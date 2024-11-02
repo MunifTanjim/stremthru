@@ -16,11 +16,12 @@ type Ctx struct {
 type StoreName string
 
 const (
-	StoreNameAlldebrid StoreName = "alldebrid"
+	StoreNameAlldebrid  StoreName = "alldebrid"
+	StoreNamePremiumize StoreName = "premiumize"
 )
 
 func (sn StoreName) Validate() (StoreName, *core.StoreError) {
-	if sn == StoreNameAlldebrid {
+	if sn == StoreNameAlldebrid || sn == StoreNamePremiumize {
 		return sn, nil
 	}
 	return sn, ErrorInvalidStoreName(string(sn))

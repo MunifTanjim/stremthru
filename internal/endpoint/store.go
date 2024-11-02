@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
+	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -47,6 +48,7 @@ func getStoreAuthToken(r *http.Request) string {
 }
 
 var adStore = alldebrid.NewStore()
+var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{})
 
 func getStore(r *http.Request) (store.Store, error) {
 	name, err := getStoreName(r)
@@ -58,6 +60,8 @@ func getStore(r *http.Request) (store.Store, error) {
 	switch name {
 	case store.StoreNameAlldebrid:
 		return adStore, nil
+	case store.StoreNamePremiumize:
+		return pmStore, nil
 	default:
 		return nil, nil
 	}
