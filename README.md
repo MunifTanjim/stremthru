@@ -13,6 +13,7 @@ Companion for Stremio.
 ### Store Integration
 
 - [AllDebrid](https://alldebrid.com)
+- [Debrid-Link](https://debrid-link.com)
 - [Premiumize](https://www.premiumize.me)
 - [RealDebrid](https://real-debrid.com) _(Planned)_
 
