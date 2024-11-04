@@ -59,6 +59,9 @@ func ParseMagnetLink(value string) (MagnetLink, error) {
 		magnet.Trackers = params["tr"]
 		params.Del("tr")
 	}
-	magnet.Link = "magnet:?xt=" + xt + "&dn=" + magnet.Name
+	magnet.Link = "magnet:?xt=" + xt
+	if magnet.Name != "" {
+		magnet.Link = magnet.Link + "&dn=" + magnet.Name
+	}
 	return magnet, nil
 }
