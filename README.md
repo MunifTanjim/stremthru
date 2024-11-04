@@ -16,6 +16,7 @@ Companion for Stremio.
 - [Debrid-Link](https://debrid-link.com)
 - [Premiumize](https://www.premiumize.me)
 - [RealDebrid](https://real-debrid.com) _(Planned)_
+- [TorBox](https://torbox.app)
 
 ## Configuration
 

@@ -69,10 +69,11 @@ const (
 	StoreNameAlldebrid  StoreName = "alldebrid"
 	StoreNameDebridLink StoreName = "debridlink"
 	StoreNamePremiumize StoreName = "premiumize"
+	StoreNameTorBox     StoreName = "torbox"
 )
 
 func (sn StoreName) Validate() (StoreName, *core.StoreError) {
-	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNamePremiumize {
+	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNamePremiumize || sn == StoreNameTorBox {
 		return sn, nil
 	}
 	return sn, ErrorInvalidStoreName(string(sn))

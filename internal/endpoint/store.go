@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
 	"github.com/MunifTanjim/stremthru/store/debridlink"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
+	"github.com/MunifTanjim/stremthru/store/torbox"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -51,6 +52,7 @@ func getStoreAuthToken(r *http.Request) string {
 var adStore = alldebrid.NewStore()
 var dlStore = debridlink.NewStoreClient()
 var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{})
+var tbStore = torbox.NewStoreClient()
 
 func getStore(r *http.Request) (store.Store, error) {
 	name, err := getStoreName(r)
@@ -66,6 +68,8 @@ func getStore(r *http.Request) (store.Store, error) {
 		return dlStore, nil
 	case store.StoreNamePremiumize:
 		return pmStore, nil
+	case store.StoreNameTorBox:
+		return tbStore, nil
 	default:
 		return nil, nil
 	}
