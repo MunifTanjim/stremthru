@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 )
 
@@ -69,3 +70,54 @@ func ParseMagnetLink(value string) (MagnetLink, error) {
 	}
 	return magnet, nil
 }
+
+var HasVideoExtension = func() func(filename string) bool {
+	videoExtensions := map[string]bool{
+		".3g2":  true,
+		".3gp":  true,
+		".amv":  true,
+		".asf":  true,
+		".avi":  true,
+		".drc":  true,
+		".f4a":  true,
+		".f4b":  true,
+		".f4p":  true,
+		".f4v":  true,
+		".flv":  true,
+		".gif":  true,
+		".gifv": true,
+		".m2ts": true,
+		".m2v":  true,
+		".m4p":  true,
+		".m4v":  true,
+		".mk3d": true,
+		".mkv":  true,
+		".mng":  true,
+		".mov":  true,
+		".mp2":  true,
+		".mp4":  true,
+		".mpe":  true,
+		".mpeg": true,
+		".mpg":  true,
+		".mpv":  true,
+		".mxf":  true,
+		".nsv":  true,
+		".ogg":  true,
+		".ogm":  true,
+		".ogv":  true,
+		".qt":   true,
+		".rm":   true,
+		".rmvb": true,
+		".roq":  true,
+		".svi":  true,
+		".ts":   true,
+		".webm": true,
+		".wmv":  true,
+		".yuv":  true,
+	}
+
+	return func(filename string) bool {
+		_, found := videoExtensions[strings.ToLower(filepath.Ext(filename))]
+		return found
+	}
+}()
