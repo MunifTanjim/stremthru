@@ -44,6 +44,8 @@ type StoreClient struct {
 	client           *APIClient
 	checkMagnetCache core.Cache[string, store.CheckMagnetDataItem]
 	getMagnetCache   core.Cache[string, store.GetMagnetData] // for downloaded magnets
+	idsByHashCache   core.Cache[string, map[string]bool]
+	hashByIdCache    core.Cache[string, string]
 }
 
 func NewStoreClient() *StoreClient {
@@ -67,7 +69,48 @@ func NewStoreClient() *StoreClient {
 		})
 	}()
 
+	c.idsByHashCache = func() core.Cache[string, map[string]bool] {
+		return core.NewCache[string, map[string]bool](&core.CacheConfig[string]{
+			Name:     "store:realdebrid:idsByHash",
+			HashKey:  core.CacheHashKeyString,
+			Lifetime: 10 * time.Minute,
+		})
+	}()
+	c.hashByIdCache = func() core.Cache[string, string] {
+		return core.NewCache[string, string](&core.CacheConfig[string]{
+			Name:     "store:realdebrid:hashById",
+			HashKey:  core.CacheHashKeyString,
+			Lifetime: 10 * time.Minute,
+		})
+	}()
+
 	return c
+}
+
+func (c *StoreClient) getCacheKey(params store.RequestContext, key string) string {
+	return params.GetAPIKey(c.client.apiKey) + ":" + key
+}
+
+func (c *StoreClient) addIdHashMapCache(params store.RequestContext, id, hash string) {
+	c.hashByIdCache.Add(c.getCacheKey(params, id), hash)
+	if ids, ok := c.idsByHashCache.Get(c.getCacheKey(params, hash)); ok {
+		ids[id] = true
+		c.idsByHashCache.Add(c.getCacheKey(params, hash), ids)
+	} else {
+		c.idsByHashCache.Add(c.getCacheKey(params, hash), map[string]bool{id: true})
+	}
+}
+
+func (c *StoreClient) removeIdHashMapCache(params store.RequestContext, id, hash string) {
+	c.hashByIdCache.Remove(c.getCacheKey(params, id))
+	if ids, ok := c.idsByHashCache.Get(c.getCacheKey(params, hash)); ok {
+		delete(ids, id)
+		if len(ids) == 0 {
+			c.idsByHashCache.Remove(c.getCacheKey(params, hash))
+		} else {
+			c.idsByHashCache.Add(c.getCacheKey(params, hash), ids)
+		}
+	}
 }
 
 func (c *StoreClient) GetName() store.StoreName {
@@ -93,57 +136,135 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 	return data, nil
 }
 
+func shouldRemoveTorrent(t *GetTorrentInfoData) bool {
+	status := t.Status
+	return (status == TorrentStatusMagnetError || status == TorrentStatusError || status == TorrentStatusVirus || status == TorrentStatusDead) || ((status == TorrentStatusQueued || status == TorrentStatusDownloading || status == TorrentStatusDownloaded) && len(getSelectedFileIdsFromTorrent(t)) != len(getVideoFileIdsFromTorrent(t)))
+}
+
+func (c *StoreClient) waitForTorrentStatus(ctx store.Ctx, t *GetTorrentInfoData, status TorrentStatus, maxRetry int, retryInterval time.Duration) (*GetTorrentInfoData, error) {
+	retry := 0
+	for t.Status != status && retry < maxRetry {
+		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
+			Ctx: ctx,
+			Id:  t.Id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		t = &tInfo.Data
+		time.Sleep(retryInterval)
+		retry++
+	}
+	if t.Status != status {
+		error := core.NewStoreError("torrent failed to reach status: " + string(status))
+		error.StoreName = string(store.StoreNameRealDebrid)
+		return nil, error
+	}
+	return t, nil
+}
+
+func getSelectedFileIdsFromTorrent(t *GetTorrentInfoData) []string {
+	fileIds := []string{}
+	for _, f := range t.Files {
+		if f.Selected == 1 {
+			fileIds = append(fileIds, strconv.Itoa(f.Id))
+		}
+	}
+	return fileIds
+}
+
+func getVideoFileIdsFromTorrent(t *GetTorrentInfoData) []string {
+	fileIds := []string{}
+	for _, f := range t.Files {
+		if core.HasVideoExtension(f.Path) {
+			fileIds = append(fileIds, strconv.Itoa(f.Id))
+		}
+	}
+	return fileIds
+}
+
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
 	magnet, err := core.ParseMagnetLink(params.Magnet)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.client.AddMagnet(&AddMagnetParams{
-		Ctx:    params.Ctx,
-		Magnet: magnet.Link,
-	})
-	if err != nil {
-		return nil, err
+
+	tIdsMap, found := c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash))
+	if !found {
+		_, err := c.ListMagnets(&store.ListMagnetsParams{
+			Ctx: params.Ctx,
+		})
+		if err != nil {
+			return nil, err
+		}
+		tIdsMap, found = c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash))
 	}
+	var t *GetTorrentInfoData
+	for tId := range tIdsMap {
+		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
+			Ctx: params.Ctx,
+			Id:  tId,
+		})
+		if err != nil {
+			return nil, err
+		}
+		t = &tInfo.Data
+		if shouldRemoveTorrent(&tInfo.Data) {
+			_, err := c.RemoveMagnet(&store.RemoveMagnetParams{
+				Ctx: params.Ctx,
+				Id:  t.Id,
+			})
+			if err != nil {
+				return nil, err
+			}
+			t = nil
+		}
+	}
+
+	if t == nil {
+		res, err := c.client.AddMagnet(&AddMagnetParams{
+			Ctx:    params.Ctx,
+			Magnet: magnet.Link,
+		})
+		if err != nil {
+			return nil, err
+		}
+		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
+			Ctx: params.Ctx,
+			Id:  res.Data.Id,
+		})
+		if err != nil {
+			return nil, err
+		}
+		t = &tInfo.Data
+	}
+
+	if t.Status != TorrentStatusQueued && t.Status != TorrentStatusDownloading && t.Status != TorrentStatusDownloaded {
+		t, err = c.waitForTorrentStatus(params.Ctx, t, TorrentStatusWaitingFilesSelection, 5, 5*time.Second)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.client.StartTorrentDownload(&StartTorrentDownloadParams{
+			Ctx:     params.Ctx,
+			Id:      t.Id,
+			FileIds: getVideoFileIdsFromTorrent(t),
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	m, err := c.GetMagnet(&store.GetMagnetParams{
+		Ctx: params.Ctx,
+		Id:  t.Id,
+	})
 	data := &store.AddMagnetData{
-		Id:     res.Data.Id,
+		Id:     t.Id,
 		Hash:   magnet.Hash,
 		Magnet: magnet.Link,
 		Name:   magnet.Name,
-		Status: store.MagnetStatusQueued,
-		Files:  []store.MagnetFile{},
-	}
-	m, err := c.GetMagnet(&store.GetMagnetParams{
-		Ctx: params.Ctx,
-		Id:  data.Id,
-	})
-	if err != nil {
-		return nil, err
-	}
-	fileIds := []string{}
-	for _, f := range m.Files {
-		if core.HasVideoExtension(f.Name) {
-			fileIds = append(fileIds, strconv.Itoa(f.Idx+1))
-		}
-	}
-	_, err = c.client.StartTorrentDownload(&StartTorrentDownloadParams{
-		Ctx:     params.Ctx,
-		Id:      data.Id,
-		FileIds: fileIds,
-	})
-	if err != nil {
-		return nil, err
-	}
-	t, err := c.GetMagnet(&store.GetMagnetParams{
-		Ctx: params.Ctx,
-		Id:  data.Id,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if t.Status == store.MagnetStatusDownloaded {
-		data.Files = t.Files
-
+		Status: m.Status,
+		Files:  m.Files,
 	}
 	return data, nil
 }
@@ -326,8 +447,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
 	res, err := c.client.ListTorrents(&ListTorrentsParams{
-		Ctx:    params.Ctx,
-		Filter: "active",
+		Ctx: params.Ctx,
 	})
 	if err != nil {
 		return nil, err
@@ -336,12 +456,14 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 		Items: []store.ListMagnetsDataItem{},
 	}
 	for _, t := range res.Data {
-		data.Items = append(data.Items, store.ListMagnetsDataItem{
+		item := store.ListMagnetsDataItem{
 			Id:     t.Id,
 			Hash:   t.Hash,
 			Name:   t.Filename,
 			Status: torrentStatusToMagnetStatus(t.Status),
-		})
+		}
+		data.Items = append(data.Items, item)
+		c.addIdHashMapCache(params, item.Id, item.Hash)
 	}
 	return data, nil
 }
@@ -358,5 +480,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 		Id: params.Id,
 	}
 	c.setCachedGetMagnet(params, params.Id, nil)
+	if hash, ok := c.hashByIdCache.Get(c.getCacheKey(params, params.Id)); ok {
+		c.removeIdHashMapCache(params, params.Id, hash)
+	}
 	return data, nil
 }
