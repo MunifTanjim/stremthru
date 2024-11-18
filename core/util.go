@@ -9,6 +9,10 @@ import (
 )
 
 func UnmarshalJSON(statusCode int, body []byte, v interface{}) error {
+	if statusCode == 204 && len(strings.TrimSpace(string(body))) == 0 {
+		return nil
+	}
+
 	err := json.Unmarshal(body, v)
 	if err == nil {
 		return nil
