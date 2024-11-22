@@ -1,0 +1,58 @@
+{
+  "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
+  "name": "stremthru",
+  "version": "0.0.0",
+  "description": "SDK for StremThru",
+  "keywords": [],
+  "homepage": "https://github.com/MunifTanjim/stremthru/tree/main/sdk/js#readme",
+  "bugs": {
+    "url": "https://github.com/MunifTanjim/stremthru/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Munif Tanjim",
+    "url": "https://muniftanjim.dev"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MunifTanjim/stremthru",
+    "directory": "sdk/js"
+  },
+  "scripts": {
+    "build": "pkgroll --clean-dist --export-condition=node",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@types/node-fetch": "^2.6.11",
+    "node-fetch": "release-2.x"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@tsconfig/node20": "^20.1.4",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^20.x",
+    "eslint": "^9.15.0",
+    "eslint-plugin-perfectionist": "^4.0.3",
+    "globals": "^15.12.0",
+    "pkgroll": "^2.4.1",
+    "prettier": "^3.3.3",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^2.1.1"
+  }
+}
