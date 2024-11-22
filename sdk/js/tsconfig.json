@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "@tsconfig/strictest/tsconfig.json",
+    "@tsconfig/node20/tsconfig.json"
+  ],
+  "include": ["src", "vitest.setup.ts"],
+  "compilerOptions": {
+    "incremental": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "stripInternal": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "types": ["vitest/globals"]
+  }
+}
