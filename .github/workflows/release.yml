@@ -12,9 +12,36 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
-      actions: write
       contents: write
       pull-requests: write
     steps:
       - name: Release
         uses: google-github-actions/release-please-action@v4
+
+      - name: SDK/JS - Checkout
+        if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+        uses: actions/checkout@v4
+      - name: SDK/JS - Setup pnpm
+        if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+          package_json_file: sdk/js/package.json
+      - name: SDK/JS - Setup Node.js
+        if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          cache-dependency-path: sdk/js
+      - name: SDK/JS - Install Dependencies
+        if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+        run: pnpm install
+      - name: SDK/JS - Build
+        if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+        run: pnpm run build
+      # - name: SDK/JS - Publish
+      #   if: ${{ steps.release.outputs['sdk/js--release_created'] }}
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #   run: pnpm publish
