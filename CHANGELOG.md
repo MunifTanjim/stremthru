@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/MunifTanjim/stremthru/compare/0.1.0...0.2.0) (2024-11-22)
+
+
+### Features
+
+* **sdk/js:** initial implementation ([1d2ba8d](https://github.com/MunifTanjim/stremthru/commit/1d2ba8d6fc27aaba07dae87e6de60915427d2fce))
+
 ## 0.1.0 (2024-11-21)
 
 
