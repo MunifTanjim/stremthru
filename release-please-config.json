@@ -19,7 +19,6 @@
     },
     "sdk/js": {
       "component": "sdk-js",
-      "release-as": "0.0.1",
       "release-type": "node",
       "pull-request-title-pattern": "chore(sdk/js): release ${version}"
     }
