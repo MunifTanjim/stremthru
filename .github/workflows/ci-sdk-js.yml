@@ -1,0 +1,40 @@
+name: CI [SDK/JS]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - sdk/js/**
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/js
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+          package_json_file: sdk/js/package.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          cache-dependency-path: sdk/js
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Check Format
+        run: pnpm exec prettier --cache --ignore-unknown --check .
+      - name: Lint
+        run: pnpm exec eslint --cache --report-unused-disable-directives .
+      - name: Build
+        run: pnpm run build
+      - name: Test
+        run: pnpm run test
