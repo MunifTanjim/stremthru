@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.1](https://github.com/MunifTanjim/stremthru/compare/0.1.0...0.0.1) (2024-11-22)
+
+
+### Continuous Integration
+
+* **sdk/js:** add check and release job ([54e9542](https://github.com/MunifTanjim/stremthru/commit/54e954265463a212bb2301213907fc1e0e1cbf00))
+
 ## 0.1.0 (2024-11-21)
 
 
