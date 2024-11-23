@@ -370,7 +370,10 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 	if err != nil {
 		return nil, err
 	}
-	data := &store.ListMagnetsData{}
+	data := &store.ListMagnetsData{
+		Items:      []store.ListMagnetsDataItem{},
+		TotalItems: 0,
+	}
 	for _, t := range res.Data {
 		item := store.ListMagnetsDataItem{
 			Id:     strconv.Itoa(t.Id),
@@ -382,6 +385,10 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			item.Status = store.MagnetStatusDownloaded
 		}
 		data.Items = append(data.Items, item)
+	}
+	// torbox returns 1 extra item
+	if len(data.Items) > params.Limit {
+		data.Items = data.Items[0:params.Limit]
 	}
 	return data, nil
 }
