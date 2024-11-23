@@ -3,6 +3,8 @@ package torbox
 import (
 	"net/url"
 	"strconv"
+
+	"github.com/MunifTanjim/stremthru/core"
 )
 
 type CheckTorrentsCachedDataItemFile struct {
@@ -150,6 +152,9 @@ func (c APIClient) ListTorrents(params *ListTorrentsParams) (APIResponse[ListTor
 	params.Form = form
 	response := &Response[ListTorrentsData]{}
 	res, err := c.Request("GET", "/v1/api/torrents/mylist", params, response)
+	if sterr, ok := err.(core.StremThruError); ok && sterr.GetStatusCode() == 404 {
+		err = nil
+	}
 	return newAPIResponse(res, response.Data, response.Detail), err
 }
 
