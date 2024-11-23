@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.1.0...sdk-js-0.2.0) (2024-11-23)
+
+
+### Features
+
+* **sdk/js:** support pagination for store.listMagnets ([6ce4718](https://github.com/MunifTanjim/stremthru/commit/6ce4718dffda204807d783291327b98fae42b5a9))
+
 ## [0.1.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.0.1...sdk-js-0.1.0) (2024-11-22)
 
 
