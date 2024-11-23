@@ -97,7 +97,22 @@ class StremThruStore {
     }>("/v0/store/user", { method: "GET" });
   }
 
-  async listMagnets() {
+  async listMagnets({
+    limit,
+    offset,
+  }: {
+    // min `1`, max `500`, default `100`
+    limit?: number;
+    // min `0`, default `0`
+    offset?: number;
+  }) {
+    const params: Record<string, string> = {};
+    if (limit) {
+      params["limit"] = String(limit);
+    }
+    if (offset) {
+      params["offset"] = String(offset);
+    }
     return await this.#client.request<{
       items: Array<{
         hash: string;
@@ -105,7 +120,8 @@ class StremThruStore {
         name: string;
         status: StoreMagnetStatus;
       }>;
-    }>("/v0/store/magnets", { method: "GET" });
+      total_items: number;
+    }>("/v0/store/magnets", { method: "GET", params });
   }
 
   async removeMagnet(magnetId: string) {
