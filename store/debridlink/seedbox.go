@@ -49,6 +49,9 @@ const (
 	SeedboxTorrentStructureTypeTree = "tree"
 )
 
+const LIST_SEEDBOX_TORRENTS_PER_PAGE_MIN = 20
+const LIST_SEEDBOX_TORRENTS_PER_PAGE_MAX = 50
+
 type ListSeedboxTorrentsParams struct {
 	Ctx
 	Ids           []string

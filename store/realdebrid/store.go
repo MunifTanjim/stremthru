@@ -447,13 +447,25 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
 	res, err := c.client.ListTorrents(&ListTorrentsParams{
-		Ctx: params.Ctx,
+		Ctx:    params.Ctx,
+		Limit:  params.Limit,
+		Offset: params.Offset,
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	sTotal := res.Header.Get("X-Total-Count")
+	if sTotal == "" {
+		sTotal = "0"
+	}
+	total, err := strconv.Atoi(sTotal)
+	if err != nil {
+		return nil, err
+	}
 	data := &store.ListMagnetsData{
-		Items: []store.ListMagnetsDataItem{},
+		Items:      []store.ListMagnetsDataItem{},
+		TotalItems: total,
 	}
 	for _, t := range res.Data {
 		item := store.ListMagnetsDataItem{

@@ -206,11 +206,14 @@ type ListMagnetsDataItem struct {
 }
 
 type ListMagnetsData struct {
-	Items []ListMagnetsDataItem `json:"items"`
+	Items      []ListMagnetsDataItem `json:"items"`
+	TotalItems int                   `json:"total_items"`
 }
 
 type ListMagnetsParams struct {
 	Ctx
+	Limit  int // min 1, max 500, default 100
+	Offset int // default 0
 }
 
 type RemoveMagnetData struct {

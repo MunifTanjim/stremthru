@@ -16,10 +16,11 @@ type StoreClientConfig struct {
 }
 
 type StoreClient struct {
-	Name           store.StoreName
-	client         *APIClient
-	config         *StoreClientConfig
-	parentFolderId string
+	Name             store.StoreName
+	client           *APIClient
+	config           *StoreClientConfig
+	parentFolderId   string
+	listMagnetsCache core.Cache[string, []store.ListMagnetsDataItem]
 }
 
 func NewStoreClient(config *StoreClientConfig) *StoreClient {
@@ -32,7 +33,19 @@ func NewStoreClient(config *StoreClientConfig) *StoreClient {
 	c.Name = store.StoreNamePremiumize
 	c.config = config
 
+	c.listMagnetsCache = func() core.Cache[string, []store.ListMagnetsDataItem] {
+		return core.NewCache[string, []store.ListMagnetsDataItem](&core.CacheConfig[string]{
+			Name:     "store:premiumize:listMagnets",
+			HashKey:  core.CacheHashKeyString,
+			Lifetime: 1 * time.Minute,
+		})
+	}()
+
 	return c
+}
+
+func (c *StoreClient) getCacheKey(params store.RequestContext, key string) string {
+	return params.GetAPIKey(c.client.apiKey) + ":" + key
 }
 
 func (c *StoreClient) getFolderByName(apiKey string, folderName string) (*CreateFolderData, error) {
@@ -304,6 +317,8 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			Files:  cm.Files,
 		}
 
+		c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
+
 		return data, nil
 	}
 
@@ -335,6 +350,8 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		return nil, err
 	}
 	if transfer == nil {
+		c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
+
 		return data, nil
 	}
 
@@ -349,7 +366,9 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		data.Files = files
 	}
 
-	return data, err
+	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
+
+	return data, nil
 }
 
 func getMagnetStatsForTransfer(transfer *ListTransfersDataItem) store.MagnetStatus {
@@ -421,47 +440,69 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
-	sf_res, err := c.client.SearchFolders(&SearchFoldersParams{
-		Ctx:   params.Ctx,
-		Query: CachedMagnetIdPrefix,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	lt_res, err := c.client.ListTransfers(&ListTransfersParams{
-		Ctx: params.Ctx,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	data := &store.ListMagnetsData{}
-
-	for _, m := range sf_res.Data.Content {
-		item := &store.ListMagnetsDataItem{
-			Id:     m.Name,
-			Hash:   CachedMagnetId(m.Name).toHash(),
-			Name:   "",
-			Status: store.MagnetStatusDownloaded,
-		}
-
-		data.Items = append(data.Items, *item)
-	}
-
-	for _, t := range lt_res.Data.Transfers {
-		magnet, err := core.ParseMagnetLink(t.Src)
+	lm, found := c.listMagnetsCache.Get(c.getCacheKey(params, ""))
+	if !found {
+		sf_res, err := c.client.SearchFolders(&SearchFoldersParams{
+			Ctx:   params.Ctx,
+			Query: CachedMagnetIdPrefix,
+		})
 		if err != nil {
 			return nil, err
 		}
-		item := &store.ListMagnetsDataItem{
-			Id:     t.Id,
-			Hash:   magnet.Hash,
-			Name:   t.Name,
-			Status: getMagnetStatsForTransfer(&t),
+
+		lt_res, err := c.client.ListTransfers(&ListTransfersParams{
+			Ctx: params.Ctx,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		data.Items = append(data.Items, *item)
+		items := []store.ListMagnetsDataItem{}
+
+		for _, m := range sf_res.Data.Content {
+			item := &store.ListMagnetsDataItem{
+				Id:     m.Name,
+				Hash:   CachedMagnetId(m.Name).toHash(),
+				Name:   "",
+				Status: store.MagnetStatusDownloaded,
+			}
+
+			items = append(items, *item)
+		}
+
+		for _, t := range lt_res.Data.Transfers {
+			magnet, err := core.ParseMagnetLink(t.Src)
+			if err != nil {
+				return nil, err
+			}
+			item := &store.ListMagnetsDataItem{
+				Id:     t.Id,
+				Hash:   magnet.Hash,
+				Name:   t.Name,
+				Status: getMagnetStatsForTransfer(&t),
+			}
+
+			items = append(items, *item)
+		}
+
+		lm = items
+		c.listMagnetsCache.Add(c.getCacheKey(params, ""), items)
+	}
+
+	totalItems := len(lm)
+	startIdx := params.Offset
+	if startIdx > totalItems {
+		startIdx = totalItems
+	}
+	endIdx := startIdx + params.Limit
+	if endIdx > totalItems {
+		endIdx = totalItems
+	}
+	items := lm[startIdx:endIdx]
+
+	data := &store.ListMagnetsData{
+		Items:      items,
+		TotalItems: totalItems,
 	}
 
 	return data, nil
@@ -507,6 +548,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 			return nil, err
 		}
 
+		c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
+
 		return data, nil
 	}
 
@@ -514,6 +557,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	if err != nil {
 		return nil, err
 	}
+
+	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
 
 	data := &store.RemoveMagnetData{Id: params.Id}
 	return data, nil

@@ -183,27 +183,64 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
-	res, err := c.client.ListSeedboxTorrents(&ListSeedboxTorrentsParams{
-		Ctx: params.Ctx,
-	})
-	if err != nil {
-		return nil, err
+	origLimit := params.Limit
+	origOffset := params.Offset
+
+	data := &store.ListMagnetsData{
+		Items:      []store.ListMagnetsDataItem{},
+		TotalItems: 0,
 	}
-	data := &store.ListMagnetsData{}
-	for _, t := range res.Data.Value {
-		item := &store.ListMagnetsDataItem{
-			Id:     t.Id,
-			Hash:   t.HashString,
-			Name:   t.Name,
-			Status: store.MagnetStatusUnknown,
+	totalPages := 0
+
+	limit := LIST_SEEDBOX_TORRENTS_PER_PAGE_MAX
+	page := origOffset / limit
+	offsetInPage := origOffset % limit
+	remainingItems := origLimit
+	for remainingItems > 0 {
+		res, err := c.client.ListSeedboxTorrents(&ListSeedboxTorrentsParams{
+			Ctx:     params.Ctx,
+			PerPage: limit,
+			Page:    page,
+		})
+		if err != nil {
+			return nil, err
 		}
-		if t.DownloadPercent == 100 {
-			item.Status = store.MagnetStatusDownloaded
-		} else if t.DownloadPercent < 100 {
-			item.Status = store.MagnetStatusDownloading
+
+		resItems := res.Data.Value
+		totalPages = res.Data.Pagination.Pages
+		totalResItems := len(resItems)
+		if totalResItems == 0 {
+			break
 		}
-		data.Items = append(data.Items, *item)
+
+		if offsetInPage != 0 {
+			resItems = resItems[offsetInPage:]
+			totalResItems = len(resItems)
+			offsetInPage = 0
+		}
+
+		for _, t := range resItems[:min(totalResItems, remainingItems)] {
+			item := &store.ListMagnetsDataItem{
+				Id:     t.Id,
+				Hash:   t.HashString,
+				Name:   t.Name,
+				Status: store.MagnetStatusUnknown,
+			}
+			if t.DownloadPercent == 100 {
+				item.Status = store.MagnetStatusDownloaded
+			} else if t.DownloadPercent < 100 {
+				item.Status = store.MagnetStatusDownloading
+			}
+
+			data.Items = append(data.Items, *item)
+		}
+
+		page++
+		remainingItems -= totalResItems
 	}
+
+	data.TotalItems = totalPages * limit
+
 	return data, nil
 }
 

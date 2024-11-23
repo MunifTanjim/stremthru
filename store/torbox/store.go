@@ -364,8 +364,8 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 	res, err := c.client.ListTorrents(&ListTorrentsParams{
 		Ctx:         params.Ctx,
 		BypassCache: true,
-		Offset:      0,
-		Limit:       0,
+		Limit:       params.Limit,
+		Offset:      params.Offset,
 	})
 	if err != nil {
 		return nil, err

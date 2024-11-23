@@ -2,9 +2,12 @@ package endpoint
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -77,4 +80,20 @@ func ReadJSONPayload[T interface{}](r *http.Request, payload T) error {
 	error := core.NewAPIError("failed to decode body")
 	error.Cause = err
 	return error
+}
+
+func getQueryInt(queryParams url.Values, name string, defaultValue int) (int, error) {
+	if qVal, ok := queryParams[name]; ok {
+		v := qVal[0]
+		if v == "" {
+			return defaultValue, nil
+		}
+
+		val, err := strconv.Atoi(v)
+		if err != nil {
+			return 0, errors.New("invalid " + name)
+		}
+		return val, nil
+	}
+	return defaultValue, nil
 }

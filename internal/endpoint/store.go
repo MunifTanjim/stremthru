@@ -146,10 +146,27 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, 200, data, err)
 }
 
-func listMagnets(ctx *context.RequestContext) (*store.ListMagnetsData, error) {
-	params := &store.ListMagnetsParams{}
+func listMagnets(ctx *context.RequestContext, r *http.Request) (*store.ListMagnetsData, error) {
+	queryParams := r.URL.Query()
+	limit, err := getQueryInt(queryParams, "limit", 100)
+	if err != nil {
+		return nil, ErrorBadRequest(r, err.Error())
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	offset, err := getQueryInt(queryParams, "offset", 0)
+	if err != nil {
+		return nil, ErrorBadRequest(r, err.Error())
+	}
+
+	params := &store.ListMagnetsParams{
+		Limit:  limit,
+		Offset: offset,
+	}
 	params.APIKey = ctx.StoreAuthToken
 	data, err := ctx.Store.ListMagnets(params)
+
 	if err == nil && data.Items == nil {
 		data.Items = []store.ListMagnetsDataItem{}
 	}
@@ -163,7 +180,7 @@ func handleStoreMagnetsList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.GetRequestContext(r)
-	data, err := listMagnets(ctx)
+	data, err := listMagnets(ctx, r)
 	if err == nil && data != nil {
 		for _, item := range data.Items {
 			item.Hash = strings.ToLower(item.Hash)

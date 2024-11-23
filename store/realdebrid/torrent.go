@@ -214,6 +214,12 @@ type ListTorrentsParams struct {
 
 func (c APIClient) ListTorrents(params *ListTorrentsParams) (APIResponse[ListTorrentsData], error) {
 	form := &url.Values{}
+	if params.Limit != 0 {
+		form.Add("limit", strconv.Itoa(params.Limit))
+	}
+	if params.Offset != 0 {
+		form.Add("offset", strconv.Itoa(params.Offset))
+	}
 	params.Form = form
 	response := &listTorrentsData{}
 	res, err := c.Request("GET", "/rest/1.0/torrents", params, response)

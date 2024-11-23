@@ -140,6 +140,11 @@ If `.status` is `downloaded`, `.files` will have the list of files.
 
 List mangets on user's account.
 
+**Query Parameter**:
+
+- `limit`: min `1`, max `500`, default `100`
+- `offset`: min `0`, default `0`
+
 **Response**:
 
 ```json
@@ -152,7 +157,8 @@ List mangets on user's account.
         "name": "string",
         "status": "MagnetStatus"
       }
-    ]
+    ],
+    "total_items": "int"
   }
 }
 ```

@@ -3,21 +3,36 @@ package alldebrid
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 type StoreClient struct {
-	Name   store.StoreName
-	client *APIClient
+	Name             store.StoreName
+	client           *APIClient
+	listMagnetsCache core.Cache[string, []store.ListMagnetsDataItem]
 }
 
 func NewStore() *StoreClient {
 	c := &StoreClient{}
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameAlldebrid
+
+	c.listMagnetsCache = func() core.Cache[string, []store.ListMagnetsDataItem] {
+		return core.NewCache[string, []store.ListMagnetsDataItem](&core.CacheConfig[string]{
+			Name:     "store:alldebrid:listMagnets",
+			HashKey:  core.CacheHashKeyString,
+			Lifetime: 1 * time.Minute,
+		})
+	}()
+
 	return c
+}
+
+func (c *StoreClient) getCacheKey(params store.RequestContext, key string) string {
+	return params.GetAPIKey(c.client.apiKey) + ":" + key
 }
 
 func (c *StoreClient) GetName() store.StoreName {
@@ -97,6 +112,8 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	if err != nil {
 		return nil, err
 	}
+
+	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
 
 	magnet := um.Data[0]
 
@@ -211,24 +228,45 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
-	ams, err := c.client.GetAllMagnetStatus(&GetAllMagnetStatusParams{
-		Ctx: params.Ctx,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	data := &store.ListMagnetsData{}
-
-	for _, magnet := range ams.Data.Magnets {
-		item := &store.ListMagnetsDataItem{
-			Id:     strconv.Itoa(magnet.Id),
-			Hash:   magnet.Hash,
-			Name:   magnet.Filename,
-			Status: statusCodeToMangetStatus(magnet.StatusCode),
+	lm, found := c.listMagnetsCache.Get(c.getCacheKey(params, ""))
+	if !found {
+		res, err := c.client.GetAllMagnetStatus(&GetAllMagnetStatusParams{
+			Ctx: params.Ctx,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		data.Items = append(data.Items, *item)
+		items := []store.ListMagnetsDataItem{}
+		for _, magnet := range res.Data.Magnets {
+			item := &store.ListMagnetsDataItem{
+				Id:     strconv.Itoa(magnet.Id),
+				Hash:   magnet.Hash,
+				Name:   magnet.Filename,
+				Status: statusCodeToMangetStatus(magnet.StatusCode),
+			}
+
+			items = append(items, *item)
+		}
+
+		lm = items
+		c.listMagnetsCache.Add(c.getCacheKey(params, ""), items)
+	}
+
+	totalItems := len(lm)
+	startIdx := params.Offset
+	if startIdx > totalItems {
+		startIdx = totalItems
+	}
+	endIdx := startIdx + params.Limit
+	if endIdx > totalItems {
+		endIdx = totalItems
+	}
+	items := lm[startIdx:endIdx]
+
+	data := &store.ListMagnetsData{
+		Items:      items,
+		TotalItems: totalItems,
 	}
 
 	return data, nil
@@ -250,6 +288,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	if err != nil {
 		return nil, err
 	}
+
+	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
 
 	data := &store.RemoveMagnetData{Id: params.Id}
 	return data, nil
