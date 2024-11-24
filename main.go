@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
 )
 
@@ -14,6 +15,10 @@ func main() {
 	endpoint.AddHealthEndpoints(mux)
 	endpoint.AddProxyEndpoints(mux)
 	endpoint.AddStoreEndpoints(mux)
+
+	db.Open()
+	defer db.Close()
+	db.Ping()
 
 	addr := ":" + config.Port
 	server := &http.Server{Addr: addr, Handler: mux}

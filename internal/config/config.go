@@ -75,6 +75,7 @@ type Config struct {
 	Port              string
 	StoreAuthToken    StoreAuthTokenMap
 	ProxyAuthPassword ProxyAuthPasswordMap
+	DatabaseURL       string
 }
 
 var config = func() Config {
@@ -121,13 +122,17 @@ var config = func() Config {
 		}
 	}
 
+	databaseUrl := getEnv("STREMTHRU_DATABASE_URL", "file:./data/stremthru.db")
+
 	return Config{
 		Port:              getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword: proxyAuthPasswordMap,
 		StoreAuthToken:    storeAuthTokenMap,
+		DatabaseURL:       databaseUrl,
 	}
 }()
 
 var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var StoreAuthToken = config.StoreAuthToken
+var DatabaseURL = config.DatabaseURL

@@ -34,6 +34,9 @@ WORKDIR /
 
 COPY --from=builder /workspace/stremthru /stremthru
 
+RUN mkdir /data 
+VOLUME ["/data"]
+
 EXPOSE 8080
 
 ENTRYPOINT ["/stremthru"]
