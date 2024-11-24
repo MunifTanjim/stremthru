@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.2.0...sdk-js-0.3.0) (2024-11-24)
+
+
+### Features
+
+* **sdk/js:** improve StremThruError ([f2488ee](https://github.com/MunifTanjim/stremthru/commit/f2488eeb5e95d6e171d7dae735d6752448ab5421))
+* **sdk/js:** support timeout config ([4faa5c3](https://github.com/MunifTanjim/stremthru/commit/4faa5c3569171ef8b4530bffffd5e49caa258e9a))
+* **sdk/js:** support userAgent config ([dbcc743](https://github.com/MunifTanjim/stremthru/commit/dbcc743d90629776374fb6ad361ead84304cd536))
+
 ## [0.2.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.1.0...sdk-js-0.2.0) (2024-11-23)
 
 
