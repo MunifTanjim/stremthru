@@ -1,11 +1,38 @@
+export type ErrorCode =
+  | "BAD_GATEWAY"
+  | "BAD_REQUEST"
+  | "CONFLICT"
+  | "FORBIDDEN"
+  | "GONE"
+  | "INTERNAL_SERVER_ERROR"
+  | "MAGNET_INVALID"
+  | "METHOD_NOT_ALLOWED"
+  | "NOT_FOUND"
+  | "NOT_IMPLEMENTED"
+  | "PAYMENT_REQUIRED"
+  | "PROXY_AUTHENTICATION_REQUIRED"
+  | "SERVICE_UNAVAILABLE"
+  | "STORE_LIMIT_EXCEEDED"
+  | "TOO_MANY_REQUESTS"
+  | "UNAUTHORIZED"
+  | "UNAVAILABLE_FOR_LEGAL_REASONS"
+  | "UNKNOWN"
+  | "UNPROCESSABLE_ENTITY"
+  | "UNSUPPORTED_MEDIA_TYPE";
+
+export type ErrorType =
+  | "api_error"
+  | "store_error"
+  | "unknown_error"
+  | "upstream_error";
+
 export class StremThruError extends Error {
   body?: unknown;
-  code?: string;
+  code?: ErrorCode = "UNKNOWN";
   headers: Record<string, string>;
   statusCode: number;
   statusText: string;
-  type?: "api_error" | "store_error" | "unknown_error" | "upstream_error" =
-    "unknown_error";
+  type?: ErrorType = "unknown_error";
 
   constructor(
     message: string,
