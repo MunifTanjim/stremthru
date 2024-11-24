@@ -81,6 +81,7 @@ type CheckTorrentInstantAvailabilityParams struct {
 	Hashes []string
 }
 
+// Deprecated: RealDebrid removed the endpoint
 func (c APIClient) CheckTorrentInstantAvailability(params *CheckTorrentInstantAvailabilityParams) (APIResponse[CheckTorrentInstantAvailabilityData], error) {
 	response := &checkTorrentInstantAvailabilityData{}
 	res, err := c.Request("GET", "/rest/1.0/torrents/instantAvailability/"+strings.Join(params.Hashes, "/"), params, response)

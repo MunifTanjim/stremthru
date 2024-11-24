@@ -1,12 +1,13 @@
 package realdebrid
 
 import (
+	"log"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -40,26 +41,17 @@ func torrentStatusToMagnetStatus(status TorrentStatus) store.MagnetStatus {
 }
 
 type StoreClient struct {
-	Name             store.StoreName
-	client           *APIClient
-	checkMagnetCache core.Cache[string, store.CheckMagnetDataItem]
-	getMagnetCache   core.Cache[string, store.GetMagnetData] // for downloaded magnets
-	idsByHashCache   core.Cache[string, map[string]bool]
-	hashByIdCache    core.Cache[string, string]
+	Name           store.StoreName
+	client         *APIClient
+	getMagnetCache core.Cache[string, store.GetMagnetData] // for downloaded magnets
+	idsByHashCache core.Cache[string, map[string]bool]
+	hashByIdCache  core.Cache[string, string]
 }
 
 func NewStoreClient() *StoreClient {
 	c := &StoreClient{}
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameRealDebrid
-
-	c.checkMagnetCache = func() core.Cache[string, store.CheckMagnetDataItem] {
-		return core.NewCache[string, store.CheckMagnetDataItem](&core.CacheConfig[string]{
-			Name:     "store:realdebrid:checkMagnet",
-			HashKey:  core.CacheHashKeyString,
-			Lifetime: 10 * time.Minute,
-		})
-	}()
 
 	c.getMagnetCache = func() core.Cache[string, store.GetMagnetData] {
 		return core.NewCache[string, store.GetMagnetData](&core.CacheConfig[string]{
@@ -138,7 +130,7 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 
 func shouldRemoveTorrent(t *GetTorrentInfoData) bool {
 	status := t.Status
-	return (status == TorrentStatusMagnetError || status == TorrentStatusError || status == TorrentStatusVirus || status == TorrentStatusDead) || ((status == TorrentStatusQueued || status == TorrentStatusDownloading || status == TorrentStatusDownloaded) && len(getSelectedFileIdsFromTorrent(t)) != len(getVideoFileIdsFromTorrent(t)))
+	return (status == TorrentStatusMagnetError || status == TorrentStatusError || status == TorrentStatusVirus || status == TorrentStatusDead) || ((status == TorrentStatusQueued || status == TorrentStatusDownloading || status == TorrentStatusDownloaded) && len(t.getSelectedFileIds()) != len(t.getVideoFileIds()))
 }
 
 func (c *StoreClient) waitForTorrentStatus(ctx store.Ctx, t *GetTorrentInfoData, status TorrentStatus, maxRetry int, retryInterval time.Duration) (*GetTorrentInfoData, error) {
@@ -163,7 +155,7 @@ func (c *StoreClient) waitForTorrentStatus(ctx store.Ctx, t *GetTorrentInfoData,
 	return t, nil
 }
 
-func getSelectedFileIdsFromTorrent(t *GetTorrentInfoData) []string {
+func (t *GetTorrentInfoData) getSelectedFileIds() []string {
 	fileIds := []string{}
 	for _, f := range t.Files {
 		if f.Selected == 1 {
@@ -173,7 +165,7 @@ func getSelectedFileIdsFromTorrent(t *GetTorrentInfoData) []string {
 	return fileIds
 }
 
-func getVideoFileIdsFromTorrent(t *GetTorrentInfoData) []string {
+func (t *GetTorrentInfoData) getVideoFileIds() []string {
 	fileIds := []string{}
 	for _, f := range t.Files {
 		if core.HasVideoExtension(f.Path) {
@@ -181,6 +173,24 @@ func getVideoFileIdsFromTorrent(t *GetTorrentInfoData) []string {
 		}
 	}
 	return fileIds
+}
+
+func (f *GetTorrentInfoDataFile) toStoreMagnetCacheFile() db.StoreMagnetCacheFile {
+	return db.StoreMagnetCacheFile{
+		Idx:  f.Id - 1,
+		Name: filepath.Base(f.Path),
+		Size: f.Bytes,
+	}
+}
+
+func (t *GetTorrentInfoData) getStoreMagnetCacheFiles() db.StoreMagnetCacheFiles {
+	files := db.StoreMagnetCacheFiles{}
+	for _, f := range t.Files {
+		if core.HasVideoExtension(f.Path) {
+			files = append(files, f.toStoreMagnetCacheFile())
+		}
+	}
+	return files
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
@@ -247,10 +257,13 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		_, err = c.client.StartTorrentDownload(&StartTorrentDownloadParams{
 			Ctx:     params.Ctx,
 			Id:      t.Id,
-			FileIds: getVideoFileIdsFromTorrent(t),
+			FileIds: t.getVideoFileIds(),
 		})
 		if err != nil {
 			return nil, err
+		}
+		if err = db.TouchStoreMagnetCache(db.StoreMagnetCacheStoreRealDebrid, magnet.Hash, t.getStoreMagnetCacheFiles()); err != nil {
+			log.Printf("failed to touch magnet(%s:%s): %v\n", db.StoreMagnetCacheStoreRealDebrid, magnet.Hash, err)
 		}
 	}
 
@@ -269,17 +282,6 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	return data, nil
 }
 
-func (c *StoreClient) getCachedCheckMagnet(params *store.CheckMagnetParams, magnetHash string) *store.CheckMagnetDataItem {
-	if v, ok := c.checkMagnetCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + magnetHash); ok {
-		return &v
-	}
-	return nil
-}
-
-func (c *StoreClient) setCachedCheckMagnet(params *store.CheckMagnetParams, magnetHash string, v *store.CheckMagnetDataItem) {
-	c.checkMagnetCache.Add(params.GetAPIKey(c.client.apiKey)+":"+magnetHash, *v)
-}
-
 func (c *StoreClient) checkMagnetInstantAvailability(params *store.CheckMagnetParams, hashes []string) (APIResponse[CheckTorrentInstantAvailabilityData], error) {
 	res, err := c.client.CheckTorrentInstantAvailability(&CheckTorrentInstantAvailabilityParams{
 		Ctx:    params.Ctx,
@@ -292,9 +294,6 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 	magnetByHash := map[string]core.MagnetLink{}
 	hashes := []string{}
 
-	cachedItemByHash := map[string]store.CheckMagnetDataItem{}
-	uncachedHashes := []string{}
-
 	for _, m := range params.Magnets {
 		magnet, err := core.ParseMagnetLink(m)
 		if err != nil {
@@ -302,33 +301,21 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		}
 		magnetByHash[magnet.Hash] = magnet
 		hashes = append(hashes, magnet.Hash)
-		if v := c.getCachedCheckMagnet(params, magnet.Hash); v != nil {
-			cachedItemByHash[magnet.Hash] = *v
-		} else {
-			uncachedHashes = append(uncachedHashes, magnet.Hash)
-		}
 	}
-	tByHash := map[string]CheckTorrentInstantAvailabilityDataHosterMap{}
-	if len(uncachedHashes) > 0 {
-		res, err := c.client.CheckTorrentInstantAvailability(&CheckTorrentInstantAvailabilityParams{
-			Ctx:    params.Ctx,
-			Hashes: uncachedHashes,
-		})
-		if err != nil {
-			return nil, err
-		}
-		for hash, t := range res.Data {
-			tByHash[strings.ToLower(hash)] = t
+
+	cachedMagnetByHash := map[string]db.StoreMagnetCache{}
+	smcs, err := db.GetStoreMagnetCaches(db.StoreMagnetCacheStoreRealDebrid, hashes)
+	if err != nil {
+		return nil, err
+	}
+	for _, smc := range smcs {
+		if smc.IsCached() {
+			cachedMagnetByHash[smc.Hash] = smc
 		}
 	}
 
 	data := &store.CheckMagnetData{}
 	for _, hash := range hashes {
-		if item, ok := cachedItemByHash[hash]; ok {
-			data.Items = append(data.Items, item)
-			continue
-		}
-
 		m := magnetByHash[hash]
 		item := store.CheckMagnetDataItem{
 			Hash:   m.Hash,
@@ -336,36 +323,15 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			Status: store.MagnetStatusUnknown,
 			Files:  []store.MagnetFile{},
 		}
-		if t, ok := tByHash[hash]; ok {
-			largestVariant := map[string]CheckTorrentInstantAvailabilityDataFileIdsVariantFile{}
-			largestVariantLength := 0
-
-			for _, variants := range t {
-				for _, fMap := range variants {
-					length := len(fMap)
-					if length > largestVariantLength {
-						largestVariantLength = length
-						largestVariant = fMap
-					}
-				}
-			}
-
-			for id, f := range largestVariant {
-				idx, err := strconv.Atoi(id)
-				if err != nil {
-					return nil, err
-				}
+		if t, ok := cachedMagnetByHash[hash]; ok {
+			for _, f := range t.Files {
 				item.Files = append(item.Files, store.MagnetFile{
-					Idx:  idx - 1,
-					Name: f.Filename,
-					Size: f.Filesize,
+					Idx:  f.Idx,
+					Name: f.Name,
+					Size: f.Size,
 				})
 			}
-
-			if largestVariantLength > 0 {
-				item.Status = store.MagnetStatusCached
-				c.setCachedCheckMagnet(params, hash, &item)
-			}
+			item.Status = store.MagnetStatusCached
 		}
 
 		data.Items = append(data.Items, item)
@@ -422,6 +388,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Files:  []store.MagnetFile{},
 	}
 	totalLinks := len(res.Data.Links)
+	smcFiles := db.StoreMagnetCacheFiles{}
 	if data.Status == store.MagnetStatusDownloaded {
 		idx := -1
 		for _, f := range res.Data.Files {
@@ -431,15 +398,18 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 				if totalLinks >= idx+1 {
 					link = res.Data.Links[idx]
 				}
+				smcFile := f.toStoreMagnetCacheFile()
 				data.Files = append(data.Files, store.MagnetFile{
-					Idx:  f.Id - 1,
-					Name: filepath.Base(f.Path),
+					Idx:  smcFile.Idx,
+					Name: smcFile.Name,
 					Path: f.Path,
-					Size: f.Bytes,
+					Size: smcFile.Size,
 					Link: link,
 				})
+				smcFiles = append(smcFiles, smcFile)
 			}
 		}
+		db.TouchStoreMagnetCache(db.StoreMagnetCacheStoreRealDebrid, data.Hash, smcFiles)
 		c.setCachedGetMagnet(params, params.Id, data)
 	}
 	return data, nil
