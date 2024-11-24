@@ -5,15 +5,27 @@ import "net/url"
 type TranscodeStatus string
 
 const (
-	TranscodeStatusFinished TranscodeStatus = "finished"
+	TranscodeStatusError         TranscodeStatus = "error"
+	TranscodeStatusFetchPending  TranscodeStatus = "fetch_pending"
+	TranscodeStatusFinished      TranscodeStatus = "finished"
+	TranscodeStatusGoodAsIs      TranscodeStatus = "good_as_is"
+	TranscodeStatusNotApplicable TranscodeStatus = "not_applicable"
+	TranscodeStatusPending       TranscodeStatus = "pending"
+	TranscodeStatusRunning       TranscodeStatus = "running"
 )
 
 type TransferStatus string
 
 const (
-	TransferStatusWaiting  TransferStatus = "waiting"
-	TransferStatusRunning  TransferStatus = "running"
+	TransferStatusBanned   TransferStatus = "banned"
+	TransferStatusDeleted  TransferStatus = "deleted"
+	TransferStatusError    TransferStatus = "error"
 	TransferStatusFinished TransferStatus = "finished"
+	TransferStatusQueued   TransferStatus = "queued"
+	TransferStatusRunning  TransferStatus = "running"
+	TransferStatusSeeding  TransferStatus = "seeding"
+	TransferStatusTimeout  TransferStatus = "timeout"
+	TransferStatusWaiting  TransferStatus = "waiting"
 )
 
 type ListTransfersDataItem struct {

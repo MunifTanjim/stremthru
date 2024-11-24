@@ -5,7 +5,9 @@ import "net/url"
 type VirusScan string
 
 const (
-	VirusScanOk VirusScan = "ok"
+	VirusScanError    VirusScan = "error"
+	VirusScanInfected VirusScan = "infected"
+	VirusScanOk       VirusScan = "ok"
 )
 
 type ListFolderDataBreadcrumbItem struct {
