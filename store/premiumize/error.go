@@ -13,22 +13,14 @@ func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 
 	if rerr, ok := cause.(*ResponseContainer); ok {
 		err.Msg = rerr.Message
+		if err.Msg == "Not logged in." {
+			err.Code = core.ErrorCodeUnauthorized
+			err.StatusCode = http.StatusUnauthorized
+		}
 		err.UpstreamCause = rerr
 	} else {
 		err.Cause = cause
 	}
 
-	return err
-}
-
-func UpstreamErrorFromRequest(cause error, req *http.Request, res *http.Response) error {
-	err := UpstreamErrorWithCause(cause)
-	err.InjectReq(req)
-	if res != nil {
-		err.StatusCode = res.StatusCode
-	}
-	if err.StatusCode <= http.StatusBadRequest {
-		err.StatusCode = http.StatusBadRequest
-	}
 	return err
 }

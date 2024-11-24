@@ -1,8 +1,6 @@
 package torbox
 
 import (
-	"net/http"
-
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -42,28 +40,58 @@ const (
 	ErrorCodeVendorDisabled          ErrorCode = "VENDOR_DISABLED"
 )
 
+var errorCodeByErrorCode = map[ErrorCode]core.ErrorCode{
+	ErrorCodeDatabaseError:           core.ErrorCodeInternalServerError,
+	ErrorCodeUnknownError:            core.ErrorCodeInternalServerError,
+	ErrorCodeNoAuth:                  core.ErrorCodeUnauthorized,
+	ErrorCodeBadToken:                core.ErrorCodeUnauthorized,
+	ErrorCodeAuthError:               core.ErrorCodeUnauthorized,
+	ErrorCodeInvalidOption:           core.ErrorCodeBadRequest,
+	ErrorCodeRedirectError:           core.ErrorCodeInternalServerError,
+	ErrorCodeOAuthVerificationError:  core.ErrorCodeUnauthorized,
+	ErrorCodeEndpointNotFound:        core.ErrorCodeNotFound,
+	ErrorCodeItemNotFound:            core.ErrorCodeNotFound,
+	ErrorCodePlanRestrictedFeature:   core.ErrorCodePaymentRequired,
+	ErrorCodeDuplicateItem:           core.ErrorCodeConflict,
+	ErrorCodeBozoRssFeed:             core.ErrorCodeBadRequest,
+	ErrorCodeSellixError:             core.ErrorCodeInternalServerError,
+	ErrorCodeTooMuchData:             core.ErrorCodeUnprocessableEntity,
+	ErrorCodeDownloadTooLarge:        core.ErrorCodeUnprocessableEntity,
+	ErrorCodeMissingRequiredOption:   core.ErrorCodeBadRequest,
+	ErrorCodeTooManyOptions:          core.ErrorCodeBadRequest,
+	ErrorCodeBozoTorrent:             core.ErrorCodeBadRequest,
+	ErrorCodeNoServersAvailableError: core.ErrorCodeServiceUnavailable,
+	ErrorCodeMonthlyLimit:            core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeCooldownLimit:           core.ErrorCodeTooManyRequests,
+	ErrorCodeActiveLimit:             core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeDownloadServerError:     core.ErrorCodeInternalServerError,
+	ErrorCodeBozoNzb:                 core.ErrorCodeBadRequest,
+	ErrorCodeSearchError:             core.ErrorCodeInternalServerError,
+	ErrorCodeInvalidDevice:           core.ErrorCodeBadRequest,
+	ErrorCodeDiffIssue:               core.ErrorCodeUnknown,
+	ErrorCodeLinkOffline:             core.ErrorCodeServiceUnavailable,
+	ErrorCodeVendorDisabled:          core.ErrorCodeServiceUnavailable,
+}
+
+func TranslateErrorCode(errorCode ErrorCode) core.ErrorCode {
+	if code, found := errorCodeByErrorCode[errorCode]; found {
+		return code
+	}
+	return core.ErrorCodeUnknown
+
+}
+
 func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 	err := core.NewUpstreamError("")
 	err.StoreName = string(store.StoreNameTorBox)
 
 	if rerr, ok := cause.(*ResponseError); ok {
 		err.Msg = rerr.Detail
+		err.Code = TranslateErrorCode(rerr.Err)
 		err.UpstreamCause = rerr
 	} else {
 		err.Cause = cause
 	}
 
-	return err
-}
-
-func UpstreamErrorFromRequest(cause error, req *http.Request, res *http.Response) error {
-	err := UpstreamErrorWithCause(cause)
-	err.InjectReq(req)
-	if res != nil {
-		err.StatusCode = res.StatusCode
-	}
-	if err.StatusCode <= http.StatusBadRequest {
-		err.StatusCode = http.StatusBadRequest
-	}
 	return err
 }

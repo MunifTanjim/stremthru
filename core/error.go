@@ -3,7 +3,6 @@ package core
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 )
 
 type ErrorType string
@@ -18,10 +17,29 @@ const (
 type ErrorCode string
 
 const (
-	ErrorCodeBadRequest         ErrorCode = "BAD_REQUEST"
-	ErrorCodeMagnetInvalidId    ErrorCode = "MAGNET_INVALID_ID"
-	ErrorCodeMagnetInvalidURI   ErrorCode = "MAGNET_INVALID_URI"
+	ErrorCodeUnknown ErrorCode = "UNKNOWN"
+
+	ErrorCodeBadGateway                  ErrorCode = "BAD_GATEWAY"
+	ErrorCodeBadRequest                  ErrorCode = "BAD_REQUEST"
+	ErrorCodeConflict                    ErrorCode = "CONFLICT"
+	ErrorCodeForbidden                   ErrorCode = "FORBIDDEN"
+	ErrorCodeGone                        ErrorCode = "GONE"
+	ErrorCodeInternalServerError         ErrorCode = "INTERNAL_SERVER_ERROR"
+	ErrorCodeMethodNotAllowed            ErrorCode = "METHOD_NOT_ALLOWED"
+	ErrorCodeNotFound                    ErrorCode = "NOT_FOUND"
+	ErrorCodeNotImplemented              ErrorCode = "NOT_IMPLEMENTED"
+	ErrorCodePaymentRequired             ErrorCode = "PAYMENT_REQUIRED"
+	ErrorCodeProxyAuthenticationRequired ErrorCode = "PROXY_AUTHENTICATION_REQUIRED"
+	ErrorCodeServiceUnavailable          ErrorCode = "SERVICE_UNAVAILABLE"
+	ErrorCodeTooManyRequests             ErrorCode = "TOO_MANY_REQUESTS"
+	ErrorCodeUnauthorized                ErrorCode = "UNAUTHORIZED"
+	ErrorCodeUnavailableForLegalReasons  ErrorCode = "UNAVAILABLE_FOR_LEGAL_REASONS"
+	ErrorCodeUnprocessableEntity         ErrorCode = "UNPROCESSABLE_ENTITY"
+	ErrorCodeUnsupportedMediaType        ErrorCode = "UNSUPPORTED_MEDIA_TYPE"
+
 	ErrorCodeStoreLimitExceeded ErrorCode = "STORE_LIMIT_EXCEEDED"
+
+	ErrorCodeMagnetInvalid ErrorCode = "MAGNET_INVALID"
 )
 
 type StremThruError interface {
@@ -63,15 +81,42 @@ func (e *Error) InjectReq(r *http.Request) {
 	}
 }
 
+var errorCodeByStatusCode = map[int]ErrorCode{
+	http.StatusBadGateway:                 ErrorCodeBadGateway,
+	http.StatusBadRequest:                 ErrorCodeBadRequest,
+	http.StatusConflict:                   ErrorCodeConflict,
+	http.StatusForbidden:                  ErrorCodeForbidden,
+	http.StatusGone:                       ErrorCodeGone,
+	http.StatusInternalServerError:        ErrorCodeInternalServerError,
+	http.StatusMethodNotAllowed:           ErrorCodeMethodNotAllowed,
+	http.StatusNotFound:                   ErrorCodeNotFound,
+	http.StatusNotImplemented:             ErrorCodeNotImplemented,
+	http.StatusPaymentRequired:            ErrorCodePaymentRequired,
+	http.StatusProxyAuthRequired:          ErrorCodeProxyAuthenticationRequired,
+	http.StatusServiceUnavailable:         ErrorCodeServiceUnavailable,
+	http.StatusTooManyRequests:            ErrorCodeTooManyRequests,
+	http.StatusUnauthorized:               ErrorCodeUnauthorized,
+	http.StatusUnavailableForLegalReasons: ErrorCodeUnavailableForLegalReasons,
+	http.StatusUnprocessableEntity:        ErrorCodeUnprocessableEntity,
+	http.StatusUnsupportedMediaType:       ErrorCodeUnsupportedMediaType,
+}
+
 func (e *Error) Pack() {
 	if e.StatusCode == 0 {
 		e.StatusCode = 500
+	}
+	if e.Code == "" {
+		if errorCode, found := errorCodeByStatusCode[e.StatusCode]; found {
+			e.Code = errorCode
+		}
 	}
 	if e.Msg == "" {
 		if e.Cause != nil {
 			e.Msg = e.Cause.Error()
 		} else if e.UpstreamCause != nil {
 			e.Msg = e.UpstreamCause.Error()
+		} else {
+			e.Msg = http.StatusText(e.StatusCode)
 		}
 	}
 }
@@ -117,14 +162,6 @@ func NewStoreError(msg string) *StoreError {
 
 type UpstreamError struct {
 	err
-}
-
-func (e *UpstreamError) Pack() {
-	e.err.Pack()
-
-	if e.StoreName != "" && e.Code != "" {
-		e.Code = ErrorCode(strings.ToUpper(e.StoreName) + "_" + string(e.Code))
-	}
 }
 
 func NewUpstreamError(msg string) *UpstreamError {

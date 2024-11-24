@@ -43,7 +43,7 @@ var StatusCodeByMagnetErrorCode = map[MagnetErrorCode]int{
 	MagnetErrorCodeInvalidId:     http.StatusBadRequest,
 	MagnetErrorCodeInvalidURI:    http.StatusBadRequest,
 	MagnetErrorCodeMustBePremium: http.StatusPaymentRequired,
-	MagnetErrorCodeNoServer:      http.StatusForbidden,
+	MagnetErrorCodeNoServer:      http.StatusUnprocessableEntity,
 	MagnetErrorCodeTooManyActive: http.StatusUnprocessableEntity,
 }
 
@@ -78,7 +78,45 @@ var StatusCodeByLinkErrorCode = map[LinkErrorCode]int{
 	LinkErrorCodeTemporaryUnavailable: http.StatusServiceUnavailable,
 	MustBePremium:                     http.StatusPaymentRequired,
 	FreeTrialLimitReached:             http.StatusPaymentRequired,
-	NoServer:                          http.StatusForbidden,
+	NoServer:                          http.StatusServiceUnavailable,
+}
+
+var errorCodeByErrorCode = map[ErrorCode]core.ErrorCode{
+	ErrorCodeAuthMissingAgent:  core.ErrorCodeBadRequest,
+	ErrorCodeAuthBadAgent:      core.ErrorCodeBadRequest,
+	ErrorCodeAuthMissingAPIKey: core.ErrorCodeUnauthorized,
+	ErrorCodeAuthBadAPIKey:     core.ErrorCodeUnauthorized,
+	ErrorCodeAuthBlocked:       core.ErrorCodeForbidden,
+	ErrorCodeAuthBanned:        core.ErrorCodeForbidden,
+
+	MagnetErrorCodeNoURI:         core.ErrorCodeMagnetInvalid,
+	MagnetErrorCodeInvalidId:     core.ErrorCodeMagnetInvalid,
+	MagnetErrorCodeInvalidURI:    core.ErrorCodeMagnetInvalid,
+	MagnetErrorCodeMustBePremium: core.ErrorCodePaymentRequired,
+	MagnetErrorCodeNoServer:      core.ErrorCodeForbidden,
+	MagnetErrorCodeTooManyActive: core.ErrorCodeStoreLimitExceeded,
+	MagnetErrorCodeProcessing:    core.ErrorCodeConflict,
+
+	LinkErrorCodeHostNotSupported:     core.ErrorCodeNotImplemented,
+	LinkErrorCodeDown:                 core.ErrorCodeServiceUnavailable,
+	LinkErrorCodeHostUnavailable:      core.ErrorCodeServiceUnavailable,
+	LinkErrorCodeTooManyDownloads:     core.ErrorCodeStoreLimitExceeded,
+	LinkErrorCodeHostFull:             core.ErrorCodeStoreLimitExceeded,
+	LinkErrorCodeHostLimitReached:     core.ErrorCodeStoreLimitExceeded,
+	LinkErrorCodePassProtected:        core.ErrorCodeForbidden,
+	LinkErrorCodeError:                core.ErrorCodeInternalServerError,
+	LinkErrorCodeNotSupported:         core.ErrorCodeNotImplemented,
+	LinkErrorCodeTemporaryUnavailable: core.ErrorCodeServiceUnavailable,
+	MustBePremium:                     core.ErrorCodePaymentRequired,
+	FreeTrialLimitReached:             core.ErrorCodeStoreLimitExceeded,
+	NoServer:                          core.ErrorCodeServiceUnavailable,
+}
+
+func TranslateErrorCode(errorCode ErrorCode) core.ErrorCode {
+	if code, found := errorCodeByErrorCode[errorCode]; found {
+		return code
+	}
+	return core.ErrorCodeUnknown
 }
 
 func UpstreamErrorWithCause(cause error) *core.UpstreamError {
@@ -86,31 +124,22 @@ func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 	err.StoreName = string(store.StoreNameAlldebrid)
 
 	if rerr, ok := cause.(*ResponseError); ok {
-		err.Code = rerr.Code
 		err.Msg = rerr.Message
-		err.UpstreamCause = rerr
+		err.Code = TranslateErrorCode(rerr.Code)
 		if sc := StatusCodeByErrorCode[rerr.Code]; sc != 0 {
 			err.StatusCode = sc
 		}
+		err.UpstreamCause = rerr
 	} else if merr, ok := cause.(*MagnetError); ok {
-		err.Code = merr.Code
 		err.Msg = merr.Message
-		err.UpstreamCause = merr
+		err.Code = TranslateErrorCode(merr.Code)
 		if sc := StatusCodeByMagnetErrorCode[merr.Code]; sc != 0 {
 			err.StatusCode = sc
 		}
+		err.UpstreamCause = merr
 	} else {
 		err.Cause = cause
 	}
 
-	return err
-}
-
-func UpstreamErrorFromRequest(cause error, req *http.Request, res *http.Response) error {
-	err := UpstreamErrorWithCause(cause)
-	err.InjectReq(req)
-	if res != nil {
-		err.StatusCode = res.StatusCode
-	}
 	return err
 }

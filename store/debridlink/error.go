@@ -1,8 +1,6 @@
 package debridlink
 
 import (
-	"net/http"
-
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -52,6 +50,56 @@ const (
 	ErrorCodeMaxTorrent              ErrorCode = "maxTorrent"
 )
 
+var errorCodeByErrorCode = map[ErrorCode]core.ErrorCode{
+	ErrorCodeBadToken:                core.ErrorCodeUnauthorized,
+	ErrorCodeBadSign:                 core.ErrorCodeUnauthorized,
+	ErrorCodeHidedToken:              core.ErrorCodeUnauthorized,
+	ErrorCodeServerError:             core.ErrorCodeInternalServerError,
+	ErrorCodeAccessDenied:            core.ErrorCodeUnauthorized,
+	ErrorCodeAuthorizationPending:    core.ErrorCodeUnauthorized,
+	ErrorCodeUnsupportedGrantType:    core.ErrorCodeBadRequest,
+	ErrorCodeUnsupportedResponseType: core.ErrorCodeUnsupportedMediaType,
+	ErrorCodeInvalidRequest:          core.ErrorCodeBadRequest,
+	ErrorCodeInvalidScope:            core.ErrorCodeBadRequest,
+	ErrorCodeExpiredToken:            core.ErrorCodeUnauthorized,
+	ErrorCodeUnauthorizedClient:      core.ErrorCodeUnauthorized,
+	ErrorCodeInvalidClient:           core.ErrorCodeUnauthorized,
+	ErrorCodeUnknowR:                 core.ErrorCodeInternalServerError,
+	ErrorCodeInternalError:           core.ErrorCodeInternalServerError,
+	ErrorCodeBadArguments:            core.ErrorCodeBadRequest,
+	ErrorCodeBadId:                   core.ErrorCodeBadRequest,
+	ErrorCodeFloodDetected:           core.ErrorCodeTooManyRequests,
+	ErrorCodeServerNotAllowed:        core.ErrorCodeForbidden,
+	ErrorCodeFreeServerOverload:      core.ErrorCodeServiceUnavailable,
+	ErrorCodeMaxAttempts:             core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeCaptchaRequired:         core.ErrorCodeForbidden,
+	ErrorCodeAccountLocked:           core.ErrorCodeForbidden,
+	ErrorCodeNotDebrid:               core.ErrorCodeBadRequest,
+	ErrorCodeHostNotValid:            core.ErrorCodeBadRequest,
+	ErrorCodeFileNotFound:            core.ErrorCodeNotFound,
+	ErrorCodeFileNotAvailable:        core.ErrorCodeNotFound,
+	ErrorCodeBadFileUrl:              core.ErrorCodeBadRequest,
+	ErrorCodeBadFilePassword:         core.ErrorCodeUnauthorized,
+	ErrorCodeNotFreeHost:             core.ErrorCodePaymentRequired,
+	ErrorCodeMaintenanceHost:         core.ErrorCodeServiceUnavailable,
+	ErrorCodeNoServerHost:            core.ErrorCodeServiceUnavailable,
+	ErrorCodeMaxLink:                 core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeMaxLinkHost:             core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeMaxData:                 core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeMaxDataHost:             core.ErrorCodeStoreLimitExceeded,
+	ErrorCodeDisabledServerHost:      core.ErrorCodeServiceUnavailable,
+	ErrorCodeNotAddTorrent:           core.ErrorCodeBadRequest,
+	ErrorCodeTorrentTooBig:           core.ErrorCodeUnprocessableEntity,
+	ErrorCodeMaxTorrent:              core.ErrorCodeStoreLimitExceeded,
+}
+
+func TranslateErrorCode(errorCode ErrorCode) core.ErrorCode {
+	if code, found := errorCodeByErrorCode[errorCode]; found {
+		return code
+	}
+	return core.ErrorCodeUnknown
+}
+
 func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 	err := core.NewUpstreamError("")
 	err.StoreName = string(store.StoreNameDebridLink)
@@ -62,22 +110,11 @@ func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 		} else {
 			err.Msg = "Debrid-Link Error Code: " + string(rerr.Err)
 		}
+		err.Code = TranslateErrorCode(rerr.Err)
 		err.UpstreamCause = rerr
 	} else {
 		err.Cause = cause
 	}
 
-	return err
-}
-
-func UpstreamErrorFromRequest(cause error, req *http.Request, res *http.Response) error {
-	err := UpstreamErrorWithCause(cause)
-	err.InjectReq(req)
-	if res != nil {
-		err.StatusCode = res.StatusCode
-	}
-	if err.StatusCode <= http.StatusBadRequest {
-		err.StatusCode = http.StatusBadRequest
-	}
 	return err
 }
