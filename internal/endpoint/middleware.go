@@ -2,7 +2,9 @@ package endpoint
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
 )
@@ -51,6 +53,24 @@ func ProxyAuthRequired(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func getStoreAuthToken(r *http.Request) string {
+	authHeader := r.Header.Get("X-StremThru-Store-Authorization")
+	if authHeader == "" {
+		authHeader = r.Header.Get("Authorization")
+	}
+	if authHeader == "" {
+		ctx := context.GetRequestContext(r)
+		if ctx.IsProxyAuthorized && ctx.Store != nil {
+			if token := config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(ctx.Store.GetName())); token != "" {
+				ctx.ClientIP = core.GetClientIP(r)
+				return token
+			}
+		}
+	}
+	_, token, _ := strings.Cut(authHeader, " ")
+	return strings.TrimSpace(token)
 }
 
 func StoreContext(next http.HandlerFunc) http.HandlerFunc {

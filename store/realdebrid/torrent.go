@@ -98,6 +98,7 @@ type AddMagnetParams struct {
 	Ctx
 	Magnet string
 	Host   string
+	IP     string
 }
 
 func (c APIClient) AddMagnet(params *AddMagnetParams) (APIResponse[AddMagnetData], error) {
@@ -105,6 +106,9 @@ func (c APIClient) AddMagnet(params *AddMagnetParams) (APIResponse[AddMagnetData
 	form.Add("magnet", params.Magnet)
 	if params.Host != "" {
 		form.Add("host", params.Host)
+	}
+	if params.IP != "" {
+		form.Add("ip", params.IP)
 	}
 	params.Form = form
 	response := &AddMagnetData{}
@@ -238,6 +242,7 @@ type StartTorrentDownloadParams struct {
 	// If non-video file ids are present, the whole thing would be packaged/compressed into a single file and have one download link.
 	// If not given, all files will be downloaded.
 	FileIds []string
+	IP      string
 }
 
 func (c APIClient) StartTorrentDownload(params *StartTorrentDownloadParams) (APIResponse[GetTorrentInfoData], error) {
@@ -247,6 +252,9 @@ func (c APIClient) StartTorrentDownload(params *StartTorrentDownloadParams) (API
 	}
 	form := &url.Values{}
 	form.Add("files", fileIds)
+	if params.IP != "" {
+		form.Add("ip", params.IP)
+	}
 	params.Form = form
 	response := &GetTorrentInfoData{}
 	res, err := c.Request("POST", "/rest/1.0/torrents/selectFiles/"+params.Id, params, response)
@@ -281,6 +289,7 @@ type UnrestrictLinkParams struct {
 	Link     string // The original hoster link
 	Password string // Password to unlock the file access hoster side
 	Remote   int    // 0 or 1, use Remote traffic, dedicated servers and account sharing protections lifted
+	IP       string
 }
 
 func (c APIClient) UnrestrictLink(params *UnrestrictLinkParams) (APIResponse[UnrestrictLinkData], error) {
@@ -291,6 +300,9 @@ func (c APIClient) UnrestrictLink(params *UnrestrictLinkParams) (APIResponse[Unr
 	}
 	if params.Remote != 0 {
 		form.Add("remote", strconv.Itoa(params.Remote))
+	}
+	if params.IP != "" {
+		form.Add("ip", params.IP)
 	}
 	params.Form = form
 	response := &UnrestrictLinkData{}

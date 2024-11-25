@@ -235,6 +235,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		res, err := c.client.AddMagnet(&AddMagnetParams{
 			Ctx:    params.Ctx,
 			Magnet: magnet.Link,
+			IP:     params.ClientIP,
 		})
 		if err != nil {
 			return nil, err
@@ -258,6 +259,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			Ctx:     params.Ctx,
 			Id:      t.Id,
 			FileIds: t.getVideoFileIds(),
+			IP:      params.ClientIP,
 		})
 		if err != nil {
 			return nil, err
@@ -344,6 +346,7 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	res, err := c.client.UnrestrictLink(&UnrestrictLinkParams{
 		Ctx:  params.Ctx,
 		Link: params.Link,
+		IP:   params.ClientIP,
 	})
 	if err != nil {
 		return nil, err
