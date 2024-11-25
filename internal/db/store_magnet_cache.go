@@ -14,6 +14,7 @@ type StoreMagnetCacheStore string
 
 const (
 	StoreMagnetCacheStoreRealDebrid StoreMagnetCacheStore = "rd"
+	StoreMagnetCacheStoreAllDebrid  StoreMagnetCacheStore = "ad"
 )
 
 type StoreMagnetCacheFile struct {

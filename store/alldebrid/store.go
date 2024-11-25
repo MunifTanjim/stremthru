@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -61,44 +62,63 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
-	mi, err := c.client.GetMagnetInstant(&GetMagnetInstantParams{
-		Ctx:     params.Ctx,
-		Magnets: params.Magnets,
+	user, err := c.GetUser(&store.GetUserParams{
+		Ctx: params.Ctx,
 	})
 	if err != nil {
 		return nil, err
 	}
+	if user.SubscriptionStatus != store.UserSubscriptionStatusPremium {
+		err := core.NewAPIError("forbidden")
+		err.Code = core.ErrorCodeForbidden
+		err.StatusCode = http.StatusForbidden
+		return nil, err
+	}
+
+	magnetByHash := map[string]core.MagnetLink{}
+	hashes := []string{}
+
+	for _, m := range params.Magnets {
+		magnet, err := core.ParseMagnetLink(m)
+		if err != nil {
+			return nil, err
+		}
+		magnetByHash[magnet.Hash] = magnet
+		hashes = append(hashes, magnet.Hash)
+	}
+
+	cachedMagnetByHash := map[string]db.StoreMagnetCache{}
+	smcs, err := db.GetStoreMagnetCaches(db.StoreMagnetCacheStoreAllDebrid, hashes)
+	if err != nil {
+		return nil, err
+	}
+	for _, smc := range smcs {
+		if smc.IsCached() {
+			cachedMagnetByHash[smc.Hash] = smc
+		}
+	}
 
 	data := &store.CheckMagnetData{}
-
-	for _, magnet := range mi.Data {
-		item := &store.CheckMagnetDataItem{
-			Magnet: magnet.Magnet,
-			Hash:   magnet.Hash,
+	for _, hash := range hashes {
+		m := magnetByHash[hash]
+		item := store.CheckMagnetDataItem{
+			Hash:   m.Hash,
+			Magnet: m.Link,
 			Status: store.MagnetStatusUnknown,
+			Files:  []store.MagnetFile{},
 		}
-
-		if magnet.Error != nil {
-			if magnet.Error.Code == MagnetErrorCodeInvalidURI {
-				item.Status = store.MagnetStatusInvalid
-			}
-		} else if magnet.Instant {
-			item.Status = store.MagnetStatusCached
-
-			for _, file := range magnet.GetFiles() {
-				if file.Type == store.MagnetFileTypeFolder || file.Size == 0 {
-					continue
-				}
-
+		if t, ok := cachedMagnetByHash[hash]; ok {
+			for _, f := range t.Files {
 				item.Files = append(item.Files, store.MagnetFile{
-					Idx:  file.Idx,
-					Name: file.Name,
-					Size: file.Size,
+					Idx:  f.Idx,
+					Name: f.Name,
+					Size: f.Size,
 				})
 			}
+			item.Status = store.MagnetStatusCached
 		}
 
-		data.Items = append(data.Items, *item)
+		data.Items = append(data.Items, item)
 	}
 
 	return data, nil

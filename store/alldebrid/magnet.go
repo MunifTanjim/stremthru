@@ -93,6 +93,7 @@ type GetMagnetInstantParams struct {
 	Magnets []string
 }
 
+// Deprecated: AllDebrid removed the endpoint
 func (c APIClient) GetMagnetInstant(params *GetMagnetInstantParams) (APIResponse[[]GetMagnetInstantDataMagnet], error) {
 	params.Form = &url.Values{
 		"magnets[]": params.Magnets,
