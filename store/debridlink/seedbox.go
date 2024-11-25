@@ -141,6 +141,7 @@ type CheckSeedboxTorrentsCachedParams struct {
 	Urls []string // torrent url, magnet or hash
 }
 
+// Deprecated: Debrid-Link removed the endpoint
 func (c APIClient) CheckSeedboxTorrentsCached(params *CheckSeedboxTorrentsCachedParams) (APIResponse[CheckSeedboxTorrentsCachedData], error) {
 	form := &url.Values{}
 	form.Add("url", strings.Join(params.Urls, ","))

@@ -15,6 +15,7 @@ import (
 type RequestContext interface {
 	GetAPIKey(fallbackAPIKey string) string
 	GetContext() context.Context
+	PrepareHeader(header *http.Header)
 	PrepareBody(method string, query *url.Values) (body io.Reader, contentType string, err error)
 	NewRequest(baseURL *url.URL, method, path string, header func(header *http.Header, params RequestContext), query func(query *url.Values, params RequestContext)) (req *http.Request, err error)
 }
@@ -24,6 +25,7 @@ type Ctx struct {
 	Context context.Context `json:"-"`
 	Form    *url.Values     `json:"-"`
 	JSON    any             `json:"-"`
+	Headers *http.Header    `json:"-"`
 }
 
 func (ctx Ctx) GetAPIKey(fallbackAPIKey string) string {
@@ -64,6 +66,18 @@ func (ctx Ctx) PrepareBody(method string, query *url.Values) (body io.Reader, co
 	return body, contentType, nil
 }
 
+func (ctx Ctx) PrepareHeader(header *http.Header) {
+	if ctx.Headers == nil {
+		return
+	}
+
+	for key, values := range *ctx.Headers {
+		for _, value := range values {
+			header.Add(key, value)
+		}
+	}
+}
+
 func (ctx Ctx) NewRequest(baseURL *url.URL, method, path string, header func(header *http.Header, params RequestContext), query func(query *url.Values, params RequestContext)) (req *http.Request, err error) {
 	url := baseURL.JoinPath(path)
 
@@ -83,6 +97,7 @@ func (ctx Ctx) NewRequest(baseURL *url.URL, method, path string, header func(hea
 	}
 
 	header(&req.Header, ctx)
+	ctx.PrepareHeader(&req.Header)
 
 	if len(contentType) > 0 {
 		req.Header.Add("Content-Type", contentType)

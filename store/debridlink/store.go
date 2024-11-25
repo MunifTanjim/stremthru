@@ -1,11 +1,13 @@
 package debridlink
 
 import (
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -50,51 +52,43 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
-	magnetByLink := map[string]core.MagnetLink{}
-	magnetLinks := []string{}
+	user, err := c.GetUser(&store.GetUserParams{
+		Ctx: params.Ctx,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user.SubscriptionStatus != store.UserSubscriptionStatusPremium {
+		err := core.NewAPIError("forbidden")
+		err.Code = core.ErrorCodeForbidden
+		err.StatusCode = http.StatusForbidden
+		return nil, err
+	}
+
+	hashes := []string{}
 
 	for _, m := range params.Magnets {
 		magnet, err := core.ParseMagnetLink(m)
 		if err != nil {
 			return nil, err
 		}
-		magnetLinks = append(magnetLinks, magnet.Link)
-		magnetByLink[magnet.Link] = magnet
+		hashes = append(hashes, magnet.Hash)
 	}
 
-	res, err := c.client.CheckSeedboxTorrentsCached(&CheckSeedboxTorrentsCachedParams{
-		Ctx:  params.Ctx,
-		Urls: magnetLinks,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	data := &store.CheckMagnetData{}
-
-	for _, mLink := range magnetLinks {
-		item := &store.CheckMagnetDataItem{
-			Hash:   magnetByLink[mLink].Hash,
-			Magnet: magnetByLink[mLink].Link,
-			Status: store.MagnetStatusUnknown,
-			Files:  []store.MagnetFile{},
+	if buddy.Client.IsAvailable() {
+		res, err := buddy.Client.CheckMagnetCache(&buddy.CheckMagnetCacheParams{
+			Store:  store.StoreNameDebridLink,
+			Hashes: hashes,
+		})
+		if err != nil {
+			return nil, err
 		}
-
-		if result, ok := res.Data[mLink]; ok {
-			for idx, f := range result.Files {
-				item.Status = store.MagnetStatusCached
-
-				item.Files = append(item.Files, store.MagnetFile{
-					Idx:  idx,
-					Name: f.Name,
-					Size: f.Size,
-				})
-			}
-		}
-
-		data.Items = append(data.Items, *item)
+		return &res.Data, nil
 	}
 
+	data := &store.CheckMagnetData{
+		Items: []store.CheckMagnetDataItem{},
+	}
 	return data, nil
 }
 
@@ -135,6 +129,17 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			}
 
 			data.Files = append(data.Files, *file)
+		}
+	}
+
+	if buddy.Client.IsAvailable() {
+		if _, err := buddy.Client.TrackMagnetCache(&buddy.TrackMagnetCacheParams{
+			Store:     c.GetName(),
+			Hash:      data.Hash,
+			Files:     data.Files,
+			CacheMiss: data.Status != store.MagnetStatusDownloaded,
+		}); err != nil {
+			log.Printf("failed to track magnet cache for %s:%s: %v\n", c.GetName(), data.Hash, err)
 		}
 	}
 
@@ -179,6 +184,18 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 
 		data.Files = append(data.Files, *file)
 	}
+
+	if buddy.Client.IsAvailable() {
+		if _, err := buddy.Client.TrackMagnetCache(&buddy.TrackMagnetCacheParams{
+			Store:     c.GetName(),
+			Hash:      data.Hash,
+			Files:     data.Files,
+			CacheMiss: data.Status != store.MagnetStatusDownloaded,
+		}); err != nil {
+			log.Printf("failed to track magnet cache for %s:%s: %v\n", c.GetName(), data.Hash, err)
+		}
+	}
+
 	return data, nil
 }
 

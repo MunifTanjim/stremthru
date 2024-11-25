@@ -75,6 +75,7 @@ type Config struct {
 	Port              string
 	StoreAuthToken    StoreAuthTokenMap
 	ProxyAuthPassword ProxyAuthPasswordMap
+	BuddyURL          string
 }
 
 var config = func() Config {
@@ -125,9 +126,11 @@ var config = func() Config {
 		Port:              getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword: proxyAuthPasswordMap,
 		StoreAuthToken:    storeAuthTokenMap,
+		BuddyURL:          getEnv("STREMTHRU_BUDDY_URL", ""),
 	}
 }()
 
 var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var StoreAuthToken = config.StoreAuthToken
+var BuddyURL = config.BuddyURL

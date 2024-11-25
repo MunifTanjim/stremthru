@@ -1,12 +1,14 @@
 package realdebrid
 
 import (
+	"log"
+	"net/http"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -183,6 +185,24 @@ func getVideoFileIdsFromTorrent(t *GetTorrentInfoData) []string {
 	return fileIds
 }
 
+func (f *GetTorrentInfoDataFile) toStoreMagnetFile() store.MagnetFile {
+	return store.MagnetFile{
+		Idx:  f.Id - 1,
+		Name: filepath.Base(f.Path),
+		Size: f.Bytes,
+	}
+}
+
+func (t *GetTorrentInfoData) getStoreMagnetFiles() []store.MagnetFile {
+	files := []store.MagnetFile{}
+	for _, f := range t.Files {
+		if core.HasVideoExtension(f.Path) {
+			files = append(files, f.toStoreMagnetFile())
+		}
+	}
+	return files
+}
+
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
 	magnet, err := core.ParseMagnetLink(params.Magnet)
 	if err != nil {
@@ -268,6 +288,16 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Status: m.Status,
 		Files:  m.Files,
 	}
+	if buddy.Client.IsAvailable() {
+		if _, err := buddy.Client.TrackMagnetCache(&buddy.TrackMagnetCacheParams{
+			Store:     c.GetName(),
+			Hash:      data.Hash,
+			Files:     data.Files,
+			CacheMiss: data.Status != store.MagnetStatusDownloaded,
+		}); err != nil {
+			log.Printf("failed to track magnet cache for %s:%s: %v\n", c.GetName(), magnet.Hash, err)
+		}
+	}
 	return data, nil
 }
 
@@ -291,88 +321,42 @@ func (c *StoreClient) checkMagnetInstantAvailability(params *store.CheckMagnetPa
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
-	magnetByHash := map[string]core.MagnetLink{}
+	user, err := c.GetUser(&store.GetUserParams{
+		Ctx: params.Ctx,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user.SubscriptionStatus != store.UserSubscriptionStatusPremium {
+		err := core.NewAPIError("forbidden")
+		err.Code = core.ErrorCodeForbidden
+		err.StatusCode = http.StatusForbidden
+		return nil, err
+	}
+
 	hashes := []string{}
-
-	cachedItemByHash := map[string]store.CheckMagnetDataItem{}
-	uncachedHashes := []string{}
-
 	for _, m := range params.Magnets {
 		magnet, err := core.ParseMagnetLink(m)
 		if err != nil {
 			return nil, err
 		}
-		magnetByHash[magnet.Hash] = magnet
 		hashes = append(hashes, magnet.Hash)
-		if v := c.getCachedCheckMagnet(params, magnet.Hash); v != nil {
-			cachedItemByHash[magnet.Hash] = *v
-		} else {
-			uncachedHashes = append(uncachedHashes, magnet.Hash)
-		}
 	}
-	tByHash := map[string]CheckTorrentInstantAvailabilityDataHosterMap{}
-	if len(uncachedHashes) > 0 {
-		res, err := c.client.CheckTorrentInstantAvailability(&CheckTorrentInstantAvailabilityParams{
-			Ctx:    params.Ctx,
-			Hashes: uncachedHashes,
+
+	if buddy.Client.IsAvailable() {
+		res, err := buddy.Client.CheckMagnetCache(&buddy.CheckMagnetCacheParams{
+			Store:  store.StoreNameRealDebrid,
+			Hashes: hashes,
 		})
 		if err != nil {
 			return nil, err
 		}
-		for hash, t := range res.Data {
-			tByHash[strings.ToLower(hash)] = t
-		}
+		return &res.Data, nil
 	}
 
-	data := &store.CheckMagnetData{}
-	for _, hash := range hashes {
-		if item, ok := cachedItemByHash[hash]; ok {
-			data.Items = append(data.Items, item)
-			continue
-		}
-
-		m := magnetByHash[hash]
-		item := store.CheckMagnetDataItem{
-			Hash:   m.Hash,
-			Magnet: m.Link,
-			Status: store.MagnetStatusUnknown,
-			Files:  []store.MagnetFile{},
-		}
-		if t, ok := tByHash[hash]; ok {
-			largestVariant := map[string]CheckTorrentInstantAvailabilityDataFileIdsVariantFile{}
-			largestVariantLength := 0
-
-			for _, variants := range t {
-				for _, fMap := range variants {
-					length := len(fMap)
-					if length > largestVariantLength {
-						largestVariantLength = length
-						largestVariant = fMap
-					}
-				}
-			}
-
-			for id, f := range largestVariant {
-				idx, err := strconv.Atoi(id)
-				if err != nil {
-					return nil, err
-				}
-				item.Files = append(item.Files, store.MagnetFile{
-					Idx:  idx - 1,
-					Name: f.Filename,
-					Size: f.Filesize,
-				})
-			}
-
-			if largestVariantLength > 0 {
-				item.Status = store.MagnetStatusCached
-				c.setCachedCheckMagnet(params, hash, &item)
-			}
-		}
-
-		data.Items = append(data.Items, item)
+	data := &store.CheckMagnetData{
+		Items: []store.CheckMagnetDataItem{},
 	}
-
 	return data, nil
 }
 
@@ -434,16 +418,27 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 				if totalLinks >= idx+1 {
 					link = res.Data.Links[idx]
 				}
+				smFile := f.toStoreMagnetFile()
 				data.Files = append(data.Files, store.MagnetFile{
-					Idx:  f.Id - 1,
-					Name: filepath.Base(f.Path),
+					Idx:  smFile.Idx,
+					Name: smFile.Name,
 					Path: f.Path,
-					Size: f.Bytes,
+					Size: smFile.Size,
 					Link: link,
 				})
 			}
 		}
 		c.setCachedGetMagnet(params, params.Id, data)
+	}
+	if buddy.Client.IsAvailable() {
+		if _, err := buddy.Client.TrackMagnetCache(&buddy.TrackMagnetCacheParams{
+			Store:     c.GetName(),
+			Hash:      data.Hash,
+			Files:     data.Files,
+			CacheMiss: data.Status != store.MagnetStatusDownloaded,
+		}); err != nil {
+			log.Printf("failed to track magnet cache for %s:%s: %v\n", c.GetName(), data.Hash, err)
+		}
 	}
 	return data, nil
 }

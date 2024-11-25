@@ -244,7 +244,7 @@ type StartTorrentDownloadParams struct {
 	IP      string
 }
 
-func (c APIClient) StartTorrentDownload(params *StartTorrentDownloadParams) (APIResponse[GetTorrentInfoData], error) {
+func (c APIClient) StartTorrentDownload(params *StartTorrentDownloadParams) (APIResponse[StartTorrentDownloadData], error) {
 	fileIds := "all"
 	if len(params.FileIds) > 0 {
 		fileIds = strings.Join(params.FileIds, ",")
@@ -255,7 +255,7 @@ func (c APIClient) StartTorrentDownload(params *StartTorrentDownloadParams) (API
 		form.Add("ip", params.IP)
 	}
 	params.Form = form
-	response := &GetTorrentInfoData{}
+	response := &StartTorrentDownloadData{}
 	res, err := c.Request("POST", "/rest/1.0/torrents/selectFiles/"+params.Id, params, response)
 	return newAPIResponse(res, *response), err
 }
