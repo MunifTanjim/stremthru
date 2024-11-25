@@ -2,6 +2,7 @@ package realdebrid
 
 import (
 	"log"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -293,6 +294,18 @@ func (c *StoreClient) checkMagnetInstantAvailability(params *store.CheckMagnetPa
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
+	user, err := c.GetUser(&store.GetUserParams{
+		Ctx: params.Ctx,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if user.SubscriptionStatus != store.UserSubscriptionStatusPremium {
+		err := core.NewAPIError("forbidden")
+		err.Code = core.ErrorCodeForbidden
+		err.StatusCode = http.StatusForbidden
+		return nil, err
+	}
 	magnetByHash := map[string]core.MagnetLink{}
 	hashes := []string{}
 
