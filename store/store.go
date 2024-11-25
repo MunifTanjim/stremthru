@@ -182,7 +182,8 @@ type AddMagnetData struct {
 
 type AddMagnetParams struct {
 	Ctx
-	Magnet string
+	Magnet   string
+	ClientIP string
 }
 
 type GetMagnetData struct {
@@ -231,7 +232,8 @@ type GenerateLinkData struct {
 
 type GenerateLinkParams struct {
 	Ctx
-	Link string
+	Link     string
+	ClientIP string
 }
 
 type Store interface {

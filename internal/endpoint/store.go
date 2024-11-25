@@ -33,23 +33,6 @@ func getStoreName(r *http.Request) (store.StoreName, *core.StoreError) {
 	return store.StoreName(name).Validate()
 }
 
-func getStoreAuthToken(r *http.Request) string {
-	authHeader := r.Header.Get("X-StremThru-Store-Authorization")
-	if authHeader == "" {
-		authHeader = r.Header.Get("Authorization")
-	}
-	if authHeader == "" {
-		ctx := context.GetRequestContext(r)
-		if ctx.IsProxyAuthorized && ctx.Store != nil {
-			if token := config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(ctx.Store.GetName())); token != "" {
-				return token
-			}
-		}
-	}
-	_, token, _ := strings.Cut(authHeader, " ")
-	return strings.TrimSpace(token)
-}
-
 var adStore = alldebrid.NewStore()
 var dlStore = debridlink.NewStoreClient()
 var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{})
@@ -193,6 +176,9 @@ func addMagnet(ctx *context.RequestContext, magnet string) (*store.AddMagnetData
 	params := &store.AddMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnet = magnet
+	if ctx.ClientIP != "" {
+		params.ClientIP = ctx.ClientIP
+	}
 	return ctx.Store.AddMagnet(params)
 }
 
@@ -369,6 +355,9 @@ func generateLink(r *http.Request, ctx *context.RequestContext, link string) (*s
 	params := &store.GenerateLinkParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Link = link
+	if ctx.ClientIP != "" {
+		params.ClientIP = ctx.ClientIP
+	}
 
 	data, err := ctx.Store.GenerateLink(params)
 	if err != nil {

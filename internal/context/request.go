@@ -15,6 +15,7 @@ type RequestContext struct {
 	IsProxyAuthorized bool
 	ProxyAuthUser     string
 	ProxyAuthPassword string
+	ClientIP          string // optional
 }
 
 func SetRequestContext(r *http.Request) *http.Request {
