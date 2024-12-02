@@ -319,7 +319,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 
 		c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
-		buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+		buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 		return data, nil
 	}
@@ -369,7 +369,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 
 	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
-	buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 	return data, nil
 }
@@ -405,7 +405,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 			Files:  files,
 		}
 
-		buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+		buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 		return data, nil
 	}
@@ -442,7 +442,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		data.Files = files
 	}
 
-	buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 	return data, nil
 }

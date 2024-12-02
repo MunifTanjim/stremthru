@@ -41,26 +41,17 @@ func torrentStatusToMagnetStatus(status TorrentStatus) store.MagnetStatus {
 }
 
 type StoreClient struct {
-	Name             store.StoreName
-	client           *APIClient
-	checkMagnetCache core.Cache[string, store.CheckMagnetDataItem]
-	getMagnetCache   core.Cache[string, store.GetMagnetData] // for downloaded magnets
-	idsByHashCache   core.Cache[string, map[string]bool]
-	hashByIdCache    core.Cache[string, string]
+	Name           store.StoreName
+	client         *APIClient
+	getMagnetCache core.Cache[string, store.GetMagnetData] // for downloaded magnets
+	idsByHashCache core.Cache[string, map[string]bool]
+	hashByIdCache  core.Cache[string, string]
 }
 
 func NewStoreClient() *StoreClient {
 	c := &StoreClient{}
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameRealDebrid
-
-	c.checkMagnetCache = func() core.Cache[string, store.CheckMagnetDataItem] {
-		return core.NewCache[string, store.CheckMagnetDataItem](&core.CacheConfig[string]{
-			Name:     "store:realdebrid:checkMagnet",
-			HashKey:  core.CacheHashKeyString,
-			Lifetime: 10 * time.Minute,
-		})
-	}()
 
 	c.getMagnetCache = func() core.Cache[string, store.GetMagnetData] {
 		return core.NewCache[string, store.GetMagnetData](&core.CacheConfig[string]{
@@ -192,16 +183,6 @@ func (f *GetTorrentInfoDataFile) toStoreMagnetFile() store.MagnetFile {
 	}
 }
 
-func (t *GetTorrentInfoData) getStoreMagnetFiles() []store.MagnetFile {
-	files := []store.MagnetFile{}
-	for _, f := range t.Files {
-		if core.HasVideoExtension(f.Path) {
-			files = append(files, f.toStoreMagnetFile())
-		}
-	}
-	return files
-}
-
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
 	magnet, err := core.ParseMagnetLink(params.Magnet)
 	if err != nil {
@@ -287,27 +268,10 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Status: m.Status,
 		Files:  m.Files,
 	}
-	buddy.TrackMagnetCache(c, magnet.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+
+	buddy.TrackMagnet(c, magnet.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+
 	return data, nil
-}
-
-func (c *StoreClient) getCachedCheckMagnet(params *store.CheckMagnetParams, magnetHash string) *store.CheckMagnetDataItem {
-	if v, ok := c.checkMagnetCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + magnetHash); ok {
-		return &v
-	}
-	return nil
-}
-
-func (c *StoreClient) setCachedCheckMagnet(params *store.CheckMagnetParams, magnetHash string, v *store.CheckMagnetDataItem) {
-	c.checkMagnetCache.Add(params.GetAPIKey(c.client.apiKey)+":"+magnetHash, *v)
-}
-
-func (c *StoreClient) checkMagnetInstantAvailability(params *store.CheckMagnetParams, hashes []string) (APIResponse[CheckTorrentInstantAvailabilityData], error) {
-	res, err := c.client.CheckTorrentInstantAvailability(&CheckTorrentInstantAvailabilityParams{
-		Ctx:    params.Ctx,
-		Hashes: hashes,
-	})
-	return res, err
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
@@ -333,13 +297,9 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		hashes = append(hashes, magnet.Hash)
 	}
 
-	res, err := buddy.CheckMagnetCache(c, hashes)
-	if err != nil || res != nil {
-		return res, err
-	}
-
-	data := &store.CheckMagnetData{
-		Items: []store.CheckMagnetDataItem{},
+	data, err := buddy.CheckMagnet(c, hashes)
+	if err != nil {
+		return nil, err
 	}
 	return data, nil
 }
@@ -414,7 +374,9 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		}
 		c.setCachedGetMagnet(params, params.Id, data)
 	}
-	buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+
+	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+
 	return data, nil
 }
 

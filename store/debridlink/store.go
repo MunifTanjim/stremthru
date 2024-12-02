@@ -65,7 +65,6 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 	}
 
 	hashes := []string{}
-
 	for _, m := range params.Magnets {
 		magnet, err := core.ParseMagnetLink(m)
 		if err != nil {
@@ -74,13 +73,9 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		hashes = append(hashes, magnet.Hash)
 	}
 
-	res, err := buddy.CheckMagnetCache(c, hashes)
-	if err != nil || res != nil {
-		return res, err
-	}
-
-	data := &store.CheckMagnetData{
-		Items: []store.CheckMagnetDataItem{},
+	data, err := buddy.CheckMagnet(c, hashes)
+	if err != nil {
+		return nil, err
 	}
 	return data, nil
 }
@@ -125,7 +120,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 	}
 
-	buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 	return data, nil
 }
@@ -169,7 +164,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		data.Files = append(data.Files, *file)
 	}
 
-	buddy.TrackMagnetCache(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 	return data, nil
 }
