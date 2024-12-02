@@ -8,16 +8,17 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 type StoreClient struct {
 	Name              store.StoreName
 	client            *APIClient
-	getUserCache      core.Cache[string, store.User]
-	checkMagnetCache  core.Cache[string, store.CheckMagnetDataItem] // for cached magnets
-	getMagnetCache    core.Cache[string, store.GetMagnetData]       // for downloaded magnets
-	generateLinkCache core.Cache[string, store.GenerateLinkData]
+	getUserCache      cache.Cache[store.User]
+	checkMagnetCache  cache.Cache[store.CheckMagnetDataItem] // for cached magnets
+	getMagnetCache    cache.Cache[store.GetMagnetData]       // for downloaded magnets
+	generateLinkCache cache.Cache[store.GenerateLinkData]
 }
 
 func NewStoreClient() *StoreClient {
@@ -25,34 +26,30 @@ func NewStoreClient() *StoreClient {
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameTorBox
 
-	c.getUserCache = func() core.Cache[string, store.User] {
-		return core.NewCache[string, store.User](&core.CacheConfig[string]{
+	c.getUserCache = func() cache.Cache[store.User] {
+		return cache.NewCache[store.User](&cache.CacheConfig{
 			Name:     "store:torbox:getUser",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 1 * time.Minute,
 		})
 	}()
 
-	c.checkMagnetCache = func() core.Cache[string, store.CheckMagnetDataItem] {
-		return core.NewCache[string, store.CheckMagnetDataItem](&core.CacheConfig[string]{
+	c.checkMagnetCache = func() cache.Cache[store.CheckMagnetDataItem] {
+		return cache.NewCache[store.CheckMagnetDataItem](&cache.CacheConfig{
 			Name:     "store:torbox:checkMagnet",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 10 * time.Minute,
 		})
 	}()
 
-	c.getMagnetCache = func() core.Cache[string, store.GetMagnetData] {
-		return core.NewCache[string, store.GetMagnetData](&core.CacheConfig[string]{
+	c.getMagnetCache = func() cache.Cache[store.GetMagnetData] {
+		return cache.NewCache[store.GetMagnetData](&cache.CacheConfig{
 			Name:     "store:torbox:getMagnet",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 10 * time.Minute,
 		})
 	}()
 
-	c.generateLinkCache = func() core.Cache[string, store.GenerateLinkData] {
-		return core.NewCache[string, store.GenerateLinkData](&core.CacheConfig[string]{
+	c.generateLinkCache = func() cache.Cache[store.GenerateLinkData] {
+		return cache.NewCache[store.GenerateLinkData](&cache.CacheConfig{
 			Name:     "store:torbox:generateLink",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 50 * time.Minute,
 		})
 	}()
@@ -65,8 +62,9 @@ func (c *StoreClient) GetName() store.StoreName {
 }
 
 func (c *StoreClient) getCachedGetUser(params *store.GetUserParams) *store.User {
-	if v, ok := c.getUserCache.Get(params.GetAPIKey(c.client.apiKey)); ok {
-		return &v
+	v := &store.User{}
+	if c.getUserCache.Get(params.GetAPIKey(c.client.apiKey), v) {
+		return v
 	}
 	return nil
 }
@@ -100,8 +98,9 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 }
 
 func (c *StoreClient) getCachedCheckMagnet(params *store.CheckMagnetParams, magnetHash string) *store.CheckMagnetDataItem {
-	if v, ok := c.checkMagnetCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + magnetHash); ok {
-		return &v
+	v := &store.CheckMagnetDataItem{}
+	if c.checkMagnetCache.Get(params.GetAPIKey(c.client.apiKey)+":"+magnetHash, v) {
+		return v
 	}
 	return nil
 }
@@ -270,8 +269,9 @@ func intToStr(key ...int) string {
 }
 
 func (c *StoreClient) getCachedGeneratedLink(params *store.GenerateLinkParams, torrentId int, fileId int) *store.GenerateLinkData {
-	if v, ok := c.generateLinkCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + intToStr(torrentId, fileId)); ok {
-		return &v
+	v := &store.GenerateLinkData{}
+	if c.generateLinkCache.Get(params.GetAPIKey(c.client.apiKey)+":"+intToStr(torrentId, fileId), v) {
+		return v
 	}
 	return nil
 
@@ -306,8 +306,9 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 }
 
 func (c *StoreClient) getCachedGetMagnet(params *store.GetMagnetParams) *store.GetMagnetData {
-	if v, ok := c.getMagnetCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + params.Id); ok {
-		return &v
+	v := &store.GetMagnetData{}
+	if c.getMagnetCache.Get(params.GetAPIKey(c.client.apiKey)+":"+params.Id, v) {
+		return v
 	}
 	return nil
 }

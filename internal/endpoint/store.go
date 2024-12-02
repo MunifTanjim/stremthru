@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/store"
@@ -403,10 +404,9 @@ func getUserSecretFromJWT(t *jwt.Token) (string, []byte, error) {
 	return password, []byte(password), nil
 }
 
-var tokenLinkCache = func() core.Cache[string, string] {
-	return core.NewCache[string, string](&core.CacheConfig[string]{
+var tokenLinkCache = func() cache.Cache[string] {
+	return cache.NewCache[string](&cache.CacheConfig{
 		Name:     "endpoint:store:tokenLink",
-		HashKey:  core.CacheHashKeyString,
 		Lifetime: 15 * time.Minute,
 	})
 }()
@@ -423,7 +423,8 @@ func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if link, ok := tokenLinkCache.Get(encodedToken); ok {
+	link := ""
+	if ok := tokenLinkCache.Get(encodedToken, &link); ok {
 		ProxyToLink(w, r, link)
 		return
 	}
@@ -445,7 +446,7 @@ func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := core.Decrypt(secret, claims.Data.EncLink)
+	link, err = core.Decrypt(secret, claims.Data.EncLink)
 	if err != nil {
 		SendError(w, err)
 		return

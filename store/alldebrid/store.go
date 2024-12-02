@@ -7,13 +7,14 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 type StoreClient struct {
 	Name             store.StoreName
 	client           *APIClient
-	listMagnetsCache core.Cache[string, []store.ListMagnetsDataItem]
+	listMagnetsCache cache.Cache[[]store.ListMagnetsDataItem]
 }
 
 func NewStore() *StoreClient {
@@ -21,10 +22,9 @@ func NewStore() *StoreClient {
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameAlldebrid
 
-	c.listMagnetsCache = func() core.Cache[string, []store.ListMagnetsDataItem] {
-		return core.NewCache[string, []store.ListMagnetsDataItem](&core.CacheConfig[string]{
+	c.listMagnetsCache = func() cache.Cache[[]store.ListMagnetsDataItem] {
+		return cache.NewCache[[]store.ListMagnetsDataItem](&cache.CacheConfig{
 			Name:     "store:alldebrid:listMagnets",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 1 * time.Minute,
 		})
 	}()
@@ -219,8 +219,8 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
-	lm, found := c.listMagnetsCache.Get(c.getCacheKey(params, ""))
-	if !found {
+	lm := []store.ListMagnetsDataItem{}
+	if !c.listMagnetsCache.Get(c.getCacheKey(params, ""), &lm) {
 		res, err := c.client.GetAllMagnetStatus(&GetAllMagnetStatusParams{
 			Ctx: params.Ctx,
 		})

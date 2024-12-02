@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -43,9 +44,9 @@ func torrentStatusToMagnetStatus(status TorrentStatus) store.MagnetStatus {
 type StoreClient struct {
 	Name           store.StoreName
 	client         *APIClient
-	getMagnetCache core.Cache[string, store.GetMagnetData] // for downloaded magnets
-	idsByHashCache core.Cache[string, map[string]bool]
-	hashByIdCache  core.Cache[string, string]
+	getMagnetCache cache.Cache[store.GetMagnetData] // for downloaded magnets
+	idsByHashCache cache.Cache[map[string]bool]
+	hashByIdCache  cache.Cache[string]
 }
 
 func NewStoreClient() *StoreClient {
@@ -53,25 +54,22 @@ func NewStoreClient() *StoreClient {
 	c.client = NewAPIClient(&APIClientConfig{})
 	c.Name = store.StoreNameRealDebrid
 
-	c.getMagnetCache = func() core.Cache[string, store.GetMagnetData] {
-		return core.NewCache[string, store.GetMagnetData](&core.CacheConfig[string]{
+	c.getMagnetCache = func() cache.Cache[store.GetMagnetData] {
+		return cache.NewCache[store.GetMagnetData](&cache.CacheConfig{
 			Name:     "store:realdebrid:getMagnet",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 10 * time.Minute,
 		})
 	}()
 
-	c.idsByHashCache = func() core.Cache[string, map[string]bool] {
-		return core.NewCache[string, map[string]bool](&core.CacheConfig[string]{
+	c.idsByHashCache = func() cache.Cache[map[string]bool] {
+		return cache.NewCache[map[string]bool](&cache.CacheConfig{
 			Name:     "store:realdebrid:idsByHash",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 10 * time.Minute,
 		})
 	}()
-	c.hashByIdCache = func() core.Cache[string, string] {
-		return core.NewCache[string, string](&core.CacheConfig[string]{
+	c.hashByIdCache = func() cache.Cache[string] {
+		return cache.NewCache[string](&cache.CacheConfig{
 			Name:     "store:realdebrid:hashById",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 10 * time.Minute,
 		})
 	}()
@@ -85,7 +83,8 @@ func (c *StoreClient) getCacheKey(params store.RequestContext, key string) strin
 
 func (c *StoreClient) addIdHashMapCache(params store.RequestContext, id, hash string) {
 	c.hashByIdCache.Add(c.getCacheKey(params, id), hash)
-	if ids, ok := c.idsByHashCache.Get(c.getCacheKey(params, hash)); ok {
+	ids := map[string]bool{}
+	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
 		ids[id] = true
 		c.idsByHashCache.Add(c.getCacheKey(params, hash), ids)
 	} else {
@@ -95,7 +94,8 @@ func (c *StoreClient) addIdHashMapCache(params store.RequestContext, id, hash st
 
 func (c *StoreClient) removeIdHashMapCache(params store.RequestContext, id, hash string) {
 	c.hashByIdCache.Remove(c.getCacheKey(params, id))
-	if ids, ok := c.idsByHashCache.Get(c.getCacheKey(params, hash)); ok {
+	ids := map[string]bool{}
+	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
 		delete(ids, id)
 		if len(ids) == 0 {
 			c.idsByHashCache.Remove(c.getCacheKey(params, hash))
@@ -189,15 +189,15 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		return nil, err
 	}
 
-	tIdsMap, found := c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash))
-	if !found {
+	tIdsMap := map[string]bool{}
+	if !c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash), &tIdsMap) {
 		_, err := c.ListMagnets(&store.ListMagnetsParams{
 			Ctx: params.Ctx,
 		})
 		if err != nil {
 			return nil, err
 		}
-		tIdsMap, found = c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash))
+		c.idsByHashCache.Get(c.getCacheKey(params, magnet.Hash), &tIdsMap)
 	}
 	var t *GetTorrentInfoData
 	for tId := range tIdsMap {
@@ -320,7 +320,8 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 }
 
 func (c *StoreClient) getCachedGetMagnet(params store.RequestContext, id string) *store.GetMagnetData {
-	if v, ok := c.getMagnetCache.Get(params.GetAPIKey(c.client.apiKey) + ":" + id); ok {
+	v := store.GetMagnetData{}
+	if c.getMagnetCache.Get(params.GetAPIKey(c.client.apiKey)+":"+id, &v) {
 		return &v
 	}
 	return nil
@@ -427,7 +428,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 		Id: params.Id,
 	}
 	c.setCachedGetMagnet(params, params.Id, nil)
-	if hash, ok := c.hashByIdCache.Get(c.getCacheKey(params, params.Id)); ok {
+	hash := ""
+	if c.hashByIdCache.Get(c.getCacheKey(params, params.Id), &hash) {
 		c.removeIdHashMapCache(params, params.Id, hash)
 	}
 	return data, nil

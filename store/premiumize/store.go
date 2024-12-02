@@ -9,6 +9,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -21,7 +22,7 @@ type StoreClient struct {
 	client           *APIClient
 	config           *StoreClientConfig
 	parentFolderId   string
-	listMagnetsCache core.Cache[string, []store.ListMagnetsDataItem]
+	listMagnetsCache cache.Cache[[]store.ListMagnetsDataItem]
 }
 
 func NewStoreClient(config *StoreClientConfig) *StoreClient {
@@ -34,10 +35,9 @@ func NewStoreClient(config *StoreClientConfig) *StoreClient {
 	c.Name = store.StoreNamePremiumize
 	c.config = config
 
-	c.listMagnetsCache = func() core.Cache[string, []store.ListMagnetsDataItem] {
-		return core.NewCache[string, []store.ListMagnetsDataItem](&core.CacheConfig[string]{
+	c.listMagnetsCache = func() cache.Cache[[]store.ListMagnetsDataItem] {
+		return cache.NewCache[[]store.ListMagnetsDataItem](&cache.CacheConfig{
 			Name:     "store:premiumize:listMagnets",
-			HashKey:  core.CacheHashKeyString,
 			Lifetime: 1 * time.Minute,
 		})
 	}()
@@ -448,8 +448,8 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
-	lm, found := c.listMagnetsCache.Get(c.getCacheKey(params, ""))
-	if !found {
+	lm := []store.ListMagnetsDataItem{}
+	if !c.listMagnetsCache.Get(c.getCacheKey(params, ""), &lm) {
 		sf_res, err := c.client.SearchFolders(&SearchFoldersParams{
 			Ctx:   params.Ctx,
 			Query: CachedMagnetIdPrefix,

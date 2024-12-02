@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -14,17 +14,17 @@ var Client = NewAPIClient(&APIClientConfig{
 	APIKey:  config.BuddyAuthToken,
 })
 
-var checkMagnetCache = func() core.Cache[string, store.CheckMagnetDataItem] {
-	return core.NewCache[string, store.CheckMagnetDataItem](&core.CacheConfig[string]{
+var checkMagnetCache = func() cache.Cache[store.CheckMagnetDataItem] {
+	return cache.NewCache[store.CheckMagnetDataItem](&cache.CacheConfig{
 		Name:     "buddy:checkMagnet",
-		HashKey:  core.CacheHashKeyString,
 		Lifetime: 10 * time.Minute,
 	})
 }()
 
 func getCachedCheckMagnet(s store.Store, magnetHash string) *store.CheckMagnetDataItem {
-	if v, ok := checkMagnetCache.Get(string(s.GetName()) + ":" + magnetHash); ok {
-		return &v
+	v := &store.CheckMagnetDataItem{}
+	if ok := checkMagnetCache.Get(string(s.GetName())+":"+magnetHash, v); ok {
+		return v
 	}
 	return nil
 }

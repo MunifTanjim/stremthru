@@ -6,3 +6,7 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 8089:6379
