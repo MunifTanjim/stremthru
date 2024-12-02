@@ -11,6 +11,7 @@ import (
 
 var Client = NewAPIClient(&APIClientConfig{
 	BaseURL: config.BuddyURL,
+	APIKey:  config.BuddyAuthToken,
 })
 
 var checkMagnetCache = func() core.Cache[string, store.CheckMagnetDataItem] {

@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
@@ -76,6 +77,7 @@ type Config struct {
 	StoreAuthToken    StoreAuthTokenMap
 	ProxyAuthPassword ProxyAuthPasswordMap
 	BuddyURL          string
+	BuddyAuthToken    string
 }
 
 var config = func() Config {
@@ -122,11 +124,28 @@ var config = func() Config {
 		}
 	}
 
+	buddyUrl := ""
+	buddyAuthToken := ""
+	if buddyUri := getEnv("STREMTHRU_BUDDY_URI", ""); buddyUri != "" {
+		u, err := url.Parse(buddyUri)
+		if err != nil {
+			log.Fatal("invalid buddy uri")
+		}
+		if password, ok := u.User.Password(); ok {
+			buddyAuthToken = password
+		} else {
+			buddyAuthToken = u.User.Username()
+		}
+		u.User = nil
+		buddyUrl = strings.TrimSpace(u.String())
+	}
+
 	return Config{
 		Port:              getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword: proxyAuthPasswordMap,
 		StoreAuthToken:    storeAuthTokenMap,
-		BuddyURL:          getEnv("STREMTHRU_BUDDY_URL", ""),
+		BuddyURL:          buddyUrl,
+		BuddyAuthToken:    buddyAuthToken,
 	}
 }()
 
@@ -134,3 +153,4 @@ var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
+var BuddyAuthToken = config.BuddyAuthToken
