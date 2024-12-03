@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.3.0...sdk-js-0.4.0) (2024-12-03)
+
+
+### Features
+
+* **sdk/js:** add health endpoint ([7244cc2](https://github.com/MunifTanjim/stremthru/commit/7244cc2643f11e6fdc8850afd155164b26005705))
+* **sdk/js:** update auth config ([5089442](https://github.com/MunifTanjim/stremthru/commit/5089442834cca0c7c7493a49d9f33f800bc4fcb9))
+* **sdk/js:** update ErrorCode ([e01fbaa](https://github.com/MunifTanjim/stremthru/commit/e01fbaa140afcc569370fdf25b409d9db5e069f9))
+* **sdk/js:** update exports ([effb371](https://github.com/MunifTanjim/stremthru/commit/effb37196b81f4da8c3e54a87ac028c3ecd90936))
+
 ## [0.3.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.2.0...sdk-js-0.3.0) (2024-11-24)
 
 
