@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "stremthru"
+version = "0.0.0"
+description = "SDK for StremThru"
+authors = ["Munif Tanjim <hello@muniftanjim.dev>"]
+license = "MIT"
+readme = "README.md"
+exclude = ["**/test_*.py"]
+
+[tool.poetry.scripts]
+test = "pytest:main"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = "^3.11.9"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8.1"
+pytest = "^8.3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
