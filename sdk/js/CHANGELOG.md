@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.4.0...sdk-js-0.5.0) (2024-12-04)
+
+
+### Features
+
+* **sdk/js:** support passing client_ip ([048dce3](https://github.com/MunifTanjim/stremthru/commit/048dce32bffb1b5bf2a8144d613c0c573d9b56d8))
+
 ## [0.4.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.3.0...sdk-js-0.4.0) (2024-12-03)
 
 
