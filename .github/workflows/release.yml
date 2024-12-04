@@ -50,3 +50,27 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: sdk/js
         run: pnpm publish
+
+      - name: SDK/PY - Checkout
+        if: ${{ steps.release.outputs['sdk/py--release_created'] }}
+        uses: actions/checkout@v4
+      - name: SDK/PY - Setup Poetry
+        if: ${{ steps.release.outputs['sdk/py--release_created'] }}
+        run: pipx install poetry
+      - name: SDK/PY - Setup Python
+        if: ${{ steps.release.outputs['sdk/py--release_created'] }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: poetry
+          cache-dependency-path: |
+            sdk/py/poetry.lock
+            sdk/py/pyproject.toml
+      - name: SDK/PY - Install Dependencies
+        if: ${{ steps.release.outputs['sdk/py--release_created'] }}
+        working-directory: sdk/py
+        run: poetry install --with dev
+      - name: SDK/PY - Build
+        if: ${{ steps.release.outputs['sdk/py--release_created'] }}
+        working-directory: sdk/py
+        run: poetry build
