@@ -1,0 +1,39 @@
+name: CI [SDK/PY]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - sdk/py/**
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/py
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Poetry
+        run: pipx install poetry
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: poetry
+          cache-dependency-path: |
+            sdk/py/poetry.lock
+            sdk/py/pyproject.toml
+      - name: Install Dependencies
+        run: poetry install --with dev
+      - name: Check Format
+        run: poetry run ruff format --check
+      - name: Lint
+        run: poetry run ruff check --no-fix
+      - name: Build
+        run: poetry build
+      - name: Test
+        run: poetry run test
