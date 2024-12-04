@@ -34,11 +34,6 @@ type APIClient struct {
 	reqHeader func(query *http.Header, params store.RequestContext)
 }
 
-func (c APIClient) IsAvailable() bool {
-	return c.BaseURL != nil
-
-}
-
 func NewAPIClient(conf *APIClientConfig) *APIClient {
 	if conf.agent == "" {
 		conf.agent = "stremthru"

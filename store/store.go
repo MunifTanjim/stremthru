@@ -116,6 +116,28 @@ const (
 	StoreNameTorBox     StoreName = "torbox"
 )
 
+type StoreCode string
+
+const (
+	StoreCodeAllDebrid  StoreCode = "ad"
+	StoreCodeDebridLink StoreCode = "dl"
+	StoreCodePremiumize StoreCode = "pm"
+	StoreCodeRealDebrid StoreCode = "rd"
+	StoreCodeTorBox     StoreCode = "tb"
+)
+
+var storeCodeByName = map[StoreName]StoreCode{
+	StoreNameAlldebrid:  StoreCodeAllDebrid,
+	StoreNameDebridLink: StoreCodeDebridLink,
+	StoreNamePremiumize: StoreCodePremiumize,
+	StoreNameRealDebrid: StoreCodeRealDebrid,
+	StoreNameTorBox:     StoreCodeTorBox,
+}
+
+func (sn StoreName) Code() StoreCode {
+	return storeCodeByName[sn]
+}
+
 func (sn StoreName) Validate() (StoreName, *core.StoreError) {
 	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNamePremiumize || sn == StoreNameRealDebrid || sn == StoreNameTorBox {
 		return sn, nil

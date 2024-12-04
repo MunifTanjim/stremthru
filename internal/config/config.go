@@ -78,6 +78,7 @@ type Config struct {
 	ProxyAuthPassword ProxyAuthPasswordMap
 	BuddyURL          string
 	BuddyAuthToken    string
+	HasBuddy          bool
 	RedisURI          string
 	DatabaseURI       string
 }
@@ -150,6 +151,7 @@ var config = func() Config {
 		StoreAuthToken:    storeAuthTokenMap,
 		BuddyURL:          buddyUrl,
 		BuddyAuthToken:    buddyAuthToken,
+		HasBuddy:          len(buddyUrl) > 0,
 		RedisURI:          getEnv("STREMTHRU_REDIS_URI", ""),
 		DatabaseURI:       databaseUri,
 	}
@@ -160,5 +162,6 @@ var ProxyAuthPassword = config.ProxyAuthPassword
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var BuddyAuthToken = config.BuddyAuthToken
+var HasBuddy = config.HasBuddy
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
