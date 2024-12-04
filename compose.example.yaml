@@ -6,6 +6,8 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    volumes:
+      - ./data:/app/data
   redis:
     image: redis:7-alpine
     ports:

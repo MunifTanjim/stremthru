@@ -1,13 +1,4 @@
-FROM golang:1.22 AS builder
-
-RUN adduser \
-  --disabled-password \
-  --gecos "" \
-  --home "/nonexistent" \
-  --shell "/sbin/nologin" \
-  --no-create-home \
-  --uid 10001 \
-  nonroot
+FROM golang:1.23 AS builder
 
 WORKDIR /workspace
 
@@ -19,21 +10,17 @@ COPY internal ./internal
 COPY store ./store
 COPY *.go ./
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./stremthru
+RUN CGO_ENABLED=1 GOOS=linux go build -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'
 
 FROM scratch
 
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+WORKDIR /app
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /etc/group /etc/group
+COPY --from=builder /workspace/stremthru ./stremthru
 
-USER nonroot:nonroot
-
-WORKDIR /
-
-COPY --from=builder /workspace/stremthru /stremthru
+VOLUME ["/app/data"]
 
 EXPOSE 8080
 
-ENTRYPOINT ["/stremthru"]
+ENTRYPOINT ["./stremthru"]

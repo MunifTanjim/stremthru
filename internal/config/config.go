@@ -79,6 +79,7 @@ type Config struct {
 	BuddyURL          string
 	BuddyAuthToken    string
 	RedisURI          string
+	DatabaseURI       string
 }
 
 var config = func() Config {
@@ -141,6 +142,8 @@ var config = func() Config {
 		buddyUrl = strings.TrimSpace(u.String())
 	}
 
+	databaseUri := getEnv("STREMTHRU_DATABASE_URI", "sqlite://./data/stremthru.db")
+
 	return Config{
 		Port:              getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword: proxyAuthPasswordMap,
@@ -148,6 +151,7 @@ var config = func() Config {
 		BuddyURL:          buddyUrl,
 		BuddyAuthToken:    buddyAuthToken,
 		RedisURI:          getEnv("STREMTHRU_REDIS_URI", ""),
+		DatabaseURI:       databaseUri,
 	}
 }()
 
@@ -157,3 +161,4 @@ var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var BuddyAuthToken = config.BuddyAuthToken
 var RedisURI = config.RedisURI
+var DatabaseURI = config.DatabaseURI
