@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -77,11 +78,11 @@ func NewStoreClient() *StoreClient {
 	return c
 }
 
-func (c *StoreClient) getCacheKey(params store.RequestContext, key string) string {
+func (c *StoreClient) getCacheKey(params request.Context, key string) string {
 	return params.GetAPIKey(c.client.apiKey) + ":" + key
 }
 
-func (c *StoreClient) addIdHashMapCache(params store.RequestContext, id, hash string) {
+func (c *StoreClient) addIdHashMapCache(params request.Context, id, hash string) {
 	c.hashByIdCache.Add(c.getCacheKey(params, id), hash)
 	ids := map[string]bool{}
 	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
@@ -92,7 +93,7 @@ func (c *StoreClient) addIdHashMapCache(params store.RequestContext, id, hash st
 	}
 }
 
-func (c *StoreClient) removeIdHashMapCache(params store.RequestContext, id, hash string) {
+func (c *StoreClient) removeIdHashMapCache(params request.Context, id, hash string) {
 	c.hashByIdCache.Remove(c.getCacheKey(params, id))
 	ids := map[string]bool{}
 	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
@@ -319,7 +320,7 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	return data, nil
 }
 
-func (c *StoreClient) getCachedGetMagnet(params store.RequestContext, id string) *store.GetMagnetData {
+func (c *StoreClient) getCachedGetMagnet(params request.Context, id string) *store.GetMagnetData {
 	v := store.GetMagnetData{}
 	if c.getMagnetCache.Get(params.GetAPIKey(c.client.apiKey)+":"+id, &v) {
 		return &v
@@ -327,7 +328,7 @@ func (c *StoreClient) getCachedGetMagnet(params store.RequestContext, id string)
 	return nil
 }
 
-func (c *StoreClient) setCachedGetMagnet(params store.RequestContext, id string, v *store.GetMagnetData) {
+func (c *StoreClient) setCachedGetMagnet(params request.Context, id string, v *store.GetMagnetData) {
 	if v == nil {
 		c.getMagnetCache.Remove(params.GetAPIKey(c.client.apiKey) + ":" + id)
 		return

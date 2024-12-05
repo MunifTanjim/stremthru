@@ -5,11 +5,12 @@ import (
 	"net/url"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-var DefaultHTTPTransport = core.DefaultHTTPTransport
-var DefaultHTTPClient = core.DefaultHTTPClient
+var DefaultHTTPTransport = request.DefaultHTTPTransport
+var DefaultHTTPClient = request.DefaultHTTPClient
 
 type APIClientConfig struct {
 	BaseURL    string // default: https://api.torbox.app
@@ -23,8 +24,8 @@ type APIClient struct {
 	HTTPClient *http.Client
 	apiKey     string
 	agent      string
-	reqQuery   func(query *url.Values, params store.RequestContext)
-	reqHeader  func(query *http.Header, params store.RequestContext)
+	reqQuery   func(query *url.Values, params request.Context)
+	reqHeader  func(query *http.Header, params request.Context)
 }
 
 func NewAPIClient(conf *APIClientConfig) *APIClient {
@@ -52,9 +53,9 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	c.apiKey = conf.APIKey
 	c.agent = conf.agent
 
-	c.reqQuery = func(query *url.Values, params store.RequestContext) {}
+	c.reqQuery = func(query *url.Values, params request.Context) {}
 
-	c.reqHeader = func(header *http.Header, params store.RequestContext) {
+	c.reqHeader = func(header *http.Header, params request.Context) {
 		header.Add("Authorization", "Bearer "+params.GetAPIKey(c.apiKey))
 		header.Add("User-Agent", c.agent)
 	}
@@ -62,9 +63,9 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	return c
 }
 
-type Ctx = store.Ctx
+type Ctx = request.Ctx
 
-func (c APIClient) Request(method, path string, params store.RequestContext, v ResponseEnvelop) (*http.Response, error) {
+func (c APIClient) Request(method, path string, params request.Context, v ResponseEnvelop) (*http.Response, error) {
 	if params == nil {
 		params = &Ctx{}
 	}

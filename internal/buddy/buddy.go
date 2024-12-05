@@ -5,16 +5,18 @@ import (
 	"net/url"
 
 	"github.com/MunifTanjim/stremthru/core"
-	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/internal/request"
 )
 
 var DefaultHTTPTransport = func() *http.Transport {
-	transport := core.DefaultHTTPTransport.Clone()
+	transport := request.DefaultHTTPTransport.Clone()
 	transport.Proxy = nil
 	return transport
 }()
 var DefaultHTTPClient = func() *http.Client {
-	return &http.Client{Transport: DefaultHTTPTransport}
+	return &http.Client{
+		Transport: DefaultHTTPTransport,
+	}
 }()
 
 type APIClientConfig struct {
@@ -30,8 +32,8 @@ type APIClient struct {
 	apiKey     string
 	agent      string
 
-	reqQuery  func(query *url.Values, params store.RequestContext)
-	reqHeader func(query *http.Header, params store.RequestContext)
+	reqQuery  func(query *url.Values, params request.Context)
+	reqHeader func(query *http.Header, params request.Context)
 }
 
 func NewAPIClient(conf *APIClientConfig) *APIClient {
@@ -57,10 +59,10 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	c.apiKey = conf.APIKey
 	c.agent = conf.agent
 
-	c.reqQuery = func(query *url.Values, params store.RequestContext) {
+	c.reqQuery = func(query *url.Values, params request.Context) {
 	}
 
-	c.reqHeader = func(header *http.Header, params store.RequestContext) {
+	c.reqHeader = func(header *http.Header, params request.Context) {
 		header.Set("Authorization", "Bearer "+params.GetAPIKey(c.apiKey))
 		header.Add("User-Agent", c.agent)
 	}
@@ -68,16 +70,15 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	return c
 }
 
-type Ctx = store.Ctx
+type Ctx = request.Ctx
 
-func (c APIClient) Request(method, path string, params store.RequestContext, v ResponseEnvelop) (*http.Response, error) {
+func (c APIClient) Request(method, path string, params request.Context, v ResponseEnvelop) (*http.Response, error) {
 	if params == nil {
 		params = &Ctx{}
 	}
 	req, err := params.NewRequest(c.BaseURL, method, path, c.reqHeader, c.reqQuery)
 	if err != nil {
-		error := core.NewStoreError("failed to create request")
-		error.StoreName = string(store.StoreNameAlldebrid)
+		error := core.NewAPIError("failed to create request")
 		error.Cause = err
 		return nil, error
 	}

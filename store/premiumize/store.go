@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -45,7 +46,7 @@ func NewStoreClient(config *StoreClientConfig) *StoreClient {
 	return c
 }
 
-func (c *StoreClient) getCacheKey(params store.RequestContext, key string) string {
+func (c *StoreClient) getCacheKey(params request.Context, key string) string {
 	return params.GetAPIKey(c.client.apiKey) + ":" + key
 }
 

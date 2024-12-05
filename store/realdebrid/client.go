@@ -5,11 +5,12 @@ import (
 	"net/url"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-var DefaultHTTPTransport = core.DefaultHTTPTransport
-var DefaultHTTPClient = core.DefaultHTTPClient
+var DefaultHTTPTransport = request.DefaultHTTPTransport
+var DefaultHTTPClient = request.DefaultHTTPClient
 
 type APIClientConfig struct {
 	BaseURL    string // default: https://api.real-debrid.com
@@ -53,9 +54,9 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	return c
 }
 
-type Ctx = store.Ctx
+type Ctx = request.Ctx
 
-func (c APIClient) newRequest(method, path string, params store.RequestContext) (req *http.Request, err error) {
+func (c APIClient) newRequest(method, path string, params request.Context) (req *http.Request, err error) {
 	if params == nil {
 		params = &Ctx{}
 	}
@@ -85,7 +86,7 @@ func (c APIClient) newRequest(method, path string, params store.RequestContext) 
 	return req, nil
 }
 
-func (c APIClient) Request(method, path string, params store.RequestContext, v ResponseContainer) (*http.Response, error) {
+func (c APIClient) Request(method, path string, params request.Context, v ResponseContainer) (*http.Response, error) {
 	req, err := c.newRequest(method, path, params)
 	if err != nil {
 		error := core.NewStoreError("failed to create request")
