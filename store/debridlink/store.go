@@ -120,8 +120,6 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 	}
 
-	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
-
 	return data, nil
 }
 
@@ -163,8 +161,6 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 
 		data.Files = append(data.Files, *file)
 	}
-
-	buddy.TrackMagnet(c, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
 
 	return data, nil
 }

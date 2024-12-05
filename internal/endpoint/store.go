@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
@@ -180,7 +181,11 @@ func addMagnet(ctx *context.RequestContext, magnet string) (*store.AddMagnetData
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
 	}
-	return ctx.Store.AddMagnet(params)
+	data, err := ctx.Store.AddMagnet(params)
+	if err == nil {
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	}
+	return data, err
 }
 
 func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +227,11 @@ func getMagnet(ctx *context.RequestContext, magnetId string) (*store.GetMagnetDa
 	params := &store.GetMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Id = magnetId
-	return ctx.Store.GetMagnet(params)
+	data, err := ctx.Store.GetMagnet(params)
+	if err == nil {
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+	}
+	return data, err
 }
 
 func handleStoreMagnetGet(w http.ResponseWriter, r *http.Request) {
