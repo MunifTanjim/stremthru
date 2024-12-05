@@ -10,7 +10,7 @@ import (
 )
 
 func getEnv(key string, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
+	if value, exists := os.LookupEnv(key); exists && len(value) > 0 {
 		return value
 	}
 	return defaultValue
