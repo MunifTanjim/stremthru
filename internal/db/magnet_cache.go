@@ -52,18 +52,21 @@ func (arr MagnetCacheFiles) ToStoreMagnetFile() []store.MagnetFile {
 	return files
 }
 
-type SQLiteUnixTime struct{ time.Time }
+type Timestamp struct{ time.Time }
 
-func (t SQLiteUnixTime) Value() (driver.Value, error) {
+func (t Timestamp) Value() (driver.Value, error) {
 	return t.Unix(), nil
 }
 
-func (t *SQLiteUnixTime) Scan(value interface{}) error {
-	unix_seconds, ok := value.(int64)
-	if !ok {
-		return errors.New("failed to convert value to int64")
+func (t *Timestamp) Scan(value interface{}) error {
+	switch v := value.(type) {
+	case int64:
+		t.Time = time.Unix(v, 0)
+	case time.Time:
+		t.Time = v
+	default:
+		return errors.New("failed to convert value to Timestamp")
 	}
-	*t = SQLiteUnixTime{time.Unix(unix_seconds, 0)}
 	return nil
 }
 
@@ -71,7 +74,7 @@ type MagnetCache struct {
 	Store      store.StoreCode
 	Hash       string
 	IsCached   bool
-	ModifiedAt SQLiteUnixTime
+	ModifiedAt Timestamp
 	Files      MagnetCacheFiles
 }
 
@@ -97,7 +100,7 @@ func (mc MagnetCache) IsStale() bool {
 }
 
 func GetMagnetCache(store store.StoreCode, hash string) (MagnetCache, error) {
-	row := db.QueryRow("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash = ?", store, hash)
+	row := QueryRow("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash = ?", store, hash)
 	mc := MagnetCache{}
 	err := row.Scan(&mc.Store, &mc.Hash, &mc.IsCached, &mc.ModifiedAt, &mc.Files)
 	return mc, err
@@ -113,7 +116,7 @@ func GetMagnetCaches(store store.StoreCode, hashes []string) ([]MagnetCache, err
 		args[i+1] = hash
 	}
 
-	rows, err := db.Query("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash IN ("+strings.Join(hashPlaceholders, ",")+")", args...)
+	rows, err := Query("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash IN ("+strings.Join(hashPlaceholders, ",")+")", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,11 +142,11 @@ func TouchMagnetCache(store store.StoreCode, hash string, files MagnetCacheFiles
 	var result sql.Result
 	var err error
 	if len(files) == 0 {
-		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, 0) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = unixepoch()")
-		result, err = db.Exec(buf.String(), store, hash)
+		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, false) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + CurrentTimestamp)
+		result, err = Exec(buf.String(), store, hash)
 	} else {
-		buf.WriteString(" (store, hash, is_cached, files) VALUES (?, ?, 1, ?) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = unixepoch()")
-		result, err = db.Exec(buf.String(), store, hash, files)
+		buf.WriteString(" (store, hash, is_cached, files) VALUES (?, ?, true, ?) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + CurrentTimestamp)
+		result, err = Exec(buf.String(), store, hash, files)
 	}
 	if err != nil {
 		return err
@@ -157,11 +160,11 @@ func TouchMagnetCache(store store.StoreCode, hash string, files MagnetCacheFiles
 
 func TouchMagnetCaches(store store.StoreCode, filesByHash map[string]MagnetCacheFiles) error {
 	hit_buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES "))
-	hit_placeholder := "(?,?,1,?)"
+	hit_placeholder := adaptQuery("(?,?,true,?)")
 	hit_count := 0
 
 	miss_buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName + " (store,hash,is_cached) VALUES "))
-	miss_placeholder := "(?,?,0)"
+	miss_placeholder := adaptQuery("(?,?,false)")
 	miss_count := 0
 
 	var hit_args []interface{}
@@ -190,14 +193,14 @@ func TouchMagnetCaches(store store.StoreCode, filesByHash map[string]MagnetCache
 		return err
 	}
 	if hit_count > 0 {
-		hit_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = unixepoch()")
+		hit_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + CurrentTimestamp)
 		_, err := tx.Exec(hit_buf.String(), hit_args...)
 		if err != nil {
 			println(err.Error())
 		}
 	}
 	if miss_count > 0 {
-		miss_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = unixepoch()")
+		miss_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + CurrentTimestamp)
 		_, err := tx.Exec(miss_buf.String(), miss_args...)
 		if err != nil {
 			println(err.Error())

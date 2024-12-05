@@ -5,16 +5,10 @@ import (
 	"strings"
 )
 
-type ConnectionURIVariant string
-
-const (
-	ConnectionURIVariantSQLite     ConnectionURIVariant = "sqlite"
-	ConnectionURIVariantPostgreSQL ConnectionURIVariant = "postgresql"
-)
-
 type ConnectionURI struct {
-	variant ConnectionURIVariant
-	value   string
+	dialect          string
+	driverName       string
+	connectionString string
 }
 
 func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
@@ -27,12 +21,14 @@ func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
 
 	switch u.Scheme {
 	case "sqlite":
-		uri.variant = ConnectionURIVariantSQLite
+		uri.dialect = "sqlite"
+		uri.driverName = "libsql"
 		u.Scheme = "file"
-		uri.value = strings.Replace(u.String(), "://", ":", 1)
+		uri.connectionString = strings.Replace(u.String(), "://", ":", 1)
 	case "postgresql":
-		uri.variant = ConnectionURIVariantPostgreSQL
-		uri.value = u.String()
+		uri.dialect = "postgres"
+		uri.driverName = "pgx"
+		uri.connectionString = u.String()
 	}
 
 	return uri, nil

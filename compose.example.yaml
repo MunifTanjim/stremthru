@@ -12,3 +12,14 @@ services:
     image: redis:7-alpine
     ports:
       - 8089:6379
+  postgres:
+    image: postgres:16.6-alpine
+    ports:
+      - 8088:5432
+    environment:
+      POSTGRES_DB: stremthru
+      POSTGRES_USER: stremthru
+      POSTGRES_PASSWORD: stremthru
+    restart: always
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
