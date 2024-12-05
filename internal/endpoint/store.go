@@ -88,6 +88,7 @@ type AddMagnetPayload struct {
 func checkMagnet(ctx *context.RequestContext, magnets []string) (*store.CheckMagnetData, error) {
 	params := &store.CheckMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
+	params.UpstreamToken = ctx.UpstreamToken
 	params.Magnets = magnets
 	data, err := ctx.Store.CheckMagnet(params)
 	if err == nil && data.Items == nil {
@@ -96,7 +97,51 @@ func checkMagnet(ctx *context.RequestContext, magnets []string) (*store.CheckMag
 	return data, err
 }
 
+type TrackMagnetPayload struct {
+	Hash   string             `json:"hash"`
+	Files  []store.MagnetFile `json:"files"`
+	IsMiss bool               `json:"is_miss"`
+}
+
+type TrackMagnetData struct {
+}
+
+func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
+	if !IsMethod(r, http.MethodPost) {
+		SendError(w, ErrorMethodNotAllowed(r))
+		return
+	}
+
+	ctx := context.GetRequestContext(r)
+
+	isValidToken, err := buddy.IsValidToken(ctx.UpstreamToken)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+	if !isValidToken {
+		error := ErrorUnauthorized(r)
+		SendError(w, error)
+		return
+	}
+
+	payload := &TrackMagnetPayload{}
+	if err := ReadJSONPayload(r, payload); err != nil {
+		SendError(w, err)
+		return
+	}
+
+	buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.IsMiss, ctx.UpstreamToken, ctx.StoreAuthToken)
+
+	SendResponse[any](w, 202, &TrackMagnetData{}, nil)
+}
+
 func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
+	if IsMethod(r, http.MethodPost) {
+		hadleStoreMagnetsTrack(w, r)
+		return
+	}
+
 	if !IsMethod(r, http.MethodGet) {
 		SendError(w, ErrorMethodNotAllowed(r))
 		return
@@ -183,7 +228,7 @@ func addMagnet(ctx *context.RequestContext, magnet string) (*store.AddMagnetData
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, "", ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -229,7 +274,7 @@ func getMagnet(ctx *context.RequestContext, magnetId string) (*store.GetMagnetDa
 	params.Id = magnetId
 	data, err := ctx.Store.GetMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, "", ctx.StoreAuthToken)
 	}
 	return data, err
 }

@@ -2,19 +2,27 @@ package buddy
 
 import (
 	"log"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	"github.com/MunifTanjim/stremthru/internal/upstream"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-var Client = NewAPIClient(&APIClientConfig{
+var Buddy = NewAPIClient(&APIClientConfig{
 	BaseURL: config.BuddyURL,
 	APIKey:  config.BuddyAuthToken,
 })
 
-func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss bool) {
+var Upstream = upstream.NewAPIClient(&upstream.APIClientConfig{
+	BaseURL: config.UpstreamURL,
+	APIKey:  config.UpstreamAuthToken,
+})
+
+func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss bool, buddyToken string, storeToken string) {
 	mcFiles := db.MagnetCacheFiles{}
 	if !cacheMiss {
 		for _, f := range files {
@@ -26,18 +34,33 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 	}
 
 	if config.HasBuddy {
-		if _, err := Client.TrackMagnetCache(&TrackMagnetCacheParams{
+		params := &TrackMagnetCacheParams{
 			Store:     s.GetName(),
 			Hash:      hash,
 			Files:     files,
 			CacheMiss: cacheMiss,
-		}); err != nil {
-			log.Printf("failed to track magnet cache for %s:%s: %v\n", s.GetName(), hash, err)
+		}
+		params.APIKey = buddyToken
+		if _, err := Buddy.TrackMagnetCache(params); err != nil {
+			log.Printf("[buddy] failed to track magnet cache for %s:%s: %v\n", s.GetName(), hash, err)
+		}
+	}
+
+	if config.HasUpstream {
+		params := &upstream.TrackMagnetParams{
+			StoreName:  s.GetName(),
+			StoreToken: storeToken,
+			Hash:       hash,
+			Files:      files,
+			IsMiss:     cacheMiss,
+		}
+		if _, err := Upstream.TrackMagnet(params); err != nil {
+			log.Printf("[buddy:upstream] failed to track magnet cache for %s:%s: %v\n", s.GetName(), hash, err)
 		}
 	}
 }
 
-func CheckMagnet(s store.Store, hashes []string) (*store.CheckMagnetData, error) {
+func CheckMagnet(s store.Store, hashes []string, buddyToken string, storeToken string) (*store.CheckMagnetData, error) {
 	data := &store.CheckMagnetData{
 		Items: []store.CheckMagnetDataItem{},
 	}
@@ -81,55 +104,105 @@ func CheckMagnet(s store.Store, hashes []string) (*store.CheckMagnetData, error)
 		return data, nil
 	}
 
-	if !config.HasBuddy {
-		for _, hash := range staleOrMissingHashes {
-			magnet := magnetByHash[hash]
-			item := store.CheckMagnetDataItem{
-				Hash:   magnet.Hash,
-				Magnet: magnet.Link,
-				Status: store.MagnetStatusUnknown,
-				Files:  []store.MagnetFile{},
-			}
-			data.Items = append(data.Items, item)
+	if config.HasBuddy {
+		params := &CheckMagnetCacheParams{
+			Store:  s.GetName(),
+			Hashes: staleOrMissingHashes,
 		}
-
-		return data, nil
+		params.APIKey = buddyToken
+		res, err := Buddy.CheckMagnetCache(params)
+		if err != nil {
+			log.Printf("[buddy] failed to check magnet: %v\n", err)
+		} else {
+			filesByHash := map[string]db.MagnetCacheFiles{}
+			for _, item := range res.Data.Items {
+				files := db.MagnetCacheFiles{}
+				if item.Status == store.MagnetStatusCached {
+					for _, f := range item.Files {
+						files = append(files, db.MagnetCacheFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
+					}
+				}
+				filesByHash[item.Hash] = files
+				data.Items = append(data.Items, item)
+			}
+			err = db.TouchMagnetCaches(s.GetName().Code(), filesByHash)
+			if err != nil {
+				log.Printf("[buddy] failed to update local cache: %v\n", err)
+			}
+			return data, nil
+		}
 	}
 
-	res, err := Client.CheckMagnetCache(&CheckMagnetCacheParams{
-		Store:  s.GetName(),
-		Hashes: staleOrMissingHashes,
-	})
-	if err != nil {
-		log.Printf("[buddy] failed to check magnet: %v\n", err)
-
-		for _, hash := range staleOrMissingHashes {
-			magnet := magnetByHash[hash]
-			item := store.CheckMagnetDataItem{
-				Hash:   magnet.Hash,
-				Magnet: magnet.Link,
-				Status: store.MagnetStatusUnknown,
-				Files:  []store.MagnetFile{},
-			}
-			data.Items = append(data.Items, item)
+	if config.HasUpstream {
+		params := &upstream.CheckMagnetParams{
+			StoreName:  s.GetName(),
+			StoreToken: storeToken,
 		}
-		return data, nil
+		params.Magnets = hashes
+		res, err := Upstream.CheckMagnet(params)
+		if err != nil {
+			log.Printf("[buddy:upstream] failed to check magnet: %v\n", err)
+		} else {
+			filesByHash := map[string]db.MagnetCacheFiles{}
+			for _, item := range res.Data.Items {
+				files := db.MagnetCacheFiles{}
+				if item.Status == store.MagnetStatusCached {
+					for _, f := range item.Files {
+						files = append(files, db.MagnetCacheFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
+					}
+				}
+				filesByHash[item.Hash] = files
+				data.Items = append(data.Items, item)
+			}
+			err = db.TouchMagnetCaches(s.GetName().Code(), filesByHash)
+			if err != nil {
+				log.Printf("[buddy:upstream] failed to update local cache: %v\n", err)
+			}
+			return data, nil
+		}
 	}
 
-	filesByHash := map[string]db.MagnetCacheFiles{}
-	for _, item := range res.Data.Items {
-		files := db.MagnetCacheFiles{}
-		if item.Status == store.MagnetStatusCached {
-			for _, f := range item.Files {
-				files = append(files, db.MagnetCacheFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
-			}
+	for _, hash := range staleOrMissingHashes {
+		magnet := magnetByHash[hash]
+		item := store.CheckMagnetDataItem{
+			Hash:   magnet.Hash,
+			Magnet: magnet.Link,
+			Status: store.MagnetStatusUnknown,
+			Files:  []store.MagnetFile{},
 		}
-		filesByHash[item.Hash] = files
 		data.Items = append(data.Items, item)
 	}
-	err = db.TouchMagnetCaches(s.GetName().Code(), filesByHash)
-	if err != nil {
-		log.Printf("[buddy] failed to update local cache: %v\n", err)
-	}
 	return data, nil
+}
+
+var isValidTokenCache = func() cache.Cache[bool] {
+	return cache.NewCache[bool](&cache.CacheConfig{
+		Name:     "buddy:isValidToken",
+		Lifetime: 10 * time.Minute,
+	})
+}()
+
+func IsValidToken(token string) (bool, error) {
+	if token == "" || !config.HasBuddy {
+		return false, nil
+	}
+
+	isValid := false
+	if isValidTokenCache.Get(token, &isValid) {
+		return isValid, nil
+	}
+
+	if res, err := Buddy.CheckAuth(&CheckAuthParams{Token: token}); err != nil {
+		if res.StatusCode != 401 {
+			return false, err
+		}
+		isValid = false
+	} else {
+		isValid = true
+	}
+
+	if err := isValidTokenCache.Add(token, isValid); err != nil {
+		log.Printf("[buddy] failed to cache valid token check: %v\n", err)
+	}
+	return isValid, nil
 }

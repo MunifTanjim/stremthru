@@ -95,7 +95,8 @@ const (
 
 type CheckMagnetParams struct {
 	Ctx
-	Magnets []string
+	UpstreamToken string
+	Magnets       []string
 }
 
 type CheckMagnetDataItem struct {
