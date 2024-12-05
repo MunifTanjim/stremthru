@@ -79,8 +79,26 @@ type Config struct {
 	BuddyURL          string
 	BuddyAuthToken    string
 	HasBuddy          bool
+	UpstreamURL       string
+	UpstreamAuthToken string
+	HasUpstream       bool
 	RedisURI          string
 	DatabaseURI       string
+}
+
+func parseUri(uri string) (parsedUrl, parsedToken string) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		log.Fatalf("invalid uri: %s", uri)
+	}
+	if password, ok := u.User.Password(); ok {
+		parsedToken = password
+	} else {
+		parsedToken = u.User.Username()
+	}
+	u.User = nil
+	parsedUrl = strings.TrimSpace(u.String())
+	return
 }
 
 var config = func() Config {
@@ -127,21 +145,8 @@ var config = func() Config {
 		}
 	}
 
-	buddyUrl := ""
-	buddyAuthToken := ""
-	if buddyUri := getEnv("STREMTHRU_BUDDY_URI", ""); buddyUri != "" {
-		u, err := url.Parse(buddyUri)
-		if err != nil {
-			log.Fatal("invalid buddy uri")
-		}
-		if password, ok := u.User.Password(); ok {
-			buddyAuthToken = password
-		} else {
-			buddyAuthToken = u.User.Username()
-		}
-		u.User = nil
-		buddyUrl = strings.TrimSpace(u.String())
-	}
+	buddyUrl, buddyAuthToken := parseUri(getEnv("STREMTHRU_BUDDY_URI", ""))
+	upstreamUrl, upstreamAuthToken := parseUri(getEnv("STREMTHRU_UPSTREAM_URI", ""))
 
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI", "sqlite://./data/stremthru.db")
 
@@ -152,6 +157,9 @@ var config = func() Config {
 		BuddyURL:          buddyUrl,
 		BuddyAuthToken:    buddyAuthToken,
 		HasBuddy:          len(buddyUrl) > 0,
+		UpstreamURL:       upstreamUrl,
+		UpstreamAuthToken: upstreamAuthToken,
+		HasUpstream:       len(upstreamUrl) > 0,
 		RedisURI:          getEnv("STREMTHRU_REDIS_URI", ""),
 		DatabaseURI:       databaseUri,
 	}
@@ -163,5 +171,8 @@ var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var BuddyAuthToken = config.BuddyAuthToken
 var HasBuddy = config.HasBuddy
+var UpstreamURL = config.UpstreamURL
+var UpstreamAuthToken = config.UpstreamAuthToken
+var HasUpstream = config.HasUpstream
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
