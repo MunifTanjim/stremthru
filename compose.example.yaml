@@ -1,5 +1,9 @@
 services:
   stremthru:
+    container_name: stremthru
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     image: muniftanjim/stremthru
     ports:
       - 8080:8080
