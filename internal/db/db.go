@@ -52,18 +52,18 @@ func QueryRow(query string, args ...any) *sql.Row {
 func Ping() {
 	err := db.Ping()
 	if err != nil {
-		log.Fatalf("failed to ping db: %v\n", err)
+		log.Fatalf("[db] failed to ping: %v\n", err)
 	}
 	_, err = Query("SELECT 1")
 	if err != nil {
-		log.Fatalf("failed to query db: %v\n", err)
+		log.Fatalf("[db] failed to query: %v\n", err)
 	}
 }
 
 func Open() *sql.DB {
 	uri, err := ParseConnectionURI(config.DatabaseURI)
 	if err != nil {
-		log.Fatalf("failed to open db %s", err)
+		log.Fatalf("[db] failed to parse uri: %v\n", err)
 	}
 
 	dialect = uri.dialect
@@ -73,14 +73,28 @@ func Open() *sql.DB {
 	case "postgres":
 		CurrentTimestamp = "current_timestamp"
 	default:
-		log.Fatalf("unsupported db dialect: %v\n", dialect)
+		log.Fatalf("[db] unsupported dialect: %v\n", dialect)
 	}
 
 	database, err := sql.Open(uri.driverName, uri.connectionString)
 	if err != nil {
-		log.Fatalf("failed to open db %s", err)
+		log.Fatalf("[db] failed to open: %v\n", err)
 	}
 	db = database
+
+	if dialect == "sqlite" {
+		result := db.QueryRow("PRAGMA journal_mode=WAL")
+		if err := result.Err(); err != nil {
+			log.Fatalf("[db] failed to enable WAL mode: %v\n", err)
+		}
+		journal_mode := ""
+		err := result.Scan(&journal_mode)
+		if err != nil {
+			log.Fatalf("[db] failed to enable WAL mode: %v\n", err)
+		}
+		log.Printf("[db] journal_mode: %v\n", journal_mode)
+	}
+
 	return db
 }
 
