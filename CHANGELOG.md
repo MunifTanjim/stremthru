@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/0.5.0...0.6.0) (2024-12-06)
+
+
+### Features
+
+* add support for uptream node ([f704542](https://github.com/MunifTanjim/stremthru/commit/f70454298382413dfe7b04d92799eaf376173cd9))
+* **db:** add support for postgresql ([df3473c](https://github.com/MunifTanjim/stremthru/commit/df3473c461f9aae8a95d56a715befbfbd6461a6f))
+* **db:** initial setup ([7371667](https://github.com/MunifTanjim/stremthru/commit/73716677b9a9301763a61e5f584da13f489e65f9))
+* **db:** use wal mode for sqlite ([39f2b18](https://github.com/MunifTanjim/stremthru/commit/39f2b18e8c628c01a00d9c933d1b9ed16f8cdc5f))
+* extract request stuffs ([031dd77](https://github.com/MunifTanjim/stremthru/commit/031dd77a09db0370e4344d682f9cd53e4c86a4d3))
+* **peer:** introduce concept of peer ([18ced66](https://github.com/MunifTanjim/stremthru/commit/18ced66a55e6a72630767e8231eeeb783011212d))
+* store magnet cache info in db ([7b32556](https://github.com/MunifTanjim/stremthru/commit/7b325560ac69f1a0e126df020feebccca8ca74c4))
+* **store:** integrate upstream for check and track magnet cache ([f6bf4d7](https://github.com/MunifTanjim/stremthru/commit/f6bf4d7900c58d61b238fb075c58725f5bd158bc))
+* **store:** update error code for invalid store name ([281041e](https://github.com/MunifTanjim/stremthru/commit/281041e978e2a6a66de37cc12b182df0b5ef9b4d))
+* update header for buddy token ([45afd6d](https://github.com/MunifTanjim/stremthru/commit/45afd6dd4cf5df37fa2f4c248acf1ff0ffd598f6))
+
+
+### Bug Fixes
+
+* **config:** handle env var with empty value ([7a1abcf](https://github.com/MunifTanjim/stremthru/commit/7a1abcfee81d02fcf1c3128f4f2bb7733053f90e))
+
 ## [0.5.0](https://github.com/MunifTanjim/stremthru/compare/0.4.0...0.5.0) (2024-12-04)
 
 
