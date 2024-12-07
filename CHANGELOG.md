@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/0.6.0...0.7.0) (2024-12-07)
+
+
+### Features
+
+* **db:** handle connection and transaction better ([3c60920](https://github.com/MunifTanjim/stremthru/commit/3c609203f1953ac545549d562729c9c74c3688d6))
+* **db:** log magnet_cache insert failure better ([0624b1a](https://github.com/MunifTanjim/stremthru/commit/0624b1a8460f83e48cd5c94bba79d112438159ee))
+* **magnet_cache:** extract and fix db stuffs ([8fbeafb](https://github.com/MunifTanjim/stremthru/commit/8fbeafbb7c9a3099f203e1837d84adfbad9b0e2c))
+* **store/realdebrid:** update error codes ([8a49941](https://github.com/MunifTanjim/stremthru/commit/8a499413edb220cfd32a124a2138797f1e7f28ad))
+
 ## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/0.5.0...0.6.0) (2024-12-06)
 
 
