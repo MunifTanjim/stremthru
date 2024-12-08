@@ -25,7 +25,7 @@ type File struct {
 
 type Files []File
 
-func (files Files) Value() (driver.Value, error) {
+func (files *Files) Value() (driver.Value, error) {
 	return json.Marshal(files)
 }
 

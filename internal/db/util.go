@@ -23,8 +23,14 @@ func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
 	switch u.Scheme {
 	case "sqlite":
 		uri.dialect = "sqlite"
-		uri.driverName = "libsql"
+		uri.driverName = "sqlite3"
 		u.Scheme = "file"
+		query := u.Query()
+		query.Add("_busy_timeout", "500")
+		query.Add("_journal_mode", "WAL")
+		query.Add("_txlock", "immediate")
+		query.Add("_loc", "UTC")
+		u.RawQuery = query.Encode()
 		uri.connectionString = strings.Replace(u.String(), "://", ":", 1)
 	case "postgresql":
 		uri.dialect = "postgres"

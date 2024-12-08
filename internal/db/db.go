@@ -6,7 +6,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/tursodatabase/go-libsql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
@@ -83,15 +83,6 @@ func Open() *sql.DB {
 		log.Fatalf("[db] failed to open: %v\n", err)
 	}
 	db = database
-
-	if dialect == "sqlite" {
-		result := QueryRow("PRAGMA journal_mode=WAL")
-		journal_mode := ""
-		if err := result.Scan(&journal_mode); err != nil {
-			log.Fatalf("[db] failed to enable WAL mode: %v\n", err)
-		}
-		log.Printf("[db] journal_mode: %v\n", journal_mode)
-	}
 
 	return db
 }

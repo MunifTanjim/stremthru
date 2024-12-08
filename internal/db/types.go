@@ -8,7 +8,7 @@ import (
 
 type Timestamp struct{ time.Time }
 
-func (t Timestamp) Value() (driver.Value, error) {
+func (t *Timestamp) Value() (driver.Value, error) {
 	return t.Unix(), nil
 }
 
