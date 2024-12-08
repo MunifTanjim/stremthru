@@ -172,28 +172,21 @@ func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
 		}
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	if hit_count > 0 {
 		hit_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
-		_, err := tx.Exec(hit_buf.String(), hit_args...)
+		_, err := db.Exec(hit_buf.String(), hit_args...)
 		if err != nil {
 			log.Printf("[magnet_cache] failed to touch hits: %v\n", err)
 		}
 	}
+
 	if miss_count > 0 {
 		miss_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
-		_, err := tx.Exec(miss_buf.String(), miss_args...)
+		_, err := db.Exec(miss_buf.String(), miss_args...)
 		if err != nil {
 			log.Printf("[magnet_cache] failed to touch misses: %v\n", err)
 		}
 	}
 
-	err = tx.Commit()
-
-	return err
+	return nil
 }
