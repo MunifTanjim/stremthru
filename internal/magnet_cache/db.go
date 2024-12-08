@@ -143,11 +143,13 @@ func Touch(store store.StoreCode, hash string, files Files) error {
 }
 
 func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
-	hit_buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES "))
+	var hit_query strings.Builder
+	hit_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES ")
 	hit_placeholder := "(?,?,true,?)"
 	hit_count := 0
 
-	miss_buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName + " (store,hash,is_cached) VALUES "))
+	var miss_query strings.Builder
+	miss_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached) VALUES ")
 	miss_placeholder := "(?,?,false)"
 	miss_count := 0
 
@@ -157,32 +159,32 @@ func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
 	for hash, files := range filesByHash {
 		if len(files) == 0 {
 			if miss_count > 0 {
-				miss_buf.WriteString(",")
+				miss_query.WriteString(",")
 			}
-			miss_buf.WriteString(miss_placeholder)
-			miss_count++
+			miss_query.WriteString(miss_placeholder)
 			miss_args = append(miss_args, store, hash)
+			miss_count++
 		} else {
 			if hit_count > 0 {
-				hit_buf.WriteString(",")
+				hit_query.WriteString(",")
 			}
-			hit_buf.WriteString(hit_placeholder)
-			hit_count++
+			hit_query.WriteString(hit_placeholder)
 			hit_args = append(hit_args, store, hash, files)
+			hit_count++
 		}
 	}
 
 	if hit_count > 0 {
-		hit_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
-		_, err := db.Exec(hit_buf.String(), hit_args...)
+		hit_query.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
+		_, err := db.Exec(hit_query.String(), hit_args...)
 		if err != nil {
 			log.Printf("[magnet_cache] failed to touch hits: %v\n", err)
 		}
 	}
 
 	if miss_count > 0 {
-		miss_buf.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
-		_, err := db.Exec(miss_buf.String(), miss_args...)
+		miss_query.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
+		_, err := db.Exec(miss_query.String(), miss_args...)
 		if err != nil {
 			log.Printf("[magnet_cache] failed to touch misses: %v\n", err)
 		}
