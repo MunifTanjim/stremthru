@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/MunifTanjim/stremthru/compare/0.7.0...0.8.0) (2024-12-09)
+
+
+### Features
+
+* **db:** switch from libsql to sqlite3 ([dc9e0c8](https://github.com/MunifTanjim/stremthru/commit/dc9e0c86212ea1c050348415c9f04c1feab10c1d))
+* **magnet_cache:** get rid of unnecessary transaction ([fb7b244](https://github.com/MunifTanjim/stremthru/commit/fb7b2441c1150d0499114183a891ffeabe1472c8))
+
 ## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/0.6.0...0.7.0) (2024-12-07)
 
 
