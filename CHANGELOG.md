@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/MunifTanjim/stremthru/compare/0.8.0...0.9.0) (2024-12-10)
+
+
+### Features
+
+* **db:** add 'heavy' tag for auto schema migration ([0d6b28f](https://github.com/MunifTanjim/stremthru/commit/0d6b28fd4cf98cb27e0fc1940a560e06c1f31b59))
+
+
+### Bug Fixes
+
+* **peer_token:** fix schema file for postgresql ([aad8e7b](https://github.com/MunifTanjim/stremthru/commit/aad8e7b37d504feaa749353d1937420b8607393b))
+
 ## [0.8.0](https://github.com/MunifTanjim/stremthru/compare/0.7.0...0.8.0) (2024-12-09)
 
 
