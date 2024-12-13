@@ -7,6 +7,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 )
 
 type MiddlewareFunc func(http.HandlerFunc) http.HandlerFunc
@@ -47,7 +48,7 @@ func ProxyAuthRequired(next http.HandlerFunc) http.HandlerFunc {
 
 		if !ctx.IsProxyAuthorized {
 			w.Header().Add("Proxy-Authenticate", "Basic")
-			SendError(w, ErrorProxyAuthRequired(r))
+			SendError(w, shared.ErrorProxyAuthRequired(r))
 			return
 		}
 
@@ -96,13 +97,13 @@ func StoreRequired(next http.HandlerFunc) http.HandlerFunc {
 		ctx := context.GetRequestContext(r)
 
 		if ctx.Store == nil {
-			SendError(w, ErrorBadRequest(r, "missing store"))
+			SendError(w, shared.ErrorBadRequest(r, "missing store"))
 			return
 		}
 
 		if ctx.StoreAuthToken == "" {
 			w.Header().Add("WWW-Authenticate", "Bearer realm=\"store:"+string(ctx.Store.GetName())+"\"")
-			SendError(w, ErrorUnauthorized(r))
+			SendError(w, shared.ErrorUnauthorized(r))
 			return
 		}
 

@@ -1,4 +1,4 @@
-package endpoint
+package shared
 
 import (
 	"net/http"

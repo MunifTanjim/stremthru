@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 )
 
 type StoreResponse[D interface{}] struct {
@@ -67,7 +68,7 @@ func IsMethod(r *http.Request, method string) bool {
 func ReadJSONPayload[T interface{}](r *http.Request, payload T) error {
 	contentType := r.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "application/json") {
-		return ErrorUnsupportedMediaType(r)
+		return shared.ErrorUnsupportedMediaType(r)
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
@@ -75,7 +76,7 @@ func ReadJSONPayload[T interface{}](r *http.Request, payload T) error {
 		return err
 	}
 	if err == io.EOF {
-		return ErrorBadRequest(r, "missing body")
+		return shared.ErrorBadRequest(r, "missing body")
 	}
 	error := core.NewAPIError("failed to decode body")
 	error.Cause = err

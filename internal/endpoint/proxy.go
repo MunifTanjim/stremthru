@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 )
 
 func parseBasicAuthToken(token string) (encoded, username, password string, ok bool) {
@@ -41,9 +42,9 @@ var httpClient = core.DefaultHTTPClient
 func ProxyToLink(w http.ResponseWriter, r *http.Request, link string) {
 	request, err := http.NewRequest(r.Method, link, nil)
 	if err != nil {
-		error := ErrorInternalServerError(r, "failed to create request")
-		error.Cause = err
-		SendError(w, error)
+		e := shared.ErrorInternalServerError(r, "failed to create request")
+		e.Cause = err
+		SendError(w, e)
 		return
 	}
 
@@ -51,7 +52,7 @@ func ProxyToLink(w http.ResponseWriter, r *http.Request, link string) {
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		error := ErrorBadGateway(r, "failed to request url")
+		error := shared.ErrorBadGateway(r, "failed to request url")
 		error.Cause = err
 		SendError(w, error)
 		return
@@ -78,26 +79,26 @@ func copyHeaders(src http.Header, dest http.Header) {
 
 func handleProxy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
 	targetUrl := r.URL.Query().Get("url")
 	if targetUrl == "" {
-		SendError(w, ErrorBadRequest(r, "missing url"))
+		SendError(w, shared.ErrorBadRequest(r, "missing url"))
 		return
 	}
 
 	targetUrl, err := url.QueryUnescape(targetUrl)
 	if err != nil {
-		error := ErrorBadRequest(r, "invalid url")
+		error := shared.ErrorBadRequest(r, "invalid url")
 		error.Cause = err
 		SendError(w, error)
 		return
 	}
 
 	if u, err := url.ParseRequestURI(targetUrl); err != nil || u.Scheme == "" || u.Host == "" {
-		error := ErrorBadRequest(r, "invalid url")
+		error := shared.ErrorBadRequest(r, "invalid url")
 		error.Cause = err
 		SendError(w, error)
 		return

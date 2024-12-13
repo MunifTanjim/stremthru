@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
 	"github.com/MunifTanjim/stremthru/store/debridlink"
@@ -73,7 +74,7 @@ func getUser(ctx *context.RequestContext) (*store.User, error) {
 
 func handleStoreUser(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
@@ -108,7 +109,7 @@ type TrackMagnetData struct {
 
 func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodPost) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
@@ -120,7 +121,7 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !isValidToken {
-		error := ErrorUnauthorized(r)
+		error := shared.ErrorUnauthorized(r)
 		SendError(w, error)
 		return
 	}
@@ -143,14 +144,14 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !IsMethod(r, http.MethodGet) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
 	queryParams := r.URL.Query()
 	magnet, ok := queryParams["magnet"]
 	if !ok {
-		SendError(w, ErrorBadRequest(r, "missing magnet"))
+		SendError(w, shared.ErrorBadRequest(r, "missing magnet"))
 		return
 	}
 
@@ -162,7 +163,7 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(magnets) == 0 {
-		SendError(w, ErrorBadRequest(r, "missing magnet"))
+		SendError(w, shared.ErrorBadRequest(r, "missing magnet"))
 		return
 	}
 
@@ -180,14 +181,14 @@ func listMagnets(ctx *context.RequestContext, r *http.Request) (*store.ListMagne
 	queryParams := r.URL.Query()
 	limit, err := getQueryInt(queryParams, "limit", 100)
 	if err != nil {
-		return nil, ErrorBadRequest(r, err.Error())
+		return nil, shared.ErrorBadRequest(r, err.Error())
 	}
 	if limit > 500 {
 		limit = 500
 	}
 	offset, err := getQueryInt(queryParams, "offset", 0)
 	if err != nil {
-		return nil, ErrorBadRequest(r, err.Error())
+		return nil, shared.ErrorBadRequest(r, err.Error())
 	}
 
 	params := &store.ListMagnetsParams{
@@ -205,7 +206,7 @@ func listMagnets(ctx *context.RequestContext, r *http.Request) (*store.ListMagne
 
 func handleStoreMagnetsList(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
@@ -235,7 +236,7 @@ func addMagnet(ctx *context.RequestContext, magnet string) (*store.AddMagnetData
 
 func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodPost) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
@@ -265,7 +266,7 @@ func handleStoreMagnets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendError(w, ErrorMethodNotAllowed(r))
+	SendError(w, shared.ErrorMethodNotAllowed(r))
 }
 
 func getMagnet(ctx *context.RequestContext, magnetId string) (*store.GetMagnetData, error) {
@@ -281,13 +282,13 @@ func getMagnet(ctx *context.RequestContext, magnetId string) (*store.GetMagnetDa
 
 func handleStoreMagnetGet(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
 	magnetId := r.PathValue("magnetId")
 	if magnetId == "" {
-		SendError(w, ErrorBadRequest(r, "missing magnetId"))
+		SendError(w, shared.ErrorBadRequest(r, "missing magnetId"))
 		return
 	}
 
@@ -308,13 +309,13 @@ func removeMagnet(ctx *context.RequestContext, magnetId string) (*store.RemoveMa
 
 func handleStoreMagnetRemove(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodDelete) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
 	magnetId := r.PathValue("magnetId")
 	if magnetId == "" {
-		SendError(w, ErrorBadRequest(r, "missing magnetId"))
+		SendError(w, shared.ErrorBadRequest(r, "missing magnetId"))
 		return
 	}
 
@@ -334,7 +335,7 @@ func handleStoreMagnet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendError(w, ErrorMethodNotAllowed(r))
+	SendError(w, shared.ErrorMethodNotAllowed(r))
 }
 
 type GenerateLinkPayload struct {
@@ -433,7 +434,7 @@ func generateLink(r *http.Request, ctx *context.RequestContext, link string) (*s
 
 func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodPost) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
@@ -467,13 +468,13 @@ var tokenLinkCache = func() cache.Cache[string] {
 
 func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) && !IsMethod(r, http.MethodHead) {
-		SendError(w, ErrorMethodNotAllowed(r))
+		SendError(w, shared.ErrorMethodNotAllowed(r))
 		return
 	}
 
 	encodedToken := r.PathValue("token")
 	if encodedToken == "" {
-		SendError(w, ErrorBadRequest(r, "missing token"))
+		SendError(w, shared.ErrorBadRequest(r, "missing token"))
 		return
 	}
 
