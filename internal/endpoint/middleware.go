@@ -48,7 +48,7 @@ func ProxyAuthRequired(next http.HandlerFunc) http.HandlerFunc {
 
 		if !ctx.IsProxyAuthorized {
 			w.Header().Add("Proxy-Authenticate", "Basic")
-			SendError(w, shared.ErrorProxyAuthRequired(r))
+			shared.ErrorProxyAuthRequired(r).Send(w)
 			return
 		}
 
@@ -97,13 +97,13 @@ func StoreRequired(next http.HandlerFunc) http.HandlerFunc {
 		ctx := context.GetRequestContext(r)
 
 		if ctx.Store == nil {
-			SendError(w, shared.ErrorBadRequest(r, "missing store"))
+			shared.ErrorBadRequest(r, "missing store").Send(w)
 			return
 		}
 
 		if ctx.StoreAuthToken == "" {
 			w.Header().Add("WWW-Authenticate", "Bearer realm=\"store:"+string(ctx.Store.GetName())+"\"")
-			SendError(w, shared.ErrorUnauthorized(r))
+			shared.ErrorUnauthorized(r).Send(w)
 			return
 		}
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -46,6 +47,7 @@ type StremThruError interface {
 	Pack()
 	GetStatusCode() int
 	GetError() *Error
+	Send(w http.ResponseWriter)
 }
 
 type Error struct {
@@ -64,6 +66,10 @@ type Error struct {
 	Cause error `json:"__cause__,omitempty"`
 }
 
+type errorResponse struct {
+	Error *Error `json:"error,omitempty"`
+}
+
 func (e *Error) Error() string {
 	ret, _ := json.Marshal(e)
 	return string(ret)
@@ -71,6 +77,24 @@ func (e *Error) Error() string {
 
 func (e *Error) Unwrap() error {
 	return e.Cause
+}
+
+func (e *Error) GetStatusCode() int {
+	return e.StatusCode
+}
+
+func (e *Error) GetError() *Error {
+	return e
+}
+
+func (e *Error) Send(w http.ResponseWriter) {
+	e.Pack()
+	res := &errorResponse{Error: e}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(e.GetStatusCode())
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("failed to encode json %v\n", err)
+	}
 }
 
 func (e *Error) InjectReq(r *http.Request) {
@@ -119,14 +143,6 @@ func (e *Error) Pack() {
 			e.Msg = http.StatusText(e.StatusCode)
 		}
 	}
-}
-
-func (e *Error) GetStatusCode() int {
-	return e.StatusCode
-}
-
-func (e *Error) GetError() *Error {
-	return e
 }
 
 func NewError(msg string) *Error {

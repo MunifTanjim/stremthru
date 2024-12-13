@@ -1,8 +1,6 @@
 package endpoint
 
 import (
-	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -37,74 +35,34 @@ func extractProxyAuthToken(r *http.Request) (token string, hasToken bool) {
 	return token, token != ""
 }
 
-var httpClient = core.DefaultHTTPClient
-
-func ProxyToLink(w http.ResponseWriter, r *http.Request, link string) {
-	request, err := http.NewRequest(r.Method, link, nil)
-	if err != nil {
-		e := shared.ErrorInternalServerError(r, "failed to create request")
-		e.Cause = err
-		SendError(w, e)
-		return
-	}
-
-	copyHeaders(r.Header, request.Header)
-
-	response, err := httpClient.Do(request)
-	if err != nil {
-		error := shared.ErrorBadGateway(r, "failed to request url")
-		error.Cause = err
-		SendError(w, error)
-		return
-	}
-	defer response.Body.Close()
-
-	copyHeaders(response.Header, w.Header())
-
-	w.WriteHeader(response.StatusCode)
-
-	_, err = io.Copy(w, response.Body)
-	if err != nil {
-		log.Printf("stream failure: %v", err)
-	}
-}
-
-func copyHeaders(src http.Header, dest http.Header) {
-	for key, values := range src {
-		for _, value := range values {
-			dest.Add(key, value)
-		}
-	}
-}
-
 func handleProxy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
-		SendError(w, shared.ErrorMethodNotAllowed(r))
+		shared.ErrorMethodNotAllowed(r).Send(w)
 		return
 	}
 
 	targetUrl := r.URL.Query().Get("url")
 	if targetUrl == "" {
-		SendError(w, shared.ErrorBadRequest(r, "missing url"))
+		shared.ErrorBadRequest(r, "missing url").Send(w)
 		return
 	}
 
 	targetUrl, err := url.QueryUnescape(targetUrl)
 	if err != nil {
-		error := shared.ErrorBadRequest(r, "invalid url")
-		error.Cause = err
-		SendError(w, error)
+		e := shared.ErrorBadRequest(r, "invalid url")
+		e.Cause = err
+		e.Send(w)
 		return
 	}
 
 	if u, err := url.ParseRequestURI(targetUrl); err != nil || u.Scheme == "" || u.Host == "" {
-		error := shared.ErrorBadRequest(r, "invalid url")
-		error.Cause = err
-		SendError(w, error)
+		e := shared.ErrorBadRequest(r, "invalid url")
+		e.Cause = err
+		e.Send(w)
 		return
 	}
 
-	ProxyToLink(w, r, targetUrl)
+	shared.ProxyResponse(w, r, targetUrl)
 }
 
 func AddProxyEndpoints(mux *http.ServeMux) {
