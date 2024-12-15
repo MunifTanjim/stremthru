@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/MunifTanjim/stremthru/compare/0.9.0...0.10.0) (2024-12-15)
+
+
+### Features
+
+* **store:** add added_at field for magnet list/get ([d772158](https://github.com/MunifTanjim/stremthru/commit/d772158053e4a519d43dc607125b4244afcc1ae0))
+
 ## [0.9.0](https://github.com/MunifTanjim/stremthru/compare/0.8.0...0.9.0) (2024-12-10)
 
 
