@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.5.0...sdk-js-0.6.0) (2024-12-15)
+
+
+### Features
+
+* **sdk/js:** support added_at field ([98a61c7](https://github.com/MunifTanjim/stremthru/commit/98a61c77fb59dfe9f9bef0be8133ea7a238c7301))
+
 ## [0.5.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.4.0...sdk-js-0.5.0) (2024-12-04)
 
 
