@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.1.0...sdk-py-0.2.0) (2024-12-15)
+
+
+### Features
+
+* **sdk/py:** support added_at field ([3dcee0e](https://github.com/MunifTanjim/stremthru/commit/3dcee0eead3ce435a1e1a8a4f8dfcad954e861eb))
+
 ## [0.1.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.0.1...sdk-py-0.1.0) (2024-12-04)
 
 
