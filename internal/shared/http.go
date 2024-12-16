@@ -130,3 +130,37 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string) {
 		log.Printf("stream failure: %v", err)
 	}
 }
+
+func extractRequestScheme(r *http.Request) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+
+	if scheme == "" {
+		scheme = r.URL.Scheme
+	}
+
+	if scheme == "" {
+		scheme = "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+	}
+
+	return scheme
+}
+
+func extractRequestHost(r *http.Request) string {
+	host := r.Header.Get("X-Forwarded-Host")
+
+	if host == "" {
+		host = r.Host
+	}
+
+	return host
+}
+
+func ExtractRequestBaseURL(r *http.Request) *url.URL {
+	return &url.URL{
+		Scheme: extractRequestScheme(r),
+		Host:   extractRequestHost(r),
+	}
+}

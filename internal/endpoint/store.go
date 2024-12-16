@@ -2,69 +2,14 @@ package endpoint
 
 import (
 	"net/http"
-	"net/url"
 	"strings"
-	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
-	"github.com/MunifTanjim/stremthru/internal/cache"
-	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/store"
-	"github.com/MunifTanjim/stremthru/store/alldebrid"
-	"github.com/MunifTanjim/stremthru/store/debridlink"
-	"github.com/MunifTanjim/stremthru/store/premiumize"
-	"github.com/MunifTanjim/stremthru/store/realdebrid"
-	"github.com/MunifTanjim/stremthru/store/torbox"
-	"github.com/golang-jwt/jwt/v5"
 )
-
-func getStoreName(r *http.Request) (store.StoreName, *core.StoreError) {
-	name := r.Header.Get("X-StremThru-Store-Name")
-	if name == "" {
-		ctx := context.GetRequestContext(r)
-		if ctx.IsProxyAuthorized {
-			name = config.StoreAuthToken.GetPreferredStore(ctx.ProxyAuthUser)
-			r.Header.Set("X-StremThru-Store-Name", name)
-		}
-	}
-	if name == "" {
-		return "", nil
-	}
-	return store.StoreName(name).Validate()
-}
-
-var adStore = alldebrid.NewStore()
-var dlStore = debridlink.NewStoreClient()
-var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{})
-var rdStore = realdebrid.NewStoreClient()
-var tbStore = torbox.NewStoreClient()
-
-func getStore(r *http.Request) (store.Store, error) {
-	name, err := getStoreName(r)
-	if err != nil {
-		err.InjectReq(r)
-		err.StatusCode = http.StatusBadRequest
-		return nil, err
-	}
-	switch name {
-	case store.StoreNameAlldebrid:
-		return adStore, nil
-	case store.StoreNameDebridLink:
-		return dlStore, nil
-	case store.StoreNamePremiumize:
-		return pmStore, nil
-	case store.StoreNameRealDebrid:
-		return rdStore, nil
-	case store.StoreNameTorBox:
-		return tbStore, nil
-	default:
-		return nil, nil
-	}
-}
 
 func getUser(ctx *context.RequestContext) (*store.User, error) {
 	params := &store.GetUserParams{}
@@ -341,96 +286,6 @@ type GenerateLinkPayload struct {
 	Link string `json:"link"`
 }
 
-type GenerateLinkJWTData struct {
-	EncLink   string `json:"enc_link"`
-	EncFormat string `json:"enc_format"`
-}
-
-func extractReqScheme(r *http.Request) string {
-	scheme := r.Header.Get("X-Forwarded-Proto")
-
-	if scheme == "" {
-		scheme = r.URL.Scheme
-	}
-
-	if scheme == "" {
-		scheme = "http"
-		if r.TLS != nil {
-			scheme = "https"
-		}
-	}
-
-	return scheme
-}
-
-func extractReqHost(r *http.Request) string {
-	host := r.Header.Get("X-Forwarded-Host")
-
-	if host == "" {
-		host = r.Host
-	}
-
-	return host
-}
-
-func createSecureLink(r *http.Request, ctx *context.RequestContext, link string) (string, error) {
-	encryptedLink, err := core.Encrypt(ctx.ProxyAuthPassword, link)
-	if err != nil {
-		return "", err
-	}
-
-	secureLink := (&url.URL{
-		Scheme: extractReqScheme(r),
-		Host:   extractReqHost(r),
-	}).JoinPath("/v0/store/link/access")
-
-	token, err := core.CreateJWT(ctx.ProxyAuthPassword, core.JWTClaims[GenerateLinkJWTData]{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "stremthru",
-			Subject:   ctx.ProxyAuthUser,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-		},
-		Data: &GenerateLinkJWTData{
-			EncLink:   encryptedLink,
-			EncFormat: core.EncryptionFormat,
-		},
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	secureLink = secureLink.JoinPath(token)
-
-	return secureLink.String(), nil
-
-}
-
-func generateLink(r *http.Request, ctx *context.RequestContext, link string) (*store.GenerateLinkData, error) {
-	params := &store.GenerateLinkParams{}
-	params.APIKey = ctx.StoreAuthToken
-	params.Link = link
-	if ctx.ClientIP != "" {
-		params.ClientIP = ctx.ClientIP
-	}
-
-	data, err := ctx.Store.GenerateLink(params)
-	if err != nil {
-		return nil, err
-	}
-
-	if ctx.IsProxyAuthorized && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(ctx.Store.GetName())) {
-		secureLink, err := createSecureLink(r, ctx, data.Link)
-		if err != nil {
-			return nil, err
-		}
-
-		data.Link = secureLink
-	}
-
-	return data, nil
-}
-
 func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	if !shared.IsMethod(r, http.MethodPost) {
 		shared.ErrorMethodNotAllowed(r).Send(w)
@@ -445,25 +300,9 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.GetRequestContext(r)
-	link, err := generateLink(r, ctx, payload.Link)
+	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link)
 	SendResponse(w, 200, link, err)
 }
-
-func getUserSecretFromJWT(t *jwt.Token) (string, []byte, error) {
-	username, err := t.Claims.GetSubject()
-	if err != nil {
-		return "", nil, err
-	}
-	password := config.ProxyAuthPassword.GetPassword(username)
-	return password, []byte(password), nil
-}
-
-var tokenLinkCache = func() cache.Cache[string] {
-	return cache.NewCache[string](&cache.CacheConfig{
-		Name:     "endpoint:store:tokenLink",
-		Lifetime: 15 * time.Minute,
-	})
-}()
 
 func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 	if !shared.IsMethod(r, http.MethodGet) && !shared.IsMethod(r, http.MethodHead) {
@@ -477,36 +316,11 @@ func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link := ""
-	if ok := tokenLinkCache.Get(encodedToken, &link); ok {
-		shared.ProxyResponse(w, r, link)
-		return
-	}
-
-	claims := &core.JWTClaims[GenerateLinkJWTData]{}
-	token, err := core.ParseJWT(func(t *jwt.Token) (interface{}, error) {
-		_, secret, err := getUserSecretFromJWT(t)
-		return secret, err
-	}, encodedToken, claims)
-
+	link, err := shared.UnwrapProxyLinkToken(encodedToken)
 	if err != nil {
 		SendError(w, err)
 		return
 	}
-
-	secret, _, err := getUserSecretFromJWT(token)
-	if err != nil {
-		SendError(w, err)
-		return
-	}
-
-	link, err = core.Decrypt(secret, claims.Data.EncLink)
-	if err != nil {
-		SendError(w, err)
-		return
-	}
-
-	tokenLinkCache.Add(encodedToken, link)
 
 	shared.ProxyResponse(w, r, link)
 }
