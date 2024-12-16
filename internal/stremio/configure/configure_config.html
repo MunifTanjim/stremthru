@@ -1,0 +1,16 @@
+<label for="{{.Key}}">{{.Title}}{{if .Required}} *{{end}}</label>
+{{if eq .Type "checkbox"}}
+  <input type="checkbox" id="{{.Key}}" name="{{.Key}}" {{if eq .Default "checked"}}checked{{end}}>
+{{else if eq .Type "select"}}
+  <select id="{{.Key}}" name="{{.Key}}" {{if .Required}}required{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>
+    {{ $Default := .Default }}
+    {{range .Options}}
+      <option value="{{.Value}}" {{if eq $Default .Value}}selected{{end}}>{{.Label}}</option>
+    {{end}}
+  </select>
+{{else}}
+  <input type="{{.Type}}" id="{{.Key}}" name="{{.Key}}" value="{{.Default}}" {{if .Required}}required{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>
+{{end}}
+{{if ne .Error ""}}
+<small id="invalid-helper">{{.Error}}</small>
+{{end}}

@@ -8,6 +8,7 @@ RUN go mod download
 COPY core ./core
 COPY internal ./internal
 COPY store ./store
+COPY stremio ./stremio
 COPY *.go ./
 COPY schema.hcl schema.postgres.hcl ./
 

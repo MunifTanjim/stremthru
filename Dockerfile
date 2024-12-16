@@ -8,6 +8,7 @@ RUN go mod download
 COPY core ./core
 COPY internal ./internal
 COPY store ./store
+COPY stremio ./stremio
 COPY *.go ./
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'

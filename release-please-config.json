@@ -15,6 +15,7 @@
         "release-please-config.json",
         "sdk"
       ],
+      "extra-files": ["internal/stremio/store/manifest.go"],
       "pull-request-title-pattern": "chore: release ${version}"
     },
     "sdk/js": {

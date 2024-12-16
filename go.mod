@@ -38,4 +38,5 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/sahilm/fuzzy v0.1.1
 )

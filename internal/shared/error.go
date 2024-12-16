@@ -22,6 +22,14 @@ var ErrorForbidden = func(r *http.Request) *core.APIError {
 	return err
 }
 
+var ErrorNotFound = func(r *http.Request) *core.APIError {
+	err := core.NewAPIError("not found")
+	err.InjectReq(r)
+	err.Code = core.ErrorCodeNotFound
+	err.StatusCode = http.StatusNotFound
+	return err
+}
+
 var ErrorMethodNotAllowed = func(r *http.Request) *core.APIError {
 	err := core.NewAPIError("method not allowed")
 	err.InjectReq(r)

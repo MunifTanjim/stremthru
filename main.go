@@ -15,6 +15,7 @@ func main() {
 	endpoint.AddHealthEndpoints(mux)
 	endpoint.AddProxyEndpoints(mux)
 	endpoint.AddStoreEndpoints(mux)
+	endpoint.AddStremioEndpoints(mux)
 
 	database := db.Open()
 	defer db.Close()

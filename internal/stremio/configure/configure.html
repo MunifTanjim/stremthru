@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <script
+      src="https://unpkg.com/htmx.org@2.0.4"
+      integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+      crossorigin="anonymous"
+    ></script>
+    <title>{{.Title}}</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>{{.Title}}</h1>
+      <form id="configuration" action="configure" method="post" hx-boost="true">
+        {{range .Configs}}
+          {{template "configure_config.html" .}}
+        {{end}}
+
+        <button type="submit">Install</button>
+
+        {{if ne .ManifestURL ""}}
+        <div id="manifest_url_section">
+          <label for="manifest_url">Manifest URL</label>
+          <fieldset role="group">
+            <input id="manifest_url" value="{{.ManifestURL}}" readonly />
+            <button type="button" onclick="copyManifestUrl()">Copy</button>
+          </fieldset>
+        </div>
+        {{end}}
+      </form>
+    </main>
+
+    <script>
+      function copyManifestUrl() {
+        const manifestUrl = document.querySelector("input#manifest_url")?.value;
+        if (!manifestUrl) {
+          return;
+        }
+        navigator.clipboard.writeText(manifestUrl);
+        return manifestUrl;
+      }
+
+      function tryInstall() {
+        const url = new URL(window.location.href)
+        if (!url.searchParams.get("try_install")) {
+          return
+        }
+        url.searchParams.delete("try_install");
+        window.history.replaceState(null, "", url.href);
+
+        const manifestUrl = copyManifestUrl();
+        if (manifestUrl) {
+          window.location.href = manifestUrl.replace(/^.+:\/\//, 'stremio://');
+        }
+      }
+
+      tryInstall()
+
+      htmx.on("htmx:beforeRequest", function(evt) {
+        if (evt.detail.elt.id === "configuration") {
+          evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+        }
+      });
+      htmx.on("form#configuration", "change", function(evt) {
+        document.querySelector('#manifest_url_section')?.remove();
+      }, { once: true });
+    </script>
+  </body>
+</html>

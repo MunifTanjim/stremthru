@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
@@ -89,6 +90,12 @@ func SendResponse(w http.ResponseWriter, statusCode int, data any, err error) {
 	res.Data = data
 
 	res.send(w, statusCode)
+}
+
+func SendHTML(w http.ResponseWriter, statusCode int, data bytes.Buffer) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(statusCode)
+	data.WriteTo(w)
 }
 
 func copyHeaders(src http.Header, dest http.Header) {
