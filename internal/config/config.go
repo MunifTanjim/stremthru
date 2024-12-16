@@ -118,16 +118,8 @@ var config = func() Config {
 	})
 	proxyAuthPasswordMap := make(ProxyAuthPasswordMap)
 	for _, cred := range proxyAuthCredList {
-		if strings.ContainsRune(cred, ':') {
-			username, password, ok := strings.Cut(cred, ":")
-			if ok {
-				proxyAuthPasswordMap[username] = password
-			}
-		} else if decoded, err := core.Base64Decode(cred); err == nil {
-			username, password, ok := strings.Cut(strings.TrimSpace(decoded), ":")
-			if ok {
-				proxyAuthPasswordMap[username] = password
-			}
+		if basicAuth, err := core.ParseBasicAuth(cred); err == nil {
+			proxyAuthPasswordMap[basicAuth.Username] = basicAuth.Password
 		}
 	}
 
