@@ -64,6 +64,10 @@ URI for Database, in format `<scheme>://<user>:<pass>@<host>[:<port>][/<db>]`.
 
 Supports `sqlite` and `postgresql`.
 
+**`STREMTHRU_STREMIO_ADDON`**
+
+Comma separated list of Stremio Addon names to enable. All available addons are enabled by default.
+
 ## Endpoints
 
 ### Authentication
@@ -288,6 +292,14 @@ Generate direct link for a file link.
 ```
 
 The generated direct link should be valid for 24 hours.
+
+### Stremio Addon
+
+#### Store
+
+`/stremio/store/configure`
+
+StremThru Store Catalog.
 
 ### Enums
 

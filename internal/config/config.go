@@ -72,6 +72,23 @@ func (m ProxyAuthPasswordMap) GetPassword(userName string) string {
 	return ""
 }
 
+type StremioAddonConfig struct {
+	enabled []string
+}
+
+func (sa StremioAddonConfig) IsEnabled(name string) bool {
+	if len(sa.enabled) == 0 {
+		return true
+	}
+
+	for _, addon := range sa.enabled {
+		if addon == name {
+			return true
+		}
+	}
+	return false
+}
+
 type Config struct {
 	Port              string
 	StoreAuthToken    StoreAuthTokenMap
@@ -83,6 +100,7 @@ type Config struct {
 	HasPeer           bool
 	RedisURI          string
 	DatabaseURI       string
+	StremioAddon      StremioAddonConfig
 }
 
 func parseUri(uri string) (parsedUrl, parsedToken string) {
@@ -141,6 +159,12 @@ var config = func() Config {
 
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI", "sqlite://./data/stremthru.db")
 
+	stremioAddon := StremioAddonConfig{
+		enabled: strings.FieldsFunc(strings.TrimSpace(getEnv("STREMTHRU_STREMIO_ADDON", "")), func(c rune) bool {
+			return c == ','
+		}),
+	}
+
 	return Config{
 		Port:              getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword: proxyAuthPasswordMap,
@@ -152,6 +176,7 @@ var config = func() Config {
 		HasPeer:           len(peerUrl) > 0,
 		RedisURI:          getEnv("STREMTHRU_REDIS_URI", ""),
 		DatabaseURI:       databaseUri,
+		StremioAddon:      stremioAddon,
 	}
 }()
 
@@ -165,3 +190,4 @@ var PeerAuthToken = config.PeerAuthToken
 var HasPeer = config.HasPeer
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
+var StremioAddon = config.StremioAddon
