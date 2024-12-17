@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.11.0](https://github.com/MunifTanjim/stremthru/compare/0.10.0...0.11.0) (2024-12-17)
+
+
+### Features
+
+* add landing page ([f499cbf](https://github.com/MunifTanjim/stremthru/commit/f499cbf722da4c84057e87e326272b316245191d))
+* add version in health debug ([e9c1980](https://github.com/MunifTanjim/stremthru/commit/e9c1980ac17786be8015b67c164ec26345a17dbd))
+* **stremio:** add addon - store ([39dca81](https://github.com/MunifTanjim/stremthru/commit/39dca81be9eed485877fa8b3c85c9aca1930181c))
+* **stremio:** add config to toggle addons ([a6c06f8](https://github.com/MunifTanjim/stremthru/commit/a6c06f811a0b6e45a3a5b7faae47503b3907e926))
+
 ## [0.10.0](https://github.com/MunifTanjim/stremthru/compare/0.9.0...0.10.0) (2024-12-15)
 
 
