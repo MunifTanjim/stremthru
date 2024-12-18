@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/MunifTanjim/stremthru/compare/0.11.0...0.11.1) (2024-12-18)
+
+
+### Bug Fixes
+
+* **stremio:** malformed manifest for store ([886d2a3](https://github.com/MunifTanjim/stremthru/commit/886d2a342a40c0dd809cebe41d7688db73928f44))
+* **stremio:** properly handle user data error for store ([ff6842d](https://github.com/MunifTanjim/stremthru/commit/ff6842d74a51db2aa55ecffac2d79c51f95610cc))
+
 ## [0.11.0](https://github.com/MunifTanjim/stremthru/compare/0.10.0...0.11.0) (2024-12-17)
 
 
