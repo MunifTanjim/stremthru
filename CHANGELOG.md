@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.1](https://github.com/MunifTanjim/stremthru/compare/0.13.0...0.13.1) (2024-12-19)
+
+
+### Bug Fixes
+
+* **stremio:** deduplicate id in configure page ([b56f934](https://github.com/MunifTanjim/stremthru/commit/b56f9344a00478a1ec61820dd702b68aadee34aa))
+* **stremio:** stop loading indicator on failed request ([e370417](https://github.com/MunifTanjim/stremthru/commit/e3704178dfa013f91bb29ce02e62e793deafbcb3))
+
 ## [0.13.0](https://github.com/MunifTanjim/stremthru/compare/0.12.0...0.13.0) (2024-12-19)
 
 
