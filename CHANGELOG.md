@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/MunifTanjim/stremthru/compare/0.12.0...0.13.0) (2024-12-19)
+
+
+### Features
+
+* **stremio:** add addon - wrap ([bfc9e1c](https://github.com/MunifTanjim/stremthru/commit/bfc9e1c9ce1344568d6aae10edd097088780caeb))
+
 ## [0.12.0](https://github.com/MunifTanjim/stremthru/compare/0.11.1...0.12.0) (2024-12-19)
 
 
