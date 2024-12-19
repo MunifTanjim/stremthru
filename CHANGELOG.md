@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/MunifTanjim/stremthru/compare/0.11.1...0.12.0) (2024-12-19)
+
+
+### Features
+
+* add config for landing page ([e383a0d](https://github.com/MunifTanjim/stremthru/commit/e383a0dc13233b5604571e980b443f1401931ea5))
+* **stremio:** improve landing page for store ([7a0638c](https://github.com/MunifTanjim/stremthru/commit/7a0638c48faed2f42757727764cbe578bd9a81ed))
+* **stremio:** mention store name in manifest ([559467c](https://github.com/MunifTanjim/stremthru/commit/559467c76a249fb94abd9f94a3bbf8102fa2cddb))
+
+
+### Bug Fixes
+
+* **endpoint:** match landing page route exactly ([2d76b0e](https://github.com/MunifTanjim/stremthru/commit/2d76b0ed7433cce78608cb62cd93dd4f969225d7))
+
 ## [0.11.1](https://github.com/MunifTanjim/stremthru/compare/0.11.0...0.11.1) (2024-12-18)
 
 
