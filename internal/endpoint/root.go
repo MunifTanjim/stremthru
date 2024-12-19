@@ -63,6 +63,12 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 			URL:  "/stremio/store",
 		})
 	}
+	if config.StremioAddon.IsEnabled("wrap") {
+		td.Addons = append(td.Addons, rootTemplateDataAddon{
+			Name: "Wrap",
+			URL:  "/stremio/wrap",
+		})
+	}
 
 	buf, err := ExecuteTemplate(td)
 	if err != nil {

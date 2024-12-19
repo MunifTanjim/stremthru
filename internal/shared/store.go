@@ -45,7 +45,11 @@ type proxyLinkTokenData struct {
 	EncFormat string `json:"enc_format"`
 }
 
-func createProxyLink(r *http.Request, ctx *context.RequestContext, link string) (string, error) {
+func CreateProxyLink(r *http.Request, ctx *context.RequestContext, link string) (string, error) {
+	if !ctx.IsProxyAuthorized || ctx.StoreAuthToken != config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(ctx.Store.GetName())) {
+		return link, nil
+	}
+
 	encryptedLink, err := core.Encrypt(ctx.ProxyAuthPassword, link)
 	if err != nil {
 		return "", err
@@ -87,14 +91,12 @@ func GenerateStremThruLink(r *http.Request, ctx *context.RequestContext, link st
 		return nil, err
 	}
 
-	if ctx.IsProxyAuthorized && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(ctx.Store.GetName())) {
-		proxyLink, err := createProxyLink(r, ctx, data.Link)
-		if err != nil {
-			return nil, err
-		}
-
-		data.Link = proxyLink
+	proxyLink, err := CreateProxyLink(r, ctx, data.Link)
+	if err != nil {
+		return nil, err
 	}
+
+	data.Link = proxyLink
 
 	return data, nil
 }

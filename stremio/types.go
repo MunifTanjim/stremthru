@@ -1,6 +1,9 @@
 package stremio
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type ResourceName string
 
@@ -27,6 +30,8 @@ type Resource struct {
 	IDPrefixes []string      `json:"idPrefixes,omitempty"`
 }
 
+type resource Resource
+
 type CatalogExtra struct {
 	Name         string   `json:"name"`
 	IsRequired   bool     `json:"isRequired,omitempty"`
@@ -46,6 +51,21 @@ type BehaviorHints struct {
 	P2P                   bool `json:"p2p,omitempty"`
 	Configurable          bool `json:"configurable,omitempty"`
 	ConfigurationRequired bool `json:"configurationRequired,omitempty"`
+}
+
+func (r *Resource) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err == nil {
+		r.Name = ResourceName(name)
+		r.Types = []ContentType{}
+		return nil
+	}
+	rsrc := &resource{}
+	err := json.Unmarshal(data, rsrc)
+	r.Name = rsrc.Name
+	r.Types = rsrc.Types
+	r.IDPrefixes = rsrc.IDPrefixes
+	return err
 }
 
 type Manifest struct {
