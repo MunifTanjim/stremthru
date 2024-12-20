@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	"github.com/MunifTanjim/stremthru/internal/stremio/store"
 	"github.com/MunifTanjim/stremthru/internal/stremio/wrap"
 )
@@ -14,5 +15,8 @@ func AddStremioEndpoints(mux *http.ServeMux) {
 	}
 	if config.StremioAddon.IsEnabled("wrap") {
 		stremio_wrap.AddStremioWrapEndpoints(mux)
+	}
+	if config.StremioAddon.IsEnabled("sidekick") {
+		stremio_sidekick.AddStremioSidekickEndpoints(mux)
 	}
 }

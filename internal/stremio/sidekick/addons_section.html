@@ -1,0 +1,57 @@
+<section id="addons_section">
+
+<header class="flex-row justify-space-between">
+  <div>
+  </div>
+  <div>
+    <button id="load_addons" hx-get="addons" hx-target="#addons_section">
+      {{if eq (len .Addons) 0}}Load{{else}}Refresh{{end}}
+    </button>
+  </div>
+</header>
+
+<div>
+  {{range $idx, $addon := .Addons}}
+  <article>
+    <h3>
+      {{.Manifest.Name}}
+      <small>
+        <sup>v{{.Manifest.Version}}</sup>
+      </small>
+    </h3>
+
+    <div role="group">
+      <button
+        {{if eq $idx 0}}disabled{{end}}
+        hx-post="addons/{{.TransportUrl | url_path_escape}}/move/top"
+        hx-target="#addons_section"
+      >
+        Top
+      </button>
+      <button
+        {{if eq $idx 0}}disabled{{end}}
+        hx-post="addons/{{.TransportUrl | url_path_escape}}/move/up"
+        hx-target="#addons_section"
+      >
+        Up
+      </button>
+      <button
+        {{if eq $idx $.LastAddonIndex}}disabled{{end}}
+        hx-post="addons/{{.TransportUrl | url_path_escape}}/move/down"
+        hx-target="#addons_section"
+      >
+        Down
+      </button>
+      <button
+        {{if eq $idx $.LastAddonIndex}}disabled{{end}}
+        hx-post="addons/{{.TransportUrl | url_path_escape}}/move/bottom"
+        hx-target="#addons_section"
+      >
+        Bottom
+      </button>
+    </div>
+  </article>
+  {{end}}
+</div>
+
+</section>

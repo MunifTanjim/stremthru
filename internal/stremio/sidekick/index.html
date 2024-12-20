@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%2210 0 100 100%22><text y=%22.90em%22 font-size=%2290%22>✨</text></svg>"></link>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <script
+      src="https://unpkg.com/htmx.org@2.0.4"
+      integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+      crossorigin="anonymous"
+    ></script>
+    <title>{{.Title}}</title>
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 48px;
+      }
+
+      section > header {
+        margin-bottom: 24px;
+      }
+
+      .flex-row {
+        display: flex;
+        flex-direction: row;
+      }
+      .justify-space-between {
+        justify-content: space-between;
+      }
+      .align-center {
+        align-items: center;
+      }
+
+      #account_section p {
+        margin-bottom: 0;
+      }
+    </style>
+  </head>
+  <body class="container">
+    <header>
+      <h1>
+        {{.Title}}
+        <small>
+          <sup>v{{.Version}}</sup>
+        </small>
+      </h1>
+    </header>
+    <main>
+      {{if .IsAuthed}}
+      <section id="account_section">
+        <div class="flex-row align-center justify-space-between">
+          <div>
+            <p>Welcome, <em>{{.Email}}</em>!</p>
+          </div>
+          <div>
+            <button hx-post="logout" hx-target="body">Logout</button>
+          </div>
+        </div>
+      </section>
+
+      <details open>
+        <summary role="button" class="secondary">
+          Addons
+        </summary>
+        {{template "addons_section.html" .}}
+      </details>
+      {{else}}
+        <form id="login" action="login" method="post" hx-boost="true">
+          <fieldset role="group">
+            <input 
+              name="email"
+              type="email"
+              placeholder="Email"
+              aria-label="Email"
+              autocomplete="email"
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              aria-label="Password"
+              autocomplete="current-password"
+            />
+            <input type="submit" value="Log In" />
+          </fieldset>
+        </form>
+      {{end}}
+    </main>
+
+    <script>
+      htmx.on("htmx:beforeRequest", function(evt) {
+        if (evt.detail.elt.tagName === "BUTTON") {
+          evt.detail.elt.ariaBusy = true;
+        }
+      });
+      htmx.on("htmx:afterRequest", function(evt) {
+        if (evt.detail.elt.tagName === "BUTTON") {
+          evt.detail.elt.ariaBusy = false;
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -69,6 +69,12 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 			URL:  "/stremio/wrap",
 		})
 	}
+	if config.StremioAddon.IsEnabled("sidekick") {
+		td.Addons = append(td.Addons, rootTemplateDataAddon{
+			Name: "Sidekick",
+			URL:  "/stremio/sidekick",
+		})
+	}
 
 	buf, err := ExecuteTemplate(td)
 	if err != nil {
