@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/MunifTanjim/stremthru/compare/0.13.1...0.14.0) (2024-12-20)
+
+
+### Features
+
+* **stremio/sidekick:** initial addon implementation ([1c88b4f](https://github.com/MunifTanjim/stremthru/commit/1c88b4fbf3b6cfadbb8d12a0963eda807c404d21))
+* **stremio/sidekick:** support disabling addon ([e0ea92d](https://github.com/MunifTanjim/stremthru/commit/e0ea92d63cb74c4d475504d2d8ea3f662bd5b205))
+
+
+### Bug Fixes
+
+* **stremio:** use string body for addon client error ([87c764b](https://github.com/MunifTanjim/stremthru/commit/87c764bf847e6b60591058681c9e00c78a0d5f96))
+
 ## [0.13.1](https://github.com/MunifTanjim/stremthru/compare/0.13.0...0.13.1) (2024-12-19)
 
 
