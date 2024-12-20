@@ -54,8 +54,8 @@ func NewClient(conf *ClientConfig) *Client {
 type Ctx = request.Ctx
 
 type ResponseError struct {
-	Body       any `json:"body"`
-	StatusCode int `json:"status_code"`
+	Body       string `json:"body"`
+	StatusCode int    `json:"status_code"`
 }
 
 func (e *ResponseError) Error() string {
@@ -77,7 +77,7 @@ func processResponseBody(res *http.Response, err error, v any) error {
 
 	if res.StatusCode >= 400 {
 		return &ResponseError{
-			Body:       body,
+			Body:       string(body),
 			StatusCode: res.StatusCode,
 		}
 	}
