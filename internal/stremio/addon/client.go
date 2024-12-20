@@ -22,23 +22,23 @@ var DefaultHTTPClient = func() *http.Client {
 	}
 }()
 
-type APIClientConfig struct {
+type ClientConfig struct {
 	HTTPClient *http.Client
 }
 
-type APIClient struct {
+type Client struct {
 	HTTPClient *http.Client
 
 	reqQuery  func(query *url.Values, params request.Context)
 	reqHeader func(query *http.Header, params request.Context)
 }
 
-func NewAPIClient(conf *APIClientConfig) *APIClient {
+func NewClient(conf *ClientConfig) *Client {
 	if conf.HTTPClient == nil {
 		conf.HTTPClient = DefaultHTTPClient
 	}
 
-	c := &APIClient{}
+	c := &Client{}
 
 	c.HTTPClient = conf.HTTPClient
 
@@ -52,10 +52,6 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 }
 
 type Ctx = request.Ctx
-
-type ResponseEnvelop interface {
-	GetError() error
-}
 
 type ResponseError struct {
 	Body       any `json:"body"`
@@ -89,7 +85,7 @@ func processResponseBody(res *http.Response, err error, v any) error {
 	return core.UnmarshalJSON(res.StatusCode, body, v)
 }
 
-func (c APIClient) Request(method string, url *url.URL, params request.Context, v any) (*http.Response, error) {
+func (c Client) Request(method string, url *url.URL, params request.Context, v any) (*http.Response, error) {
 	if params == nil {
 		params = &Ctx{}
 	}
@@ -122,7 +118,7 @@ type GetManifestParams struct {
 	BaseURL *url.URL
 }
 
-func (c APIClient) GetManifest(params *GetManifestParams) (request.APIResponse[stremio.Manifest], error) {
+func (c Client) GetManifest(params *GetManifestParams) (request.APIResponse[stremio.Manifest], error) {
 	response := &stremio.Manifest{}
 	res, err := c.Request("GET", params.BaseURL.JoinPath("manifest.json"), params, response)
 	return request.NewAPIResponse(res, *response), err
@@ -136,7 +132,7 @@ type FetchStreamParams struct {
 	Extra   string
 }
 
-func (c APIClient) FetchStream(params *FetchStreamParams) (request.APIResponse[stremio.StreamHandlerResponse], error) {
+func (c Client) FetchStream(params *FetchStreamParams) (request.APIResponse[stremio.StreamHandlerResponse], error) {
 	response := &stremio.StreamHandlerResponse{}
 	path := "stream/" + params.Type + "/" + params.Id
 	if params.Extra != "" {
@@ -155,7 +151,7 @@ type ProxyResourceParams struct {
 	Extra    string
 }
 
-func (c APIClient) ProxyResource(w http.ResponseWriter, r *http.Request, params *ProxyResourceParams) {
+func (c Client) ProxyResource(w http.ResponseWriter, r *http.Request, params *ProxyResourceParams) {
 	path := params.Resource + "/" + params.Type + "/" + params.Id
 	if params.Extra != "" {
 		path = path + "/" + params.Extra

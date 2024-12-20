@@ -15,8 +15,8 @@ import (
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
-var c = func() *stremio_addon.APIClient {
-	return stremio_addon.NewAPIClient(&stremio_addon.APIClientConfig{})
+var c = func() *stremio_addon.Client {
+	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
 }()
 
 type UserData struct {
