@@ -1,7 +1,21 @@
+<style>
+#addons_list:not([data-operation="move"]) #addon_operation_move {
+  display: none;
+}
+#addons_list:not([data-operation="toggle"]) #addon_operation_toggle {
+  display: none;
+}
+</style>
+
 <section id="addons_section">
 
 <header class="flex-row justify-space-between">
   <div>
+    <select name="addon_operation" aria-label="Addon Operation" required onchange="onAddonOperationChange(this)">
+      <option disabled value="">Operation</option>
+      <option {{if eq .AddonOperation "move"}}selected{{end}} value="move">Move</option>
+      <option {{if eq .AddonOperation "toggle"}}selected{{end}} value="toggle">Toggle</option>
+    </select>
   </div>
   <div>
     <button id="load_addons" hx-get="addons" hx-target="#addons_section">
@@ -10,7 +24,7 @@
   </div>
 </header>
 
-<div>
+<div id="addons_list" data-operation="{{.AddonOperation}}">
   {{range $idx, $addon := .Addons}}
   <article>
     <h3>
@@ -20,7 +34,7 @@
       </small>
     </h3>
 
-    <div role="group">
+    <div id="addon_operation_move" role="group">
       <button
         {{if eq $idx 0}}disabled{{end}}
         hx-post="addons/{{.TransportUrl | url_path_escape}}/move/top"
@@ -50,8 +64,29 @@
         Bottom
       </button>
     </div>
+    <div id="addon_operation_toggle" role="group">
+      <button
+        hx-post="addons/{{.TransportUrl | url_path_escape}}/toggle"
+        hx-target="#addons_section"
+        {{if .Flags.Protected}}disabled{{end}}
+      >
+        {{if (has_prefix .Manifest.ID "st:disabled:")}}Enable{{else}}Disable{{end}}
+      </button>
+    </div>
   </article>
   {{end}}
 </div>
 
 </section>
+
+<script>
+function onAddonOperationChange(el) {
+  const operation = el.value;
+
+  document.querySelector("#addons_list").dataset.operation = operation;
+
+  const url = new URL(window.location.href)
+  url.searchParams.set("addon_operation", operation);
+  window.history.replaceState(null, "", url.href);
+}
+</script>

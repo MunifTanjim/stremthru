@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/stremio/disabled"
 	"github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	"github.com/MunifTanjim/stremthru/internal/stremio/store"
 	"github.com/MunifTanjim/stremthru/internal/stremio/wrap"
@@ -18,5 +19,6 @@ func AddStremioEndpoints(mux *http.ServeMux) {
 	}
 	if config.StremioAddon.IsEnabled("sidekick") {
 		stremio_sidekick.AddStremioSidekickEndpoints(mux)
+		stremio_disabled.AddStremioDisabledEndpoints(mux)
 	}
 }

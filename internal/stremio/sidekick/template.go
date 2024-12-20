@@ -5,6 +5,7 @@ import (
 	"embed"
 	"html/template"
 	"net/url"
+	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/api"
@@ -19,23 +20,30 @@ type TemplateData struct {
 	IsAuthed       bool
 	Email          string
 	Addons         []stremio_api.Addon
+	AddonOperation string
 	LastAddonIndex int
 }
 
 type TemplateExecutor func(data *TemplateData, name string) (bytes.Buffer, error)
 
-var ExecuteTemplate = func() TemplateExecutor {
-	funcMap := template.FuncMap{
-		"url_path_escape": func(value string) string {
-			return url.PathEscape(value)
-		},
-	}
-	tmpl := template.Must(template.New("stremio/sidekick").Funcs(funcMap).ParseFS(templateFs, "*.html"))
+var funcMap = template.FuncMap{
+	"url_path_escape": func(value string) string {
+		return url.PathEscape(value)
+	},
+	"has_prefix": func(value, prefix string) bool {
+		return strings.HasPrefix(value, prefix)
+	},
+}
 
+var ExecuteTemplate = func() TemplateExecutor {
+	tmpl := template.Must(template.New("stremio/sidekick").Funcs(funcMap).ParseFS(templateFs, "*.html"))
 	return func(data *TemplateData, name string) (bytes.Buffer, error) {
 		data.Version = config.Version
 		if data.Addons == nil {
 			data.Addons = []stremio_api.Addon{}
+		}
+		if data.AddonOperation == "" {
+			data.AddonOperation = "move"
 		}
 		data.LastAddonIndex = len(data.Addons) - 1
 		var buf bytes.Buffer
