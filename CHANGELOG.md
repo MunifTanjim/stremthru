@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.1](https://github.com/MunifTanjim/stremthru/compare/0.15.0...0.15.1) (2024-12-21)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** mark as wrapped only for proxy url ([d36a696](https://github.com/MunifTanjim/stremthru/commit/d36a69658cfd8f2637189960440bd0f0f015731a))
+* **stremio:** add missing types for manifest ([0c25101](https://github.com/MunifTanjim/stremthru/commit/0c251011a628ba6385855f4ff5d992ab7559df80))
+
 ## [0.15.0](https://github.com/MunifTanjim/stremthru/compare/0.14.0...0.15.0) (2024-12-21)
 
 
