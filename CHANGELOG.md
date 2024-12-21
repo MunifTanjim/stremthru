@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.0](https://github.com/MunifTanjim/stremthru/compare/0.14.0...0.15.0) (2024-12-21)
+
+
+### Features
+
+* **stremio/sidekick:** improve button ux ([fc2928e](https://github.com/MunifTanjim/stremthru/commit/fc2928efce1283182ba23216b9799b450c66e434))
+* **stremio/sidekick:** update login ui ([1176f5a](https://github.com/MunifTanjim/stremthru/commit/1176f5ade98fe6642ac3a8407485248fb973cec9))
+* **stremio:** add description for addons ([e7f5758](https://github.com/MunifTanjim/stremthru/commit/e7f5758972b0f50f415dde928d9b81104025a02b))
+
 ## [0.14.0](https://github.com/MunifTanjim/stremthru/compare/0.13.1...0.14.0) (2024-12-20)
 
 
