@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.16.0](https://github.com/MunifTanjim/stremthru/compare/0.15.1...0.16.0) (2024-12-23)
+
+
+### Features
+
+* **request:** support passing query params ([f634ac7](https://github.com/MunifTanjim/stremthru/commit/f634ac7861fdef1a71eb8185760c413737482d24))
+* **store/offcloud:** add initial implementation ([a7156f5](https://github.com/MunifTanjim/stremthru/commit/a7156f5d05195727814ae6a745a8929885504380))
+
+
+### Bug Fixes
+
+* **stremio/store:** allow trial subscription ([329781f](https://github.com/MunifTanjim/stremthru/commit/329781fb493b106f413f301c1ec2f4759312c33c))
+
 ## [0.15.1](https://github.com/MunifTanjim/stremthru/compare/0.15.0...0.15.1) (2024-12-21)
 
 
