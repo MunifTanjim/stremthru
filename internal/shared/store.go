@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
 	"github.com/MunifTanjim/stremthru/store/debridlink"
+	"github.com/MunifTanjim/stremthru/store/offcloud"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/torbox"
@@ -20,6 +21,7 @@ import (
 var adStore = alldebrid.NewStore()
 var dlStore = debridlink.NewStoreClient()
 var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{})
+var ocStore = offcloud.NewStoreClient()
 var rdStore = realdebrid.NewStoreClient()
 var tbStore = torbox.NewStoreClient()
 
@@ -29,6 +31,8 @@ func GetStore(name string) store.Store {
 		return adStore
 	case store.StoreNameDebridLink:
 		return dlStore
+	case store.StoreNameOffcloud:
+		return ocStore
 	case store.StoreNamePremiumize:
 		return pmStore
 	case store.StoreNameRealDebrid:

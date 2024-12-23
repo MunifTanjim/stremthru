@@ -14,6 +14,7 @@ type StoreName string
 const (
 	StoreNameAlldebrid  StoreName = "alldebrid"
 	StoreNameDebridLink StoreName = "debridlink"
+	StoreNameOffcloud   StoreName = "offcloud"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
 	StoreNameTorBox     StoreName = "torbox"
@@ -24,6 +25,7 @@ type StoreCode string
 const (
 	StoreCodeAllDebrid  StoreCode = "ad"
 	StoreCodeDebridLink StoreCode = "dl"
+	StoreCodeOffcloud   StoreCode = "oc"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
 	StoreCodeTorBox     StoreCode = "tb"
@@ -32,6 +34,7 @@ const (
 var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameAlldebrid:  StoreCodeAllDebrid,
 	StoreNameDebridLink: StoreCodeDebridLink,
+	StoreNameOffcloud:   StoreCodeOffcloud,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
 	StoreNameTorBox:     StoreCodeTorBox,
@@ -42,7 +45,7 @@ func (sn StoreName) Code() StoreCode {
 }
 
 func (sn StoreName) Validate() (StoreName, *core.StoreError) {
-	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNamePremiumize || sn == StoreNameRealDebrid || sn == StoreNameTorBox {
+	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNameOffcloud || sn == StoreNamePremiumize || sn == StoreNameRealDebrid || sn == StoreNameTorBox {
 		return sn, nil
 	}
 	return sn, ErrorInvalidStoreName(string(sn))
