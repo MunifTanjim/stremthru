@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/MunifTanjim/stremthru/compare/0.16.0...0.17.0) (2024-12-24)
+
+
+### Features
+
+* **store:** include filename in generated link ([85347ac](https://github.com/MunifTanjim/stremthru/commit/85347acb1f31fe742f124110303c2391a89244d8))
+* **stremio/sidekick:** improve login ux ([c4e3e34](https://github.com/MunifTanjim/stremthru/commit/c4e3e34da9d45ef62f892656c176f1f3947730fd))
+* **stremio/store:** update token field description ([2591e2f](https://github.com/MunifTanjim/stremthru/commit/2591e2fbb2ee31197448cab2d43a43fc6b38ed47))
+
+
+### Bug Fixes
+
+* core.ParseBasicAuth .Token value ([1cd1240](https://github.com/MunifTanjim/stremthru/commit/1cd124069900a80e82e6d1969c8dfd8c3064179a))
+* **stremio/store:** check allowed method correctly ([3a97a23](https://github.com/MunifTanjim/stremthru/commit/3a97a231aa93cc16af6005031acd9c7344efa3f1))
+
 ## [0.16.0](https://github.com/MunifTanjim/stremthru/compare/0.15.1...0.16.0) (2024-12-23)
 
 
