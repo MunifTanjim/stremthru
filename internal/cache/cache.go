@@ -9,6 +9,7 @@ import (
 type Cache[V any] interface {
 	GetName() string
 	Add(key string, value V) error
+	AddWithLifetime(key string, value V, lifetime time.Duration) error
 	Get(key string, value *V) bool
 	Remove(key string)
 }

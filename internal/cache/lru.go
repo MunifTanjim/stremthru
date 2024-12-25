@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/elastic/go-freelru"
 	"github.com/zeebo/xxh3"
 )
@@ -16,6 +18,11 @@ func (cache *LRUCache[V]) GetName() string {
 
 func (cache *LRUCache[V]) Add(key string, value V) error {
 	cache.c.Add(key, value)
+	return nil
+}
+
+func (cache *LRUCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	cache.c.AddWithLifetime(key, value, lifetime)
 	return nil
 }
 

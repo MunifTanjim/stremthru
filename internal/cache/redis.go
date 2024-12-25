@@ -103,6 +103,15 @@ func (cache *RedisCache[V]) Add(key string, value V) error {
 	return err
 }
 
+func (cache *RedisCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	err := cache.c.Set(&rc.Item{
+		Key:   cache.name + ":" + key,
+		Value: value,
+		TTL:   lifetime,
+	})
+	return err
+}
+
 func (cache *RedisCache[V]) Get(key string, value *V) bool {
 	err := cache.c.Get(context.Background(), cache.name+":"+key, value)
 	if err != nil {
