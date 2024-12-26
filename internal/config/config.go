@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 )
@@ -103,6 +104,7 @@ type Config struct {
 	StremioAddon      StremioAddonConfig
 	Version           string
 	LandingPage       string
+	ServerStartTime   time.Time
 }
 
 func parseUri(uri string) (parsedUrl, parsedToken string) {
@@ -181,6 +183,7 @@ var config = func() Config {
 		StremioAddon:      stremioAddon,
 		Version:           "0.16.0", // x-release-please-version
 		LandingPage:       getEnv("STREMTHRU_LANDING_PAGE", "{}"),
+		ServerStartTime:   time.Now(),
 	}
 }()
 
@@ -197,3 +200,4 @@ var DatabaseURI = config.DatabaseURI
 var StremioAddon = config.StremioAddon
 var Version = config.Version
 var LandingPage = config.LandingPage
+var ServerStartTime = config.ServerStartTime

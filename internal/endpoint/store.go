@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -325,6 +326,19 @@ func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 	shared.ProxyResponse(w, r, link)
 }
 
+func handleStatic(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) && !shared.IsMethod(r, http.MethodHead) {
+		shared.ErrorMethodNotAllowed(r).Send(w)
+		return
+	}
+
+	video := r.PathValue("video")
+
+	if err := store_video.Serve(video, w, r); err != nil {
+		SendError(w, err)
+	}
+}
+
 func AddStoreEndpoints(mux *http.ServeMux) {
 	withContext := Middleware(ProxyAuthContext)
 	withStore := Middleware(ProxyAuthContext, StoreContext, StoreRequired)
@@ -336,4 +350,6 @@ func AddStoreEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/v0/store/link/generate", withStore(handleStoreLinkGenerate))
 	mux.HandleFunc("/v0/store/link/access/{token}", withContext(handleStoreLinkAccess))
 	mux.HandleFunc("/v0/store/link/access/{token}/{filename}", withContext(handleStoreLinkAccess))
+
+	mux.HandleFunc("/v0/store/_/static/{video}", handleStatic)
 }
