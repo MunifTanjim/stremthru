@@ -4,30 +4,35 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
+	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
-var c = func() *stremio_addon.Client {
+var addon = func() *stremio_addon.Client {
 	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
 }()
 
 type UserData struct {
 	ManifestURL string   `json:"manifest_url"`
-	AuthToken   string   `json:"auth_token"`
+	StoreName   string   `json:"store"`
+	StoreToken  string   `json:"token"`
 	encoded     string   `json:"-"`
 	baseUrl     *url.URL `json:"-"`
 }
 
 func (ud UserData) HasRequiredValues() bool {
-	return ud.ManifestURL != "" && ud.AuthToken != ""
+	return ud.ManifestURL != "" && ud.StoreToken != ""
 }
 
 func (ud UserData) GetEncoded() (string, error) {
@@ -44,7 +49,8 @@ func (ud UserData) GetEncoded() (string, error) {
 
 type userDataError struct {
 	manifestUrl string
-	authToken   string
+	store       string
+	token       string
 }
 
 func (uderr *userDataError) Error() string {
@@ -58,9 +64,16 @@ func (uderr *userDataError) Error() string {
 	if hasSome {
 		str.WriteString(", ")
 	}
-	if uderr.authToken != "" {
-		str.WriteString("auth_token: ")
-		str.WriteString(uderr.authToken)
+	if uderr.store != "" {
+		str.WriteString("store: ")
+		str.WriteString(uderr.store)
+	}
+	if hasSome {
+		str.WriteString(", ")
+	}
+	if uderr.token != "" {
+		str.WriteString("token: ")
+		str.WriteString(uderr.token)
 	}
 	return str.String()
 }
@@ -68,28 +81,35 @@ func (uderr *userDataError) Error() string {
 func (ud UserData) GetRequestContext(r *http.Request) (*context.RequestContext, error) {
 	ctx := &context.RequestContext{}
 
-	authToken := ud.AuthToken
-	user, err := core.ParseBasicAuth(authToken)
-	if err != nil {
-		return ctx, &userDataError{authToken: err.Error()}
+	if ud.baseUrl == nil {
+		return ctx, &userDataError{manifestUrl: "Invalid Manifest URL"}
 	}
-	password := config.ProxyAuthPassword.GetPassword(user.Username)
-	if password != "" && password == user.Password {
-		ctx.IsProxyAuthorized = true
-		ctx.ProxyAuthUser = user.Username
-		ctx.ProxyAuthPassword = user.Password
 
-		storeName := config.StoreAuthToken.GetPreferredStore(ctx.ProxyAuthUser)
+	storeName := ud.StoreName
+	storeToken := ud.StoreToken
+	if storeName == "" {
+		auth, err := core.ParseBasicAuth(storeToken)
+		if err != nil {
+			return ctx, &userDataError{token: err.Error()}
+		}
+		password := config.ProxyAuthPassword.GetPassword(auth.Username)
+		if password != "" && password == auth.Password {
+			ctx.IsProxyAuthorized = true
+			ctx.ProxyAuthUser = auth.Username
+			ctx.ProxyAuthPassword = auth.Password
+
+			storeName = config.StoreAuthToken.GetPreferredStore(ctx.ProxyAuthUser)
+			storeToken = config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName)
+		}
+	}
+
+	if storeToken != "" {
 		ctx.Store = shared.GetStore(storeName)
-		ctx.StoreAuthToken = config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName)
+		ctx.StoreAuthToken = storeToken
 	}
 
 	if !ctx.IsProxyAuthorized {
-		return ctx, &userDataError{authToken: "Invalid Auth Token"}
-	}
-
-	if ud.baseUrl == nil {
-		return ctx, &userDataError{manifestUrl: "Invalid Manifest URL"}
+		ctx.ClientIP = core.GetClientIP(r)
 	}
 
 	return ctx, nil
@@ -115,7 +135,8 @@ func getUserData(r *http.Request) (*UserData, error) {
 
 	if IsMethod(r, http.MethodPost) {
 		data.ManifestURL = r.FormValue("manifest_url")
-		data.AuthToken = r.FormValue("auth_token")
+		data.StoreName = r.FormValue("store")
+		data.StoreToken = r.FormValue("token")
 		encoded, err := data.GetEncoded()
 		if err != nil {
 			return nil, err
@@ -149,7 +170,7 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := c.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl})
+	res, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl})
 	if err != nil {
 		SendError(w, err)
 		return
@@ -174,14 +195,31 @@ func getTemplateData() *configure.TemplateData {
 				Required:    true,
 			},
 			configure.Config{
-				Key:         "auth_token",
+				Key:     "store",
+				Type:    "select",
+				Default: "",
+				Title:   "Store Name",
+				Options: []configure.ConfigOption{
+					configure.ConfigOption{Value: "", Label: "StremThru"},
+					configure.ConfigOption{Value: "alldebrid", Label: "AllDebrid"},
+					configure.ConfigOption{Value: "debridlink", Label: "DebridLink"},
+					configure.ConfigOption{Value: "offcloud", Label: "Offcloud"},
+					configure.ConfigOption{Value: "premiumize", Label: "Premiumize"},
+					configure.ConfigOption{Value: "realdebrid", Label: "RealDebrid"},
+					configure.ConfigOption{Value: "torbox", Label: "TorBox"},
+				},
+				Required: false,
+			},
+			configure.Config{
+				Key:         "token",
 				Type:        "password",
 				Default:     "",
-				Title:       "StremThru Token",
-				Description: `StremThru Basic Auth Token (base64) from <a href="https://github.com/MunifTanjim/stremthru?tab=readme-ov-file#configuration" target="_blank"><code>STREMTHRU_PROXY_AUTH</code></a>`,
+				Title:       "Store Token",
+				Description: "",
 				Required:    true,
 			},
 		},
+		Script: configure.GetScriptStoreTokenDescription("store", "token"),
 	}
 }
 
@@ -203,8 +241,10 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		switch conf.Key {
 		case "manifest_url":
 			conf.Default = ud.ManifestURL
-		case "auth_token":
-			conf.Default = ud.AuthToken
+		case "store":
+			conf.Default = ud.StoreName
+		case "token":
+			conf.Default = ud.StoreToken
 		}
 	}
 
@@ -225,34 +265,42 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var manifest_url_config *configure.Config
-	var auth_token_config *configure.Config
+	var store_config *configure.Config
+	var token_config *configure.Config
 	for i := range td.Configs {
 		conf := &td.Configs[i]
 		switch conf.Key {
 		case "manifest_url":
 			manifest_url_config = conf
-		case "auth_token":
-			auth_token_config = conf
+		case "store":
+			store_config = conf
+		case "token":
+			token_config = conf
 		}
 	}
 
-	_, err = ud.GetRequestContext(r)
+	ctx, err := ud.GetRequestContext(r)
 	if err != nil {
 		if uderr, ok := err.(*userDataError); ok {
-			if uderr.manifestUrl != "" {
-				manifest_url_config.Error = uderr.manifestUrl
-			}
-			if uderr.authToken != "" {
-				auth_token_config.Error = uderr.authToken
-			}
+			manifest_url_config.Error = uderr.manifestUrl
+			store_config.Error = uderr.store
+			token_config.Error = uderr.token
 		} else {
 			SendError(w, err)
 			return
 		}
 	}
 
+	if ctx.Store == nil {
+		if ud.StoreName == "" {
+			token_config.Error = "Invalid Token"
+		} else {
+			store_config.Error = "Invalid Store"
+		}
+	}
+
 	if manifest_url_config.Error == "" {
-		_, err := c.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl})
+		_, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl})
 		if err != nil {
 			manifest_url_config.Error = "Failed to fetch Manifest"
 		}
@@ -300,7 +348,7 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 	extra := r.PathValue("extra")
 
 	if resource == string(stremio.ResourceNameStream) {
-		res, err := c.FetchStream(&stremio_addon.FetchStreamParams{
+		res, err := addon.FetchStream(&stremio_addon.FetchStreamParams{
 			BaseURL: ud.baseUrl,
 			Type:    contentType,
 			Id:      id,
@@ -317,9 +365,52 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		hashes := []string{}
+		magnetByHash := map[string]core.MagnetLink{}
 		for i := range res.Data.Streams {
 			stream := &res.Data.Streams[i]
-			if stream.URL != "" {
+			if stream.URL == "" && stream.InfoHash != "" {
+				magnet, err := core.ParseMagnetLink(stream.InfoHash)
+				if err != nil {
+					continue
+				}
+				hashes = append(hashes, magnet.Hash)
+				magnetByHash[magnet.Hash] = magnet
+			}
+		}
+
+		isCachedByHash := map[string]bool{}
+		cmParams := &store.CheckMagnetParams{Magnets: hashes}
+		cmParams.APIKey = ctx.StoreAuthToken
+		cmRes, err := ctx.Store.CheckMagnet(cmParams)
+		if err != nil {
+			SendError(w, err)
+			return
+		}
+		for _, item := range cmRes.Items {
+			isCachedByHash[item.Hash] = item.Status == store.MagnetStatusCached
+		}
+
+		storeNamePrefix := "[" + strings.ToUpper(string(ctx.Store.GetName().Code())) + "] "
+		for i := range res.Data.Streams {
+			stream := &res.Data.Streams[i]
+			if stream.URL == "" && stream.InfoHash != "" {
+				magnet, ok := magnetByHash[strings.ToLower(stream.InfoHash)]
+				if !ok {
+					continue
+				}
+				stream.Name = storeNamePrefix + stream.Name
+				if isCached, ok := isCachedByHash[magnet.Hash]; ok && isCached {
+					stream.Name = "⚡ " + stream.Name
+				}
+				eud, err := ud.GetEncoded()
+				if err != nil {
+					continue
+				}
+				stream.URL = shared.ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/_/strem/" + magnet.Hash + "/" + strconv.Itoa(stream.FileIndex) + "/" + stream.BehaviorHints.Filename).String()
+				stream.InfoHash = ""
+				stream.FileIndex = 0
+			} else if stream.URL != "" {
 				if url, err := shared.CreateProxyLink(r, ctx, stream.URL); err == nil && url != stream.URL {
 					stream.URL = url
 					stream.Name = "✨ " + stream.Name
@@ -331,13 +422,148 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
 		BaseURL:  ud.baseUrl,
 		Resource: resource,
 		Type:     contentType,
 		Id:       id,
 		Extra:    extra,
 	})
+}
+
+func waitForMagnetStatus(ctx *context.RequestContext, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
+	retry := 0
+	for m.Status != status && retry < maxRetry {
+		gmParams := &store.GetMagnetParams{Id: m.Id}
+		gmParams.APIKey = ctx.StoreAuthToken
+		magnet, err := ctx.Store.GetMagnet(gmParams)
+		if err != nil {
+			return m, err
+		}
+		m = magnet
+		time.Sleep(retryInterval)
+		retry++
+	}
+	if m.Status != status {
+		error := core.NewStoreError("torrent failed to reach status: " + string(status))
+		error.StoreName = string(ctx.Store.GetName())
+		return m, error
+	}
+	return m, nil
+}
+
+var stremLinkCache = cache.NewCache[string](&cache.CacheConfig{
+	Name:     "stremio:wrap:streamLink",
+	Lifetime: 3 * time.Hour,
+})
+
+func redirectToStaticVideo(w http.ResponseWriter, r *http.Request, cacheKey string, videoName string) {
+	link := shared.ExtractRequestBaseURL(r).JoinPath("/v0/store/_/static/" + videoName + ".mp4").String()
+	stremLinkCache.AddWithLifetime(cacheKey, link, 1*time.Minute)
+	http.Redirect(w, r, link, http.StatusFound)
+}
+
+func handleStrem(w http.ResponseWriter, r *http.Request) {
+	if !IsMethod(r, http.MethodGet) && !IsMethod(r, http.MethodHead) {
+		shared.ErrorMethodNotAllowed(r).Send(w)
+		return
+	}
+
+	magnetHash := r.PathValue("magnetHash")
+	fileName := r.PathValue("fileName")
+	fileIdx := -1
+	if idx, err := strconv.Atoi(r.PathValue("fileIdx")); err == nil {
+		fileIdx = idx
+	}
+
+	ud, err := getUserData(r)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+
+	ctx, err := ud.GetRequestContext(r)
+	if err != nil || ctx.Store == nil {
+		shared.ErrorBadRequest(r, "").Send(w)
+		return
+	}
+
+	stremLink := ""
+
+	cacheKey := strings.Join([]string{ctx.ClientIP, string(ctx.Store.GetName()), ctx.StoreAuthToken, magnetHash, strconv.Itoa(fileIdx), fileName}, ":")
+	if stremLinkCache.Get(cacheKey, &stremLink) {
+		http.Redirect(w, r, stremLink, http.StatusFound)
+		return
+	}
+
+	amParams := &store.AddMagnetParams{
+		Magnet:   magnetHash,
+		ClientIP: ctx.ClientIP,
+	}
+	amParams.APIKey = ctx.StoreAuthToken
+	amRes, err := ctx.Store.AddMagnet(amParams)
+	if err != nil {
+		redirectToStaticVideo(w, r, cacheKey, "download_failed")
+		return
+	}
+
+	magnet := &store.GetMagnetData{
+		Id:      amRes.Id,
+		Name:    amRes.Name,
+		Hash:    amRes.Hash,
+		Status:  amRes.Status,
+		Files:   amRes.Files,
+		AddedAt: amRes.AddedAt,
+	}
+
+	magnet, err = waitForMagnetStatus(ctx, magnet, store.MagnetStatusDownloaded, 12, 5*time.Second)
+	if err != nil {
+		if magnet.Status == store.MagnetStatusQueued || magnet.Status == store.MagnetStatusDownloading || magnet.Status == store.MagnetStatusProcessing {
+			redirectToStaticVideo(w, r, cacheKey, "downloading")
+			return
+		}
+		if magnet.Status == store.MagnetStatusFailed || magnet.Status == store.MagnetStatusInvalid || magnet.Status == store.MagnetStatusUnknown {
+			redirectToStaticVideo(w, r, cacheKey, "download_failed")
+			return
+		}
+		redirectToStaticVideo(w, r, cacheKey, "500")
+		return
+	}
+
+	link := ""
+	for i := range magnet.Files {
+		f := &magnet.Files[i]
+		if f.Name == fileName || (fileIdx != -1 && f.Idx == fileIdx) {
+			link = f.Link
+			break
+		}
+	}
+
+	if link == "" {
+		redirectToStaticVideo(w, r, cacheKey, "no_matching_file")
+		return
+	}
+
+	glParams := &store.GenerateLinkParams{
+		Link:     link,
+		ClientIP: ctx.ClientIP,
+	}
+	glParams.APIKey = ctx.StoreAuthToken
+	glRes, err := ctx.Store.GenerateLink(glParams)
+	if err != nil {
+		redirectToStaticVideo(w, r, cacheKey, "500")
+		return
+	}
+
+	glRes, err = shared.GenerateStremThruLink(r, ctx, glRes.Link)
+	if err != nil {
+		redirectToStaticVideo(w, r, cacheKey, "500")
+		return
+	}
+
+	stremLink = glRes.Link
+	stremLinkCache.Add(cacheKey, stremLink)
+	http.Redirect(w, r, stremLink, http.StatusFound)
 }
 
 func AddStremioWrapEndpoints(mux *http.ServeMux) {
@@ -352,4 +578,7 @@ func AddStremioWrapEndpoints(mux *http.ServeMux) {
 
 	mux.HandleFunc("/stremio/wrap/{userData}/{resource}/{contentType}/{id}", handleResource)
 	mux.HandleFunc("/stremio/wrap/{userData}/{resource}/{contentType}/{id}/{extra}", handleResource)
+
+	mux.HandleFunc("/stremio/wrap/{userData}/_/strem/{magnetHash}/{fileIdx}/{$}", handleStrem)
+	mux.HandleFunc("/stremio/wrap/{userData}/_/strem/{magnetHash}/{fileIdx}/{fileName}", handleStrem)
 }
