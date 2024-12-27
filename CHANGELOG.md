@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.18.0](https://github.com/MunifTanjim/stremthru/compare/0.17.0...0.18.0) (2024-12-27)
+
+
+### Features
+
+* **stremio/wrap:** add configure button for upstream addon ([618e1df](https://github.com/MunifTanjim/stremthru/commit/618e1df549906a8b40471e57a2f44f24c4ad5c3a))
+* **stremio/wrap:** forward client ip to upstream addon ([2ce883b](https://github.com/MunifTanjim/stremthru/commit/2ce883bba0a13178405b707bfe5b3cac13a6f0e4))
+* **stremio:** add manifest validity check ([b619f10](https://github.com/MunifTanjim/stremthru/commit/b619f10007b46f8ba018e9a6c4f8d4365f35f699))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** fix double header on successful login ([62801c9](https://github.com/MunifTanjim/stremthru/commit/62801c92ed161c60d5342de317ee09f63f56caff))
+
 ## [0.17.0](https://github.com/MunifTanjim/stremthru/compare/0.16.0...0.17.0) (2024-12-26)
 
 
