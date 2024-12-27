@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.0](https://github.com/MunifTanjim/stremthru/compare/0.18.0...0.19.0) (2024-12-27)
+
+
+### Features
+
+* **stremio/sidekick:** add configure button for addons ([74c375a](https://github.com/MunifTanjim/stremthru/commit/74c375adb10aed1f0678ea435a6c7bcb522a4339))
+* **stremio/sidekick:** support reloading addon ([0f5c4a3](https://github.com/MunifTanjim/stremthru/commit/0f5c4a343f65482c956c3cdcc771693ea08c2577))
+
 ## [0.18.0](https://github.com/MunifTanjim/stremthru/compare/0.17.0...0.18.0) (2024-12-27)
 
 
