@@ -37,6 +37,9 @@ func checkMagnet(ctx *context.RequestContext, magnets []string) (*store.CheckMag
 	params := &store.CheckMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnets = magnets
+	if ctx.ClientIP != "" {
+		params.ClientIP = ctx.ClientIP
+	}
 	data, err := ctx.Store.CheckMagnet(params)
 	if err == nil && data.Items == nil {
 		data.Items = []store.CheckMagnetDataItem{}

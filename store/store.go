@@ -100,7 +100,8 @@ const (
 
 type CheckMagnetParams struct {
 	Ctx
-	Magnets []string
+	Magnets  []string
+	ClientIP string
 }
 
 type CheckMagnetDataItem struct {

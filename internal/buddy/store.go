@@ -56,7 +56,7 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 	}
 }
 
-func CheckMagnet(s store.Store, hashes []string, storeToken string) (*store.CheckMagnetData, error) {
+func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp string) (*store.CheckMagnetData, error) {
 	data := &store.CheckMagnetData{
 		Items: []store.CheckMagnetDataItem{},
 	}
@@ -102,8 +102,9 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string) (*store.Chec
 
 	if config.HasBuddy {
 		params := &CheckMagnetCacheParams{
-			Store:  s.GetName(),
-			Hashes: staleOrMissingHashes,
+			Store:    s.GetName(),
+			Hashes:   staleOrMissingHashes,
+			ClientIP: clientIp,
 		}
 		res, err := Buddy.CheckMagnetCache(params)
 		if err != nil {

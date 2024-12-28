@@ -9,8 +9,9 @@ import (
 
 type CheckMagnetCacheParams struct {
 	Ctx
-	Store  store.StoreName
-	Hashes []string
+	Store    store.StoreName
+	Hashes   []string
+	ClientIP string
 }
 
 func (c APIClient) CheckMagnetCache(params *CheckMagnetCacheParams) (APIResponse[store.CheckMagnetData], error) {
@@ -19,6 +20,7 @@ func (c APIClient) CheckMagnetCache(params *CheckMagnetCacheParams) (APIResponse
 	}
 	params.Headers = &http.Header{
 		"X-StremThru-Store-Name": []string{string(params.Store)},
+		"X-StremThru-Client-IP":  []string{params.ClientIP},
 	}
 	response := &Response[store.CheckMagnetData]{}
 	res, err := c.Request("GET", "/v0/store/magnet-cache/check", params, response)
