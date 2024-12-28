@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.1](https://github.com/MunifTanjim/stremthru/compare/0.19.0...0.19.1) (2024-12-28)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** handle missing .behaviorHints ([808136f](https://github.com/MunifTanjim/stremthru/commit/808136fd0549925d3d7ff23774d8a8f8a1afc378))
+
 ## [0.19.0](https://github.com/MunifTanjim/stremthru/compare/0.18.0...0.19.0) (2024-12-27)
 
 
