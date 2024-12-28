@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.20.0](https://github.com/MunifTanjim/stremthru/compare/0.19.1...0.20.0) (2024-12-28)
+
+
+### Features
+
+* **buddy:** forward client ip ([dee549b](https://github.com/MunifTanjim/stremthru/commit/dee549b8970286ae24ccee56714227e7bc8ac60d))
+* **peer:** forward client ip ([13a555d](https://github.com/MunifTanjim/stremthru/commit/13a555d5874e589856ce6e248ee665817b72b288))
+* **stremio/wrap:** forward client ip ([e8c4a5d](https://github.com/MunifTanjim/stremthru/commit/e8c4a5dbc7956015cab80fff9f8c40f2589a42bb))
+
 ## [0.19.1](https://github.com/MunifTanjim/stremthru/compare/0.19.0...0.19.1) (2024-12-28)
 
 
