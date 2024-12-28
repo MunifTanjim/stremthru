@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/MunifTanjim/stremthru/compare/0.20.0...0.20.1) (2024-12-28)
+
+
+### Bug Fixes
+
+* **stremio:** marshal json correctly for Resource ([8e0a196](https://github.com/MunifTanjim/stremthru/commit/8e0a1964ebf4b680715e1ee977494a0a8c431cda))
+
 ## [0.20.0](https://github.com/MunifTanjim/stremthru/compare/0.19.1...0.20.0) (2024-12-28)
 
 
