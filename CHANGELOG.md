@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.21.0](https://github.com/MunifTanjim/stremthru/compare/0.20.1...0.21.0) (2024-12-29)
+
+
+### Features
+
+* **stremio/sidekick:** log ignored errors ([29bf96a](https://github.com/MunifTanjim/stremthru/commit/29bf96adfbe82dc4ae87af2af586d3b9d93585bd))
+* **stremio/store:** log ignored errors ([9d3f641](https://github.com/MunifTanjim/stremthru/commit/9d3f6419a40125851180364382837b00f1a93a89))
+* **stremio/wrap:** add logs for static video redirects ([2231568](https://github.com/MunifTanjim/stremthru/commit/2231568c1c24fdeb5d8974c6bad884187d9ebaa3))
+* **stremio/wrap:** log ignored errors ([1acbeac](https://github.com/MunifTanjim/stremthru/commit/1acbeac3eafa547dc61f195b369a4eff171ec595))
+
 ## [0.20.1](https://github.com/MunifTanjim/stremthru/compare/0.20.0...0.20.1) (2024-12-28)
 
 
