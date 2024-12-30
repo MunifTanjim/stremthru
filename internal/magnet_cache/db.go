@@ -21,6 +21,7 @@ type File struct {
 	Idx  int    `json:"i"`
 	Name string `json:"n"`
 	Size int    `json:"s"`
+	SId  string `json:"-"`
 }
 
 type Files []File
@@ -65,13 +66,13 @@ type MagnetCache struct {
 // If Buddy is available, refresh data more frequently.
 var cachedStaleTime = func() time.Duration {
 	if config.HasBuddy {
-		return 10 * time.Minute
+		return 1 * time.Hour
 	}
 	return 12 * time.Hour
 }()
 var uncachedStaleTime = func() time.Duration {
 	if config.HasBuddy {
-		return 5 * time.Minute
+		return 30 * time.Minute
 	}
 	return 1 * time.Hour
 }()
@@ -83,24 +84,39 @@ func (mc MagnetCache) IsStale() bool {
 	return mc.ModifiedAt.Before(time.Now().Add(-uncachedStaleTime))
 }
 
-func GetByHash(store store.StoreCode, hash string) (MagnetCache, error) {
-	row := db.QueryRow("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash = ?", store, hash)
-	mc := MagnetCache{}
-	err := row.Scan(&mc.Store, &mc.Hash, &mc.IsCached, &mc.ModifiedAt, &mc.Files)
-	return mc, err
-}
+func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCache, error) {
+	filesByHash, err := GetFilesByHashes(hashes)
+	if err != nil {
+		return nil, err
+	}
 
-func GetByHashes(store store.StoreCode, hashes []string) ([]MagnetCache, error) {
-	args := make([]interface{}, len(hashes)+1)
-	args[0] = store
+	args_len := len(hashes) + 1
+	if sid != "" {
+		args_len += 1
+	}
+	arg_idx := 0
+	args := make([]interface{}, args_len)
 
+	query := "SELECT store, hash, is_cached, modified_at, files FROM " + TableName
+	if sid != "" {
+		query += " LEFT JOIN " + FileTableName + " ON " + TableName + ".hash = " + FileTableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + FileTableName + ".sid IN (?, '*')) AND"
+		args[arg_idx] = sid
+		arg_idx += 1
+	} else {
+		query += " WHERE"
+	}
+
+	args[arg_idx] = store
+	arg_idx += 1
 	hashPlaceholders := make([]string, len(hashes))
 	for i, hash := range hashes {
 		hashPlaceholders[i] = "?"
-		args[i+1] = hash
+		args[arg_idx+i] = hash
 	}
 
-	rows, err := db.Query("SELECT store, hash, is_cached, modified_at, files FROM "+TableName+" WHERE store = ? AND hash IN ("+strings.Join(hashPlaceholders, ",")+")", args...)
+	query += " store = ? AND hash IN (" + strings.Join(hashPlaceholders, ",") + ")"
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +128,9 @@ func GetByHashes(store store.StoreCode, hashes []string) ([]MagnetCache, error) 
 		if err := rows.Scan(&smc.Store, &smc.Hash, &smc.IsCached, &smc.ModifiedAt, &smc.Files); err != nil {
 			return nil, err
 		}
+		if files, ok := filesByHash[smc.Hash]; ok && len(files) > 0 {
+			smc.Files = files
+		}
 		mcs = append(mcs, smc)
 	}
 
@@ -121,7 +140,7 @@ func GetByHashes(store store.StoreCode, hashes []string) ([]MagnetCache, error) 
 	return mcs, nil
 }
 
-func Touch(store store.StoreCode, hash string, files Files) error {
+func Touch(store store.StoreCode, hash string, files Files, sid string) {
 	buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
 	var result sql.Result
 	var err error
@@ -132,17 +151,17 @@ func Touch(store store.StoreCode, hash string, files Files) error {
 		buf.WriteString(" (store, hash, is_cached, files) VALUES (?, ?, true, ?) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
 		result, err = db.Exec(buf.String(), store, hash, files)
 	}
-	if err != nil {
-		return err
+	if err == nil {
+		_, err = result.RowsAffected()
 	}
-	_, err = result.RowsAffected()
 	if err != nil {
-		return err
+		log.Printf("[magnet_cache] failed to touch: %v\n", err)
+		return
 	}
-	return nil
+	TrackFiles(hash, files, sid)
 }
 
-func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
+func BulkTouch(store store.StoreCode, filesByHash map[string]Files, sid string) {
 	var hit_query strings.Builder
 	hit_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES ")
 	hit_placeholder := "(?,?,true,?)"
@@ -180,6 +199,7 @@ func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
 		if err != nil {
 			log.Printf("[magnet_cache] failed to touch hits: %v\n", err)
 		}
+		BulkTrackFiles(filesByHash, sid)
 	}
 
 	if miss_count > 0 {
@@ -189,6 +209,4 @@ func BulkTouch(store store.StoreCode, filesByHash map[string]Files) error {
 			log.Printf("[magnet_cache] failed to touch misses: %v\n", err)
 		}
 	}
-
-	return nil
 }

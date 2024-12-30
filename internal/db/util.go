@@ -8,10 +8,17 @@ import (
 	"strings"
 )
 
+type DBDialect string
+
+const (
+	DBDialectPostgres DBDialect = "postgres"
+	DBDialectSQLite   DBDialect = "sqlite"
+)
+
 type ConnectionURI struct {
 	*url.URL
 	driverName string
-	Dialect    string
+	Dialect    DBDialect
 }
 
 type DSNModifier func(u *url.URL, q *url.Values)
@@ -58,23 +65,23 @@ func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
 
 	switch u.Scheme {
 	case "sqlite":
-		uri.Dialect = "sqlite"
+		uri.Dialect = DBDialectSQLite
 		uri.driverName = "sqlite3"
 		if u.Host != "" && u.Host != "." {
 			return uri, errors.New("invalid path, must start with '/' or './'")
 		}
 	case "postgresql":
-		uri.Dialect = "postgres"
+		uri.Dialect = DBDialectPostgres
 		uri.driverName = "pgx"
 	default:
 		return uri, errors.New("unsupported scheme: " + u.Scheme)
 	}
 
 	return uri, nil
-
 }
+
 func adaptQuery(query string) string {
-	if dialect == "sqlite" {
+	if Dialect == DBDialectSQLite {
 		return query
 	}
 

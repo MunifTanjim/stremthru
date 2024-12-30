@@ -2,6 +2,7 @@ package buddy
 
 import (
 	"log"
+	"regexp"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -19,16 +20,14 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 	APIKey:  config.PeerAuthToken,
 })
 
-func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss bool, storeToken string) {
+func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, sid string, cacheMiss bool, storeToken string) {
 	mcFiles := magnet_cache.Files{}
 	if !cacheMiss {
 		for _, f := range files {
 			mcFiles = append(mcFiles, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
 		}
 	}
-	if err := magnet_cache.Touch(s.GetName().Code(), hash, mcFiles); err != nil {
-		log.Printf("[buddy] failed to update local cache: %v\n", err)
-	}
+	magnet_cache.Touch(s.GetName().Code(), hash, mcFiles, sid)
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
@@ -36,6 +35,7 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 			Hash:      hash,
 			Files:     files,
 			CacheMiss: cacheMiss,
+			SId:       sid,
 		}
 		if _, err := Buddy.TrackMagnetCache(params); err != nil {
 			log.Printf("[buddy] failed to track magnet cache for %s:%s: %v\n", s.GetName(), hash, err)
@@ -49,6 +49,7 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 			Hash:       hash,
 			Files:      files,
 			IsMiss:     cacheMiss,
+			SId:        sid,
 		}
 		if _, err := Peer.TrackMagnet(params); err != nil {
 			log.Printf("[buddy:upstream] failed to track magnet cache for %s:%s: %v\n", s.GetName(), hash, err)
@@ -56,12 +57,16 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 	}
 }
 
-func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp string) (*store.CheckMagnetData, error) {
+func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp string, sid string) (*store.CheckMagnetData, error) {
+	if matched, err := regexp.MatchString("^tt[0-9]+:[0-9]{1,2}:[0-9]{1,3}$", sid); err != nil || !matched {
+		sid = ""
+	}
+
 	data := &store.CheckMagnetData{
 		Items: []store.CheckMagnetDataItem{},
 	}
 
-	mcs, err := magnet_cache.GetByHashes(s.GetName().Code(), hashes)
+	mcs, err := magnet_cache.GetByHashes(s.GetName().Code(), hashes, sid)
 	if err != nil {
 		return nil, err
 	}
@@ -106,25 +111,31 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 			Hashes:   staleOrMissingHashes,
 			ClientIP: clientIp,
 		}
+		params.SId = sid
 		res, err := Buddy.CheckMagnetCache(params)
 		if err != nil {
 			log.Printf("[buddy] failed to check magnet: %v\n", err)
 		} else {
 			filesByHash := map[string]magnet_cache.Files{}
 			for _, item := range res.Data.Items {
+				res_item := store.CheckMagnetDataItem{
+					Hash:   item.Hash,
+					Magnet: item.Magnet,
+					Status: item.Status,
+				}
+				res_files := []store.MagnetFile{}
 				files := magnet_cache.Files{}
 				if item.Status == store.MagnetStatusCached {
 					for _, f := range item.Files {
-						files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+						res_files = append(res_files, store.MagnetFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
+						files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size, SId: f.SId})
 					}
 				}
+				res_item.Files = res_files
+				data.Items = append(data.Items, res_item)
 				filesByHash[item.Hash] = files
-				data.Items = append(data.Items, item)
 			}
-			err = magnet_cache.BulkTouch(s.GetName().Code(), filesByHash)
-			if err != nil {
-				log.Printf("[buddy] failed to update local cache: %v\n", err)
-			}
+			magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, sid)
 			return data, nil
 		}
 	}
@@ -136,6 +147,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		}
 		params.Magnets = hashes
 		params.ClientIP = clientIp
+		params.SId = sid
 		res, err := Peer.CheckMagnet(params)
 		if err != nil {
 			log.Printf("[buddy:upstream] failed to check magnet: %v\n", err)
@@ -151,10 +163,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 				filesByHash[item.Hash] = files
 				data.Items = append(data.Items, item)
 			}
-			err = magnet_cache.BulkTouch(s.GetName().Code(), filesByHash)
-			if err != nil {
-				log.Printf("[buddy:upstream] failed to update local cache: %v\n", err)
-			}
+			magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, sid)
 			return data, nil
 		}
 	}

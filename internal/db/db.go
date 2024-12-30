@@ -16,9 +16,12 @@ type DB struct {
 }
 
 var db *DB
-var dialect string
+var Dialect DBDialect
 
+var BooleanFalse string
 var CurrentTimestamp string
+var FnJSONGroupArray string
+var FnJSONObject string
 
 func Exec(query string, args ...any) (sql.Result, error) {
 	return db.Exec(adaptQuery(query), args...)
@@ -74,19 +77,26 @@ func Open() *DB {
 		log.Fatalf("[db] failed to parse uri: %v\n", err)
 	}
 
-	dialect = uri.Dialect
+	Dialect = uri.Dialect
 	dsnModifiers := []DSNModifier{}
 
-	switch dialect {
-	case "sqlite":
+	switch Dialect {
+	case DBDialectSQLite:
+		BooleanFalse = "0"
 		CurrentTimestamp = "unixepoch()"
+		FnJSONGroupArray = "json_group_array"
+		FnJSONObject = "json_object"
+
 		dsnModifiers = append(dsnModifiers, func(u *url.URL, q *url.Values) {
 			u.Scheme = "file"
 		})
-	case "postgres":
+	case DBDialectPostgres:
+		BooleanFalse = "false"
 		CurrentTimestamp = "current_timestamp"
+		FnJSONGroupArray = "json_agg"
+		FnJSONObject = "json_build_object"
 	default:
-		log.Fatalf("[db] unsupported dialect: %v\n", dialect)
+		log.Fatalf("[db] unsupported dialect: %v\n", Dialect)
 	}
 
 	database, err := sql.Open(uri.driverName, uri.DSN(dsnModifiers...))

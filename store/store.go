@@ -102,6 +102,7 @@ type CheckMagnetParams struct {
 	Ctx
 	Magnets  []string
 	ClientIP string
+	SId      string
 }
 
 type CheckMagnetDataItem struct {

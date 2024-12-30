@@ -32,6 +32,37 @@ table "magnet_cache" {
   }
 }
 
+table "magnet_cache_file" {
+  schema = schema.main
+
+  column "h" {
+    null = false
+    type = varchar
+  }
+  column "n" {
+    null = false
+    type = varchar
+  }
+  column "i" {
+    null = false
+    type = int
+    default = -1
+  }
+  column "s" {
+    null = false
+    type = int
+    default = -1
+  }
+  column "sid" {
+    null = false
+    type = varchar
+    default = ""
+  }
+  primary_key {
+    columns = [column.h, column.n]
+  }
+}
+
 table "peer_token" {
   schema = schema.main
 

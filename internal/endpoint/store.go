@@ -33,10 +33,11 @@ type AddMagnetPayload struct {
 	Magnet string `json:"magnet"`
 }
 
-func checkMagnet(ctx *context.RequestContext, magnets []string) (*store.CheckMagnetData, error) {
+func checkMagnet(ctx *context.RequestContext, magnets []string, sid string) (*store.CheckMagnetData, error) {
 	params := &store.CheckMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnets = magnets
+	params.SId = sid
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
 	}
@@ -51,6 +52,7 @@ type TrackMagnetPayload struct {
 	Hash   string             `json:"hash"`
 	Files  []store.MagnetFile `json:"files"`
 	IsMiss bool               `json:"is_miss"`
+	SId    string             `json:"sid"`
 }
 
 type TrackMagnetData struct {
@@ -80,7 +82,7 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.IsMiss, ctx.StoreAuthToken)
+	buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.SId, payload.IsMiss, ctx.StoreAuthToken)
 
 	SendResponse(w, 202, &TrackMagnetData{}, nil)
 }
@@ -115,8 +117,10 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sid := queryParams.Get("sid")
+
 	ctx := context.GetRequestContext(r)
-	data, err := checkMagnet(ctx, magnets)
+	data, err := checkMagnet(ctx, magnets, sid)
 	if err == nil && data != nil {
 		for _, item := range data.Items {
 			item.Hash = strings.ToLower(item.Hash)
@@ -177,7 +181,7 @@ func addMagnet(ctx *context.RequestContext, magnet string) (*store.AddMagnetData
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, "*", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -223,7 +227,7 @@ func getMagnet(ctx *context.RequestContext, magnetId string) (*store.GetMagnetDa
 	params.Id = magnetId
 	data, err := ctx.Store.GetMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, "*", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }

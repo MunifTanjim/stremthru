@@ -252,6 +252,7 @@ Check manget links.
 **Query Parameter**:
 
 - `magnet`: comma seperated magnet links
+- `sid`: strmeio stream id
 
 **Response**:
 

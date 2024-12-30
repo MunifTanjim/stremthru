@@ -73,7 +73,7 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		hashes = append(hashes, magnet.Hash)
 	}
 
-	data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP)
+	data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP, params.SId)
 	if err != nil {
 		return nil, err
 	}
