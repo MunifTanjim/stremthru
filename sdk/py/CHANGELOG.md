@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.2.0...sdk-py-0.3.0) (2024-12-31)
+
+
+### Features
+
+* **sdk/py:** add sid query for check_magnet ([7a7ba4d](https://github.com/MunifTanjim/stremthru/commit/7a7ba4d43e441494d89b04e54fcabe1ee791444b))
+
+
+### Documentation
+
+* **sdk/py:** add badge for version ([d58c876](https://github.com/MunifTanjim/stremthru/commit/d58c87602ff3374334d5060bd8b20987f2782d24))
+
 ## [0.2.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.1.0...sdk-py-0.2.0) (2024-12-15)
 
 
