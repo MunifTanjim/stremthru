@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.6.0...sdk-js-0.7.0) (2024-12-31)
+
+
+### Features
+
+* **sdk/js:** add sid query for checkMagnet ([ee593da](https://github.com/MunifTanjim/stremthru/commit/ee593daafd476cc534ff898b2fdaf6dc06092ed6))
+
 ## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.5.0...sdk-js-0.6.0) (2024-12-15)
 
 
