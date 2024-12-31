@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.22.0](https://github.com/MunifTanjim/stremthru/compare/0.21.0...0.22.0) (2024-12-31)
+
+
+### Features
+
+* **store:** add config for toggling tunnel ([b4ecc59](https://github.com/MunifTanjim/stremthru/commit/b4ecc59cd95fbd990fed5fa14b66630bdd1fb5ad))
+* **store:** improve magnet cache check ([f144494](https://github.com/MunifTanjim/stremthru/commit/f144494b8d3e3f45d90d94eca81a18b5df88ce85))
+* **stremio/wrap:** improve magnet cache check ([b19fbf2](https://github.com/MunifTanjim/stremthru/commit/b19fbf20d7495c30c7de4232c4811ac63bd8f463))
+
 ## [0.21.0](https://github.com/MunifTanjim/stremthru/compare/0.20.1...0.21.0) (2024-12-29)
 
 
