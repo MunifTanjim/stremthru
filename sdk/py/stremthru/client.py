@@ -251,8 +251,13 @@ class StremThruStore:
             params={"client_ip": client_ip} if client_ip else None,
         )
 
-    async def check_magnet(self, magnet: list[str]) -> Response[CheckMagnetData]:
-        return await self.client.request("/v0/store/magnets", params={"magnet": magnet})
+    async def check_magnet(
+        self, magnet: list[str], sid: Optional[str] = None
+    ) -> Response[CheckMagnetData]:
+        params: dict[str, Any] = {"magnet": magnet}
+        if sid:
+            params["sid"] = sid
+        return await self.client.request("/v0/store/magnets", params=params)
 
     async def generate_link(
         self, link: str, client_ip: str | None = None
