@@ -63,7 +63,7 @@ class StremThruStore {
     });
   }
 
-  async checkMagnet(params: { magnet: string[] }) {
+  async checkMagnet(params: { magnet: string[]; sid?: string }) {
     return await this.#client.request<{
       items: Array<{
         files: Array<{
