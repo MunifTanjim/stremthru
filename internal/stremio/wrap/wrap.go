@@ -393,10 +393,14 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		stremId := strings.TrimSuffix(id, ".json")
 		isCachedByHash := map[string]bool{}
 		cmParams := &store.CheckMagnetParams{Magnets: hashes}
 		cmParams.APIKey = ctx.StoreAuthToken
 		cmParams.ClientIP = ctx.ClientIP
+		if strings.Contains(stremId, ":") {
+			cmParams.SId = stremId
+		}
 		cmRes, err := ctx.Store.CheckMagnet(cmParams)
 		if err != nil {
 			SendError(w, err)
