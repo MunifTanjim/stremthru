@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.23.0](https://github.com/MunifTanjim/stremthru/compare/0.22.0...0.23.0) (2025-01-01)
+
+
+### Features
+
+* add log for check manget ([cc8dafa](https://github.com/MunifTanjim/stremthru/commit/cc8dafa20b23ed660f3e1d05b5f529ff30b14bfd))
+* **buddy:** log packed error ([98a0ed1](https://github.com/MunifTanjim/stremthru/commit/98a0ed1e69906a16dcb8dcefcb0867945e3edbae))
+* log unexpected errors ([1d6e780](https://github.com/MunifTanjim/stremthru/commit/1d6e7809250bbf6e60554e2c2cfb9b4e757aefaa))
+* **magnet_cache:** adjust stale time ([e69f156](https://github.com/MunifTanjim/stremthru/commit/e69f156491edd2d30e8b7ab3d406e2d036a44ba2))
+* set http client timeout ([0803e1e](https://github.com/MunifTanjim/stremthru/commit/0803e1e7e4a3349602b0b909d8577bfc2e8fb21b))
+* **store:** add configurable user agent ([1e2d46c](https://github.com/MunifTanjim/stremthru/commit/1e2d46cd9dcea23503139cfea051e592145c3be2))
+* **stremio/sidekick:** show server error in ui ([580d42d](https://github.com/MunifTanjim/stremthru/commit/580d42d455c9f65f63512ae1628884e5a6d6c209))
+* **stremio/sidekick:** support login with auth token ([a9f2967](https://github.com/MunifTanjim/stremthru/commit/a9f29671c66bcc1a0c2fdabb6fd25fb5500ed423))
+* **stremio/wrap:** track added magnet ([e4a6c2b](https://github.com/MunifTanjim/stremthru/commit/e4a6c2b8aa21418ba18a40a30a4e2af3ce076a6d))
+
 ## [0.22.0](https://github.com/MunifTanjim/stremthru/compare/0.21.0...0.22.0) (2024-12-31)
 
 
