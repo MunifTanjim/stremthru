@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.25.0](https://github.com/MunifTanjim/stremthru/compare/0.24.0...0.25.0) (2025-01-02)
+
+
+### Features
+
+* allow api only store tunnel ([1867ed5](https://github.com/MunifTanjim/stremthru/commit/1867ed5b83c8be070830b208c309b77855ed60cf))
+* **buddy:** send imdb id for movies ([48280b5](https://github.com/MunifTanjim/stremthru/commit/48280b5af5e025c3dd08715d73fdb13467160577))
+* decrease peer http timeout ([24cfdf4](https://github.com/MunifTanjim/stremthru/commit/24cfdf40dc2ad6bea990c3c00e40c6d44c7afe96))
+* **magnet_cache:** preserve more specific sid for files ([0cc4e2d](https://github.com/MunifTanjim/stremthru/commit/0cc4e2d488dfd4453d0d8748a8db08ff2e42f156))
+* print config at startup ([205f9e8](https://github.com/MunifTanjim/stremthru/commit/205f9e8c7b32935aa4ddec7b9930e8c204ecb624))
+
 ## [0.24.0](https://github.com/MunifTanjim/stremthru/compare/0.23.0...0.24.0) (2025-01-02)
 
 
