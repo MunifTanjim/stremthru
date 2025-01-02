@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.24.0](https://github.com/MunifTanjim/stremthru/compare/0.23.0...0.24.0) (2025-01-02)
+
+
+### Features
+
+* **stremio:** log packed error ([d16b617](https://github.com/MunifTanjim/stremthru/commit/d16b6172d883d828120a24eec2c820241b59acde))
+
+
+### Bug Fixes
+
+* **store/realdebrid:** fix type for .progress ([f5e5a0f](https://github.com/MunifTanjim/stremthru/commit/f5e5a0f2f2f6c6b4f316866b6646f46c4dc3ce95))
+
 ## [0.23.0](https://github.com/MunifTanjim/stremthru/compare/0.22.0...0.23.0) (2025-01-01)
 
 
