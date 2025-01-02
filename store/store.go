@@ -14,6 +14,7 @@ type StoreName string
 const (
 	StoreNameAlldebrid  StoreName = "alldebrid"
 	StoreNameDebridLink StoreName = "debridlink"
+	StoreNameEasyDebrid StoreName = "easydebrid"
 	StoreNameOffcloud   StoreName = "offcloud"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
@@ -25,6 +26,7 @@ type StoreCode string
 const (
 	StoreCodeAllDebrid  StoreCode = "ad"
 	StoreCodeDebridLink StoreCode = "dl"
+	StoreCodeEasyDebrid StoreCode = "ed"
 	StoreCodeOffcloud   StoreCode = "oc"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
@@ -34,6 +36,7 @@ const (
 var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameAlldebrid:  StoreCodeAllDebrid,
 	StoreNameDebridLink: StoreCodeDebridLink,
+	StoreNameEasyDebrid: StoreCodeEasyDebrid,
 	StoreNameOffcloud:   StoreCodeOffcloud,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
@@ -45,10 +48,10 @@ func (sn StoreName) Code() StoreCode {
 }
 
 func (sn StoreName) Validate() (StoreName, *core.StoreError) {
-	if sn == StoreNameAlldebrid || sn == StoreNameDebridLink || sn == StoreNameOffcloud || sn == StoreNamePremiumize || sn == StoreNameRealDebrid || sn == StoreNameTorBox {
-		return sn, nil
+	if _, ok := storeCodeByName[sn]; !ok {
+		return sn, ErrorInvalidStoreName(string(sn))
 	}
-	return sn, ErrorInvalidStoreName(string(sn))
+	return sn, nil
 }
 
 type UserSubscriptionStatus string

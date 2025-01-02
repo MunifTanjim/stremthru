@@ -310,6 +310,7 @@ func PrintConfig() {
 	for _, store := range []store.StoreName{
 		store.StoreNameAlldebrid,
 		store.StoreNameDebridLink,
+		store.StoreNameEasyDebrid,
 		store.StoreNameOffcloud,
 		store.StoreNamePremiumize,
 		store.StoreNameRealDebrid,

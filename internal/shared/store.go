@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
 	"github.com/MunifTanjim/stremthru/store/debridlink"
+	"github.com/MunifTanjim/stremthru/store/easydebrid"
 	"github.com/MunifTanjim/stremthru/store/offcloud"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
@@ -24,6 +25,9 @@ var adStore = alldebrid.NewStoreClient(&alldebrid.StoreClientConfig{
 })
 var dlStore = debridlink.NewStoreClient(&debridlink.StoreClientConfig{
 	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("debridlink")),
+})
+var edStore = easydebrid.NewStoreClient(&easydebrid.StoreClientConfig{
+	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("easydebrid")),
 })
 var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{
 	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("premiumize")),
@@ -45,6 +49,8 @@ func GetStore(name string) store.Store {
 		return adStore
 	case store.StoreNameDebridLink:
 		return dlStore
+	case store.StoreNameEasyDebrid:
+		return edStore
 	case store.StoreNameOffcloud:
 		return ocStore
 	case store.StoreNamePremiumize:

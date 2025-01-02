@@ -15,6 +15,7 @@ Companion for Stremio.
 
 - [AllDebrid](https://alldebrid.com)
 - [Debrid-Link](https://debrid-link.com)
+- [EasyDebrid](https://easydebrid.com)
 - [Offcloud](https://offcloud.com)
 - [Premiumize](https://www.premiumize.me)
 - [RealDebrid](https://real-debrid.com)
