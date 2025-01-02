@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.26.0](https://github.com/MunifTanjim/stremthru/compare/0.25.0...0.26.0) (2025-01-02)
+
+
+### Features
+
+* **store/easydebrid:** add initial implementation ([bd6f579](https://github.com/MunifTanjim/stremthru/commit/bd6f5790f503d142192a28f5f43eccac0320065d))
+* **stremio/sidekick:** allow either id or name to change in reload ([18870ce](https://github.com/MunifTanjim/stremthru/commit/18870cebceca4443364fd411d179076f16ded711))
+
+
+### Bug Fixes
+
+* update type to fix unexported field issue ([de5f5ba](https://github.com/MunifTanjim/stremthru/commit/de5f5ba07be4aee6f24aa7917c6e7bca298d63b8))
+
 ## [0.25.0](https://github.com/MunifTanjim/stremthru/compare/0.24.0...0.25.0) (2025-01-02)
 
 
