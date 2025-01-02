@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/MunifTanjim/stremthru/compare/0.25.0...0.26.0) (2025-01-02)
+
+
+### Features
+
+* **store/easydebrid:** add initial implementation ([bd6f579](https://github.com/MunifTanjim/stremthru/commit/bd6f5790f503d142192a28f5f43eccac0320065d))
+
 ## [0.25.0](https://github.com/MunifTanjim/stremthru/compare/0.24.0...0.25.0) (2025-01-02)
 
 
