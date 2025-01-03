@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.27.1](https://github.com/MunifTanjim/stremthru/compare/0.27.0...0.27.1) (2025-01-03)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** remove double link generation ([80606c5](https://github.com/MunifTanjim/stremthru/commit/80606c50dd737d1621f93c14a8c3674a775cc798))
+
 ## [0.27.0](https://github.com/MunifTanjim/stremthru/compare/0.26.0...0.27.0) (2025-01-03)
 
 
