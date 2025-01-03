@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.0](https://github.com/MunifTanjim/stremthru/compare/0.26.0...0.27.0) (2025-01-03)
+
+
+### Features
+
+* **stremio/wrap:** add easydebrid as store ([2f710b9](https://github.com/MunifTanjim/stremthru/commit/2f710b9d29c81bb6c3a0779feb10011940d69640))
+* **stremio/wrap:** auto-correct manifest url scheme ([5a23b0a](https://github.com/MunifTanjim/stremthru/commit/5a23b0aa5c2a1b94f7955a522144099e3c3dffc2))
+* update log for track magnet ([f880962](https://github.com/MunifTanjim/stremthru/commit/f88096275a8ddf49293a66711b7b59c4dd571be5))
+
 ## [0.26.0](https://github.com/MunifTanjim/stremthru/compare/0.25.0...0.26.0) (2025-01-02)
 
 
