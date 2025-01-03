@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.28.0](https://github.com/MunifTanjim/stremthru/compare/0.27.1...0.28.0) (2025-01-03)
+
+
+### Features
+
+* **stremio/store:** hide stremthru store if not usable ([c3a77ae](https://github.com/MunifTanjim/stremthru/commit/c3a77ae6ae9e8666b6b21ec534fbda5d20bce243))
+* **stremio/wrap:** add cache only config and sort ([472d937](https://github.com/MunifTanjim/stremthru/commit/472d937cd5e1a730dfc09aa12d76c278b3b4228a))
+* **stremio/wrap:** add store hint in addon name ([6b9040b](https://github.com/MunifTanjim/stremthru/commit/6b9040b121a4e1ab5a8ddfbc14fb6a61a47a9327))
+* **stremio/wrap:** hide stremthru store if not usable ([b291197](https://github.com/MunifTanjim/stremthru/commit/b29119718c05c7381375cc7294e5ca946ca2341f))
+
+
+### Bug Fixes
+
+* **magnet_cache:** skip db query for empty input ([4a9cfdf](https://github.com/MunifTanjim/stremthru/commit/4a9cfdf27e3764f25510685e3148e7c5cb1b239e))
+* **stremio/store:** handle empty metas ([2c91c21](https://github.com/MunifTanjim/stremthru/commit/2c91c2164fc1e21cdd30a54968bdf334a0da0a45))
+
 ## [0.27.1](https://github.com/MunifTanjim/stremthru/compare/0.27.0...0.27.1) (2025-01-03)
 
 
