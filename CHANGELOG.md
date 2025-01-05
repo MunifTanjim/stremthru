@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.29.0](https://github.com/MunifTanjim/stremthru/compare/0.28.1...0.29.0) (2025-01-05)
+
+
+### Features
+
+* **stremio/disabled:** support configure button in stremio ([947ea39](https://github.com/MunifTanjim/stremthru/commit/947ea39ce54e573eab4e84f30fea92b16a9b2207))
+* **stremio/sidekick:** add missing error logs ([706e3c4](https://github.com/MunifTanjim/stremthru/commit/706e3c46c8dc325fc60d8faf7ecad38d4943fd8c))
+* **stremio/wrap:** improve config validation ([2d46275](https://github.com/MunifTanjim/stremthru/commit/2d462752ea1346d32594d8def72adf60f6e9a66c))
+* **stremio/wrap:** pick largest file if file name/index missing ([486e7d7](https://github.com/MunifTanjim/stremthru/commit/486e7d71967a9c2aa85bbb1f64d56bdaf45a5769))
+* **stremio/wrap:** reduce time to wait for download ([692122d](https://github.com/MunifTanjim/stremthru/commit/692122d7b9245d9b2718d1cf5e5257c3e9b534d5))
+* **stremio:** add link for easydebrid api key ([2ffd31d](https://github.com/MunifTanjim/stremthru/commit/2ffd31d9de70bc50cafde8313d6e12494c8fe43c))
+* **stremio:** do not try to parse non-json response ([49db8c5](https://github.com/MunifTanjim/stremthru/commit/49db8c5328444c712a965fe0b632d5307b162819))
+* **stremio:** reduce addon client http timeout ([5a3e5cc](https://github.com/MunifTanjim/stremthru/commit/5a3e5cc737f8457e8924df440d31fbe79a8d8829))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** close reload modal on outside click ([60b29af](https://github.com/MunifTanjim/stremthru/commit/60b29af2f33af4be6175e15a4300baad7f81e92c))
+* **stremio/sidekick:** resolve path escaping issue ([6c57f34](https://github.com/MunifTanjim/stremthru/commit/6c57f34509f6bca89e0cd5b032df66c3dd0f3586))
+
 ## [0.28.1](https://github.com/MunifTanjim/stremthru/compare/0.28.0...0.28.1) (2025-01-03)
 
 
