@@ -83,3 +83,29 @@ table "peer_token" {
     columns = [column.id]
   }
 }
+
+table "kv" {
+  schema = schema.main
+
+  column "k" {
+    null = false
+    type = varchar
+  }
+  column "v" {
+    null = false
+    type = varchar
+  }
+  column "cat" {
+    null = false
+    type = datetime
+    default = sql("unixepoch()")
+  }
+  column "uat" {
+    null = false
+    type = datetime
+    default = sql("unixepoch()")
+  }
+  primary_key {
+    columns = [column.k]
+  }
+}

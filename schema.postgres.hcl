@@ -84,3 +84,29 @@ table "peer_token" {
     columns = [column.id]
   }
 }
+
+table "kv" {
+  schema = schema.public
+
+  column "k" {
+    null = false
+    type = text
+  }
+  column "v" {
+    null = false
+    type = text
+  }
+  column "cat" {
+    null = false
+    type = timestamptz
+    default = sql("current_timestamp")
+  }
+  column "uat" {
+    null = false
+    type = timestamptz
+    default = sql("current_timestamp")
+  }
+  primary_key {
+    columns = [column.k]
+  }
+}
