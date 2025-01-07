@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/debridlink"
 	"github.com/MunifTanjim/stremthru/store/easydebrid"
 	"github.com/MunifTanjim/stremthru/store/offcloud"
+	"github.com/MunifTanjim/stremthru/store/pikpak"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/torbox"
@@ -31,6 +32,9 @@ var edStore = easydebrid.NewStoreClient(&easydebrid.StoreClientConfig{
 })
 var pmStore = premiumize.NewStoreClient(&premiumize.StoreClientConfig{
 	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("premiumize")),
+})
+var ppStore = pikpak.NewStoreClient(&pikpak.StoreClientConfig{
+	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("pikpak")),
 })
 var ocStore = offcloud.NewStoreClient(&offcloud.StoreClientConfig{
 	HTTPClient: GetHTTPClient(config.StoreTunnel.IsEnabledForAPI("offcloud")),
@@ -53,6 +57,8 @@ func GetStore(name string) store.Store {
 		return edStore
 	case store.StoreNameOffcloud:
 		return ocStore
+	case store.StoreNamePikPak:
+		return ppStore
 	case store.StoreNamePremiumize:
 		return pmStore
 	case store.StoreNameRealDebrid:

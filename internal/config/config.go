@@ -315,6 +315,7 @@ func PrintConfig() {
 		store.StoreNameDebridLink,
 		store.StoreNameEasyDebrid,
 		store.StoreNameOffcloud,
+		store.StoreNamePikPak,
 		store.StoreNamePremiumize,
 		store.StoreNameRealDebrid,
 		store.StoreNameTorBox,

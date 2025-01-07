@@ -16,6 +16,7 @@ const (
 	StoreNameDebridLink StoreName = "debridlink"
 	StoreNameEasyDebrid StoreName = "easydebrid"
 	StoreNameOffcloud   StoreName = "offcloud"
+	StoreNamePikPak     StoreName = "pikpak"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
 	StoreNameTorBox     StoreName = "torbox"
@@ -28,6 +29,7 @@ const (
 	StoreCodeDebridLink StoreCode = "dl"
 	StoreCodeEasyDebrid StoreCode = "ed"
 	StoreCodeOffcloud   StoreCode = "oc"
+	StoreCodePikPak     StoreCode = "pp"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
 	StoreCodeTorBox     StoreCode = "tb"
@@ -38,6 +40,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameDebridLink: StoreCodeDebridLink,
 	StoreNameEasyDebrid: StoreCodeEasyDebrid,
 	StoreNameOffcloud:   StoreCodeOffcloud,
+	StoreNamePikPak:     StoreCodePikPak,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
 	StoreNameTorBox:     StoreCodeTorBox,
