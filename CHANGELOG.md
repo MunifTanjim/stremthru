@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.30.0](https://github.com/MunifTanjim/stremthru/compare/0.29.0...0.30.0) (2025-01-07)
+
+
+### Features
+
+* **stremio/wrap:** prioritize file matching by filename ([d489204](https://github.com/MunifTanjim/stremthru/commit/d489204d94d8e05a810c6b99b4cd91ada61b31d3))
+* **stremio:** add navbar ([d3a486f](https://github.com/MunifTanjim/stremthru/commit/d3a486f2b47781097198031c0e51995e83214abc))
+
+
+### Bug Fixes
+
+* **stremio:** hide token description for empty option ([68823d7](https://github.com/MunifTanjim/stremthru/commit/68823d73a544f6dd03ee8d69cc408a0e9ff74f5f))
+
 ## [0.29.0](https://github.com/MunifTanjim/stremthru/compare/0.28.1...0.29.0) (2025-01-05)
 
 
