@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.31.1](https://github.com/MunifTanjim/stremthru/compare/0.31.0...0.31.1) (2025-01-08)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** always return transformed streams ([40ce0e6](https://github.com/MunifTanjim/stremthru/commit/40ce0e685096268c88b160c71a25dc0fc227a3b1))
+
 ## [0.31.0](https://github.com/MunifTanjim/stremthru/compare/0.30.0...0.31.0) (2025-01-08)
 
 
