@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.0](https://github.com/MunifTanjim/stremthru/compare/0.30.0...0.31.0) (2025-01-08)
+
+
+### Features
+
+* **kv:** add kv storage ([90be63b](https://github.com/MunifTanjim/stremthru/commit/90be63be06c8943c08acf3e60a37a1305c297f13))
+* **store/pikpak:** add initial implementation ([d757e62](https://github.com/MunifTanjim/stremthru/commit/d757e62f33e783d26725fcfb943312cbbcbeec9a))
+* **stremio:** add pikpak as store ([f2636e8](https://github.com/MunifTanjim/stremthru/commit/f2636e8bf6df9424475916eedf6a31b42ca6a475))
+
 ## [0.30.0](https://github.com/MunifTanjim/stremthru/compare/0.29.0...0.30.0) (2025-01-07)
 
 
