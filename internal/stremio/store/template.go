@@ -12,6 +12,7 @@ func getStoreNameConfig() configure.Config {
 		configure.ConfigOption{Value: "debridlink", Label: "DebridLink"},
 		configure.ConfigOption{Value: "easydebrid", Label: "EasyDebrid"},
 		configure.ConfigOption{Value: "offcloud", Label: "Offcloud"},
+		configure.ConfigOption{Value: "pikpak", Label: "PikPak"},
 		configure.ConfigOption{Value: "premiumize", Label: "Premiumize"},
 		configure.ConfigOption{Value: "realdebrid", Label: "RealDebrid"},
 		configure.ConfigOption{Value: "torbox", Label: "TorBox"},

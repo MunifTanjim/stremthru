@@ -11,6 +11,7 @@ func GetScriptStoreTokenDescription(storeNameId, storeTokenId string) template.J
 		debridlink: "DebridLink <a href='https://debrid-link.com/webapp/apikey' target='_blank'>API Key</a>",
 		easydebrid: "EasyDebrid <a href='https://paradise-cloud.com/guides/easydebrid-api-key' target='_blank'>API Key</a>",
 		offcloud: "Offcloud <a href='https://offcloud.com/#/account' target='_blank'>credential</a> in <code>email:password</code> format, e.g. <code>john.doe@example.com:secret-password</code>",
+		pikpak: "PikPak <a href='https://mypikpak.com/drive/account/basic' target='_blank'>credential</a> in <code>email:password</code> format, e.g. <code>john.doe@example.com:secret-password</code>",
 		premiumize: "Premiumize <a href='https://www.premiumize.me/account' target='_blank'>API Key</a>",
 		realdebrid: "RealDebrid <a href='https://real-debrid.com/apitoken' target='_blank'>API Token</a>",
 		torbox: "TorBox <a href='https://torbox.app/settings' target='_blank'>API Key</a>",
