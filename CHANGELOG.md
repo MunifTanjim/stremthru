@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.32.0](https://github.com/MunifTanjim/stremthru/compare/0.31.1...0.32.0) (2025-01-09)
+
+
+### Features
+
+* **config:** show ip at startup ([f4ed73c](https://github.com/MunifTanjim/stremthru/commit/f4ed73cd3ab93b9adba48f7a68815746ff6b4cdc))
+* **store/pikpak:** add pagination for list magnets ([9d1b5bc](https://github.com/MunifTanjim/stremthru/commit/9d1b5bc822c0a1d27c5e265fec3fa3289d5fe740))
+* **store:** forward machine ip if stream tunnel is disabled ([bc15430](https://github.com/MunifTanjim/stremthru/commit/bc1543006fbc3722f79c9d39a4f5af30855a0efd))
+* **stremio/sidekick:** add addons backup/restore ([2c250cc](https://github.com/MunifTanjim/stremthru/commit/2c250cc9b95e88892ae983db61fc8e86d35e5a06))
+
+
+### Bug Fixes
+
+* **store/pikpak:** do not add duplicate magnet ([93241f3](https://github.com/MunifTanjim/stremthru/commit/93241f387004349fbb777f212fe9e2bacda5b21f))
+* **store/pikpak:** fix link generation for single file ([70c4619](https://github.com/MunifTanjim/stremthru/commit/70c461939c4c53e2369499aea1efeba313475841))
+* **store/pikpak:** handle expired refresh token ([806680f](https://github.com/MunifTanjim/stremthru/commit/806680fc7159577eb2f366353c250bdb79df2959))
+* **stremio/sidekick:** swap whole addons section to avoid duplication ([0e5cf0a](https://github.com/MunifTanjim/stremthru/commit/0e5cf0ad152bdc276687b271a4e0d4900a4e3eec))
+
 ## [0.31.1](https://github.com/MunifTanjim/stremthru/compare/0.31.0...0.31.1) (2025-01-08)
 
 
