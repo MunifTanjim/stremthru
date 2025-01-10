@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.32.1](https://github.com/MunifTanjim/stremthru/compare/0.32.0...0.32.1) (2025-01-10)
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** fix addons load button click ([5b00287](https://github.com/MunifTanjim/stremthru/commit/5b0028774f93110b078be40247aad2f3842123e1))
+
 ## [0.32.0](https://github.com/MunifTanjim/stremthru/compare/0.31.1...0.32.0) (2025-01-09)
 
 
