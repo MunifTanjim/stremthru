@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.33.0](https://github.com/MunifTanjim/stremthru/compare/0.32.1...0.33.0) (2025-01-10)
+
+
+### Features
+
+* **store:** add toggle for content proxy ([87d6203](https://github.com/MunifTanjim/stremthru/commit/87d620392250c81de6939afe50050d74a8857890))
+* **stremio/wrap:** support content proxy for usenet links ([adb6368](https://github.com/MunifTanjim/stremthru/commit/adb6368b326a666bcc99fb547952c90eb548888b))
+
 ## [0.32.1](https://github.com/MunifTanjim/stremthru/compare/0.32.0...0.32.1) (2025-01-10)
 
 
