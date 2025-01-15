@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.35.0](https://github.com/MunifTanjim/stremthru/compare/0.34.0...0.35.0) (2025-01-15)
+
+
+### Features
+
+* disable http keep-alive ([379e054](https://github.com/MunifTanjim/stremthru/commit/379e054237f5ba271c9374c6bdd3a9634cb2d788))
+* **peer:** temporarily disable on slow response ([37c103a](https://github.com/MunifTanjim/stremthru/commit/37c103aab7c56be7f5720196c216faefb61ed430))
+
 ## [0.34.0](https://github.com/MunifTanjim/stremthru/compare/0.33.0...0.34.0) (2025-01-15)
 
 
