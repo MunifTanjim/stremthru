@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.34.0](https://github.com/MunifTanjim/stremthru/compare/0.33.0...0.34.0) (2025-01-15)
+
+
+### Features
+
+* **buddy:** do not try to track if unauthorized ([af23e0e](https://github.com/MunifTanjim/stremthru/commit/af23e0e4165fe4567a6841ac688426c629cd5f35))
+* **config:** panic if unresolved tunnel ip at startup ([16f12bc](https://github.com/MunifTanjim/stremthru/commit/16f12bc41b3e1c9cbd9ce6ff66f77b79d17ea53f))
+* **stremio/disabled:** autoload addons on configure ([2860e37](https://github.com/MunifTanjim/stremthru/commit/2860e37a6980117f7b942a9459039319553b2296))
+* update log for proxy connection close ([d14a28c](https://github.com/MunifTanjim/stremthru/commit/d14a28cc24dc4ea1d9dafc9a46622e0991708c5d))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** stop triggering multiple downloads ([f44805f](https://github.com/MunifTanjim/stremthru/commit/f44805fa486e0196692f6652a43c6d822a5c34a6))
+* **stremio:** allow cors consistently ([c7d3010](https://github.com/MunifTanjim/stremthru/commit/c7d301047e33e3f8e3f3655f97f225188cbbcac1))
+
 ## [0.33.0](https://github.com/MunifTanjim/stremthru/compare/0.32.1...0.33.0) (2025-01-10)
 
 
