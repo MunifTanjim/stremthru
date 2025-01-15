@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.35.1](https://github.com/MunifTanjim/stremthru/compare/0.35.0...0.35.1) (2025-01-15)
+
+
+### Bug Fixes
+
+* enable http keep-alive for non-public deployment ([b314a2b](https://github.com/MunifTanjim/stremthru/commit/b314a2b1f01b42c001ba97c1378f7f60bd5937b6))
+
 ## [0.35.0](https://github.com/MunifTanjim/stremthru/compare/0.34.0...0.35.0) (2025-01-15)
 
 
