@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.36.0](https://github.com/MunifTanjim/stremthru/compare/0.35.1...0.36.0) (2025-01-16)
+
+
+### Features
+
+* **buddy:** make touching local magnet cache non-blocking ([a3f6055](https://github.com/MunifTanjim/stremthru/commit/a3f60554bb3857c4e779239f479ac1a033b2b450))
+* **buddy:** make upstream track magnet non-blocking ([7e11b66](https://github.com/MunifTanjim/stremthru/commit/7e11b66af08f5fe5f955b2773d1c908dd9f38068))
+* **store:** increase generated link lifetime to 12 hours ([2ddab33](https://github.com/MunifTanjim/stremthru/commit/2ddab33970ca264abbd3d3108a3e192c4be7a6ab))
+* **stremio/wrap:** make track magnet cache non-blocking ([c5d0212](https://github.com/MunifTanjim/stremthru/commit/c5d0212450e750fe8d98ea45ca2244461f502190))
+* **stremio/wrap:** pass stream id for tracking magnet cache ([e9f7642](https://github.com/MunifTanjim/stremthru/commit/e9f76428bfdd75ba7dcada6979c70dec03653222))
+
 ## [0.35.1](https://github.com/MunifTanjim/stremthru/compare/0.35.0...0.35.1) (2025-01-15)
 
 
