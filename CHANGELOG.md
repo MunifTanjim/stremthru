@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.36.1](https://github.com/MunifTanjim/stremthru/compare/0.36.0...0.36.1) (2025-01-16)
+
+
+### Bug Fixes
+
+* **store:** enable cors for link access endpoint ([e695e55](https://github.com/MunifTanjim/stremthru/commit/e695e551f12677946527d847d94444009acb9733))
+* **stremio:** remove duplicate header ([88252e7](https://github.com/MunifTanjim/stremthru/commit/88252e7c1e853028662767f3be8008068e8ba726))
+
 ## [0.36.0](https://github.com/MunifTanjim/stremthru/compare/0.35.1...0.36.0) (2025-01-16)
 
 
