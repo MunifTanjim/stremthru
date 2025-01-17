@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.37.1](https://github.com/MunifTanjim/stremthru/compare/0.37.0...0.37.1) (2025-01-17)
+
+
+### Bug Fixes
+
+* **peer:** fix check magnet retry after throttling ([9450dcf](https://github.com/MunifTanjim/stremthru/commit/9450dcf12ebe48deb89bdba0fc2250e45634cb29))
+
 ## [0.37.0](https://github.com/MunifTanjim/stremthru/compare/0.36.1...0.37.0) (2025-01-17)
 
 
