@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.37.0](https://github.com/MunifTanjim/stremthru/compare/0.36.1...0.37.0) (2025-01-17)
+
+
+### Features
+
+* **stremio/store:** add static video feedback ([b251cca](https://github.com/MunifTanjim/stremthru/commit/b251cca3643b9bf43ddde1659095feae94294e55))
+
+
+### Bug Fixes
+
+* **store/offcloud:** deal with inconsistent json type ([85ea26c](https://github.com/MunifTanjim/stremthru/commit/85ea26c1971062b1d98b4ab2d8d25a9dc8c3dcf9))
+* **store/torbox:** pass file_id correctly to generate link ([f00473a](https://github.com/MunifTanjim/stremthru/commit/f00473a1171d19c0380f0ba1c51d614fd76ee4c8))
+* **stremio/store:** allow clear cache from mobile app ([703a93d](https://github.com/MunifTanjim/stremthru/commit/703a93d312e067f89a9bad03bb67393e5fb054b9))
+* **stremio/store:** allow head request for stream ([c1a7b4d](https://github.com/MunifTanjim/stremthru/commit/c1a7b4d0648a1c2271251b203b3353a837e5fcf2))
+* **stremio/wrap:** add log for request context error ([589ceb3](https://github.com/MunifTanjim/stremthru/commit/589ceb3a3dd4e33c0df94b1459f4857a2650013f))
+* **stremio/wrap:** allow head request for stream ([ba17bd2](https://github.com/MunifTanjim/stremthru/commit/ba17bd255fbb74176259f4330cd80436aa6a691f))
+* **stremio/wrap:** dedupe concurrent link generation ([431507d](https://github.com/MunifTanjim/stremthru/commit/431507dc5d9e79ad86b7c6adf2032d25b39d672d))
+
 ## [0.36.1](https://github.com/MunifTanjim/stremthru/compare/0.36.0...0.36.1) (2025-01-16)
 
 
