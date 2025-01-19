@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.38.0](https://github.com/MunifTanjim/stremthru/compare/0.37.1...0.38.0) (2025-01-19)
+
+
+### Features
+
+* **cache:** make lru cache thread-safe ([59392c3](https://github.com/MunifTanjim/stremthru/commit/59392c3772da7494ab64b4db42f540a484fbb537))
+* **peer:** send stremthru version in header ([782a8f5](https://github.com/MunifTanjim/stremthru/commit/782a8f53fef73267dd77d947f624e5005987a5f3))
+* **store/offcloud:** disable expensive file size query ([24b7b06](https://github.com/MunifTanjim/stremthru/commit/24b7b06d9208bd9e8194f35751f15102e153c311))
+* **store/offcloud:** try not to add existing magnet ([ba0cc0c](https://github.com/MunifTanjim/stremthru/commit/ba0cc0c6127d2eca42d3b69e830efe209b4f3393))
+* **store:** set missing magnet.added_at to unix 0 timestamp ([c8b30fa](https://github.com/MunifTanjim/stremthru/commit/c8b30fa4579dce0f2d2642fee5d4d2b6f4c24b1b))
+* **stremio:** adjust proxied addon request headers ([9de9759](https://github.com/MunifTanjim/stremthru/commit/9de97599c58397b29ed33e9752f948fd5f70e43e))
+
+
+### Bug Fixes
+
+* **store/offcloud:** detect error for add magnet ([e5ec209](https://github.com/MunifTanjim/stremthru/commit/e5ec20959dd33a7de3c99dfac1e39927f9846edf))
+* **store/offcloud:** set correct magnet file path ([cd8818f](https://github.com/MunifTanjim/stremthru/commit/cd8818fd79fc15a2e80d1c343f004089cbaa7964))
+
+
+### Performance Improvements
+
+* **stremio/wrap:** group duplicate fetch stream calls ([881f3a7](https://github.com/MunifTanjim/stremthru/commit/881f3a7b80f2e2e209b2d02291799bd53d3eb8b3))
+
 ## [0.37.1](https://github.com/MunifTanjim/stremthru/compare/0.37.0...0.37.1) (2025-01-17)
 
 
