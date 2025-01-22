@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.39.0](https://github.com/MunifTanjim/stremthru/compare/0.38.0...0.39.0) (2025-01-22)
+
+
+### Features
+
+* improve tunnel config ([d435748](https://github.com/MunifTanjim/stremthru/commit/d4357483881c3014ea4e94aecb50686699dae4a2))
+
 ## [0.38.0](https://github.com/MunifTanjim/stremthru/compare/0.37.1...0.38.0) (2025-01-19)
 
 
