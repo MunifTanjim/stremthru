@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.40.0](https://github.com/MunifTanjim/stremthru/compare/0.39.0...0.40.0) (2025-01-23)
+
+
+### Features
+
+* integrate tunnel config to content proxy ([b1d0d93](https://github.com/MunifTanjim/stremthru/commit/b1d0d93325a8b73c827d526142e364e260513b93))
+
+
+### Bug Fixes
+
+* **buddy:** detect and ignore duplicate magnet cache file ([9c9f54b](https://github.com/MunifTanjim/stremthru/commit/9c9f54b7ac13874d24d521a3915eec6b85ccf5d9))
+* do not reuse http transport for multiple clients ([9e50f51](https://github.com/MunifTanjim/stremthru/commit/9e50f511bf1842fd0d2d6486a8e6fdd9948d849e))
+* **store/torbox:** fix type for torrent progress ([6137698](https://github.com/MunifTanjim/stremthru/commit/6137698dfe48cff3d2d3c383aada7ce8d887adeb))
+
 ## [0.39.0](https://github.com/MunifTanjim/stremthru/compare/0.38.0...0.39.0) (2025-01-22)
 
 
