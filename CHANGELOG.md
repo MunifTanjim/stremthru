@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.41.0](https://github.com/MunifTanjim/stremthru/compare/0.40.0...0.41.0) (2025-01-26)
+
+
+### Features
+
+* **stremio:** improve proxied addon request headers adjustment ([859dbb8](https://github.com/MunifTanjim/stremthru/commit/859dbb80efde698ea3260167e18b705950c84b77))
+
 ## [0.40.0](https://github.com/MunifTanjim/stremthru/compare/0.39.0...0.40.0) (2025-01-23)
 
 
