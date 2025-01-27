@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.1](https://github.com/MunifTanjim/stremthru/compare/0.42.0...0.42.1) (2025-01-27)
+
+
+### Continuous Integration
+
+* add docker automation ([e67f519](https://github.com/MunifTanjim/stremthru/commit/e67f519e2e0ad4d81a3c9fc723632f2f4b33724d))
+
 ## [0.42.0](https://github.com/MunifTanjim/stremthru/compare/0.41.0...0.42.0) (2025-01-27)
 
 
