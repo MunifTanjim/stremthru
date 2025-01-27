@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.1](https://github.com/MunifTanjim/stremthru/compare/0.42.0...0.42.1) (2025-01-27)
+
+
+### Bug Fixes
+
+* **stremio/store:** unescape url path component properly ([e53cf95](https://github.com/MunifTanjim/stremthru/commit/e53cf95ed50a114242127bbc8e5b374b247bea5f))
+
 ## [0.42.0](https://github.com/MunifTanjim/stremthru/compare/0.41.0...0.42.0) (2025-01-27)
 
 
