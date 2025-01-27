@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.42.0](https://github.com/MunifTanjim/stremthru/compare/0.41.0...0.42.0) (2025-01-27)
+
+
+### Features
+
+* **stremio/store:** support installation per store ([8d24803](https://github.com/MunifTanjim/stremthru/commit/8d24803f4152d10c96e2da210c96bdc4f6c1341a))
+
+
+### Bug Fixes
+
+* **stremio/store:** support stores without file index ([dc92a43](https://github.com/MunifTanjim/stremthru/commit/dc92a4387bec76033203203f806b67cd4746dc5c))
+
 ## [0.41.0](https://github.com/MunifTanjim/stremthru/compare/0.40.0...0.41.0) (2025-01-26)
 
 
