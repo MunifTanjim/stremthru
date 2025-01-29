@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.43.0](https://github.com/MunifTanjim/stremthru/compare/0.42.1...0.43.0) (2025-01-29)
+
+
+### Features
+
+* **config:** try to sync TUNNEL with STORE_TUNNEL ([28f5794](https://github.com/MunifTanjim/stremthru/commit/28f579409f95edc0dea838af7bd2390a8bc24d94))
+* **stremio/sidekick:** add library backup/restore ([c819b87](https://github.com/MunifTanjim/stremthru/commit/c819b87f711a694717518a206fa5856c0d34f4f1))
+
 ## [0.42.1](https://github.com/MunifTanjim/stremthru/compare/0.42.0...0.42.1) (2025-01-27)
 
 
