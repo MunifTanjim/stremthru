@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.43.1](https://github.com/MunifTanjim/stremthru/compare/0.43.0...0.43.1) (2025-02-01)
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** do not escape html in json for backup ([3d09426](https://github.com/MunifTanjim/stremthru/commit/3d09426b77b6bebf5364cd37c9f9d6d01c08f18b))
+
 ## [0.43.0](https://github.com/MunifTanjim/stremthru/compare/0.42.1...0.43.0) (2025-01-29)
 
 
