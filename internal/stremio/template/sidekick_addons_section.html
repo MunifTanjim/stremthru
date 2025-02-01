@@ -19,7 +19,7 @@
 }
 </style>
 
-<header class="flex-row justify-space-between">
+<header class="flex flex-row justify-between">
   <div>
     <select name="addon_operation" aria-label="Addon Operation" required onchange="onAddonOperationChange(this)">
       <option disabled value="">Operation</option>
@@ -44,7 +44,7 @@
 <div id="addons_list">
   {{range $idx, $addon := .Addons}}
   <article>
-    <header class="flex-row justify-space-between align-center">
+    <header class="flex flex-row justify-between align-center">
       <div>
         <h3>
           {{.Manifest.Name}}

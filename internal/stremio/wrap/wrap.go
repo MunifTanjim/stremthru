@@ -137,14 +137,19 @@ func getUserData(r *http.Request) (*UserData, error) {
 	}
 
 	if IsMethod(r, http.MethodPost) {
-		data.ManifestURL = r.FormValue("manifest_url")
+		err := r.ParseForm()
+		if err != nil {
+			return nil, err
+		}
+
+		data.ManifestURL = r.Form.Get("manifest_url")
 		if strings.HasPrefix(data.ManifestURL, "stremio:") {
 			data.ManifestURL = "https:" + strings.TrimPrefix(data.ManifestURL, "stremio:")
 		}
 
-		data.StoreName = r.FormValue("store")
-		data.StoreToken = r.FormValue("token")
-		data.CachedOnly = r.FormValue("cached") == "on"
+		data.StoreName = r.Form.Get("store")
+		data.StoreToken = r.Form.Get("token")
+		data.CachedOnly = r.Form.Get("cached") == "on"
 		encoded, err := data.GetEncoded()
 		if err != nil {
 			return nil, err
@@ -237,11 +242,10 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	td := getTemplateData()
+	td.Upstream.URL = ud.ManifestURL
 	for i := range td.Configs {
 		conf := &td.Configs[i]
 		switch conf.Key {
-		case "manifest_url":
-			conf.Default = ud.ManifestURL
 		case "store":
 			conf.Default = ud.StoreName
 		case "token":
@@ -254,14 +258,11 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ud.encoded != "" {
-		var manifest_url_config *configure.Config
 		var store_config *configure.Config
 		var token_config *configure.Config
 		for i := range td.Configs {
 			conf := &td.Configs[i]
 			switch conf.Key {
-			case "manifest_url":
-				manifest_url_config = conf
 			case "store":
 				store_config = conf
 			case "token":
@@ -272,7 +273,8 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		ctx, err := ud.GetRequestContext(r)
 		if err != nil {
 			if uderr, ok := err.(*userDataError); ok {
-				manifest_url_config.Error = uderr.manifestUrl
+				td.HasError.Upstream = true
+				td.Message.Upstream = uderr.manifestUrl
 				store_config.Error = uderr.store
 				token_config.Error = uderr.token
 			} else {
@@ -281,17 +283,18 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if manifest_url_config.Error == "" {
+		if !td.HasError.Upstream {
 			manifest, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl, ClientIP: ctx.ClientIP})
 			if err != nil {
 				core.LogError("[stremio/wrap] failed to fetch manifest", err)
-				manifest_url_config.Error = "Failed to fetch Manifest"
+				td.HasError.Upstream = true
+				td.Message.Upstream = "Failed to fetch Manifest"
 			} else if manifest.Data.BehaviorHints != nil && manifest.Data.BehaviorHints.Configurable {
-				manifest_url_config.Action.Visible = true
+				td.Upstream.IsConfigurable = true
 			}
 		}
 
-		if manifest_url_config.Error == "" {
+		if !td.HasError.Upstream {
 			if ctx.Store == nil {
 				if ud.StoreName == "" {
 					token_config.Error = "Invalid Token"
@@ -310,7 +313,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	hasError := td.HasError()
+	hasError := td.HasFieldError()
 
 	if IsMethod(r, http.MethodGet) || hasError {
 		if !hasError && ud.HasRequiredValues() {
@@ -319,7 +322,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		page, err := configure.GetPage(td)
+		page, err := getPage(td)
 		if err != nil {
 			SendError(w, err)
 			return

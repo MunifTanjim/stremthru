@@ -1,0 +1,114 @@
+{{define "head"}}
+<style>
+  body {
+    justify-content: center;
+  }
+</style>
+{{end}}
+
+{{define "header"}}
+<h1>
+  {{.Title}}
+  <small>
+    <sup>v{{.Version}}</sup>
+  </small>
+</h1>
+<div>
+  <p>{{.Description}}</p>
+</div>
+{{end}}
+
+{{define "main"}}
+<form id="configuration" action="configure" method="post" hx-boost="true">
+  <div class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addon</header>
+
+    <label for="manifest_url">Manifest URL *</label>
+    {{if .Upstream.IsConfigurable}}
+    <fieldset role="group" {{if .HasError.Upstream}}aria-invalid="true"{{end}}>
+    {{end}}
+    <input name="manifest_url" type="url" required aria-invalid="{{if .HasError.Upstream}}true{{end}}" value="{{.Upstream.URL}}">
+    {{if .Upstream.IsConfigurable}}
+    <input type="button" value="Configure" onclick="onUpstreamManifestConfigure()" />
+    </fieldset>
+    {{end}}
+    <small class="mb-0">{{if ne .Message.Upstream ""}}<span class="error">{{.Message.Upstream}}</span>{{end}}</small>
+
+    <footer class="w-full absolute px-4 flex flex-row justify-between" style="bottom: -0.5rem; left: 0;">
+      <small>
+      </small>
+      <small class="px-2" style="background-color: var(--pico-background-color)">
+        <span class="description">Manifest URL for the Upstream Addon</span>
+      </small>
+    </footer>
+  </div>
+
+  {{range .Configs}}
+    {{template "configure_config.html" .}}
+  {{end}}
+
+  <button type="submit">Install</button>
+
+  {{if ne .ManifestURL ""}}
+  <div id="manifest_url_section">
+    <label for="__manifest_url__">Manifest URL</label>
+    <fieldset role="group">
+      <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
+      <button type="button" onclick="copyManifestUrl()">Copy</button>
+    </fieldset>
+  </div>
+  {{end}}
+</form>
+{{end}}
+
+{{define "foot"}}
+<script>
+  function onUpstreamManifestConfigure() {
+    const url = document.querySelector("input[name='manifest_url']").value.replace(/\/manifest.json$/,'') + "/configure";
+    window.open(url, "_blank");
+  }
+
+  function copyManifestUrl() {
+    const manifestUrl = document.querySelector("input#__manifest_url__")?.value;
+    if (!manifestUrl) {
+      return;
+    }
+    navigator.clipboard.writeText(manifestUrl);
+    return manifestUrl;
+  }
+
+  function tryInstall() {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.get("try_install")) {
+      return
+    }
+    url.searchParams.delete("try_install");
+    window.history.replaceState(null, "", url.href);
+
+    const manifestUrl = copyManifestUrl();
+    if (manifestUrl) {
+      window.location.href = manifestUrl.replace(/^.+:\/\//, 'stremio://');
+    }
+  }
+
+  tryInstall()
+
+  htmx.on("htmx:beforeRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+    }
+  });
+  htmx.on("htmx:afterRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = false;
+    }
+  });
+  htmx.on("form#configuration", "change", function(evt) {
+    document.querySelector('#manifest_url_section')?.remove();
+  }, { once: true });
+
+  {{.Script}}
+</script>
+{{end}}
+
+{{template "layout.html" .}}

@@ -16,6 +16,7 @@ const (
 	ConfigTypePassword ConfigType = "password"
 	ConfigTypeCheckbox ConfigType = "checkbox"
 	ConfigTypeSelect   ConfigType = "select"
+	ConfigTypeURL      ConfigType = "url"
 )
 
 type ConfigAction struct {
