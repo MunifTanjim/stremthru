@@ -20,25 +20,32 @@
 
 {{define "main"}}
 <form id="configuration" action="configure" method="post" hx-boost="true">
-  <div class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
-    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addon</header>
+  <div id="upstream_addons" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addons</header>
 
-    <label for="manifest_url">Manifest URL *</label>
-    {{if .Upstream.IsConfigurable}}
-    <fieldset role="group" {{if .HasError.Upstream}}aria-invalid="true"{{end}}>
-    {{end}}
-    <input name="manifest_url" type="url" required aria-invalid="{{if .HasError.Upstream}}true{{end}}" value="{{.Upstream.URL}}">
-    {{if .Upstream.IsConfigurable}}
-    <input type="button" value="Configure" onclick="onUpstreamManifestConfigure()" />
-    </fieldset>
-    {{end}}
-    <small class="mb-0">{{if ne .Message.Upstream ""}}<span class="error">{{.Message.Upstream}}</span>{{end}}</small>
+    <div>
+      <input type="hidden" name="upstreams_length" value="{{ .Upstreams | len }}" />
 
-    <footer class="w-full absolute px-4 flex flex-row justify-between" style="bottom: -0.5rem; left: 0;">
+      {{range $idx, $up := .Upstreams}}
+      <label for="upstreams[{{$idx}}].url">Manifest URL *</label>
+      {{if $up.IsConfigurable}}
+      <fieldset role="group" {{if ne $up.Error ""}}aria-invalid="true"{{end}}>
+        {{end}}
+        <input name="upstreams[{{$idx}}].url" type="url" required aria-invalid="{{if ne $up.Error ""}}true{{end}}" value="{{$up.URL}}">
+        {{if $up.IsConfigurable}}
+        <input type="button" value="Configure" onclick="onUpstreamManifestConfigure({{$idx}})" />
+      </fieldset>
+      {{end}}
+      <small class="mb-0">{{if ne $up.Error ""}}<span class="error">{{$up.Error}}</span>{{end}}</small>
+      {{end}}
+    </div>
+
+    <footer id="upstream-configure-actions" class="w-full absolute px-4 flex flex-row justify-between" style="bottom: -0.75rem; left: 0;">
       <small>
       </small>
-      <small class="px-2" style="background-color: var(--pico-background-color)">
-        <span class="description">Manifest URL for the Upstream Addon</span>
+      <small style="">
+        <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"remove-upstream"}'>- Remove</button>
+        <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"add-upstream"}'>+ Add</button>
       </small>
     </footer>
   </div>
@@ -63,8 +70,8 @@
 
 {{define "foot"}}
 <script>
-  function onUpstreamManifestConfigure() {
-    const url = document.querySelector("input[name='manifest_url']").value.replace(/\/manifest.json$/,'') + "/configure";
+  function onUpstreamManifestConfigure(idx) {
+    const url = document.querySelector(`input[name='upstreams[${idx}].url']`).value.replace(/\/manifest.json$/,'') + "/configure";
     window.open(url, "_blank");
   }
 

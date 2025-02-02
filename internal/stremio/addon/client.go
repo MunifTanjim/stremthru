@@ -169,7 +169,6 @@ type FetchStreamParams struct {
 	BaseURL  *url.URL
 	Type     string
 	Id       string
-	Extra    string
 	ClientIP string
 }
 
@@ -177,9 +176,6 @@ var fetchStreamGroup singleflight.Group
 
 func (c Client) FetchStream(params *FetchStreamParams) (request.APIResponse[stremio.StreamHandlerResponse], error) {
 	path := "stream/" + params.Type + "/" + params.Id
-	if params.Extra != "" {
-		path = path + "/" + params.Extra
-	}
 	url := params.BaseURL.JoinPath(path)
 	apiResponse, err, _ := fetchStreamGroup.Do(url.String(), func() (interface{}, error) {
 		adjustClientIPHeader(params.Ctx, params.ClientIP, nil)
@@ -188,6 +184,62 @@ func (c Client) FetchStream(params *FetchStreamParams) (request.APIResponse[stre
 		return request.NewAPIResponse(res, *response), err
 	})
 	return apiResponse.(request.APIResponse[stremio.StreamHandlerResponse]), err
+}
+
+type FetchCatalogParams struct {
+	request.Ctx
+	BaseURL  *url.URL
+	Type     string
+	Id       string
+	Extra    string
+	ClientIP string
+}
+
+func (c Client) FetchCatalog(params *FetchCatalogParams) (request.APIResponse[stremio.CatalogHandlerResponse], error) {
+	path := "catalog/" + params.Type + "/" + params.Id
+	if params.Extra != "" {
+		path = path + "/" + params.Extra
+	}
+	adjustClientIPHeader(params.Ctx, params.ClientIP, nil)
+	response := &stremio.CatalogHandlerResponse{}
+	res, err := c.Request("GET", params.BaseURL.JoinPath(path), params, response)
+	return request.NewAPIResponse(res, *response), err
+}
+
+type FetchMetaParams struct {
+	request.Ctx
+	BaseURL  *url.URL
+	Type     string
+	Id       string
+	ClientIP string
+}
+
+func (c Client) FetchMeta(params *FetchMetaParams) (request.APIResponse[stremio.MetaHandlerResponse], error) {
+	path := "meta/" + params.Type + "/" + params.Id
+	adjustClientIPHeader(params.Ctx, params.ClientIP, nil)
+	response := &stremio.MetaHandlerResponse{}
+	res, err := c.Request("GET", params.BaseURL.JoinPath(path), params, response)
+	return request.NewAPIResponse(res, *response), err
+}
+
+type FetchSubtitlesParams struct {
+	request.Ctx
+	BaseURL  *url.URL
+	Type     string
+	Id       string
+	Extra    string
+	ClientIP string
+}
+
+func (c Client) FetchSubtitles(params *FetchSubtitlesParams) (request.APIResponse[stremio.SubtitlesHandlerResponse], error) {
+	path := "subtitles/" + params.Type + "/" + params.Id
+	if params.Extra != "" {
+		path = path + "/" + params.Extra
+	}
+	adjustClientIPHeader(params.Ctx, params.ClientIP, nil)
+	response := &stremio.SubtitlesHandlerResponse{}
+	res, err := c.Request("GET", params.BaseURL.JoinPath(path), params, response)
+	return request.NewAPIResponse(res, *response), err
 }
 
 type ProxyResourceParams struct {

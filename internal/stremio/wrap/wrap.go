@@ -2,11 +2,13 @@ package stremio_wrap
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -27,33 +29,78 @@ var addon = func() *stremio_addon.Client {
 	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
 }()
 
+var upstreamResolverCache = cache.NewCache[upstreamsResolver](&cache.CacheConfig{
+	Name:     "stremio:wrap:upstreamResolver",
+	Lifetime: 24 * time.Hour,
+})
+
+type upstreamsResolverEntry struct {
+	Prefix  string
+	Indices []int
+}
+
+type upstreamsResolver map[string][]upstreamsResolverEntry
+
+func (usr upstreamsResolver) resolve(ud UserData, rName stremio.ResourceName, rType string, id string) []UserDataUpstream {
+	upstreams := []UserDataUpstream{}
+	key := string(rName) + ":" + rType
+	if _, found := usr[key]; !found {
+		return upstreams
+	}
+	for _, entry := range usr[key] {
+		if strings.HasPrefix(id, entry.Prefix) {
+			for _, idx := range entry.Indices {
+				upstreams = append(upstreams, ud.Upstreams[idx])
+			}
+			break
+		}
+	}
+	return upstreams
+}
+
+type UserDataUpstream struct {
+	URL     string   `json:"u"`
+	baseUrl *url.URL `json:"-"`
+}
+
 type UserData struct {
-	ManifestURL string   `json:"manifest_url"`
-	StoreName   string   `json:"store"`
-	StoreToken  string   `json:"token"`
-	CachedOnly  bool     `json:"cached"`
-	encoded     string   `json:"-"`
-	baseUrl     *url.URL `json:"-"`
+	ManifestURL string             `json:"manifest_url,omitempty"`
+	Upstreams   []UserDataUpstream `json:"upstreams"`
+	StoreName   string             `json:"store"`
+	StoreToken  string             `json:"token"`
+	CachedOnly  bool               `json:"cached,omitempty"`
+
+	encoded   string             `json:"-"`
+	manifests []stremio.Manifest `json:"-"`
+	resolver  upstreamsResolver  `json:"-"`
 }
 
 func (ud UserData) HasRequiredValues() bool {
-	return ud.ManifestURL != "" && ud.StoreToken != ""
+	if len(ud.Upstreams) == 0 {
+		return false
+	}
+	for i := range ud.Upstreams {
+		if ud.Upstreams[i].URL == "" {
+			return false
+		}
+	}
+	return ud.StoreToken != ""
 }
 
-func (ud UserData) GetEncoded() (string, error) {
-	if ud.encoded != "" {
-		return ud.encoded, nil
+func (ud UserData) GetEncoded(forceRefresh bool) (string, error) {
+	if ud.encoded == "" || forceRefresh {
+		blob, err := json.Marshal(ud)
+		if err != nil {
+			return "", err
+		}
+		ud.encoded = core.Base64Encode(string(blob))
 	}
 
-	blob, err := json.Marshal(ud)
-	if err != nil {
-		return "", err
-	}
-	return core.Base64Encode(string(blob)), nil
+	return ud.encoded, nil
 }
 
 type userDataError struct {
-	manifestUrl string
+	upstreamUrl []string
 	store       string
 	token       string
 }
@@ -61,10 +108,12 @@ type userDataError struct {
 func (uderr *userDataError) Error() string {
 	var str strings.Builder
 	hasSome := false
-	if uderr.manifestUrl != "" {
-		str.WriteString("manifest_url: ")
-		str.WriteString(uderr.manifestUrl)
-		hasSome = true
+	for _, err := range uderr.upstreamUrl {
+		if err != "" {
+			str.WriteString("upstream_url: ")
+			str.WriteString(err)
+			hasSome = true
+		}
 	}
 	if hasSome {
 		str.WriteString(", ")
@@ -86,8 +135,19 @@ func (uderr *userDataError) Error() string {
 func (ud UserData) GetRequestContext(r *http.Request) (*context.RequestContext, error) {
 	ctx := &context.RequestContext{}
 
-	if ud.baseUrl == nil {
-		return ctx, &userDataError{manifestUrl: "Invalid Manifest URL"}
+	upstreamUrlErrors := []string{}
+	hasUpstreamUrlErrors := false
+	for i := range ud.Upstreams {
+		up := &ud.Upstreams[i]
+		if up.baseUrl == nil {
+			upstreamUrlErrors = append(upstreamUrlErrors, "Invalid Manifest URL("+up.URL+")")
+			hasUpstreamUrlErrors = true
+		} else {
+			upstreamUrlErrors = append(upstreamUrlErrors, "")
+		}
+	}
+	if hasUpstreamUrlErrors {
+		return ctx, &userDataError{upstreamUrl: upstreamUrlErrors}
 	}
 
 	storeName := ud.StoreName
@@ -118,6 +178,350 @@ func (ud UserData) GetRequestContext(r *http.Request) (*context.RequestContext, 
 	return ctx, nil
 }
 
+func (ud UserData) getUpstreamManifests(ctx *context.RequestContext) ([]stremio.Manifest, []error) {
+	if ud.manifests == nil {
+		var wg sync.WaitGroup
+
+		manifests := make([]stremio.Manifest, len(ud.Upstreams))
+		errs := make([]error, len(ud.Upstreams))
+		hasError := false
+		for i := range ud.Upstreams {
+			up := &ud.Upstreams[i]
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				res, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: up.baseUrl, ClientIP: ctx.ClientIP})
+				manifests[i] = res.Data
+				errs[i] = err
+				if err != nil {
+					hasError = true
+				}
+			}()
+		}
+
+		wg.Wait()
+
+		if hasError {
+			return manifests, errs
+		}
+
+		ud.manifests = manifests
+	}
+
+	return ud.manifests, nil
+}
+
+func (ud UserData) getUpstreamsResolver(ctx *context.RequestContext) (upstreamsResolver, error) {
+	eud, err := ud.GetEncoded(false)
+	if err != nil {
+		return nil, err
+	}
+	if ud.resolver == nil {
+		if upstreamResolverCache.Get(eud, &ud.resolver) {
+			return ud.resolver, nil
+		}
+
+		manifests, errs := ud.getUpstreamManifests(ctx)
+		if errs != nil {
+			return nil, errors.Join(errs...)
+		}
+
+		resolver := upstreamsResolver{}
+		entryIdxMap := map[string]int{}
+		for mIdx := range manifests {
+			m := &manifests[mIdx]
+			for _, r := range m.Resources {
+				if r.Name == stremio.ResourceNameAddonCatalog || r.Name == stremio.ResourceNameCatalog {
+					continue
+				}
+
+				idPrefixes := getManifestResourceIdPrefixes(m, r)
+				for _, rType := range getManifestResourceTypes(m, r) {
+					key := string(r.Name) + ":" + string(rType)
+					if _, found := resolver[key]; !found {
+						resolver[key] = []upstreamsResolverEntry{}
+					}
+					for _, idPrefix := range idPrefixes {
+						idPrefixKey := key + ":" + idPrefix
+						if idx, found := entryIdxMap[idPrefixKey]; found {
+							resolver[key][idx].Indices = append(resolver[key][idx].Indices, mIdx)
+						} else {
+							resolver[key] = append(resolver[key], upstreamsResolverEntry{
+								Prefix:  idPrefix,
+								Indices: []int{mIdx},
+							})
+							entryIdxMap[idPrefixKey] = len(resolver[key]) - 1
+						}
+					}
+				}
+			}
+		}
+
+		err = upstreamResolverCache.Add(eud, resolver)
+		if err != nil {
+			return nil, err
+		}
+
+		ud.resolver = resolver
+	}
+
+	return ud.resolver, nil
+}
+
+func (ud UserData) getUpstreams(ctx *context.RequestContext, rName stremio.ResourceName, rType, id string) ([]UserDataUpstream, error) {
+	switch rName {
+	case stremio.ResourceNameAddonCatalog:
+		return []UserDataUpstream{}, nil
+	case stremio.ResourceNameCatalog:
+		return []UserDataUpstream{}, nil
+	default:
+		if len(ud.Upstreams) == 1 {
+			return ud.Upstreams, nil
+		}
+
+		resolver, err := ud.getUpstreamsResolver(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return resolver.resolve(ud, rName, rType, id), nil
+	}
+}
+
+func parseCatalogId(id string, ud *UserData) (idx int, catalogId string, err error) {
+	idxStr, catalogId, ok := strings.Cut(id, "::")
+	if !ok {
+		return -1, "", errors.New("invalid id")
+	}
+	idx, err = strconv.Atoi(idxStr)
+	if err != nil {
+		return -1, "", err
+	}
+	if len(ud.Upstreams) <= idx {
+		return -1, "", errors.New("invalid id")
+	}
+	return idx, catalogId, nil
+}
+
+func (ud UserData) fetchAddonCatalog(ctx *context.RequestContext, w http.ResponseWriter, r *http.Request, rType, id string) {
+	idx, catalogId, err := parseCatalogId(id, &ud)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+		BaseURL:  ud.Upstreams[idx].baseUrl,
+		Resource: string(stremio.ResourceNameAddonCatalog),
+		Type:     rType,
+		Id:       catalogId,
+		ClientIP: ctx.ClientIP,
+	})
+}
+
+func (ud UserData) fetchCatalog(ctx *context.RequestContext, w http.ResponseWriter, r *http.Request, rType, id, extra string) {
+	idx, catalogId, err := parseCatalogId(id, &ud)
+	if err != nil {
+		SendError(w, err)
+		return
+	}
+	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+		BaseURL:  ud.Upstreams[idx].baseUrl,
+		Resource: string(stremio.ResourceNameCatalog),
+		Type:     rType,
+		Id:       catalogId,
+		Extra:    extra,
+		ClientIP: ctx.ClientIP,
+	})
+}
+
+func (ud UserData) fetchMeta(ctx *context.RequestContext, w http.ResponseWriter, r *http.Request, rType, id, extra string) error {
+	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameMeta, rType, id)
+	if err != nil {
+		return err
+	}
+
+	upstream := upstreams[0]
+
+	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+		BaseURL:  upstream.baseUrl,
+		Resource: string(stremio.ResourceNameMeta),
+		Type:     rType,
+		Id:       id,
+		Extra:    extra,
+		ClientIP: ctx.ClientIP,
+	})
+	return nil
+}
+
+func (ud UserData) fetchStream(ctx *context.RequestContext, r *http.Request, rType, id string) (*stremio.StreamHandlerResponse, error) {
+	eud, err := ud.GetEncoded(false)
+	if err != nil {
+		return nil, err
+	}
+
+	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameStream, rType, id)
+	if err != nil {
+		return nil, err
+	}
+
+	chunks := make([][]stremio.Stream, len(upstreams))
+	errs := make([]error, len(upstreams))
+
+	var wg sync.WaitGroup
+	for i := range upstreams {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res, err := addon.FetchStream(&stremio_addon.FetchStreamParams{
+				BaseURL:  upstreams[i].baseUrl,
+				Type:     rType,
+				Id:       id,
+				ClientIP: ctx.ClientIP,
+			})
+			chunks[i] = res.Data.Streams
+			errs[i] = err
+		}()
+	}
+	wg.Wait()
+
+	allStreams := []stremio.Stream{}
+	for i := range chunks {
+		if errs[i] != nil {
+			log.Println("[stremio/wrap] failed to fetch streams", errs[i])
+			continue
+		}
+		allStreams = append(allStreams, chunks[i]...)
+	}
+
+	hashes := []string{}
+	magnetByHash := map[string]core.MagnetLink{}
+	for i := range allStreams {
+		stream := &allStreams[i]
+		if stream.URL == "" && stream.InfoHash != "" {
+			magnet, err := core.ParseMagnetLink(stream.InfoHash)
+			if err != nil {
+				continue
+			}
+			hashes = append(hashes, magnet.Hash)
+			magnetByHash[magnet.Hash] = magnet
+		}
+	}
+
+	stremId := strings.TrimSuffix(id, ".json")
+
+	storeNamePrefix := ""
+	isCachedByHash := map[string]bool{}
+	if len(hashes) > 0 {
+		cmParams := &store.CheckMagnetParams{Magnets: hashes}
+		cmParams.APIKey = ctx.StoreAuthToken
+		cmParams.ClientIP = ctx.ClientIP
+		cmParams.SId = stremId
+		cmRes, err := ctx.Store.CheckMagnet(cmParams)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range cmRes.Items {
+			isCachedByHash[item.Hash] = item.Status == store.MagnetStatusCached
+		}
+
+		storeNamePrefix = "[" + strings.ToUpper(string(ctx.Store.GetName().Code())) + "] "
+	}
+
+	cachedStreams := []stremio.Stream{}
+	uncachedStreams := []stremio.Stream{}
+	for i := range allStreams {
+		stream := &allStreams[i]
+		if stream.URL == "" && stream.InfoHash != "" {
+			magnet, ok := magnetByHash[strings.ToLower(stream.InfoHash)]
+			if !ok {
+				continue
+			}
+			stream.Name = storeNamePrefix + stream.Name
+			url := shared.ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/_/strem/" + magnet.Hash + "/" + strconv.Itoa(stream.FileIndex) + "/")
+			if stream.BehaviorHints != nil && stream.BehaviorHints.Filename != "" {
+				url = url.JoinPath(stream.BehaviorHints.Filename)
+			}
+			url.RawQuery = "sid=" + stremId
+			stream.URL = url.String()
+			stream.InfoHash = ""
+			stream.FileIndex = 0
+
+			if isCached, ok := isCachedByHash[magnet.Hash]; ok && isCached {
+				stream.Name = "⚡ " + stream.Name
+				cachedStreams = append(cachedStreams, *stream)
+			} else if !ud.CachedOnly {
+				uncachedStreams = append(uncachedStreams, *stream)
+			}
+		} else if stream.URL != "" {
+			var headers map[string]string
+			if stream.BehaviorHints != nil && stream.BehaviorHints.ProxyHeaders != nil && stream.BehaviorHints.ProxyHeaders.Request != nil {
+				headers = stream.BehaviorHints.ProxyHeaders.Request
+			}
+
+			if url, err := shared.CreateProxyLink(r, ctx, stream.URL, headers, config.TUNNEL_TYPE_AUTO); err == nil && url != stream.URL {
+				stream.URL = url
+				stream.Name = "✨ " + stream.Name
+			}
+			cachedStreams = append(cachedStreams, *stream)
+		}
+	}
+
+	streams := make([]stremio.Stream, len(cachedStreams)+len(uncachedStreams))
+	idx := 0
+	for i := range cachedStreams {
+		streams[idx] = cachedStreams[i]
+		idx++
+	}
+	for i := range uncachedStreams {
+		streams[idx] = uncachedStreams[i]
+		idx++
+	}
+
+	return &stremio.StreamHandlerResponse{
+		Streams: streams,
+	}, nil
+}
+
+func (ud UserData) fetchSubtitles(ctx *context.RequestContext, rType, id, extra string) (*stremio.SubtitlesHandlerResponse, error) {
+	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameSubtitles, rType, id)
+	if err != nil {
+		return nil, err
+	}
+
+	chunks := make([][]stremio.Subtitle, len(upstreams))
+	errs := make([]error, len(upstreams))
+
+	var wg sync.WaitGroup
+	for i := range upstreams {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res, err := addon.FetchSubtitles(&stremio_addon.FetchSubtitlesParams{
+				BaseURL:  upstreams[i].baseUrl,
+				Type:     rType,
+				Id:       id,
+				Extra:    extra,
+				ClientIP: ctx.ClientIP,
+			})
+			chunks[i] = res.Data.Subtitles
+			errs[i] = err
+		}()
+	}
+	wg.Wait()
+
+	subtitles := []stremio.Subtitle{}
+	for i := range chunks {
+		if errs[i] != nil {
+			log.Println("[stremio/wrap] failed to fetch subtitles", errs[i])
+			continue
+		}
+		subtitles = append(subtitles, chunks[i]...)
+	}
+
+	return &stremio.SubtitlesHandlerResponse{
+		Subtitles: subtitles,
+	}, nil
+}
+
 func getUserData(r *http.Request) (*UserData, error) {
 	data := &UserData{}
 
@@ -134,6 +538,19 @@ func getUserData(r *http.Request) (*UserData, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if data.ManifestURL != "" {
+			data.Upstreams = []UserDataUpstream{
+				{
+					URL: data.ManifestURL,
+				},
+			}
+			data.ManifestURL = ""
+			_, err := data.GetEncoded(true)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if IsMethod(r, http.MethodPost) {
@@ -142,26 +559,44 @@ func getUserData(r *http.Request) (*UserData, error) {
 			return nil, err
 		}
 
-		data.ManifestURL = r.Form.Get("manifest_url")
-		if strings.HasPrefix(data.ManifestURL, "stremio:") {
-			data.ManifestURL = "https:" + strings.TrimPrefix(data.ManifestURL, "stremio:")
+		upstreams_length := 1
+		if v := r.Form.Get("upstreams_length"); v != "" {
+			upstreams_length, err = strconv.Atoi(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		for idx := range upstreams_length {
+			upURL := r.Form.Get("upstreams[" + strconv.Itoa(idx) + "].url")
+			if strings.HasPrefix(upURL, "stremio:") {
+				upURL = "https:" + strings.TrimPrefix(upURL, "stremio:")
+			}
+			if upURL != "" {
+				data.Upstreams = append(data.Upstreams, UserDataUpstream{
+					URL: upURL,
+				})
+			}
 		}
 
 		data.StoreName = r.Form.Get("store")
 		data.StoreToken = r.Form.Get("token")
 		data.CachedOnly = r.Form.Get("cached") == "on"
-		encoded, err := data.GetEncoded()
+
+		_, err = data.GetEncoded(false)
 		if err != nil {
 			return nil, err
 		}
-		data.encoded = encoded
 	}
 
-	if data.ManifestURL != "" {
-		if baseUrl, err := url.Parse(data.ManifestURL); err == nil {
-			if strings.HasSuffix(baseUrl.Path, "/manifest.json") {
-				baseUrl.Path = strings.TrimSuffix(baseUrl.Path, "/manifest.json")
-				data.baseUrl = baseUrl
+	for i := range data.Upstreams {
+		up := &data.Upstreams[i]
+		if up.URL != "" {
+			if baseUrl, err := url.Parse(up.URL); err == nil {
+				if strings.HasSuffix(baseUrl.Path, "/manifest.json") {
+					baseUrl.Path = strings.TrimSuffix(baseUrl.Path, "/manifest.json")
+					up.baseUrl = baseUrl
+				}
 			}
 		}
 	}
@@ -191,42 +626,17 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl, ClientIP: ctx.ClientIP})
-	if err != nil {
-		SendError(w, err)
+	manifests, errs := ud.getUpstreamManifests(ctx)
+	if errs != nil {
+		serr := shared.ErrorInternalServerError(r, "failed to fetch upstream manifests")
+		serr.Cause = errors.Join(errs...)
+		serr.Send(w)
 		return
 	}
 
-	manifest := getManifest(&res.Data, ud)
+	manifest := getManifest(manifests, ud)
 
 	SendResponse(w, 200, manifest)
-}
-
-func getStoreNameConfig() configure.Config {
-	options := []configure.ConfigOption{
-		{Value: "", Label: "StremThru"},
-		{Value: "alldebrid", Label: "AllDebrid"},
-		{Value: "debridlink", Label: "DebridLink"},
-		{Value: "easydebrid", Label: "EasyDebrid"},
-		{Value: "offcloud", Label: "Offcloud"},
-		{Value: "pikpak", Label: "PikPak"},
-		{Value: "premiumize", Label: "Premiumize"},
-		{Value: "realdebrid", Label: "RealDebrid"},
-		{Value: "torbox", Label: "TorBox"},
-	}
-	if !config.ProxyStreamEnabled {
-		options[0].Disabled = true
-		options[0].Label = ""
-	}
-	config := configure.Config{
-		Key:      "store",
-		Type:     "select",
-		Default:  "",
-		Title:    "Store Name",
-		Options:  options,
-		Required: !config.ProxyStreamEnabled,
-	}
-	return config
 }
 
 func handleConfigure(w http.ResponseWriter, r *http.Request) {
@@ -241,8 +651,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	td := getTemplateData()
-	td.Upstream.URL = ud.ManifestURL
+	td := getTemplateData(ud)
 	for i := range td.Configs {
 		conf := &td.Configs[i]
 		switch conf.Key {
@@ -255,6 +664,29 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				conf.Default = "checked"
 			}
 		}
+	}
+
+	if action := r.Header.Get("x-addon-configure-action"); action != "" {
+		switch action {
+		case "add-upstream":
+			td.Upstreams = append(td.Upstreams, UpstreamAddon{
+				URL: "",
+			})
+		case "remove-upstream":
+			end := len(td.Upstreams) - 1
+			if end == 0 {
+				end = 1
+			}
+			td.Upstreams = append([]UpstreamAddon{}, td.Upstreams[0:end]...)
+		}
+
+		page, err := getPage(td)
+		if err != nil {
+			SendError(w, err)
+			return
+		}
+		SendHTML(w, 200, page)
+		return
 	}
 
 	if ud.encoded != "" {
@@ -273,8 +705,9 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		ctx, err := ud.GetRequestContext(r)
 		if err != nil {
 			if uderr, ok := err.(*userDataError); ok {
-				td.HasError.Upstream = true
-				td.Message.Upstream = uderr.manifestUrl
+				for i, err := range uderr.upstreamUrl {
+					td.Upstreams[i].Error = err
+				}
 				store_config.Error = uderr.store
 				token_config.Error = uderr.token
 			} else {
@@ -283,18 +716,25 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if !td.HasError.Upstream {
-			manifest, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: ud.baseUrl, ClientIP: ctx.ClientIP})
-			if err != nil {
-				core.LogError("[stremio/wrap] failed to fetch manifest", err)
-				td.HasError.Upstream = true
-				td.Message.Upstream = "Failed to fetch Manifest"
-			} else if manifest.Data.BehaviorHints != nil && manifest.Data.BehaviorHints.Configurable {
-				td.Upstream.IsConfigurable = true
+		manifests, errs := ud.getUpstreamManifests(ctx)
+		for i := range manifests {
+			tup := &td.Upstreams[i]
+			manifest := manifests[i]
+
+			if tup.Error == "" {
+				if errs != nil && errs[i] != nil {
+					core.LogError("[stremio/wrap] failed to fetch manifest", errs[i])
+					tup.Error = "Failed to fetch Manifest"
+					continue
+				}
+
+				if manifest.BehaviorHints != nil && manifest.BehaviorHints.Configurable {
+					tup.IsConfigurable = true
+				}
 			}
 		}
 
-		if !td.HasError.Upstream {
+		if !td.HasUpstreamError() {
 			if ctx.Store == nil {
 				if ud.StoreName == "" {
 					token_config.Error = "Invalid Token"
@@ -317,7 +757,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	if IsMethod(r, http.MethodGet) || hasError {
 		if !hasError && ud.HasRequiredValues() {
-			if eud, err := ud.GetEncoded(); err == nil {
+			if eud, err := ud.GetEncoded(false); err == nil {
 				td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/manifest.json").String()
 			}
 		}
@@ -331,7 +771,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eud, err := ud.GetEncoded()
+	eud, err := ud.GetEncoded(true)
 	if err != nil {
 		SendError(w, err)
 		return
@@ -368,124 +808,44 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eud, err := ud.GetEncoded()
-	if err != nil {
-		SendError(w, err)
+	switch stremio.ResourceName(resource) {
+	case stremio.ResourceNameAddonCatalog:
+		ud.fetchAddonCatalog(ctx, w, r, contentType, id)
+	case stremio.ResourceNameCatalog:
+		ud.fetchCatalog(ctx, w, r, contentType, id, extra)
+	case stremio.ResourceNameMeta:
+		err = ud.fetchMeta(ctx, w, r, contentType, id, extra)
+		if err != nil {
+			SendError(w, err)
+		}
 		return
-	}
+	case stremio.ResourceNameStream:
+		res, err := ud.fetchStream(ctx, r, contentType, id)
+		if err != nil {
+			SendError(w, err)
+			return
+		}
+		SendResponse(w, 200, res)
+		return
 
-	if resource == string(stremio.ResourceNameStream) {
-		res, err := addon.FetchStream(&stremio_addon.FetchStreamParams{
-			BaseURL:  ud.baseUrl,
+	case stremio.ResourceNameSubtitles:
+		res, err := ud.fetchSubtitles(ctx, contentType, id, extra)
+		if err != nil {
+			SendError(w, err)
+			return
+		}
+		SendResponse(w, 200, res)
+		return
+	default:
+		addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+			BaseURL:  ud.Upstreams[0].baseUrl,
+			Resource: resource,
 			Type:     contentType,
 			Id:       id,
 			Extra:    extra,
 			ClientIP: ctx.ClientIP,
 		})
-		if err != nil {
-			SendError(w, err)
-			return
-		}
-
-		hashes := []string{}
-		magnetByHash := map[string]core.MagnetLink{}
-		for i := range res.Data.Streams {
-			stream := &res.Data.Streams[i]
-			if stream.URL == "" && stream.InfoHash != "" {
-				magnet, err := core.ParseMagnetLink(stream.InfoHash)
-				if err != nil {
-					continue
-				}
-				hashes = append(hashes, magnet.Hash)
-				magnetByHash[magnet.Hash] = magnet
-			}
-		}
-
-		stremId := strings.TrimSuffix(id, ".json")
-
-		storeNamePrefix := ""
-		isCachedByHash := map[string]bool{}
-		if len(hashes) > 0 {
-			cmParams := &store.CheckMagnetParams{Magnets: hashes}
-			cmParams.APIKey = ctx.StoreAuthToken
-			cmParams.ClientIP = ctx.ClientIP
-			cmParams.SId = stremId
-			cmRes, err := ctx.Store.CheckMagnet(cmParams)
-			if err != nil {
-				SendError(w, err)
-				return
-			}
-			for _, item := range cmRes.Items {
-				isCachedByHash[item.Hash] = item.Status == store.MagnetStatusCached
-			}
-
-			storeNamePrefix = "[" + strings.ToUpper(string(ctx.Store.GetName().Code())) + "] "
-		}
-
-		cachedStreams := []stremio.Stream{}
-		uncachedStreams := []stremio.Stream{}
-		for i := range res.Data.Streams {
-			stream := &res.Data.Streams[i]
-			if stream.URL == "" && stream.InfoHash != "" {
-				magnet, ok := magnetByHash[strings.ToLower(stream.InfoHash)]
-				if !ok {
-					continue
-				}
-				stream.Name = storeNamePrefix + stream.Name
-				url := shared.ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/_/strem/" + magnet.Hash + "/" + strconv.Itoa(stream.FileIndex) + "/")
-				if stream.BehaviorHints != nil && stream.BehaviorHints.Filename != "" {
-					url = url.JoinPath(stream.BehaviorHints.Filename)
-				}
-				url.RawQuery = "sid=" + stremId
-				stream.URL = url.String()
-				stream.InfoHash = ""
-				stream.FileIndex = 0
-
-				if isCached, ok := isCachedByHash[magnet.Hash]; ok && isCached {
-					stream.Name = "⚡ " + stream.Name
-					cachedStreams = append(cachedStreams, *stream)
-				} else if !ud.CachedOnly {
-					uncachedStreams = append(uncachedStreams, *stream)
-				}
-			} else if stream.URL != "" {
-				var headers map[string]string
-				if stream.BehaviorHints != nil && stream.BehaviorHints.ProxyHeaders != nil && stream.BehaviorHints.ProxyHeaders.Request != nil {
-					headers = stream.BehaviorHints.ProxyHeaders.Request
-				}
-
-				if url, err := shared.CreateProxyLink(r, ctx, stream.URL, headers, config.TUNNEL_TYPE_AUTO); err == nil && url != stream.URL {
-					stream.URL = url
-					stream.Name = "✨ " + stream.Name
-				}
-				cachedStreams = append(cachedStreams, *stream)
-			}
-		}
-
-		streams := make([]stremio.Stream, len(cachedStreams)+len(uncachedStreams))
-		idx := 0
-		for i := range cachedStreams {
-			streams[idx] = cachedStreams[i]
-			idx++
-		}
-		for i := range uncachedStreams {
-			streams[idx] = uncachedStreams[i]
-			idx++
-		}
-
-		res.Data.Streams = streams
-
-		SendResponse(w, 200, res.Data)
-		return
 	}
-
-	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
-		BaseURL:  ud.baseUrl,
-		Resource: resource,
-		Type:     contentType,
-		Id:       id,
-		Extra:    extra,
-		ClientIP: ctx.ClientIP,
-	})
 }
 
 func waitForMagnetStatus(ctx *context.RequestContext, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
