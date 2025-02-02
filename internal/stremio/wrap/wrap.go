@@ -152,7 +152,7 @@ func (ud UserData) GetRequestContext(r *http.Request) (*context.RequestContext, 
 
 	storeName := ud.StoreName
 	storeToken := ud.StoreToken
-	if storeName == "" {
+	if storeName == "" && len(ud.Upstreams) > 0 {
 		auth, err := core.ParseBasicAuth(storeToken)
 		if err != nil {
 			return ctx, &userDataError{token: err.Error()}
