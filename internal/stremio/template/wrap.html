@@ -21,7 +21,7 @@
 {{define "main"}}
 <form id="configuration" action="configure" method="post" hx-boost="true">
   <div id="upstream_addons" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
-    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addons</header>
+    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addon{{if .SupportMultiAddons}}s{{end}}</header>
 
     <div>
       <input type="hidden" name="upstreams_length" value="{{ .Upstreams | len }}" />
@@ -43,9 +43,11 @@
     <footer id="upstream-configure-actions" class="w-full absolute px-4 flex flex-row justify-between" style="bottom: -0.75rem; left: 0;">
       <small>
       </small>
-      <small style="">
+      <small>
+        {{if .SupportMultiAddons}}
         <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"remove-upstream"}'>- Remove</button>
         <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"add-upstream"}'>+ Add</button>
+        {{end}}
       </small>
     </footer>
   </div>

@@ -232,6 +232,7 @@ var LandingPage = config.LandingPage
 var ServerStartTime = config.ServerStartTime
 var StoreContentProxy = config.StoreContentProxy
 var IP = config.IP
+var IsPublicInstance = len(ProxyAuthPassword) == 0
 
 func getRedactedURI(uri string) (string, error) {
 	u, err := url.Parse(uri)
@@ -304,8 +305,7 @@ func PrintConfig(state *AppState) {
 	}
 	l.Println()
 
-	usersCount := len(ProxyAuthPassword)
-	if usersCount > 0 {
+	if !IsPublicInstance {
 		l.Println(" Users:")
 		for user := range ProxyAuthPassword {
 			stores := StoreAuthToken.ListStores(user)
@@ -328,7 +328,7 @@ func PrintConfig(state *AppState) {
 	l.Println(" Stores:")
 	for _, store := range state.StoreNames {
 		storeConfig := ""
-		if usersCount > 0 && StoreContentProxy.IsEnabled(string(store)) {
+		if !IsPublicInstance && StoreContentProxy.IsEnabled(string(store)) {
 			storeConfig += "content_proxy"
 		}
 		if hasTunnel {
@@ -337,7 +337,7 @@ func PrintConfig(state *AppState) {
 					storeConfig += ","
 				}
 				storeConfig += "tunnel:api"
-				if usersCount > 0 && StoreTunnel.GetTypeForStream(string(store)) == TUNNEL_TYPE_FORCED {
+				if !IsPublicInstance && StoreTunnel.GetTypeForStream(string(store)) == TUNNEL_TYPE_FORCED {
 					storeConfig += "+stream"
 				}
 			}

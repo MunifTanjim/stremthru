@@ -89,6 +89,8 @@ type TemplateData struct {
 	Error       string
 	ManifestURL string
 	Script      template.JS
+
+	SupportMultiAddons bool
 }
 
 func (td *TemplateData) HasUpstreamError() bool {
@@ -115,6 +117,7 @@ func (td *TemplateData) HasFieldError() bool {
 var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/wrap", func(td *TemplateData) *TemplateData {
 		td.Version = config.Version
+		td.SupportMultiAddons = SupportMultiAddons
 		return td
 	}, template.FuncMap{}, "configure_config.html", "wrap.html")
 }()

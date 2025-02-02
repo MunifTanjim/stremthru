@@ -25,6 +25,8 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var SupportMultiAddons = !config.IsPublicInstance
+
 var addon = func() *stremio_addon.Client {
 	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
 }()
@@ -589,6 +591,10 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 	}
 
+	if !SupportMultiAddons {
+		data.Upstreams = data.Upstreams[0:1]
+	}
+
 	for i := range data.Upstreams {
 		up := &data.Upstreams[i]
 		if up.URL != "" {
@@ -669,15 +675,19 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	if action := r.Header.Get("x-addon-configure-action"); action != "" {
 		switch action {
 		case "add-upstream":
-			td.Upstreams = append(td.Upstreams, UpstreamAddon{
-				URL: "",
-			})
+			if SupportMultiAddons {
+				td.Upstreams = append(td.Upstreams, UpstreamAddon{
+					URL: "",
+				})
+			}
 		case "remove-upstream":
 			end := len(td.Upstreams) - 1
 			if end == 0 {
 				end = 1
 			}
-			td.Upstreams = append([]UpstreamAddon{}, td.Upstreams[0:end]...)
+			if SupportMultiAddons {
+				td.Upstreams = append([]UpstreamAddon{}, td.Upstreams[0:end]...)
+			}
 		}
 
 		page, err := getPage(td)
