@@ -377,18 +377,23 @@ func handleAddonMove(w http.ResponseWriter, r *http.Request) {
 			td.Addons = addons
 		}
 
-		set_params := &stremio_api.SetAddonsParams{
-			Addons: td.Addons,
-		}
-		set_params.APIKey = cookie.AuthKey()
-		set_res, err := client.SetAddons(set_params)
-		if err != nil || !set_res.Data.Success {
+		if td.AddonError == "" {
+			set_params := &stremio_api.SetAddonsParams{
+				Addons: td.Addons,
+			}
+			set_params.APIKey = cookie.AuthKey()
+			set_res, err := client.SetAddons(set_params)
 			if err != nil {
 				err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons: %v\n", core.PackError(err))
 				log.Print(err_msg)
 				td.AddonError = strings.TrimSpace(err_msg)
+			} else if !set_res.Data.Success {
+				err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons!\n")
+				log.Print(err_msg)
+				td.AddonError = strings.TrimSpace(err_msg)
+			} else {
+				td.Addons = currAddons
 			}
-			td.Addons = currAddons
 		}
 	}
 
@@ -445,7 +450,14 @@ func handleAddonReload(w http.ResponseWriter, r *http.Request) {
 			manifestUrl = addon.TransportUrl
 		}
 
-		if transportUrl, err := url.Parse(manifestUrl); err == nil {
+		oldTransportUrl, err := url.Parse(addon.TransportUrl)
+		if err != nil {
+			err_msg := fmt.Sprintf("[stremio/sidekick] failed to parse old manifest url: %v\n", core.PackError(err))
+			log.Print(err_msg)
+			td.AddonError = strings.TrimSpace(err_msg)
+		}
+
+		if transportUrl, err := url.Parse(manifestUrl); err == nil && td.AddonError == "" {
 			rawPath := transportUrl.RawPath
 			if rawPath == "" {
 				rawPath = transportUrl.Path
@@ -453,15 +465,12 @@ func handleAddonReload(w http.ResponseWriter, r *http.Request) {
 			transportUrl.RawPath = strings.TrimSuffix(rawPath, "/manifest.json")
 			transportUrl.Path, _ = url.PathUnescape(transportUrl.RawPath)
 
-			manifest, err := addon_client.GetManifest(&stremio_addon.GetManifestParams{
-				BaseURL: transportUrl,
-			})
-			if err != nil {
-				err_msg := fmt.Sprintf("[stremio/sidekick] failed to get manifest: %v\n", core.PackError(err))
+			if transportUrl.Host != oldTransportUrl.Host {
+				err_msg := fmt.Sprintf("[stremio/sidekick] manifest url host changed\n")
 				log.Print(err_msg)
 				td.AddonError = strings.TrimSpace(err_msg)
-			} else if manifest.Data.ID != addon.Manifest.ID && manifest.Data.Name != addon.Manifest.Name {
-				err_msg := fmt.Sprintf("[stremio/sidekick] both manifest id and name changed\n")
+			} else if manifest, err := addon_client.GetManifest(&stremio_addon.GetManifestParams{BaseURL: transportUrl}); err != nil {
+				err_msg := fmt.Sprintf("[stremio/sidekick] failed to get manifest: %v\n", core.PackError(err))
 				log.Print(err_msg)
 				td.AddonError = strings.TrimSpace(err_msg)
 			} else {
@@ -481,12 +490,15 @@ func handleAddonReload(w http.ResponseWriter, r *http.Request) {
 		}
 		set_params.APIKey = cookie.AuthKey()
 		set_res, err := client.SetAddons(set_params)
-		if err != nil || !set_res.Data.Success {
-			if err != nil {
-				err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons: %v\n", core.PackError(err))
-				log.Print(err_msg)
-				td.AddonError = strings.TrimSpace(err_msg)
-			}
+		if err != nil {
+			err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons: %v\n", core.PackError(err))
+			log.Print(err_msg)
+			td.AddonError = strings.TrimSpace(err_msg)
+		} else if !set_res.Data.Success {
+			err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons!\n")
+			log.Print(err_msg)
+			td.AddonError = strings.TrimSpace(err_msg)
+		} else {
 			td.Addons = currAddons
 		}
 	}
@@ -594,12 +606,15 @@ func handleAddonToggle(w http.ResponseWriter, r *http.Request) {
 		}
 		set_params.APIKey = cookie.AuthKey()
 		set_res, err := client.SetAddons(set_params)
-		if err != nil || !set_res.Data.Success {
-			if err != nil {
-				err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons: %v\n", core.PackError(err))
-				log.Print(err_msg)
-				td.AddonError = strings.TrimSpace(err_msg)
-			}
+		if err != nil {
+			err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons: %v\n", core.PackError(err))
+			log.Print(err_msg)
+			td.AddonError = strings.TrimSpace(err_msg)
+		} else if !set_res.Data.Success {
+			err_msg := fmt.Sprintf("[stremio/sidekick] failed to set addons!\n")
+			log.Print(err_msg)
+			td.AddonError = strings.TrimSpace(err_msg)
+		} else {
 			td.Addons = currAddons
 		}
 	}
