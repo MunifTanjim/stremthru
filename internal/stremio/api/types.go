@@ -35,21 +35,9 @@ type LoginData struct {
 	User    User   `json:"user"`
 }
 
-type AddonFlags struct {
-	Official  bool `json:"official"`
-	Protected bool `json:"protected"`
-}
-
-type Addon struct {
-	TransportUrl  string           `json:"transportUrl"`
-	TransportName string           `json:"transportName"`
-	Manifest      stremio.Manifest `json:"manifest"`
-	Flags         AddonFlags       `json:"flags"`
-}
-
 type GetAddonsData struct {
-	Addons       []Addon   `json:"addons"`
-	LastModified time.Time `json:"lastModified"`
+	Addons       []stremio.Addon `json:"addons"`
+	LastModified time.Time       `json:"lastModified"`
 }
 
 type SetAddonsData struct {

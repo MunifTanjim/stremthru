@@ -6,6 +6,11 @@ type cacheControlResponse struct {
 	StaleError      int `json:"staleError,omitempty"`      // (in seconds) which sets the Cache-Control header to stale-if-error=$staleError
 }
 
+type AddonCatalogHandlerResponse struct {
+	cacheControlResponse
+	Addons []Addon `json:"addons"`
+}
+
 type CatalogHandlerResponse struct {
 	cacheControlResponse
 	Metas []MetaPreview `json:"metas"`
@@ -19,4 +24,9 @@ type MetaHandlerResponse struct {
 type StreamHandlerResponse struct {
 	cacheControlResponse
 	Streams []Stream `json:"streams"`
+}
+
+type SubtitlesHandlerResponse struct {
+	cacheControlResponse
+	Subtitles []Subtitle `json:"subtitles"`
 }

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/stremio/api"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
+	"github.com/MunifTanjim/stremthru/stremio"
 )
 
 type Base = stremio_template.BaseData
@@ -18,7 +18,7 @@ type TemplateData struct {
 	Base
 	IsAuthed       bool
 	Email          string
-	Addons         []stremio_api.Addon
+	Addons         []stremio.Addon
 	AddonOperation string
 	AddonError     string
 	LastAddonIndex int
@@ -94,7 +94,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/sidekick", func(td *TemplateData) *TemplateData {
 		td.Version = config.Version
 		if td.Addons == nil {
-			td.Addons = []stremio_api.Addon{}
+			td.Addons = []stremio.Addon{}
 		}
 		if td.AddonOperation == "" {
 			td.AddonOperation = "move"
@@ -108,7 +108,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		"has_prefix": func(value, prefix string) bool {
 			return strings.HasPrefix(value, prefix)
 		},
-		"get_configure_url": func(value stremio_api.Addon) string {
+		"get_configure_url": func(value stremio.Addon) string {
 			if value.Manifest.BehaviorHints != nil && value.Manifest.BehaviorHints.Configurable {
 				return strings.Replace(value.TransportUrl, "/manifest.json", "/configure", 1)
 			}

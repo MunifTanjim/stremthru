@@ -28,6 +28,13 @@ const (
 	MetaLinkCategoryActor    MetaLinkCategory = "actor"
 	MetaLinkCategoryDirector MetaLinkCategory = "director"
 	MetaLinkCategoryWriter   MetaLinkCategory = "writer"
+
+	// undocumented
+	MetaLinkCategoryIMDB    MetaLinkCategory = "imdb"
+	MetaLinkCategoryShare   MetaLinkCategory = "share"
+	MetaLinkCategoryGenres  MetaLinkCategory = "Genres"
+	MetaLinkCategoryCast    MetaLinkCategory = "Cast"
+	MetaLinkCategoryWriters MetaLinkCategory = "Writers"
 )
 
 type MetaLink struct {
@@ -47,10 +54,46 @@ type MetaVideo struct {
 	Season    int       `json:"season,omitempty"`
 	Trailers  []Stream  `json:"trailers,omitempty"`
 	Overview  string    `json:"overview,omitempty"`
+
+	// deprecated / undocumented
+	Name        string    `json:"name,omitempty"`
+	TVDBId      int       `json:"tvdb_id,omitempty"`
+	Rating      string    `json:"rating,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Number      int       `json:"number,omitempty"`
+	FirstAired  time.Time `json:"firstAired,omitempty"`
 }
 
 type MetaBehaviorHints struct {
 	DefaultVideoId string `json:"defaultVideoId,omitempty"`
+
+	// deprecated / undocumented
+	HasScheduledVideos bool `json:"hasScheduledVideos,omitempty"`
+}
+
+// deprecated / undocumented
+type MetaCreditsCastItem struct {
+	Character   string `json:"character"`
+	Name        string `json:"name"`
+	ProfilePath string `json:"profile_path,omitempty"`
+	Id          int    `json:"id"`
+}
+
+// deprecated / undocumented
+type MetaCreditsCrewItem struct {
+	Department  string `json:"department"`
+	Job         string `json:"job"`
+	Name        string `json:"name"`
+	ProfilePath string `json:"profile_path,omitempty"`
+	Id          int    `json:"id"`
+}
+
+// deprecated / undocumented
+type MetaPopularities struct {
+	Trakt      float32 `json:"trakt,omitempty"`
+	MovieDB    float32 `json:"moviedb,omitempty"`
+	Stremio    float32 `json:"stremio,omitempty"`
+	StremioLib float32 `json:"stremio_lib,omitempty"`
 }
 
 type Meta struct {
@@ -77,6 +120,21 @@ type Meta struct {
 	Awards        string             `json:"awards,omitempty"`
 	Website       string             `json:"website,omitempty"`
 	BehaviorHints *MetaBehaviorHints `json:"behaviorHints,omitempty"`
+
+	// deprecated / undocumented
+	CreditsCast    []MetaCreditsCastItem `json:"credits_cast,omitempty"`
+	CreditsCrew    []MetaCreditsCrewItem `json:"credits_crew,omitempty"`
+	Genre          []string              `json:"genre,omitempty"`
+	IMDBId         string                `json:"imdb_id,omitempty"`
+	MovieDBId      int                   `json:"moviedb_id,omitempty"`
+	Popularity     float32               `json:"popularity,omitempty"`
+	Popularities   *MetaPopularities     `json:"popularities,omitempty"`
+	Slug           string                `json:"slug,omitempty"`
+	Status         string                `json:"status,omitempty"` // 'Continuing'
+	TVDBId         int                   `json:"tvdb_id,omitempty"`
+	TrailerStreams []Stream              `json:"trailerStreams,omitempty"`
+	Writer         []string              `json:"writer,omitempty"`
+	Year           string                `json:"year,omitempty"`
 }
 
 type MetaPreview struct {

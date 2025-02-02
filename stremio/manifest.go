@@ -44,6 +44,18 @@ func (r *Resource) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&rsrc)
 }
 
+type AddonFlags struct {
+	Official  bool `json:"official"`
+	Protected bool `json:"protected,omitempty"`
+}
+
+type Addon struct {
+	TransportUrl  string      `json:"transportUrl"`
+	TransportName string      `json:"transportName"` // 'http'
+	Manifest      Manifest    `json:"manifest"`
+	Flags         *AddonFlags `json:"flags,omitempty"`
+}
+
 type CatalogExtra struct {
 	Name         string   `json:"name"`
 	IsRequired   bool     `json:"isRequired,omitempty"`

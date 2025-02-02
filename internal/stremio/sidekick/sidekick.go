@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/internal/stremio/api"
+	"github.com/MunifTanjim/stremthru/stremio"
 )
 
 var client = func() *stremio_api.Client {
@@ -333,7 +334,7 @@ func handleAddonMove(w http.ResponseWriter, r *http.Request) {
 	totalAddons := len(currAddons)
 
 	td := getTemplateData(cookie, r)
-	td.Addons = make([]stremio_api.Addon, 0, totalAddons)
+	td.Addons = make([]stremio.Addon, 0, totalAddons)
 	td.Addons = append(td.Addons, currAddons...)
 
 	idx := -1
@@ -350,7 +351,7 @@ func handleAddonMove(w http.ResponseWriter, r *http.Request) {
 			if idx == 0 {
 				break
 			}
-			addons := make([]stremio_api.Addon, 0, totalAddons)
+			addons := make([]stremio.Addon, 0, totalAddons)
 			addons = append(addons, td.Addons[idx])
 			addons = append(addons, td.Addons[:idx]...)
 			addons = append(addons, td.Addons[idx+1:]...)
@@ -369,7 +370,7 @@ func handleAddonMove(w http.ResponseWriter, r *http.Request) {
 			if idx == totalAddons-1 {
 				break
 			}
-			addons := make([]stremio_api.Addon, 0, totalAddons)
+			addons := make([]stremio.Addon, 0, totalAddons)
 			addons = append(addons, td.Addons[:idx]...)
 			addons = append(addons, td.Addons[idx+1:]...)
 			addons = append(addons, td.Addons[idx])
@@ -423,7 +424,7 @@ func handleAddonReload(w http.ResponseWriter, r *http.Request) {
 	totalAddons := len(currAddons)
 
 	td := getTemplateData(cookie, r)
-	td.Addons = make([]stremio_api.Addon, 0, totalAddons)
+	td.Addons = make([]stremio.Addon, 0, totalAddons)
 	td.Addons = append(td.Addons, currAddons...)
 
 	transportUrl := r.PathValue("transportUrl")
@@ -464,7 +465,7 @@ func handleAddonReload(w http.ResponseWriter, r *http.Request) {
 				log.Print(err_msg)
 				td.AddonError = strings.TrimSpace(err_msg)
 			} else {
-				refreshedAddon := stremio_api.Addon{
+				refreshedAddon := stremio.Addon{
 					TransportUrl:  manifestUrl,
 					TransportName: addon.TransportName,
 					Manifest:      manifest.Data,
@@ -524,7 +525,7 @@ func handleAddonToggle(w http.ResponseWriter, r *http.Request) {
 	totalAddons := len(currAddons)
 
 	td := getTemplateData(cookie, r)
-	td.Addons = make([]stremio_api.Addon, 0, totalAddons)
+	td.Addons = make([]stremio.Addon, 0, totalAddons)
 	td.Addons = append(td.Addons, currAddons...)
 
 	idx := -1
@@ -553,7 +554,7 @@ func handleAddonToggle(w http.ResponseWriter, r *http.Request) {
 						log.Print(err_msg)
 						td.AddonError = strings.TrimSpace(err_msg)
 					} else {
-						enabledAddon := stremio_api.Addon{
+						enabledAddon := stremio.Addon{
 							TransportUrl: transportUrl.JoinPath("manifest.json").String(),
 							Manifest:     manifest.Data,
 							Flags:        addon.Flags,
@@ -576,7 +577,7 @@ func handleAddonToggle(w http.ResponseWriter, r *http.Request) {
 				log.Print(err_msg)
 				td.AddonError = strings.TrimSpace(err_msg)
 			} else {
-				disabledAddon := stremio_api.Addon{
+				disabledAddon := stremio.Addon{
 					TransportUrl: transportUrl.JoinPath("manifest.json").String(),
 					Manifest:     manifest.Data,
 					Flags:        addon.Flags,

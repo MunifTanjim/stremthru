@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/stremio"
 )
 
 var DefaultHTTPClient = config.DefaultHTTPClient
@@ -208,12 +209,12 @@ func (c Client) GetAddons(params *GetAddonsParams) (request.APIResponse[GetAddon
 
 type setAddonsPayload struct {
 	requestPayload
-	Addons []Addon `json:"addons"`
+	Addons []stremio.Addon `json:"addons"`
 }
 
 type SetAddonsParams struct {
 	Ctx
-	Addons []Addon
+	Addons []stremio.Addon
 }
 
 func (c Client) SetAddons(params *SetAddonsParams) (request.APIResponse[SetAddonsData], error) {
