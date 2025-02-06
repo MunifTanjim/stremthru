@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.1](https://github.com/MunifTanjim/stremthru/compare/0.46.0...0.46.1) (2025-02-06)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** surface error for failed database operation ([594409e](https://github.com/MunifTanjim/stremthru/commit/594409e1d34102d8d9c30f4e9fa02114a39a261c))
+
 ## [0.46.0](https://github.com/MunifTanjim/stremthru/compare/0.45.1...0.46.0) (2025-02-06)
 
 
