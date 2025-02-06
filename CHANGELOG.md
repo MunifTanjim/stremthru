@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.0](https://github.com/MunifTanjim/stremthru/compare/0.45.1...0.46.0) (2025-02-06)
+
+
+### Features
+
+* **stremio/wrap:** add support for stream sort ([0d173a2](https://github.com/MunifTanjim/stremthru/commit/0d173a2ade440cd996f2cd95a082ad450ebd5921))
+
 ## [0.45.1](https://github.com/MunifTanjim/stremthru/compare/0.45.0...0.45.1) (2025-02-06)
 
 
