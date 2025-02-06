@@ -87,6 +87,11 @@ table "peer_token" {
 table "kv" {
   schema = schema.main
 
+  column "t" {
+    null = false
+    type = varchar
+    default = ""
+  }
   column "k" {
     null = false
     type = varchar
@@ -106,6 +111,6 @@ table "kv" {
     default = sql("unixepoch()")
   }
   primary_key {
-    columns = [column.k]
+    columns = [column.t, column.k]
   }
 }

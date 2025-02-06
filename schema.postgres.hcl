@@ -88,6 +88,11 @@ table "peer_token" {
 table "kv" {
   schema = schema.public
 
+  column "t" {
+    null = false
+    type = text
+    default = ""
+  }
   column "k" {
     null = false
     type = text
@@ -107,6 +112,6 @@ table "kv" {
     default = sql("current_timestamp")
   }
   primary_key {
-    columns = [column.k]
+    columns = [column.t, column.k]
   }
 }
