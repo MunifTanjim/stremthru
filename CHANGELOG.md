@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.3](https://github.com/MunifTanjim/stremthru/compare/0.46.2...0.46.3) (2025-02-06)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** fix public instance usage ([a8b6fda](https://github.com/MunifTanjim/stremthru/commit/a8b6fda65cfb06dfa35404cbe72547217fb9e4aa))
+
 ## [0.46.2](https://github.com/MunifTanjim/stremthru/compare/0.46.1...0.46.2) (2025-02-06)
 
 
