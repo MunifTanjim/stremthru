@@ -21,22 +21,151 @@
 {{define "main"}}
 <form id="configuration" action="configure" method="post" hx-boost="true">
   <div id="upstream_addons" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
-    <header class="absolute px-2" style="top: -0.75rem; background-color: var(--pico-background-color)">Upstream Addon{{if .SupportMultiAddons}}s{{end}}</header>
+    <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
+      <span class="px-2" style="background-color: var(--pico-background-color);">
+        Upstream Addon{{if .SupportAdvanced}}s{{end}}
+      </span>
+      <small>
+        {{if .SupportAdvanced}}
+        <button
+          type="button"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
+          hx-trigger="confirmed"
+          onclick="onAuthorize(this)"
+          class="secondary mb-0"
+          style="font-size: 0.75rem; padding: 0.25em;"
+        >
+          {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
+        </button>
+        {{end}}
+      </small>
+    </header>
 
     <div>
       <input type="hidden" name="upstreams_length" value="{{ .Upstreams | len }}" />
 
       {{range $idx, $up := .Upstreams}}
-      <label for="upstreams[{{$idx}}].url">Manifest URL *</label>
-      {{if $up.IsConfigurable}}
-      <fieldset role="group" {{if ne $up.Error ""}}aria-invalid="true"{{end}}>
-        {{end}}
-        <input name="upstreams[{{$idx}}].url" type="url" required aria-invalid="{{if ne $up.Error ""}}true{{end}}" value="{{$up.URL}}">
+      <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+        <label for="upstreams[{{$idx}}].url">Manifest URL *</label>
         {{if $up.IsConfigurable}}
-        <input type="button" value="Configure" onclick="onUpstreamManifestConfigure({{$idx}})" />
-      </fieldset>
+        <fieldset role="group" {{if ne $up.Error ""}}aria-invalid="true"{{end}}>
+          {{end}}
+          <input name="upstreams[{{$idx}}].url" type="url" required aria-invalid="{{if ne $up.Error ""}}true{{end}}" value="{{$up.URL}}">
+          {{if $up.IsConfigurable}}
+          <input type="button" value="Configure" onclick="onUpstreamManifestConfigure({{$idx}})" />
+        </fieldset>
+        {{end}}
+        <small class="mb-0">{{if ne $up.Error ""}}<span class="error">{{$up.Error}}</span>{{end}}</small>
+
+        {{if $.IsAuthed}}
+        <fieldset>
+          <label class="flex flex-row justify-between align-center" for="upstreams[{{$idx}}].transformer.extractor">
+            <h4>
+              Extractor
+            </h4>
+            <div class="flex flex-row">
+              <button
+                type="button"
+                data-upstream-index="{{$idx}}"
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"save-extractor"}'
+                hx-trigger="confirmed"
+                onclick="onExtractorSave(this)"
+                class="outline secondary mb-0 mr-2"
+                style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+              >
+                💾
+              </button>
+              <select
+                data-upstream-index="{{$idx}}"
+                hx-vals='{"upstream_index": {{$idx}}}'
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"set-extractor"}'
+                name="upstreams[{{$idx}}].transformer.extractor_id"
+                aria-label="Select Extractor"
+                class="mb-0 p-1"
+              >
+                <option {{if eq $up.ExtractorId ""}}selected{{end}} value="">
+                  Extractor
+                </option>
+                {{range $.ExtractorIds}}
+                  <option {{if eq $up.ExtractorId .}}selected{{end}} value={{.}}>{{.}}</option>
+                {{end}}
+              </select>
+            </div>
+          </label>
+          <textarea
+            id="upstreams[{{$idx}}].transformer.extractor"
+            name="upstreams[{{$idx}}].transformer.extractor"
+            {{if ne .ExtractorError ""}}aria-invalid="true"{{end}}
+          >{{$up.Extractor}}</textarea>
+          <small>{{.ExtractorError}}</small>
+
+        </fieldset>
+        {{end}}
+      </div>
       {{end}}
-      <small class="mb-0">{{if ne $up.Error ""}}<span class="error">{{$up.Error}}</span>{{end}}</small>
+
+      {{if .IsAuthed}}
+      <div class="flex flex-row justify-between align-center">
+        <h4>
+          Template
+        </h4>
+        <div class="flex flex-row">
+          <button
+            type="button"
+            hx-target="body"
+            hx-post="configure"
+            hx-include="#configuration"
+            hx-headers='{"x-addon-configure-action":"save-template"}'
+            hx-trigger="confirmed"
+            onclick="onTemplateSave(this)"
+            class="outline secondary mb-0 mr-2"
+            style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+          >
+            💾
+          </button>
+          <select
+            hx-target="body"
+            hx-post="configure"
+            hx-include="#configuration"
+            hx-headers='{"x-addon-configure-action":"set-template"}'
+            name="transformer.template_id"
+            aria-label="Select Template"
+            class="mb-0 p-1"
+          >
+            <option {{if eq .TemplateId ""}}selected{{end}} value="">
+              Template
+            </option>
+            {{range $.TemplateIds}}
+              <option {{if eq $.TemplateId .}}selected{{end}} value={{.}}>{{.}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+
+      <label for="transformer.template.name">Name Template</label>
+      <textarea
+        id="transformer.template.name"
+        name="transformer.template.name"
+        {{if ne .TemplateError.Name ""}}aria-invalid="true"{{end}}
+      >{{.Template.Name}}</textarea>
+      <small>{{.TemplateError.Name}}</small>
+
+      <label for="transformer.template.description">Description Template</label>
+      <textarea
+        id="transformer.template.description"
+        name="transformer.template.description"
+        {{if ne .TemplateError.Description ""}}aria-invalid="true"{{end}}
+      >{{.Template.Description}}</textarea>
+      <small>{{.TemplateError.Description}}</small>
       {{end}}
     </div>
 
@@ -44,9 +173,31 @@
       <small>
       </small>
       <small>
-        {{if .SupportMultiAddons}}
-        <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"remove-upstream"}'>- Remove</button>
-        <button class="secondary mb-0" style="font-size: 0.75rem; padding: 0.25em;" type="button" hx-target="body" hx-post="configure" hx-include="#configuration" hx-headers='{"x-addon-configure-action":"add-upstream"}'>+ Add</button>
+        {{if .SupportAdvanced}}
+        <button
+          {{if not .IsAuthed}}disabled{{end}}
+          type="button"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"remove-upstream"}'
+          class="secondary mb-0"
+          style="font-size: 0.75rem; padding: 0.25em;"
+        >
+          - Remove
+        </button>
+        <button
+          {{if not .IsAuthed}}disabled{{end}}
+          type="button"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"add-upstream"}'
+          class="secondary mb-0"
+          style="font-size: 0.75rem; padding: 0.25em;"
+        >
+          + Add
+        </button>
         {{end}}
       </small>
     </footer>
@@ -68,10 +219,168 @@
   </div>
   {{end}}
 </form>
+
+{{if .SupportAdvanced}}
+<dialog id="auth_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" onclick="onAuthModalClose()"></button>
+      <h3>
+        <span>{{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}</span>
+      </h3>
+    </header>
+    <form>
+      {{if not .IsAuthed}}
+      <label for="user">User *</label>
+      <input type="text" name="user" required>
+      <label for="user">Password *</label>
+      <input type="password" name="pass" required>
+      {{end}}
+      <button type="submit">Go</button>
+    </form>
+  </article>
+</dialog>
+
+<dialog id="extractor_save">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" onclick="onExtractorSaveClose()"></button>
+      <h3>
+        <span>Save Extractor</span>
+      </h3>
+      <form>
+        <label for="extractor_save_id">Extractor ID *</label>
+        <input type="text" name="extractor_save_id" required>
+        <label for="extractor_save_value">Extractor</label>
+        <textarea id="extractor_save_value" name="extractor_save_value" readonly></textarea>
+        <button type="submit">Save</button>
+      </form>
+    </header>
+
+  </article>
+</dialog>
+
+<dialog id="template_save">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" onclick="onTemplateSaveClose()"></button>
+      <h3>
+        <span>Save Template</span>
+      </h3>
+      <form>
+        <label for="template_save_id">Template ID *</label>
+        <input type="text" name="template_save_id" required>
+        <label for="template_save_name">Name Template</label>
+        <textarea id="template_save_name" name="template_save_name" readonly></textarea>
+        <label for="template_save_description">Title Template</label>
+        <textarea id="template_save_description" name="template_save_description" readonly></textarea>
+        <button type="submit">Save</button>
+      </form>
+    </header>
+
+  </article>
+</dialog>
+{{end}}
+
 {{end}}
 
 {{define "foot"}}
 <script>
+  function onAuthModalClose() {
+    const modal = document.querySelector("dialog#auth_modal");
+    modal.removeAttribute("open");
+    document.querySelector("html").classList.remove("modal-is-open");
+  }
+
+  function onAuthorize(btn) {
+    const modal = document.querySelector("dialog#auth_modal");
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      {{if not .IsAuthed}}
+      btn.setAttribute("hx-vals", `{"user":"${modal.querySelector("[name='user']").value}","pass":"${modal.querySelector("[name='pass']").value}"}`);
+      {{end}}
+      onAuthModalClose();
+      htmx.trigger(btn, "confirmed");
+    }, { once: true });
+
+    function onModalOutsideClick(e) {
+      const content = modal.querySelector("article");
+      if (!content.contains(e.target)) {
+        onAuthModalClose();
+        modal.removeEventListener("click", onModalOutsideClick);
+      }
+    }
+
+    modal.addEventListener("click", onModalOutsideClick);
+
+    document.querySelector("html").classList.add("modal-is-open");
+    modal.setAttribute("open", "");
+  }
+
+  function onExtractorSaveClose() {
+    const modal = document.querySelector("dialog#extractor_save");
+    modal.removeAttribute("open");
+    document.querySelector("html").classList.remove("modal-is-open");
+  }
+
+  function onExtractorSave(btn) {
+    const modal = document.querySelector("dialog#extractor_save");
+    modal.querySelector("[name='extractor_save_id']").value = document.querySelector(`[name='${btn.closest("label").htmlFor}_id']`).value;
+    const valueField = document.querySelector(`[name='${btn.closest("label").htmlFor}']`);
+    modal.querySelector("[name='extractor_save_value']").value = valueField.value;
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      btn.setAttribute("hx-vals", JSON.stringify({extractor_id:modal.querySelector("[name='extractor_save_id']").value, extractor_upstream_index: btn.dataset.upstreamIndex}));
+      onExtractorSaveClose();
+      htmx.trigger(btn, "confirmed");
+    }, { once: true });
+
+    function onModalOutsideClick(e) {
+      const content = modal.querySelector("article");
+      if (!content.contains(e.target)) {
+        onExtractorSaveClose();
+        modal.removeEventListener("click", onModalOutsideClick);
+      }
+    }
+
+    modal.addEventListener("click", onModalOutsideClick);
+
+    document.querySelector("html").classList.add("modal-is-open");
+    modal.setAttribute("open", "");
+  }
+
+  function onTemplateSaveClose() {
+    const modal = document.querySelector("dialog#template_save");
+    modal.removeAttribute("open");
+    document.querySelector("html").classList.remove("modal-is-open");
+  }
+
+  function onTemplateSave(btn) {
+    const modal = document.querySelector("dialog#template_save");
+    modal.querySelector("[name='template_save_id']").value = document.querySelector(`[name='transformer.template_id']`).value;
+    modal.querySelector("[name='template_save_name']").value = document.querySelector(`[name='transformer.template.name']`).value;
+    modal.querySelector("[name='template_save_description']").value = document.querySelector(`[name='transformer.template.description']`).value;
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      btn.setAttribute("hx-vals", JSON.stringify({template_id:modal.querySelector("[name='template_save_id']").value }));
+      onTemplateSaveClose();
+      htmx.trigger(btn, "confirmed");
+    }, { once: true });
+
+    function onModalOutsideClick(e) {
+      const content = modal.querySelector("article");
+      if (!content.contains(e.target)) {
+        onTemplateSaveClose();
+        modal.removeEventListener("click", onModalOutsideClick);
+      }
+    }
+
+    modal.addEventListener("click", onModalOutsideClick);
+
+    document.querySelector("html").classList.add("modal-is-open");
+    modal.setAttribute("open", "");
+  }
+
   function onUpstreamManifestConfigure(idx) {
     const url = document.querySelector(`input[name='upstreams[${idx}].url']`).value.replace(/\/manifest.json$/,'') + "/configure";
     window.open(url, "_blank");

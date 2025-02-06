@@ -3,6 +3,7 @@ package stremio_wrap
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -25,7 +26,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-var SupportMultiAddons = !config.IsPublicInstance
+var SupportAdvanced = !config.IsPublicInstance
 
 var addon = func() *stremio_addon.Client {
 	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
@@ -61,8 +62,10 @@ func (usr upstreamsResolver) resolve(ud UserData, rName stremio.ResourceName, rT
 }
 
 type UserDataUpstream struct {
-	URL     string   `json:"u"`
-	baseUrl *url.URL `json:"-"`
+	URL         string                         `json:"u"`
+	baseUrl     *url.URL                       `json:"-"`
+	ExtractorId string                         `json:"e,omitempty"`
+	extractor   StreamTransformerExtractorBlob `json:"-"`
 }
 
 type UserData struct {
@@ -71,6 +74,9 @@ type UserData struct {
 	StoreName   string             `json:"store"`
 	StoreToken  string             `json:"token"`
 	CachedOnly  bool               `json:"cached,omitempty"`
+
+	TemplateId string                        `json:"template,omitempty"`
+	template   StreamTransformerTemplateBlob `json:"-"`
 
 	encoded   string             `json:"-"`
 	manifests []stremio.Manifest `json:"-"`
@@ -368,19 +374,46 @@ func (ud UserData) fetchStream(ctx *context.RequestContext, r *http.Request, rTy
 	chunks := make([][]stremio.Stream, len(upstreams))
 	errs := make([]error, len(upstreams))
 
+	template, err := ud.template.Parse()
+	if err != nil {
+		return nil, err
+	}
+
 	var wg sync.WaitGroup
 	for i := range upstreams {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			up := &upstreams[i]
 			res, err := addon.FetchStream(&stremio_addon.FetchStreamParams{
-				BaseURL:  upstreams[i].baseUrl,
+				BaseURL:  up.baseUrl,
 				Type:     rType,
 				Id:       id,
 				ClientIP: ctx.ClientIP,
 			})
-			chunks[i] = res.Data.Streams
+			streams := res.Data.Streams
+			chunks[i] = streams
 			errs[i] = err
+			if err == nil && template != nil && up.extractor != "" {
+				e, err := up.extractor.Parse()
+				if err != nil {
+					errs[i] = err
+				} else {
+					transformer := StreamTransformer{
+						Extractor: e,
+						Template:  *template,
+					}
+					for i := range streams {
+						stream := &streams[i]
+						if err := transformer.Do(stream); err != nil {
+							core.LogError("[stremio/wrap] failed to transform stream", err)
+						}
+						if stream.BehaviorHints != nil {
+							stream.BehaviorHints.NotWebReady = false
+						}
+					}
+				}
+			}
 		}()
 	}
 	wg.Wait()
@@ -553,6 +586,25 @@ func getUserData(r *http.Request) (*UserData, error) {
 				return nil, err
 			}
 		}
+
+		hasMissingExtractor := false
+		for i := range data.Upstreams {
+			up := &data.Upstreams[i]
+			if up.ExtractorId != "" {
+				if err := extractorStore.Get(up.ExtractorId, &up.extractor); err != nil {
+					core.LogError(fmt.Sprintf("[stremio/wrap] failed to fetch extractor(%s)", up.ExtractorId), err)
+					hasMissingExtractor = true
+				}
+			} else {
+				hasMissingExtractor = true
+			}
+		}
+
+		if !hasMissingExtractor && data.TemplateId != "" {
+			if err := templateStore.Get(data.TemplateId, &data.template); err != nil {
+				core.LogError(fmt.Sprintf("[stremio/wrap] failed to fetch template(%s)", data.TemplateId), err)
+			}
+		}
 	}
 
 	if IsMethod(r, http.MethodPost) {
@@ -569,15 +621,28 @@ func getUserData(r *http.Request) (*UserData, error) {
 			}
 		}
 
+		data.TemplateId = r.Form.Get("transformer.template_id")
+		data.template = StreamTransformerTemplateBlob{
+			Name:        r.Form.Get("transformer.template.name"),
+			Description: r.Form.Get("transformer.template.description"),
+		}
+
 		for idx := range upstreams_length {
 			upURL := r.Form.Get("upstreams[" + strconv.Itoa(idx) + "].url")
 			if strings.HasPrefix(upURL, "stremio:") {
 				upURL = "https:" + strings.TrimPrefix(upURL, "stremio:")
 			}
-			if upURL != "" {
-				data.Upstreams = append(data.Upstreams, UserDataUpstream{
-					URL: upURL,
-				})
+			extractorId := r.Form.Get("upstreams[" + strconv.Itoa(idx) + "].transformer.extractor_id")
+			up := UserDataUpstream{
+				URL:         upURL,
+				ExtractorId: extractorId,
+			}
+			extractor := r.Form.Get("upstreams[" + strconv.Itoa(idx) + "].transformer.extractor")
+			if extractor != "" {
+				up.extractor = StreamTransformerExtractorBlob(extractor)
+			}
+			if upURL != "" || extractorId != "" || extractor != "" {
+				data.Upstreams = append(data.Upstreams, up)
 			}
 		}
 
@@ -591,7 +656,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 	}
 
-	if !SupportMultiAddons {
+	if !SupportAdvanced && len(data.Upstreams) > 1 {
 		data.Upstreams = data.Upstreams[0:1]
 	}
 
@@ -657,7 +722,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	td := getTemplateData(ud)
+	td := getTemplateData(ud, w, r)
 	for i := range td.Configs {
 		conf := &td.Configs[i]
 		switch conf.Key {
@@ -674,8 +739,23 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	if action := r.Header.Get("x-addon-configure-action"); action != "" {
 		switch action {
+		case "authorize":
+			if SupportAdvanced {
+				user := r.Form.Get("user")
+				pass := r.Form.Get("pass")
+				if config.ProxyAuthPassword.GetPassword(user) == pass {
+					setCookie(w, user, pass)
+					td.IsAuthed = true
+					if r.Header.Get("hx-request") == "true" {
+						w.Header().Add("hx-refresh", "true")
+					}
+				}
+			}
+		case "deauthorize":
+			unsetCookie(w)
+			td.IsAuthed = false
 		case "add-upstream":
-			if SupportMultiAddons {
+			if SupportAdvanced && td.IsAuthed {
 				td.Upstreams = append(td.Upstreams, UpstreamAddon{
 					URL: "",
 				})
@@ -685,8 +765,148 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			if end == 0 {
 				end = 1
 			}
-			if SupportMultiAddons {
+			if SupportAdvanced && td.IsAuthed {
 				td.Upstreams = append([]UpstreamAddon{}, td.Upstreams[0:end]...)
+			}
+		case "set-extractor":
+			if SupportAdvanced && td.IsAuthed {
+				idx, err := strconv.Atoi(r.Form.Get("upstream_index"))
+				if err != nil {
+					SendError(w, err)
+					return
+				}
+				up := &td.Upstreams[idx]
+				id := up.ExtractorId
+				var value StreamTransformerExtractorBlob
+				if id != "" {
+					if err := extractorStore.Get(id, &value); err != nil {
+						core.LogError("[stremio/wrap] failed to fetch extractor", err)
+						SendError(w, err)
+						return
+					}
+					if _, err := value.Parse(); err != nil {
+						core.LogError("[stremio/wrap] failed to parse extractor", err)
+						up.ExtractorError = err.Error()
+					}
+				}
+				up.Extractor = value
+			}
+		case "save-extractor":
+			if SupportAdvanced && td.IsAuthed {
+				id := r.Form.Get("extractor_id")
+				idx, err := strconv.Atoi(r.Form.Get("extractor_upstream_index"))
+				if err != nil {
+					SendError(w, err)
+					return
+				}
+				up := &td.Upstreams[idx]
+				value := up.Extractor
+				if _, err := value.Parse(); err != nil {
+					core.LogError("[stremio/wrap] failed to parse extractor", err)
+					up.ExtractorError = err.Error()
+				} else {
+					up.ExtractorId = id
+					up.Extractor = value
+				}
+				if up.ExtractorError == "" {
+					if value == "" {
+						if err := extractorStore.Del(id); err != nil {
+							core.LogError("[stremio/wrap] failed to delete extractor", err)
+						}
+						extractorIds := []string{}
+						for _, extractorId := range td.ExtractorIds {
+							if extractorId != id {
+								extractorIds = append(extractorIds, extractorId)
+							}
+						}
+						td.ExtractorIds = extractorIds
+						for i := range td.Upstreams {
+							up := &td.Upstreams[i]
+							if up.ExtractorId == id {
+								up.ExtractorId = ""
+								up.Extractor = ""
+							}
+						}
+					} else {
+						if err := extractorStore.Set(id, value); err != nil {
+							core.LogError("[stremio/wrap] failed to save extractor", err)
+						} else {
+							extractorIds := []string{}
+							for _, extractorId := range td.ExtractorIds {
+								if extractorId != id {
+									extractorIds = append(extractorIds, extractorId)
+								}
+							}
+							extractorIds = append(extractorIds, id)
+							td.ExtractorIds = extractorIds
+						}
+					}
+				}
+			}
+		case "set-template":
+			if SupportAdvanced && td.IsAuthed {
+				id := ud.TemplateId
+				value := StreamTransformerTemplateBlob{}
+				if id != "" {
+					if err := templateStore.Get(id, &value); err != nil {
+						core.LogError("[stremio/wrap] failed to fetch template", err)
+						SendError(w, err)
+						return
+					}
+					if t, err := value.Parse(); err != nil {
+						core.LogError("[stremio/wrap] failed to parse template", err)
+						if t.Name == nil {
+							td.TemplateError.Name = err.Error()
+						} else {
+							td.TemplateError.Description = err.Error()
+						}
+					}
+				}
+				td.Template = value
+			}
+		case "save-template":
+			if SupportAdvanced && td.IsAuthed {
+				id := r.Form.Get("template_id")
+				value := td.Template
+				if t, err := value.Parse(); err != nil {
+					core.LogError("[stremio/wrap] failed to parse template", err)
+					if t.Name == nil {
+						td.TemplateError.Name = err.Error()
+					} else {
+						td.TemplateError.Description = err.Error()
+					}
+				} else {
+					td.TemplateId = id
+				}
+				if td.TemplateError.Name == "" && td.TemplateError.Description == "" {
+					if value.Name == "" && value.Description == "" {
+						if err := templateStore.Del(id); err != nil {
+							core.LogError("[stremio/wrap] failed to delete template", err)
+						}
+						templateIds := []string{}
+						for _, templateId := range td.TemplateIds {
+							if templateId != id {
+								templateIds = append(templateIds, templateId)
+							}
+						}
+						td.TemplateIds = templateIds
+						td.TemplateId = ""
+						td.Template = StreamTransformerTemplateBlob{}
+					} else {
+						if err := templateStore.Set(id, value); err != nil {
+							core.LogError("[stremio/wrap] failed to save template", err)
+						} else {
+							templateIds := []string{}
+							for _, templateId := range td.TemplateIds {
+								if templateId != id {
+									templateIds = append(templateIds, templateId)
+								}
+							}
+							templateIds = append(templateIds, id)
+							td.TemplateIds = templateIds
+						}
+					}
+				}
 			}
 		}
 
@@ -726,25 +946,25 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		manifests, errs := ud.getUpstreamManifests(ctx)
-		for i := range manifests {
-			tup := &td.Upstreams[i]
-			manifest := manifests[i]
+		if !td.HasUpstreamError() {
+			manifests, errs := ud.getUpstreamManifests(ctx)
+			for i := range manifests {
+				tup := &td.Upstreams[i]
+				manifest := manifests[i]
 
-			if tup.Error == "" {
-				if errs != nil && errs[i] != nil {
-					core.LogError("[stremio/wrap] failed to fetch manifest", errs[i])
-					tup.Error = "Failed to fetch Manifest"
-					continue
-				}
+				if tup.Error == "" {
+					if errs != nil && errs[i] != nil {
+						core.LogError("[stremio/wrap] failed to fetch manifest", errs[i])
+						tup.Error = "Failed to fetch Manifest"
+						continue
+					}
 
-				if manifest.BehaviorHints != nil && manifest.BehaviorHints.Configurable {
-					tup.IsConfigurable = true
+					if manifest.BehaviorHints != nil && manifest.BehaviorHints.Configurable {
+						tup.IsConfigurable = true
+					}
 				}
 			}
-		}
 
-		if !td.HasUpstreamError() {
 			if ctx.Store == nil {
 				if ud.StoreName == "" {
 					token_config.Error = "Invalid Token"
