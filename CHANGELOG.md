@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.45.0](https://github.com/MunifTanjim/stremthru/compare/0.44.0...0.45.0) (2025-02-06)
+
+
+### Features
+
+* **kv:** add type field ([fc4ae55](https://github.com/MunifTanjim/stremthru/commit/fc4ae55c34bbec48c441c837026551464e96f7fc))
+* **stremio/wrap:** add support for transformer ([908c1a7](https://github.com/MunifTanjim/stremthru/commit/908c1a79faa209b8a5d4c4e063ab98567497c0c1))
+
 ## [0.44.0](https://github.com/MunifTanjim/stremthru/compare/0.43.1...0.44.0) (2025-02-06)
 
 
