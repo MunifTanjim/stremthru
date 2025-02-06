@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.44.0](https://github.com/MunifTanjim/stremthru/compare/0.43.1...0.44.0) (2025-02-06)
+
+
+### Features
+
+* **stremio/sidekick:** allow id/name change when reloading addon ([a6643d9](https://github.com/MunifTanjim/stremthru/commit/a6643d97aec97a5c057f87f792939ee5408df771))
+* **stremio/wrap:** disable multi addons for public instance ([f153432](https://github.com/MunifTanjim/stremthru/commit/f1534324cccb3f03b5582588bfbf2cc0ec046a9f))
+* **stremio/wrap:** support multiple upstream addons ([7777d27](https://github.com/MunifTanjim/stremthru/commit/7777d2740b3bc9ace93db4d11e0d1af97f1ab623))
+* **stremio:** update types ([7210a3c](https://github.com/MunifTanjim/stremthru/commit/7210a3c0f39e7bd94ebf59c3c05b4e6184abb7d1))
+
+
+### Bug Fixes
+
+* **store/torbox:** fix type for torrent availability ([2c8f70c](https://github.com/MunifTanjim/stremthru/commit/2c8f70cd639f5ecfcce2bb83e64b6b30ccc2d6c1))
+* **stremio/wrap:** return blank manifest without config ([222c07c](https://github.com/MunifTanjim/stremthru/commit/222c07cf104dd275a763ed0c1dfab7ff0a4aaff2))
+
 ## [0.43.1](https://github.com/MunifTanjim/stremthru/compare/0.43.0...0.43.1) (2025-02-01)
 
 
