@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.45.1](https://github.com/MunifTanjim/stremthru/compare/0.45.0...0.45.1) (2025-02-06)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** cleanup dev codes ([881a861](https://github.com/MunifTanjim/stremthru/commit/881a86160824e87e634873af414837879514ee89))
+
 ## [0.45.0](https://github.com/MunifTanjim/stremthru/compare/0.44.0...0.45.0) (2025-02-06)
 
 
