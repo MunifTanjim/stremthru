@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.46.2](https://github.com/MunifTanjim/stremthru/compare/0.46.1...0.46.2) (2025-02-06)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** handle transform failure gracefully ([1924c00](https://github.com/MunifTanjim/stremthru/commit/1924c004033cf465b88faf62b0770a379b05e70f))
+
 ## [0.46.1](https://github.com/MunifTanjim/stremthru/compare/0.46.0...0.46.1) (2025-02-06)
 
 
