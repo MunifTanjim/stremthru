@@ -139,11 +139,11 @@ func (ud UserData) fetchStream(ctx *context.RequestContext, r *http.Request, rTy
 					}
 					for i := range streams {
 						stream := &streams[i]
-						if wstream, err := transformer.Do(stream); err != nil {
+						wstream, err := transformer.Do(stream)
+						if err != nil {
 							core.LogError("[stremio/wrap] failed to transform stream", err)
-						} else {
-							wstreams[i] = *wstream
 						}
+						wstreams[i] = *wstream
 					}
 				}
 			}
