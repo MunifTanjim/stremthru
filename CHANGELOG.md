@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.47.0](https://github.com/MunifTanjim/stremthru/compare/0.46.3...0.47.0) (2025-02-08)
+
+
+### Features
+
+* **stremio/wrap:** allow addon w/ direct link w/o content proxy ([0832fa4](https://github.com/MunifTanjim/stremthru/commit/0832fa4279912cabd267c778a927a8e4118b345e))
+* **stremio/wrap:** keep some manifest fields for single addon ([1df96dd](https://github.com/MunifTanjim/stremthru/commit/1df96dda68885b13c017457c3061ec48f40e9f45))
+* **stremio/wrap:** support reconfiguring store ([d11271a](https://github.com/MunifTanjim/stremthru/commit/d11271a011c964ac96f64e6f877cf2d14ce4697b))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** adjust spacing styles on configure page ([4aae7ca](https://github.com/MunifTanjim/stremthru/commit/4aae7ca4db32f76f0c7b670d87f1327907da27a7))
+
 ## [0.46.3](https://github.com/MunifTanjim/stremthru/compare/0.46.2...0.46.3) (2025-02-06)
 
 
