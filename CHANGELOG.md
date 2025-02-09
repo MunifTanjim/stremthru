@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.48.0](https://github.com/MunifTanjim/stremthru/compare/0.47.0...0.48.0) (2025-02-09)
+
+
+### Features
+
+* add better logging ([55b1419](https://github.com/MunifTanjim/stremthru/commit/55b14190b7cefc2126f42ab9cef25293d3cc864f))
+* **stremio/wrap:** support multiple upstream addons for public instance ([4147999](https://github.com/MunifTanjim/stremthru/commit/41479999baa9f3a1cf3c649aeda33e6f1f489b92))
+* **stremio/wrap:** update addon description in manifest ([ab1b672](https://github.com/MunifTanjim/stremthru/commit/ab1b6728b05cf8b7252b3ba35ca59cf631288fc7))
+* **stremio/wrap:** use extracted data for cached streams grouping ([0252fd4](https://github.com/MunifTanjim/stremthru/commit/0252fd42c4d1ae36a61c675a9cf5f1710cd67314))
+* **stremio:** add missing request_id in logs ([1ed2da2](https://github.com/MunifTanjim/stremthru/commit/1ed2da2b1825b913433378f6ad25fd86c350e48b))
+
 ## [0.47.0](https://github.com/MunifTanjim/stremthru/compare/0.46.3...0.47.0) (2025-02-08)
 
 
