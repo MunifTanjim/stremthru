@@ -224,7 +224,7 @@ var config = func() Config {
 		RedisURI:           getEnv("STREMTHRU_REDIS_URI", ""),
 		DatabaseURI:        databaseUri,
 		StremioAddon:       stremioAddon,
-		Version:            "0.48.0", // x-release-please-version
+		Version:            "0.49.0", // x-release-please-version
 		LandingPage:        getEnv("STREMTHRU_LANDING_PAGE", "{}"),
 		ServerStartTime:    time.Now(),
 		StoreContentProxy:  storeContentProxyMap,

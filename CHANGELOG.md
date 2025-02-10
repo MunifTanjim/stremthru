@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.49.0](https://github.com/MunifTanjim/stremthru/compare/0.48.0...0.49.0) (2025-02-10)
+
+
+### Features
+
+* **store:** redact token from link access endpoint logss ([8c77a66](https://github.com/MunifTanjim/stremthru/commit/8c77a667912fe621953b0e28e294cc4701e49b43))
+* **stremio/wrap:** update transformer seed entity ids ([2abd3b0](https://github.com/MunifTanjim/stremthru/commit/2abd3b03bac96e66fae3edb8c115146dc70e667a))
+* **stremio:** change version placement in ui ([caa7f2c](https://github.com/MunifTanjim/stremthru/commit/caa7f2c0eb9954c7e6525b1af8c9b4ed6e8d7c73))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** fix response for addon toggle ([8431e5c](https://github.com/MunifTanjim/stremthru/commit/8431e5c39fd8eb83e785381f90fd9de5f3e647c8))
+* **stremio/wrap:** fix file matching using pattern ([ab02b1c](https://github.com/MunifTanjim/stremthru/commit/ab02b1c599cf163031bd854d2251d65d817ed8b9))
+
+
+### Performance Improvements
+
+* **kv:** optimize queries ([6fdd737](https://github.com/MunifTanjim/stremthru/commit/6fdd737f5c97305b995d28e89693cb55084da155))
+
 ## [0.48.0](https://github.com/MunifTanjim/stremthru/compare/0.47.0...0.48.0) (2025-02-09)
 
 
