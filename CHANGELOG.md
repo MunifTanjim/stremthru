@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.50.0](https://github.com/MunifTanjim/stremthru/compare/0.49.0...0.50.0) (2025-02-11)
+
+
+### Features
+
+* **server:** cleanup request logging ([5b82a27](https://github.com/MunifTanjim/stremthru/commit/5b82a277d4855b326306fa542f582aa686cd669a))
+* **store/torbox:** chunk cached magnet check api call ([2059792](https://github.com/MunifTanjim/stremthru/commit/20597921613afb7e6b80167450e292555e6c2979))
+* **store:** enforce max 500 items for check magnet ([6529f9d](https://github.com/MunifTanjim/stremthru/commit/6529f9de3e1cce876f08f1783f5e17724ea0ccbc))
+
+
+### Bug Fixes
+
+* **magnet_cache:** resolve too many sql variables issue ([8f2b41e](https://github.com/MunifTanjim/stremthru/commit/8f2b41e83682a7c408b580bbf60553e5f7a07d35))
+
+
+### Performance Improvements
+
+* **store:** improve check magnet performance for ad/dl/rd ([2ce8baa](https://github.com/MunifTanjim/stremthru/commit/2ce8baa13f68464b8f8ef3bab73cc08ad07e370b))
+
 ## [0.49.0](https://github.com/MunifTanjim/stremthru/compare/0.48.0...0.49.0) (2025-02-10)
 
 
