@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.51.0](https://github.com/MunifTanjim/stremthru/compare/0.50.0...0.51.0) (2025-02-12)
+
+
+### Features
+
+* **store/torbox:** store magnet cache info in local db ([bb8ee7d](https://github.com/MunifTanjim/stremthru/commit/bb8ee7d10c0c9b24ef6ca7ac564886c62a03aa22))
+* **stremio/sidekick:** add usage warning ([914a79d](https://github.com/MunifTanjim/stremthru/commit/914a79db7b572febef3335d5157caf83bfbccb4b))
+* **stremio/sidekick:** support addons reset ([b8ba57b](https://github.com/MunifTanjim/stremthru/commit/b8ba57ba0c0ee3f9e125e4092c99d89f9fd962bc))
+* **stremio/wrap:** add extractor for orion ([9e5a246](https://github.com/MunifTanjim/stremthru/commit/9e5a246faa91c6308f43db6798288eac88cb6832))
+* **stremio/wrap:** always overwrite built-in transformer entitites ([6519ecb](https://github.com/MunifTanjim/stremthru/commit/6519ecb0e9d78c8095b20337a3ad4313f314999e))
+* **stremio/wrap:** auto-correct manifest url suffix ([6e1a991](https://github.com/MunifTanjim/stremthru/commit/6e1a9911ea20054cd962ba50ed9839aa391ee408))
+* **stremio/wrap:** improve mediafusion extractor ([78e68e1](https://github.com/MunifTanjim/stremthru/commit/78e68e155b2f7b76583a92ce556ad76fe45608ec))
+* **stremio/wrap:** keep built-in transformer entities in-memory ([d210896](https://github.com/MunifTanjim/stremthru/commit/d2108965a2520ac75594731073a8de8a3814f495))
+
+
+### Bug Fixes
+
+* **buddy:** do not report unknown hashes as uncached ([a686ffa](https://github.com/MunifTanjim/stremthru/commit/a686ffada145d05745d1b1a74fc7edf306578696))
+* **store/torbox:** extract file name from path ([6d030d2](https://github.com/MunifTanjim/stremthru/commit/6d030d23fadf5da27ce521e8f8604dc07e66637f))
+* **stremio/sidekick:** fix response for addon move/reload ([49dc265](https://github.com/MunifTanjim/stremthru/commit/49dc2654788c2226663b0ab839aec0363d53152c))
+* **stremio/wrap:** check for unconfigured addon ([880c17b](https://github.com/MunifTanjim/stremthru/commit/880c17b5ce38dc7688e666ea4b949795e70efb9d))
+* **stremio/wrap:** do not use empty extracted values ([f142df0](https://github.com/MunifTanjim/stremthru/commit/f142df01fb2317818153e866f5dcb0caa42b27c3))
+
 ## [0.50.0](https://github.com/MunifTanjim/stremthru/compare/0.49.0...0.50.0) (2025-02-11)
 
 
