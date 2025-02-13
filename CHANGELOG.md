@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.54.0](https://github.com/MunifTanjim/stremthru/compare/0.53.0...0.54.0) (2025-02-13)
+
+
+### Features
+
+* **buddy:** include store name in logs ([8db6749](https://github.com/MunifTanjim/stremthru/commit/8db6749eb5ace1ba1cfac891994ab7a7370e4f6d))
+
+
+### Bug Fixes
+
+* **store/torbox:** always do check magnet api call locally ([444839e](https://github.com/MunifTanjim/stremthru/commit/444839e8f9146ec6d0b1661cb78937f82a5e9819))
+
 ## [0.53.0](https://github.com/MunifTanjim/stremthru/compare/0.52.0...0.53.0) (2025-02-13)
 
 
