@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.52.0](https://github.com/MunifTanjim/stremthru/compare/0.51.0...0.52.0) (2025-02-13)
+
+
+### Features
+
+* **stremio:** add addon catalog ([5967eb3](https://github.com/MunifTanjim/stremthru/commit/5967eb3ef9a8941d835dcc032874fa78390cc550))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** allow clearing extractor/template ([9479cd5](https://github.com/MunifTanjim/stremthru/commit/9479cd5b4dde38fd368412e2c30ec1e7f3b312b1))
+
 ## [0.51.0](https://github.com/MunifTanjim/stremthru/compare/0.50.0...0.51.0) (2025-02-12)
 
 
