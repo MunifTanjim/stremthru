@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.54.1](https://github.com/MunifTanjim/stremthru/compare/0.54.0...0.54.1) (2025-02-13)
+
+
+### Bug Fixes
+
+* **magnet_cache:** discard file idx for non-rd stores ([0881355](https://github.com/MunifTanjim/stremthru/commit/0881355825d016d34ff992ce48f8bf773a85cf38))
+
 ## [0.54.0](https://github.com/MunifTanjim/stremthru/compare/0.53.0...0.54.0) (2025-02-13)
 
 
