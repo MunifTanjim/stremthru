@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.53.0](https://github.com/MunifTanjim/stremthru/compare/0.52.0...0.53.0) (2025-02-13)
+
+
+### Features
+
+* **stremio/sidekick:** add logo ([fd4f74c](https://github.com/MunifTanjim/stremthru/commit/fd4f74c977af5f06d83ca24ad639c93a52289ea8))
+* **stremio/store:** add logo ([c990301](https://github.com/MunifTanjim/stremthru/commit/c9903010a3778de861229c22ee1440640c3ca146))
+* **stremio/wrap:** add logo ([823c641](https://github.com/MunifTanjim/stremthru/commit/823c6417337241666a5e07d6c3bc1412a9567d9b))
+* **stremio:** add logo for root addon ([3c02559](https://github.com/MunifTanjim/stremthru/commit/3c0255980e308ca83098f27537783cb011b9582b))
+
+
+### Bug Fixes
+
+* **stremio:** properly set root manifest id ([337defd](https://github.com/MunifTanjim/stremthru/commit/337defdcba1aa13562c4bf2999a2cbe08f64a879))
+
 ## [0.52.0](https://github.com/MunifTanjim/stremthru/compare/0.51.0...0.52.0) (2025-02-13)
 
 
