@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.54.2](https://github.com/MunifTanjim/stremthru/compare/0.54.1...0.54.2) (2025-02-14)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** improve extractor for debridio ([e8c835d](https://github.com/MunifTanjim/stremthru/commit/e8c835de57657c43d8e79581e631d6583cb574ff))
+* **stremio/wrap:** skip parsing catalog id for single addon ([41bec5b](https://github.com/MunifTanjim/stremthru/commit/41bec5b7afa51675abafc6537f2653dcc53e6250))
+
 ## [0.54.1](https://github.com/MunifTanjim/stremthru/compare/0.54.0...0.54.1) (2025-02-13)
 
 
