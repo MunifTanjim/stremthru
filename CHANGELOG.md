@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.55.0](https://github.com/MunifTanjim/stremthru/compare/0.54.2...0.55.0) (2025-02-15)
+
+
+### Features
+
+* **store/pikpak:** improve error construction ([3923386](https://github.com/MunifTanjim/stremthru/commit/3923386775ed34c8e1c5b08a111b8ec71828ea90))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** do shallow copy before transform ([af676c1](https://github.com/MunifTanjim/stremthru/commit/af676c1c0c6f0c2f99f71b5652cc9e061a91c4a4))
+
 ## [0.54.2](https://github.com/MunifTanjim/stremthru/compare/0.54.1...0.54.2) (2025-02-14)
 
 
