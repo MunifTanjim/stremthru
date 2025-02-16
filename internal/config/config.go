@@ -41,28 +41,32 @@ func (m StoreAuthTokenMap) setToken(user, store, token string) {
 
 func (m StoreAuthTokenMap) GetPreferredStore(user string) string {
 	store := m.GetToken(user, "*")
-	if store == "" {
-		store = m.GetToken("*", "*")
-	}
+	store, _, _ = strings.Cut(store, " ")
 	return store
 }
 
 func (m StoreAuthTokenMap) ListStores(user string) []string {
-	stores := []string{}
-	if um, ok := m[user]; ok {
-		for store := range um {
-			if store != "*" {
-				stores = append(stores, store)
-			}
-		}
-	}
-	return stores
+	stores := m.GetToken(user, "*")
+	return strings.Fields(stores)
 }
 
-func (m StoreAuthTokenMap) setPreferredStore(user, store string) {
-	if m.GetPreferredStore(user) == "" {
-		m.setToken(user, "*", store)
+func (m StoreAuthTokenMap) getStores(user string) string {
+	if um, ok := m[user]; ok {
+		if stores, ok := um["*"]; ok {
+			return stores
+		}
 	}
+	return ""
+}
+
+func (m StoreAuthTokenMap) addStore(user, store string) {
+	stores := m.getStores(user)
+	if stores == "" {
+		stores = store
+	} else if !strings.Contains(stores, store) {
+		stores += " " + store
+	}
+	m.setToken(user, "*", stores)
 }
 
 type ProxyAuthPasswordMap map[string]string
@@ -170,7 +174,7 @@ var config = func() Config {
 	for _, userStoreToken := range storeAlldebridTokenList {
 		if user, storeToken, ok := strings.Cut(userStoreToken, ":"); ok {
 			if store, token, ok := strings.Cut(storeToken, ":"); ok {
-				storeAuthTokenMap.setPreferredStore(user, store)
+				storeAuthTokenMap.addStore(user, store)
 				storeAuthTokenMap.setToken(user, store, token)
 			}
 		}

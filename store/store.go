@@ -46,6 +46,17 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameTorBox:     StoreCodeTorBox,
 }
 
+var storeNameByCode = map[StoreCode]StoreName{
+	StoreCodeAllDebrid:  StoreNameAlldebrid,
+	StoreCodeDebridLink: StoreNameDebridLink,
+	StoreCodeEasyDebrid: StoreNameEasyDebrid,
+	StoreCodeOffcloud:   StoreNameOffcloud,
+	StoreCodePikPak:     StoreNamePikPak,
+	StoreCodePremiumize: StoreNamePremiumize,
+	StoreCodeRealDebrid: StoreNameRealDebrid,
+	StoreCodeTorBox:     StoreNameTorBox,
+}
+
 func (sn StoreName) Code() StoreCode {
 	return storeCodeByName[sn]
 }
@@ -55,6 +66,10 @@ func (sn StoreName) Validate() (StoreName, *core.StoreError) {
 		return sn, ErrorInvalidStoreName(string(sn))
 	}
 	return sn, nil
+}
+
+func (sc StoreCode) Name() StoreName {
+	return storeNameByCode[sc]
 }
 
 type UserSubscriptionStatus string
