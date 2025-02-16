@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.55.1](https://github.com/MunifTanjim/stremthru/compare/0.55.0...0.55.1) (2025-02-16)
+
+
+### Bug Fixes
+
+* **cache:** make lru read thread-safe ([2c85350](https://github.com/MunifTanjim/stremthru/commit/2c8535095e2da9674d0a0d648f72708c296ea5b8))
+
 ## [0.55.0](https://github.com/MunifTanjim/stremthru/compare/0.54.2...0.55.0) (2025-02-15)
 
 
