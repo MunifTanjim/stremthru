@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.56.0](https://github.com/MunifTanjim/stremthru/compare/0.55.1...0.56.0) (2025-02-18)
+
+
+### Features
+
+* **store/easydebrid:** store magnet cache info in local db ([fede7bd](https://github.com/MunifTanjim/stremthru/commit/fede7bdcadab54a57a582edf2647f777d5c9e1ec))
+
+
+### Bug Fixes
+
+* **buddy:** always set local_only for peer check magnet ([968674b](https://github.com/MunifTanjim/stremthru/commit/968674b48b3fc69a9b93be7a623ce83e989c74b1))
+
 ## [0.55.1](https://github.com/MunifTanjim/stremthru/compare/0.55.0...0.55.1) (2025-02-16)
 
 
