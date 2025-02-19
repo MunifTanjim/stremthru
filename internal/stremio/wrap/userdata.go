@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -59,21 +60,48 @@ type UserDataUpstream struct {
 	ReconfigureStore bool                           `json:"rs,omitempty"`
 }
 
+type UserDataStoreCode string
+
+func (udsc UserDataStoreCode) IsStremThru() bool {
+	return !IsPublicInstance && udsc == ""
+}
+
+func (udsc UserDataStoreCode) GetCodes(user string) []string {
+	codes := []string{}
+
+	storeNames := config.StoreAuthToken.ListStores(user)
+	for _, name := range storeNames {
+		codes = append(codes, string(store.StoreName(name).Code()))
+	}
+
+	return codes
+}
+
+type UserDataStore struct {
+	Code  UserDataStoreCode `json:"c"`
+	Token string            `json:"t"`
+}
+
 type UserData struct {
-	ManifestURL string             `json:"manifest_url,omitempty"`
 	Upstreams   []UserDataUpstream `json:"upstreams"`
-	StoreName   string             `json:"store"`
-	StoreToken  string             `json:"token"`
-	CachedOnly  bool               `json:"cached,omitempty"`
+	ManifestURL string             `json:"manifest_url,omitempty"`
+
+	Stores     []UserDataStore `json:"stores"`
+	StoreName  string          `json:"store,omitempty"`
+	StoreToken string          `json:"token,omitempty"`
+
+	CachedOnly bool `json:"cached,omitempty"`
 
 	TemplateId string                        `json:"template,omitempty"`
 	template   StreamTransformerTemplateBlob `json:"-"`
 
 	Sort string `json:"sort,omitempty"`
 
-	encoded   string             `json:"-"`
-	manifests []stremio.Manifest `json:"-"`
-	resolver  upstreamsResolver  `json:"-"`
+	encoded          string             `json:"-"`
+	manifests        []stremio.Manifest `json:"-"`
+	resolver         upstreamsResolver  `json:"-"`
+	stores           multiStore         `json:"-"`
+	isStremThruStore bool               `json:"-"`
 }
 
 func (ud UserData) HasRequiredValues() bool {
@@ -85,7 +113,16 @@ func (ud UserData) HasRequiredValues() bool {
 			return false
 		}
 	}
-	return ud.StoreToken != ""
+	for i := range ud.Stores {
+		s := &ud.Stores[i]
+		if s.Code.IsStremThru() && len(ud.Stores) > 1 {
+			return false
+		}
+		if s.Token == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func (ud UserData) GetEncoded(forceRefresh bool) (string, error) {
@@ -102,8 +139,8 @@ func (ud UserData) GetEncoded(forceRefresh bool) (string, error) {
 
 type userDataError struct {
 	upstreamUrl []string
-	store       string
-	token       string
+	store       []string
+	token       []string
 }
 
 func (uderr *userDataError) Error() string {
@@ -121,26 +158,35 @@ func (uderr *userDataError) Error() string {
 			hasSome = true
 		}
 	}
-	if uderr.store != "" {
+	for i, err := range uderr.store {
+		if err == "" {
+			continue
+		}
 		if hasSome {
 			str.WriteString(", ")
 			hasSome = false
 		}
-		str.WriteString("store: ")
-		str.WriteString(uderr.store)
+		str.WriteString("store[" + strconv.Itoa(i) + "]: ")
+		str.WriteString(err)
+		hasSome = true
 	}
-	if uderr.token != "" {
+	for i, err := range uderr.token {
+		if err == "" {
+			continue
+		}
 		if hasSome {
 			str.WriteString(", ")
 			hasSome = false
 		}
-		str.WriteString("token: ")
-		str.WriteString(uderr.token)
+		str.WriteString("token[" + strconv.Itoa(i) + "]: ")
+		str.WriteString(err)
+		hasSome = true
+
 	}
 	return str.String()
 }
 
-func (ud UserData) GetRequestContext(r *http.Request) (*context.StoreContext, error) {
+func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, error) {
 	rCtx := server.GetReqCtx(r)
 	ctx := &context.StoreContext{
 		Log: rCtx.Log,
@@ -161,27 +207,41 @@ func (ud UserData) GetRequestContext(r *http.Request) (*context.StoreContext, er
 		return ctx, &userDataError{upstreamUrl: upstreamUrlErrors}
 	}
 
-	storeName := ud.StoreName
-	storeToken := ud.StoreToken
-	if storeName == "" && len(ud.Upstreams) > 0 {
-		auth, err := core.ParseBasicAuth(storeToken)
+	if len(ud.Stores) == 1 && ud.Stores[0].Code.IsStremThru() {
+		token := ud.Stores[0].Token
+		auth, err := core.ParseBasicAuth(token)
 		if err != nil {
-			return ctx, &userDataError{token: err.Error()}
+			return ctx, &userDataError{token: []string{err.Error()}}
 		}
 		password := config.ProxyAuthPassword.GetPassword(auth.Username)
-		if password != "" && password == auth.Password {
+		if password == "" || password != auth.Password {
+			return ctx, &userDataError{token: []string{"invalid token"}}
+		} else {
 			ctx.IsProxyAuthorized = true
 			ctx.ProxyAuthUser = auth.Username
 			ctx.ProxyAuthPassword = auth.Password
-
-			storeName = config.StoreAuthToken.GetPreferredStore(ctx.ProxyAuthUser)
-			storeToken = config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName)
 		}
-	}
 
-	if storeToken != "" {
-		ctx.Store = shared.GetStore(storeName)
-		ctx.StoreAuthToken = storeToken
+		storeNames := config.StoreAuthToken.ListStores(auth.Username)
+		stores := make(multiStore, len(storeNames))
+		for i, storeName := range storeNames {
+			stores[i] = resolvedStore{
+				store:     shared.GetStore(storeName),
+				authToken: config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName),
+			}
+		}
+		ud.stores = stores
+		ud.isStremThruStore = true
+	} else {
+		stores := make(multiStore, len(ud.Stores))
+		for i := range ud.Stores {
+			s := &ud.Stores[i]
+			stores[i] = resolvedStore{
+				store:     shared.GetStore(string(store.StoreCode(s.Code).Name())),
+				authToken: s.Token,
+			}
+		}
+		ud.stores = stores
 	}
 
 	ctx.ClientIP = shared.GetClientIP(r, ctx)
@@ -325,6 +385,19 @@ func getUserData(r *http.Request) (*UserData, error) {
 			return nil, err
 		}
 
+		shouldReEncode := false
+		if data.StoreToken != "" {
+			data.Stores = []UserDataStore{
+				{
+					Code:  UserDataStoreCode(store.StoreName(data.StoreName).Code()),
+					Token: data.StoreToken,
+				},
+			}
+			data.StoreName = ""
+			data.StoreToken = ""
+			shouldReEncode = true
+		}
+
 		if data.ManifestURL != "" {
 			data.Upstreams = []UserDataUpstream{
 				{
@@ -332,6 +405,10 @@ func getUserData(r *http.Request) (*UserData, error) {
 				},
 			}
 			data.ManifestURL = ""
+			shouldReEncode = true
+		}
+
+		if shouldReEncode {
 			_, err := data.GetEncoded(true)
 			if err != nil {
 				return nil, err
@@ -417,8 +494,35 @@ func getUserData(r *http.Request) (*UserData, error) {
 			}
 		}
 
-		data.StoreName = r.Form.Get("store")
-		data.StoreToken = r.Form.Get("token")
+		stores_length := 1
+		if v := r.Form.Get("stores_length"); v != "" {
+			stores_length, err = strconv.Atoi(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		for idx := range stores_length {
+			code := r.Form.Get("stores[" + strconv.Itoa(idx) + "].code")
+			token := r.Form.Get("stores[" + strconv.Itoa(idx) + "].token")
+			if token != "" {
+				if code == "" {
+					data.Stores = []UserDataStore{
+						{
+							Code:  UserDataStoreCode(code),
+							Token: token,
+						},
+					}
+					break
+				} else {
+					data.Stores = append(data.Stores, UserDataStore{
+						Code:  UserDataStoreCode(code),
+						Token: token,
+					})
+				}
+			}
+		}
+
 		data.CachedOnly = r.Form.Get("cached") == "on"
 
 		_, err = data.GetEncoded(false)

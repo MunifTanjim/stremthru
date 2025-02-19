@@ -50,6 +50,6 @@ func getTemplateData() *configure.TemplateData {
 				Required:    true,
 			},
 		},
-		Script: configure.GetScriptStoreTokenDescription("store_name", "store_token"),
+		Script: configure.GetScriptStoreTokenDescription("'#store_name'", "'#store_token'"),
 	}
 }

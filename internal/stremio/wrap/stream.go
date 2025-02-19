@@ -1,6 +1,7 @@
 package stremio_wrap
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -114,22 +115,17 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 
 	stremId := strings.TrimSuffix(id, ".json")
 
-	storeNamePrefix := ""
-	isCachedByHash := map[string]bool{}
+	isCachedByHash := map[string]string{}
 	if len(hashes) > 0 {
-		cmParams := &store.CheckMagnetParams{Magnets: hashes}
-		cmParams.APIKey = ctx.StoreAuthToken
-		cmParams.ClientIP = ctx.ClientIP
-		cmParams.SId = stremId
-		cmRes, err := ctx.Store.CheckMagnet(cmParams)
-		if err != nil {
-			return nil, err
+		cmRes := ud.stores.CheckMagnet(&store.CheckMagnetParams{
+			Magnets:  hashes,
+			ClientIP: ctx.ClientIP,
+			SId:      stremId,
+		}, log)
+		if cmRes.HasErr {
+			return nil, errors.Join(cmRes.Err...)
 		}
-		for _, item := range cmRes.Items {
-			isCachedByHash[item.Hash] = item.Status == store.MagnetStatusCached
-		}
-
-		storeNamePrefix = "[" + strings.ToUpper(string(ctx.Store.GetName().Code())) + "] "
+		isCachedByHash = cmRes.ByHash
 	}
 
 	cachedStreams := []stremio.Stream{}
@@ -141,7 +137,6 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			if !ok {
 				continue
 			}
-			stream.Name = storeNamePrefix + stream.Name
 			surl := shared.ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/_/strem/" + magnet.Hash + "/" + strconv.Itoa(stream.FileIndex) + "/")
 			if stream.BehaviorHints != nil && stream.BehaviorHints.Filename != "" {
 				surl = surl.JoinPath(stream.BehaviorHints.Filename)
@@ -150,15 +145,29 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			if stream.r != nil && stream.r.Season != "" && stream.r.Episode != "" {
 				surl.RawQuery += "&re=" + url.QueryEscape(stream.r.Season+".{1,3}"+stream.r.Episode)
 			}
-			stream.URL = surl.String()
 			stream.InfoHash = ""
 			stream.FileIndex = 0
 
-			if isCached, ok := isCachedByHash[magnet.Hash]; ok && isCached {
-				stream.Name = "⚡ " + stream.Name
+			storeCode, ok := isCachedByHash[magnet.Hash]
+			if ok && storeCode != "" {
+				surl.RawQuery += "&s=" + storeCode
+				stream.URL = surl.String()
+				stream.Name = "⚡ [" + storeCode + "]" + stream.Name
+
 				cachedStreams = append(cachedStreams, *stream.Stream)
 			} else if !ud.CachedOnly {
-				uncachedStreams = append(uncachedStreams, *stream.Stream)
+				surlRawQuery := surl.RawQuery
+				for i := range ud.stores {
+					s := &ud.stores[i]
+					storeCode := strings.ToUpper(string(s.store.GetName().Code()))
+
+					stream := *stream.Stream
+					surl.RawQuery = surlRawQuery + "&s=" + storeCode
+					stream.URL = surl.String()
+					stream.Name = "[" + storeCode + "] " + stream.Name
+
+					uncachedStreams = append(uncachedStreams, stream)
+				}
 			}
 		} else if stream.URL != "" {
 			if !stream.noContentProxy {

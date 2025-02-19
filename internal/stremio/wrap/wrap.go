@@ -17,7 +17,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
-	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"golang.org/x/sync/singleflight"
@@ -25,6 +24,7 @@ import (
 
 var IsPublicInstance = config.IsPublicInstance
 var MaxPublicInstanceUpstreamCount = 3
+var MaxPublicInstanceStoreCount = 3
 
 var addon = func() *stremio_addon.Client {
 	return stremio_addon.NewClient(&stremio_addon.ClientConfig{})
@@ -81,10 +81,6 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	for i := range td.Configs {
 		conf := &td.Configs[i]
 		switch conf.Key {
-		case "store":
-			conf.Default = ud.StoreName
-		case "token":
-			conf.Default = ud.StoreToken
 		case "cached":
 			if ud.CachedOnly {
 				conf.Default = "checked"
@@ -121,6 +117,16 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				end = 1
 			}
 			td.Upstreams = append([]UpstreamAddon{}, td.Upstreams[0:end]...)
+		case "add-store":
+			if td.IsAuthed || len(td.Upstreams) < MaxPublicInstanceStoreCount {
+				td.Stores = append(td.Stores, StoreConfig{})
+			}
+		case "remove-store":
+			end := len(td.Stores) - 1
+			if end == 0 {
+				end = 1
+			}
+			td.Stores = append([]StoreConfig{}, td.Stores[0:end]...)
 		case "set-extractor":
 			idx, err := strconv.Atoi(r.Form.Get("upstream_index"))
 			if err != nil {
@@ -287,26 +293,18 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ud.encoded != "" {
-		var store_config *configure.Config
-		var token_config *configure.Config
-		for i := range td.Configs {
-			conf := &td.Configs[i]
-			switch conf.Key {
-			case "store":
-				store_config = conf
-			case "token":
-				token_config = conf
-			}
-		}
-
 		ctx, err := ud.GetRequestContext(r)
 		if err != nil {
 			if uderr, ok := err.(*userDataError); ok {
 				for i, err := range uderr.upstreamUrl {
 					td.Upstreams[i].Error = err
 				}
-				store_config.Error = uderr.store
-				token_config.Error = uderr.token
+				for i, err := range uderr.store {
+					td.Stores[i].Error.Code = err
+				}
+				for i, err := range uderr.token {
+					td.Stores[i].Error.Token = err
+				}
 			} else {
 				SendError(w, r, err)
 				return
@@ -336,19 +334,26 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if ctx.Store == nil {
-				if ud.StoreName == "" {
-					token_config.Error = "Invalid Token"
-				} else {
-					store_config.Error = "Invalid Store"
-				}
-			} else {
-				params := &store.GetUserParams{}
-				params.APIKey = ctx.StoreAuthToken
-				_, err := ctx.Store.GetUser(params)
-				if err != nil {
-					LogError(r, "failed to access store", err)
-					token_config.Error = "Failed to access store"
+			if !td.HasStoreError() {
+				s := ud.stores.GetUser()
+				if s.HasErr {
+					for i, err := range s.Err {
+						LogError(r, "failed to access store", err)
+						if err == nil {
+							continue
+						}
+						var ts *StoreConfig
+						if ud.isStremThruStore {
+							ts = &td.Stores[0]
+							if ts.Error.Token != "" {
+								ts.Error.Token += "\n"
+							}
+							ts.Error.Token += string(ud.stores[i].store.GetName()) + ": Failed to access store"
+						} else {
+							ts = &td.Stores[i]
+							ts.Error.Token = "Failed to access store"
+						}
+					}
 				}
 			}
 		}
@@ -510,12 +515,22 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx, err := ud.GetRequestContext(r)
-	if err != nil || ctx.Store == nil {
-		if err != nil {
-			LogError(r, "failed to get request context", err)
-		}
+	if err != nil {
+		LogError(r, "failed to get request context", err)
 		shared.ErrorBadRequest(r, "failed to get request context").Send(w, r)
 		return
+	}
+
+	ctx.Store, ctx.StoreAuthToken = ud.stores[0].store, ud.stores[0].authToken
+	if len(ud.stores) > 1 {
+		storeCode := store.StoreCode(strings.ToLower(r.PathValue("s")))
+		for i := range ud.stores {
+			us := &ud.stores[i]
+			if us.store.GetName().Code() == storeCode {
+				ctx.Store, ctx.StoreAuthToken = us.store, us.authToken
+				break
+			}
+		}
 	}
 
 	cacheKey := strings.Join([]string{ctx.ClientIP, string(ctx.Store.GetName()), ctx.StoreAuthToken, magnetHash, strconv.Itoa(fileIdx), fileName}, ":")

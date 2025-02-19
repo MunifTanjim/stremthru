@@ -223,9 +223,70 @@
     </div>
   </div>
 
-  {{range .Configs}}
-    {{template "configure_config.html" .}}
-  {{end}}
+  <div id="stores" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+    <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
+      <span class="px-2" style="background-color: var(--pico-background-color);">
+        Stores
+      </span>
+    </header>
+
+    <div>
+      <div class="relative mb-8">
+        <input type="hidden" name="stores_length" value="{{ .Stores | len }}" />
+
+        {{range $idx, $s := .Stores}}
+        <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+          <label for="stores[{{$idx}}].code">Store Name</label>
+          <select id="stores[{{$idx}}].code" name="stores[{{$idx}}].code" data-field-store-token="stores[{{$idx}}].token" {{if ne $s.Error.Code ""}}aria-invalid="true"{{end}}>
+            {{range $.StoreCodeOptions}}
+              <option value="{{.Value}}" {{if eq $s.Code .Value}}selected{{end}} {{if .Disabled}}disabled{{end}}>{{.Label}}</option>
+            {{end}}
+          </select>
+          <small>{{if ne $s.Error.Code ""}}<span class="error">{{$s.Error.Code}}</span> | {{end}}<span class="description"></span></small>
+
+          <label for="stores[{{$idx}}].token">Store Token</label>
+          <input type="password" id="stores[{{$idx}}].token" name="stores[{{$idx}}].token" value="{{$s.Token}}" {{if ne $s.Error.Token ""}}aria-invalid="true"{{end}}>
+          <small>{{if ne $s.Error.Token ""}}<span class="error">{{$s.Error.Token}}</span> | {{end}}<span class="description"></span></small>
+        </div>
+        {{end}}
+
+        <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
+          <small>
+            <button
+              {{if not .CanRemoveStore}}disabled{{end}}
+              id="configure-action-remove-store"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"remove-store"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              - Remove
+            </button>
+            <button
+              {{if not .CanAddStore}}disabled{{end}}
+              id="configure-action-add-store"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"add-store"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              + Add
+            </button>
+          </small>
+        </div>
+      </div>
+    </div>
+
+    {{range .Configs}}
+      {{template "configure_config.html" .}}
+    {{end}}
+  </div>
 
   <button type="submit">Install</button>
 
@@ -445,6 +506,16 @@
     document.querySelector('#manifest_url_section')?.remove();
   }, { once: true });
 
+
+  Array.from(document.querySelectorAll('[data-field-store-token')).forEach((storeField) => {
+    let storeFields = Array.from(document.querySelectorAll('[data-field-store-token'));
+    storeField.addEventListener("change", (e) => {
+      const isStremThru = storeFields.some((f) => f.value == "");
+      if (isStremThru) {
+        console.log('isStremThru')
+      }
+    });
+  });
   {{.Script}}
 </script>
 {{end}}

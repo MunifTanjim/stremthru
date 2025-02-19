@@ -37,6 +37,25 @@ func getStoreNameConfig() configure.Config {
 	return config
 }
 
+func getStoreCodeOptions() []configure.ConfigOption {
+	options := []configure.ConfigOption{
+		{Value: "", Label: "StremThru"},
+		{Value: "ad", Label: "AllDebrid"},
+		{Value: "dl", Label: "DebridLink"},
+		{Value: "ed", Label: "EasyDebrid"},
+		{Value: "oc", Label: "Offcloud"},
+		{Value: "pm", Label: "Premiumize"},
+		{Value: "pp", Label: "PikPak"},
+		{Value: "rd", Label: "RealDebrid"},
+		{Value: "tb", Label: "TorBox"},
+	}
+	if !config.ProxyStreamEnabled {
+		options[0].Disabled = true
+		options[0].Label = ""
+	}
+	return options
+}
+
 func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *TemplateData {
 	td := &TemplateData{
 		Base: Base{
@@ -44,17 +63,10 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Stremio Addon to Wrap other Addons with StremThru",
 			NavTitle:    "Wrap",
 		},
-		Upstreams: []UpstreamAddon{},
+		Upstreams:        []UpstreamAddon{},
+		Stores:           []StoreConfig{},
+		StoreCodeOptions: getStoreCodeOptions(),
 		Configs: []configure.Config{
-			getStoreNameConfig(),
-			{
-				Key:         "token",
-				Type:        configure.ConfigTypePassword,
-				Default:     "",
-				Title:       "Store Token",
-				Description: "",
-				Required:    true,
-			},
 			{
 				Key:     "cached",
 				Type:    configure.ConfigTypeCheckbox,
@@ -62,7 +74,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 				Options: []configure.ConfigOption{},
 			},
 		},
-		Script: configure.GetScriptStoreTokenDescription("store", "token"),
+		Script: configure.GetScriptStoreTokenDescription("", ""),
 
 		SortConfig: configure.Config{
 			Key:         "sort",
@@ -78,6 +90,18 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 
 	if cookie, err := getCookieValue(w, r); err == nil && !cookie.IsExpired {
 		td.IsAuthed = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
+	}
+
+	for i := range ud.Stores {
+		s := &ud.Stores[i]
+		td.Stores = append(td.Stores, StoreConfig{
+			Code:  s.Code,
+			Token: s.Token,
+		})
+	}
+
+	if len(ud.Stores) == 0 {
+		td.Stores = append(td.Stores, StoreConfig{})
 	}
 
 	isExecutingAction := r.Header.Get("x-addon-configure-action") != ""
@@ -199,9 +223,23 @@ type UpstreamAddon struct {
 	ReconfigureStore bool
 }
 
+type StoreConfig struct {
+	Code  UserDataStoreCode
+	Token string
+	Error struct {
+		Code  string
+		Token string
+	}
+}
+
 type TemplateData struct {
 	Base
-	Upstreams   []UpstreamAddon
+
+	Upstreams []UpstreamAddon
+
+	Stores           []StoreConfig
+	StoreCodeOptions []configure.ConfigOption
+
 	Configs     []configure.Config
 	Error       string
 	ManifestURL string
@@ -210,6 +248,8 @@ type TemplateData struct {
 	CanAuthorize      bool
 	CanAddUpstream    bool
 	CanRemoveUpstream bool
+	CanAddStore       bool
+	CanRemoveStore    bool
 
 	IsAuthed      bool
 	ExtractorIds  []string
@@ -229,11 +269,23 @@ func (td *TemplateData) HasUpstreamError() bool {
 	return false
 }
 
+func (td *TemplateData) HasStoreError() bool {
+	for i := range td.Stores {
+		if td.Stores[i].Error.Code != "" || td.Stores[i].Error.Token != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (td *TemplateData) HasFieldError() bool {
 	if td.HasUpstreamError() {
 		return true
 	}
-	if td.TemplateError.Name != "" || td.TemplateError.Description != "" {
+	if td.HasStoreError() {
+		return true
+	}
+	if !td.TemplateError.IsEmpty() {
 		return true
 	}
 	for i := range td.Configs {
@@ -250,6 +302,18 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		td.CanAuthorize = !IsPublicInstance
 		td.CanAddUpstream = td.IsAuthed || len(td.Upstreams) < MaxPublicInstanceUpstreamCount
 		td.CanRemoveUpstream = len(td.Upstreams) > 1
+		td.CanAddStore = td.IsAuthed || len(td.Stores) < MaxPublicInstanceStoreCount
+		if !IsPublicInstance && td.CanAddStore {
+			for i := range td.Stores {
+				s := &td.Stores[i]
+				if s.Code.IsStremThru() && s.Token != "" {
+					td.CanAddStore = false
+					td.Stores = td.Stores[i : i+1]
+					break
+				}
+			}
+		}
+		td.CanRemoveStore = len(td.Stores) > 1
 		return td
 	}, template.FuncMap{}, "configure_config.html", "wrap.html")
 }()
