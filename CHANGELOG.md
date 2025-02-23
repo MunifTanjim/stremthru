@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.56.0](https://github.com/MunifTanjim/stremthru/compare/0.55.1...0.56.0) (2025-02-23)
+
+
+### Features
+
+* **store/easydebrid:** store magnet cache info in local db ([fede7bd](https://github.com/MunifTanjim/stremthru/commit/fede7bdcadab54a57a582edf2647f777d5c9e1ec))
+* **stremio/wrap:** add raw template ([69707bb](https://github.com/MunifTanjim/stremthru/commit/69707bb4945c8d7eddae4b1b97f0770c3d991f92))
+* **stremio/wrap:** include site in default template ([400bfe1](https://github.com/MunifTanjim/stremthru/commit/400bfe1848b42a05ca4eea28aedb39eb3f1be5bd))
+* **stremio/wrap:** support multiple stores ([f0b791c](https://github.com/MunifTanjim/stremthru/commit/f0b791c87d6280c39426500f5b804cef90854fce))
+* **stremio/wrap:** try to match series file using sid ([1bce88f](https://github.com/MunifTanjim/stremthru/commit/1bce88f1472be7f34131c5f4e21ead4568a41739))
+* **stremio:** tweak manifest for addon catalog ([bb5bbfe](https://github.com/MunifTanjim/stremthru/commit/bb5bbfe85239f1b440b22e46aef3fb333a05bae2))
+* use shorter request id ([ea4a83a](https://github.com/MunifTanjim/stremthru/commit/ea4a83a109a533df7a835a67572083a7cd18d10c))
+
+
+### Bug Fixes
+
+* **buddy:** always set local_only for peer check magnet ([968674b](https://github.com/MunifTanjim/stremthru/commit/968674b48b3fc69a9b93be7a623ce83e989c74b1))
+* **stremio/wrap:** add missing space in cached stream name ([fadd97b](https://github.com/MunifTanjim/stremthru/commit/fadd97b0e3a25a809b194e8efe903f164e5cda4b))
+* **stremio/wrap:** handle url encoded path in manifest url ([7ab2866](https://github.com/MunifTanjim/stremthru/commit/7ab2866e9169f4b9e38e394a6dded93484425a45))
+
 ## [0.55.1](https://github.com/MunifTanjim/stremthru/compare/0.55.0...0.55.1) (2025-02-16)
 
 
