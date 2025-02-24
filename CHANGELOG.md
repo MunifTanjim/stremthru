@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.2](https://github.com/MunifTanjim/stremthru/compare/0.56.1...0.56.2) (2025-02-24)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** select store correctly in strem url ([81a11ee](https://github.com/MunifTanjim/stremthru/commit/81a11ee01de94ab8b9932342e3ec524f2aaabaf5))
+
 ## [0.56.1](https://github.com/MunifTanjim/stremthru/compare/0.56.0...0.56.1) (2025-02-23)
 
 
