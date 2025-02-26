@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.3](https://github.com/MunifTanjim/stremthru/compare/0.56.2...0.56.3) (2025-02-26)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** set correct store hint in name ([d0e88e0](https://github.com/MunifTanjim/stremthru/commit/d0e88e0c93a836ccfa2c45165ca011690deff475))
+
 ## [0.56.2](https://github.com/MunifTanjim/stremthru/compare/0.56.1...0.56.2) (2025-02-24)
 
 
