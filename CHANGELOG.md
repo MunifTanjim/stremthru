@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.57.0](https://github.com/MunifTanjim/stremthru/compare/0.56.3...0.57.0) (2025-03-02)
+
+
+### Features
+
+* **kv:** support dynamic scope in type ([608a8a6](https://github.com/MunifTanjim/stremthru/commit/608a8a6dd5066b1bbc6db63f1ee1a7c3dbd7d2d8))
+* **store:** add content proxy connection limit per user ([8a6fd00](https://github.com/MunifTanjim/stremthru/commit/8a6fd00e86251c4de6dc14762294fd77d9560f22))
+* **store:** track content proxy connections per user ([2056b4b](https://github.com/MunifTanjim/stremthru/commit/2056b4b3045c7d73597e8f5707c3773a6c7983ea))
+
+
+### Bug Fixes
+
+* extract ip from r.RemoteAddr properly ([b2e40dc](https://github.com/MunifTanjim/stremthru/commit/b2e40dcb35a35e3c9b56c09d03a04b24bef9c18b))
+* **store/premiumize:** handle not-premium error better ([494397b](https://github.com/MunifTanjim/stremthru/commit/494397b1b4d420942139a60aa5e8f1a791d52919))
+* **store/premiumize:** isolate parent folder id cache properly ([634a0e1](https://github.com/MunifTanjim/stremthru/commit/634a0e10f67c8c6158df22b572c52bfe13676d27))
+
 ## [0.56.3](https://github.com/MunifTanjim/stremthru/compare/0.56.2...0.56.3) (2025-02-26)
 
 
