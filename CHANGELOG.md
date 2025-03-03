@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.57.1](https://github.com/MunifTanjim/stremthru/compare/0.57.0...0.57.1) (2025-03-03)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** escape filename in strem url ([cd93965](https://github.com/MunifTanjim/stremthru/commit/cd93965c3c2c56e433ef21618abc9ab83eb54e3b))
+
 ## [0.57.0](https://github.com/MunifTanjim/stremthru/compare/0.56.3...0.57.0) (2025-03-02)
 
 
