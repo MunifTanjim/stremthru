@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.57.2](https://github.com/MunifTanjim/stremthru/compare/0.57.1...0.57.2) (2025-03-04)
+
+
+### Bug Fixes
+
+* **config:** do suffix match properly for STREMTHRU_TUNNEL ([89a4c6d](https://github.com/MunifTanjim/stremthru/commit/89a4c6dd1074a28d1fa1a5ba891d793d407556fa))
+
 ## [0.57.1](https://github.com/MunifTanjim/stremthru/compare/0.57.0...0.57.1) (2025-03-03)
 
 
