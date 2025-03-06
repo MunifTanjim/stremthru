@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.58.0](https://github.com/MunifTanjim/stremthru/compare/0.57.2...0.58.0) (2025-03-06)
+
+
+### Features
+
+* **config:** add default peer uri ([474d8e0](https://github.com/MunifTanjim/stremthru/commit/474d8e007a0c32300d9f5c3f93e796d12fa4df1c))
+* **db:** add embedded schema migration ([af56775](https://github.com/MunifTanjim/stremthru/commit/af5677598bd1086994ba12175c183270bf591317))
+* **db:** tweak schema migration logs ([ce2d188](https://github.com/MunifTanjim/stremthru/commit/ce2d188c9bba992f46730048de352505cf048e1d))
+* **stremio/sidekick:** support name and description modification ([6927177](https://github.com/MunifTanjim/stremthru/commit/6927177f96d404053ba37d49af325296f5a95148))
+* **stremio:** update links in ui ([0699c4b](https://github.com/MunifTanjim/stremthru/commit/0699c4bf2b8fd4b5bd17fe2b1aa416b4a9f0a5a1))
+
+
+### Bug Fixes
+
+* **buddy:** check only stale or missing hashes from peer ([041f484](https://github.com/MunifTanjim/stremthru/commit/041f484bb4812189a7714f196bc00c0a0db9a75c))
+
 ## [0.57.2](https://github.com/MunifTanjim/stremthru/compare/0.57.1...0.57.2) (2025-03-04)
 
 
