@@ -28,7 +28,7 @@ func main() {
 	database := db.Open()
 	defer db.Close()
 	db.Ping()
-	RunSchemaMigration(database.URI)
+	RunSchemaMigration(database.URI, database)
 
 	mux := http.NewServeMux()
 

@@ -77,17 +77,10 @@ jobs:
             done
             echo EOF
           } >> "${GITHUB_ENV}"
-          {
-            echo 'DOCKER_IMAGE_HEAVY_TAGS<<EOF'
-            for tag in ${TAGS}; do
-            echo "muniftanjim/stremthru:${tag}-heavy"
-            echo "ghcr.io/muniftanjim/stremthru:${tag}-heavy"
-            done
-            echo EOF
-          } >> "${GITHUB_ENV}"
+
           cat "${GITHUB_ENV}"
 
-      - name: Build - Dockerfile
+      - name: Build & Push
         uses: docker/build-push-action@v6
         with:
           cache-from: type=gha
@@ -97,14 +90,3 @@ jobs:
           context: .
           file: ./Dockerfile
           tags: ${{env.DOCKER_IMAGE_TAGS}}
-
-      - name: Build - heavy.Dockerfile
-        uses: docker/build-push-action@v6
-        with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          push: true
-          context: .
-          file: ./heavy.Dockerfile
-          tags: ${{env.DOCKER_IMAGE_HEAVY_TAGS}}

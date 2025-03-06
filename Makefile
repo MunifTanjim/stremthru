@@ -3,7 +3,7 @@ DOCKER_ID = muniftanjim
 
 .PHONY: all clean fmt test build run docker-build docker-push docker-run
 
-all: build image-build
+all: build docker-build
 
 clean:
 	rm -rf $(NAME)
@@ -25,10 +25,6 @@ docker-build:
 		--file Dockerfile \
 		--platform linux/amd64,linux/arm64 \
 		-t $(DOCKER_ID)/$(NAME):latest .
-	docker buildx build \
-		--file heavy.Dockerfile \
-		--platform linux/amd64,linux/arm64 \
-		-t $(DOCKER_ID)/$(NAME):latest-heavy .
 
 docker-run:
 	docker run --rm -it --name $(NAME) \

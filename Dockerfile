@@ -5,6 +5,7 @@ WORKDIR /workspace
 COPY go.mod go.sum ./
 RUN go mod download
 
+COPY migrations ./migrations
 COPY core ./core
 COPY internal ./internal
 COPY store ./store
