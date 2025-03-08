@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.59.0](https://github.com/MunifTanjim/stremthru/compare/0.58.0...0.59.0) (2025-03-08)
+
+
+### Features
+
+* **stremio/sidekick:** auto-correct manifest url on reload ([d925e51](https://github.com/MunifTanjim/stremthru/commit/d925e5115e1d62c47ea0b61d582e98899b8970df))
+
 ## [0.58.0](https://github.com/MunifTanjim/stremthru/compare/0.57.2...0.58.0) (2025-03-06)
 
 
