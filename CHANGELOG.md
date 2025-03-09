@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.59.0](https://github.com/MunifTanjim/stremthru/compare/0.58.0...0.59.0) (2025-03-09)
+
+
+### Features
+
+* **stremio/sidekick:** auto-correct manifest url on reload ([d925e51](https://github.com/MunifTanjim/stremthru/commit/d925e5115e1d62c47ea0b61d582e98899b8970df))
+* **stremio/wrap:** improve some built-in extractors ([1f3ec8f](https://github.com/MunifTanjim/stremthru/commit/1f3ec8fb5626fe2ea203cf05005b5b5ba56b45e3))
+* **stremio:** add common http headers for addon api calls ([6da69d4](https://github.com/MunifTanjim/stremthru/commit/6da69d4b72f36b44754688f66e244f5bc8b9f26b))
+
 ## [0.58.0](https://github.com/MunifTanjim/stremthru/compare/0.57.2...0.58.0) (2025-03-06)
 
 
