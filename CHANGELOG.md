@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.60.0](https://github.com/MunifTanjim/stremthru/compare/0.59.0...0.60.0) (2025-03-10)
+
+
+### Features
+
+* **stremio/wrap:** add built-in comet extractor ([eed8bb3](https://github.com/MunifTanjim/stremthru/commit/eed8bb33b7caa82ac5500ebf3a3839ab89739f09))
+* **stremio/wrap:** expose no content proxy without explicit auth ([85f071f](https://github.com/MunifTanjim/stremthru/commit/85f071fe05d6362417fd9672c63093664e281b25))
+* **stremio/wrap:** improve built-in torrentio extractor ([738c7bb](https://github.com/MunifTanjim/stremthru/commit/738c7bb9c2ba3c90c9d7c97d29d0ec68df89ceed))
+* **stremio/wrap:** introduce admin user ([78e7346](https://github.com/MunifTanjim/stremthru/commit/78e7346758cb11cb30114cbc7c64cae4f8271fdf))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** do not install without store configured ([109f07b](https://github.com/MunifTanjim/stremthru/commit/109f07b64ef76f05008de9c3094d6c2961e616fb))
+
 ## [0.59.0](https://github.com/MunifTanjim/stremthru/compare/0.58.0...0.59.0) (2025-03-09)
 
 
