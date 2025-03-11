@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.60.0](https://github.com/MunifTanjim/stremthru/compare/0.59.0...0.60.0) (2025-03-11)
+
+
+### Features
+
+* **stremio/sidekick:** support installing/uninstalling addon ([072a964](https://github.com/MunifTanjim/stremthru/commit/072a964e3220f6f967cefa54e2edfdecf83629f4))
+* **stremio/sidekick:** support toggling configurable and protected ([d5dc313](https://github.com/MunifTanjim/stremthru/commit/d5dc313b0fa964da34b311b309d33e317d75726b))
+* **stremio/wrap:** add built-in comet extractor ([eed8bb3](https://github.com/MunifTanjim/stremthru/commit/eed8bb33b7caa82ac5500ebf3a3839ab89739f09))
+* **stremio/wrap:** expose no content proxy without explicit auth ([85f071f](https://github.com/MunifTanjim/stremthru/commit/85f071fe05d6362417fd9672c63093664e281b25))
+* **stremio/wrap:** improve built-in torrentio extractor ([738c7bb](https://github.com/MunifTanjim/stremthru/commit/738c7bb9c2ba3c90c9d7c97d29d0ec68df89ceed))
+* **stremio/wrap:** introduce admin user ([78e7346](https://github.com/MunifTanjim/stremthru/commit/78e7346758cb11cb30114cbc7c64cae4f8271fdf))
+* **stremio:** update footer links ([a6b36da](https://github.com/MunifTanjim/stremthru/commit/a6b36da331d8b44c23f74872cefda27c3c11a721))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** do not install without store configured ([109f07b](https://github.com/MunifTanjim/stremthru/commit/109f07b64ef76f05008de9c3094d6c2961e616fb))
+
 ## [0.59.0](https://github.com/MunifTanjim/stremthru/compare/0.58.0...0.59.0) (2025-03-09)
 
 
