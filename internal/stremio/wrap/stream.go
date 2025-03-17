@@ -20,10 +20,7 @@ import (
 func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType, id string) (*stremio.StreamHandlerResponse, error) {
 	log := ctx.Log
 
-	eud, err := ud.GetEncoded(false)
-	if err != nil {
-		return nil, err
-	}
+	eud := ud.GetEncoded()
 
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameStream, rType, id)
 	if err != nil {

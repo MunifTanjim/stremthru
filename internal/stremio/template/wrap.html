@@ -20,31 +20,97 @@
 {{end}}
 
 {{define "main"}}
-<form id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false">
+
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
+{{if .CanAuthorize}}
+<div class="flex flex-row flex-wrap align-center justify-between mb-8">
+  <div>
+    {{if or .IsAuthed $hasSavedUserData}}
+    <fieldset role="group" class="flex flex-row align-center mb-0" {{if not .IsAuthed}}disabled{{end}}>
+      <label
+        for="userdata_key"
+        class="flex flex-row secondary"
+        style="
+          font-size: 0.75rem;
+          padding: 0.25em 0.75em;
+        "
+        role="button"
+      >
+        UserData
+      </label>
+      <select
+        class="mb-0"
+        style="font-size: 0.75rem; padding: 0.25em 2.5em 0.25em 1em;"
+        hx-target="body"
+        hx-post="configure"
+        hx-include="#configuration"
+        hx-headers='{"x-addon-configure-action":"set-userdata-key"}'
+        aria-label="Select Saved UserData"
+        id="userdata_key"
+        name="userdata_key"
+      >
+        {{range .SavedUserDataOptions}}
+        <option {{if eq $.SavedUserDataKey .Value}}selected{{end}} value="{{.Value}}">{{.Label}}</option>
+        {{end}}
+      </select>
+      {{if .IsAuthed}}
+      <button
+        class="secondary"
+        style="
+          {{if $hasSavedUserData}}--pico-background-color: #ad2201;{{end}}
+          font-size: 0.75rem;
+          padding: 0.25em 0.75em;
+        "
+        type="button"
+        hx-ext="htmx-modal"
+        data-modal="#userdata_{{if $hasSavedUserData}}delete{{else}}save{{end}}_modal"
+        data-modal-on-open="onOpenUserData{{if $hasSavedUserData}}Delete{{else}}Save{{end}}Modal"
+        hx-target="body"
+        hx-post="configure"
+        hx-include="#configuration"
+        hx-headers='{"x-addon-configure-action":"{{if $hasSavedUserData}}delete{{else}}save{{end}}-userdata"}'
+        hx-trigger="confirmed"
+        data-tooltip="{{if $hasSavedUserData}}Delete{{else}}Save{{end}} UserData"
+      >
+        {{if $hasSavedUserData}}🗑️{{else}}💾{{end}}
+      </button>
+      {{end}}
+    </fieldset>
+    {{end}}
+  </div>
+  <div>
+    <button
+      class="secondary mb-0"
+      style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+      type="button"
+      hx-ext="htmx-modal"
+      data-modal="#auth_modal"
+      data-modal-on-open="onOpenAuthorize"
+      hx-target="body"
+      hx-post="configure"
+      hx-include="#configuration"
+      hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
+      hx-trigger="confirmed"
+      data-tooltip="Features Restricted to Admin"
+    >
+      {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
+    </button>
+  </div>
+</div>
+{{end}}
+
+{{ $isRedacted := (and (not .IsAuthed) (ne .SavedUserDataKey "")) }}
+
+<form
+  id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false" 
+  {{if $isRedacted}}inert{{end}}
+>
   <div id="upstream_addons" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
       <span class="px-2" style="background-color: var(--pico-background-color);">
         Upstream Addons
       </span>
-      <small>
-        {{if .CanAuthorize}}
-        <button
-          class="secondary mb-0"
-          style="font-size: 0.75rem; padding: 0.25em;"
-          type="button"
-          hx-ext="htmx-modal"
-          data-modal="#auth_modal"
-          data-modal-on-open="onOpenAuthorize"
-          hx-target="body"
-          hx-post="configure"
-          hx-include="#configuration"
-          hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
-          hx-trigger="confirmed"
-        >
-          {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
-        </button>
-        {{end}}
-      </small>
     </header>
 
     <div>
@@ -298,18 +364,20 @@
     {{end}}
   </div>
 
-  <button type="submit">Install</button>
-
-  {{if ne .ManifestURL ""}}
-  <div id="manifest_url_section">
-    <label for="__manifest_url__">Manifest URL</label>
-    <fieldset role="group">
-      <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
-      <button type="button" onclick="copyManifestUrl()">Copy</button>
-    </fieldset>
-  </div>
+  {{if not $isRedacted}}
+  <button type="submit">{{if eq .SavedUserDataKey ""}}Install{{else}}Update{{end}}</button>
   {{end}}
 </form>
+
+{{if ne .ManifestURL ""}}
+<div id="manifest_url_section">
+  <label for="__manifest_url__">Manifest URL</label>
+  <fieldset role="group">
+    <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
+    <button type="button" onclick="copyManifestUrl()">Copy</button>
+  </fieldset>
+</div>
+{{end}}
 
 {{if .CanAuthorize}}
 <dialog id="auth_modal">
@@ -374,6 +442,38 @@
 
   </article>
 </dialog>
+
+{{if .IsAuthed}}
+<dialog id="userdata_save_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>Save UserData</span>
+      </h3>
+    </header>
+    <form>
+      <label for="userdata_save_name">Name *</label>
+      <input id="userdata_save_name" name="userdata_save_name" required />
+      <button type="submit">Save</button>
+    </form>
+  </article>
+</dialog>
+
+<dialog id="userdata_delete_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>Delete UserData</span>
+      </h3>
+    </header>
+    <form>
+      <button type="submit" style="--pico-background-color: #ad2201;">Delete</button>
+    </form>
+  </article>
+</dialog>
+{{end}}
 {{end}}
 
 {{end}}
@@ -429,6 +529,25 @@
     }, { once: true });
   }
 
+  function onOpenUserDataSaveModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        userdata_name: modal.querySelector("[name='userdata_save_name']").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+   s }, { once: true });
+  }
+
+  function onOpenUserDataDeleteModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
   function onUpstreamManifestConfigure(idx) {
     const url = document.querySelector(`input[name='upstreams[${idx}].url']`).value.replace(/\/manifest.json$/,'') + "/configure";
     window.open(url, "_blank");
@@ -455,12 +574,16 @@
   htmx.on("form#configuration", "htmx:beforeRequest", function(evt) {
     if (evt.detail.elt.id === "configuration") {
       evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+    } else {
+      evt.detail.elt.ariaBusy = true;
     }
   });
   htmx.off("form#configuration", "htmx:afterRequest");
   htmx.on("form#configuration", "htmx:afterRequest", function(evt) {
     if (evt.detail.elt.id === "configuration") {
       evt.detail.elt.querySelector("button[type='submit']").ariaBusy = false;
+    } else {
+      evt.detail.elt.ariaBusy = false;
     }
   });
   htmx.on("form#configuration", "change", function(evt) {

@@ -1,7 +1,6 @@
 package stremio_wrap
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,7 +16,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
-	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -104,6 +104,10 @@ type UserData struct {
 	isStremThruStore bool               `json:"-"`
 }
 
+var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
+	AddonName: "wrap",
+})
+
 func (ud UserData) HasRequiredValues() bool {
 	if len(ud.Upstreams) == 0 {
 		return false
@@ -128,16 +132,16 @@ func (ud UserData) HasRequiredValues() bool {
 	return true
 }
 
-func (ud UserData) GetEncoded(forceRefresh bool) (string, error) {
-	if ud.encoded == "" || forceRefresh {
-		blob, err := json.Marshal(ud)
-		if err != nil {
-			return "", err
-		}
-		ud.encoded = core.Base64Encode(string(blob))
-	}
+func (ud *UserData) GetEncoded() string {
+	return ud.encoded
+}
 
-	return ud.encoded, nil
+func (ud *UserData) SetEncoded(encoded string) {
+	ud.encoded = encoded
+}
+
+func (ud *UserData) Ptr() *UserData {
+	return ud
 }
 
 type userDataError struct {
@@ -286,10 +290,8 @@ func (ud UserData) getUpstreamManifests(ctx *context.StoreContext) ([]stremio.Ma
 }
 
 func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsResolver, error) {
-	eud, err := ud.GetEncoded(false)
-	if err != nil {
-		return nil, err
-	}
+	eud := ud.GetEncoded()
+
 	if ud.resolver == nil {
 		if upstreamResolverCache.Get(eud, &ud.resolver) {
 			return ud.resolver, nil
@@ -331,7 +333,7 @@ func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsRes
 			}
 		}
 
-		err = upstreamResolverCache.Add(eud, resolver)
+		err := upstreamResolverCache.Add(eud, resolver)
 		if err != nil {
 			return nil, err
 		}
@@ -373,22 +375,17 @@ func (ud UserData) getUpstreams(ctx *context.StoreContext, rName stremio.Resourc
 
 func getUserData(r *http.Request) (*UserData, error) {
 	data := &UserData{}
+	data.SetEncoded(r.PathValue("userData"))
 
 	if IsMethod(r, http.MethodGet) || IsMethod(r, http.MethodHead) {
-		data.encoded = r.PathValue("userData")
+		if err := udManager.Resolve(data); err != nil {
+			return nil, err
+		}
 		if data.encoded == "" {
 			return data, nil
 		}
-		blob, err := core.Base64DecodeToByte(data.encoded)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(blob, data)
-		if err != nil {
-			return nil, err
-		}
 
-		shouldReEncode := false
+		shouldResync := false
 		if data.StoreToken != "" {
 			data.Stores = []UserDataStore{
 				{
@@ -398,7 +395,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 			}
 			data.StoreName = ""
 			data.StoreToken = ""
-			shouldReEncode = true
+			shouldResync = true
 		}
 
 		if data.ManifestURL != "" {
@@ -408,12 +405,11 @@ func getUserData(r *http.Request) (*UserData, error) {
 				},
 			}
 			data.ManifestURL = ""
-			shouldReEncode = true
+			shouldResync = true
 		}
 
-		if shouldReEncode {
-			_, err := data.GetEncoded(true)
-			if err != nil {
+		if shouldResync {
+			if err := udManager.Sync(data); err != nil {
 				return nil, err
 			}
 		}

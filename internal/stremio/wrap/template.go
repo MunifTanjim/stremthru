@@ -4,38 +4,13 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"regexp"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
-	"github.com/MunifTanjim/stremthru/internal/stremio/template"
+	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
+	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 )
-
-func getStoreNameConfig() configure.Config {
-	options := []configure.ConfigOption{
-		{Value: "", Label: "StremThru"},
-		{Value: "alldebrid", Label: "AllDebrid"},
-		{Value: "debridlink", Label: "DebridLink"},
-		{Value: "easydebrid", Label: "EasyDebrid"},
-		{Value: "offcloud", Label: "Offcloud"},
-		{Value: "pikpak", Label: "PikPak"},
-		{Value: "premiumize", Label: "Premiumize"},
-		{Value: "realdebrid", Label: "RealDebrid"},
-		{Value: "torbox", Label: "TorBox"},
-	}
-	if config.IsPublicInstance {
-		options[0].Disabled = true
-		options[0].Label = ""
-	}
-	config := configure.Config{
-		Key:      "store",
-		Type:     "select",
-		Default:  "",
-		Title:    "Store Name",
-		Options:  options,
-		Required: config.IsPublicInstance,
-	}
-	return config
-}
 
 func getStoreCodeOptions() []configure.ConfigOption {
 	options := []configure.ConfigOption{
@@ -207,6 +182,23 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 		td.TemplateIds = templateIds
 	}
 
+	if udManager.IsSaved(ud) {
+		td.SavedUserDataKey = udManager.GetId(ud)
+	}
+	if td.IsAuthed {
+		if options, err := stremio_userdata.GetOptions("wrap"); err != nil {
+			LogError(r, "failed to list saved userdata options", err)
+		} else {
+			td.SavedUserDataOptions = options
+		}
+	} else if td.SavedUserDataKey != "" {
+		if sud, err := stremio_userdata.Get[UserData]("wrap", td.SavedUserDataKey); err != nil {
+			LogError(r, "failed to get saved userdata", err)
+		} else {
+			td.SavedUserDataOptions = []configure.ConfigOption{{Label: sud.Name, Value: td.SavedUserDataKey}}
+		}
+	}
+
 	return td
 }
 
@@ -260,6 +252,9 @@ type TemplateData struct {
 	Template      StreamTransformerTemplateBlob
 	TemplateError StreamTransformerTemplateBlob
 	SortConfig    configure.Config
+
+	SavedUserDataKey     string
+	SavedUserDataOptions []configure.ConfigOption
 }
 
 func (td *TemplateData) HasUpstreamError() bool {
@@ -316,6 +311,20 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			}
 		}
 		td.CanRemoveStore = len(td.Stores) > 1
+
+		if !td.IsAuthed && td.SavedUserDataKey != "" {
+			redacted := "*******"
+			upstreamUrlPattern := regexp.MustCompile("^(.+)://([^/]+)/(?:[^/]+/)?(manifest.json)$")
+			for i := range td.Upstreams {
+				up := &td.Upstreams[i]
+				up.URL = upstreamUrlPattern.ReplaceAllString(up.URL, "${1}://${2}/"+redacted+"/${3}")
+			}
+			for i := range td.Stores {
+				s := &td.Stores[i]
+				s.Token = redacted
+			}
+		}
+
 		return td
 	}, template.FuncMap{}, "configure_config.html", "wrap.html")
 }()

@@ -37,6 +37,7 @@ require (
 	github.com/dpotapov/slogpfx v0.0.0-20230917063348-41a73c95c536
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-redis/cache/v9 v9.0.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/lmittmann/tint v1.0.7

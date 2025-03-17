@@ -67,13 +67,7 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func redirectToConfigurePage(w http.ResponseWriter, r *http.Request, ud *UserData, tryInstall bool) {
-	eud, err := ud.GetEncoded(true)
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-
-	url := ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/configure")
+	url := ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + ud.GetEncoded() + "/configure")
 	if tryInstall {
 		w.Header().Add("hx-trigger", "try_install")
 	}
@@ -306,6 +300,49 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+		case "set-userdata-key":
+			if td.IsAuthed {
+				key := r.Form.Get("userdata_key")
+				if key == "" {
+					ud.SetEncoded("")
+					err := udManager.Sync(ud)
+					if err != nil {
+						LogError(r, "failed to unselect userdata", err)
+					} else {
+						redirectToConfigurePage(w, r, ud, false)
+						return
+					}
+				} else {
+					err := udManager.Load(key, ud)
+					if err != nil {
+						LogError(r, "failed to load userdata", err)
+					} else {
+						redirectToConfigurePage(w, r, ud, false)
+						return
+					}
+				}
+			}
+		case "save-userdata":
+			if td.IsAuthed && !udManager.IsSaved(ud) && ud.HasRequiredValues() {
+				name := r.Form.Get("userdata_name")
+				err := udManager.Save(ud, name)
+				if err != nil {
+					LogError(r, "failed to save userdata", err)
+				} else {
+					redirectToConfigurePage(w, r, ud, true)
+					return
+				}
+			}
+		case "delete-userdata":
+			if td.IsAuthed && udManager.IsSaved(ud) {
+				err := udManager.Delete(ud)
+				if err != nil {
+					LogError(r, "failed to delete userdata", err)
+				} else {
+					redirectToConfigurePage(w, r, ud, true)
+					return
+				}
+			}
 		}
 
 		page, err := getPage(td)
@@ -314,6 +351,11 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		SendHTML(w, 200, page)
+		return
+	}
+
+	if IsMethod(r, http.MethodPost) && !td.IsAuthed && td.SavedUserDataKey != "" {
+		shared.ErrorForbidden(r).Send(w, r)
 		return
 	}
 
@@ -386,23 +428,27 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	hasError := td.HasFieldError()
 
-	if IsMethod(r, http.MethodGet) || hasError {
-		if !hasError && ud.HasRequiredValues() {
-			if eud, err := ud.GetEncoded(false); err == nil {
-				td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + eud + "/manifest.json").String()
-			}
-		}
-
-		page, err := getPage(td)
+	if IsMethod(r, http.MethodPost) && !hasError {
+		err = udManager.Sync(ud)
 		if err != nil {
 			SendError(w, r, err)
 			return
 		}
-		SendHTML(w, 200, page)
+
+		redirectToConfigurePage(w, r, ud, td.SavedUserDataKey == "")
 		return
 	}
 
-	redirectToConfigurePage(w, r, ud, true)
+	if !hasError && ud.HasRequiredValues() {
+		td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + ud.GetEncoded() + "/manifest.json").String()
+	}
+
+	page, err := getPage(td)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, page)
 }
 
 func handleResource(w http.ResponseWriter, r *http.Request) {
