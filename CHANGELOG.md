@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.61.0](https://github.com/MunifTanjim/stremthru/compare/0.60.0...0.61.0) (2025-03-20)
+
+
+### Features
+
+* **stremio/wrap:** support saved userdata ([1e463d2](https://github.com/MunifTanjim/stremthru/commit/1e463d24cf1606eb5fab709caff7931b3ba6c23f))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** accept manifest url with query params ([ab6a9e8](https://github.com/MunifTanjim/stremthru/commit/ab6a9e8cea7a208325983bea7086972a486473cc))
+* **stremio/wrap:** fix duplicate event listeners ([902e7f7](https://github.com/MunifTanjim/stremthru/commit/902e7f7d608865a8df3b10818f5ddb76a9d9fabc))
+
 ## [0.60.0](https://github.com/MunifTanjim/stremthru/compare/0.59.0...0.60.0) (2025-03-11)
 
 
