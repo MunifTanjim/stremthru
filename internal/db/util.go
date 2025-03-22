@@ -100,3 +100,7 @@ func adaptQuery(query string) string {
 
 	return q.String()
 }
+
+func JoinColumnNames(columns ...string) string {
+	return `"` + strings.Join(columns, `","`) + `"`
+}
