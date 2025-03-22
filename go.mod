@@ -1,6 +1,6 @@
 module github.com/MunifTanjim/stremthru
 
-go 1.23.3
+go 1.24.1
 
 require (
 	github.com/elastic/go-freelru v0.15.0

@@ -8,6 +8,13 @@ import (
 
 type Timestamp struct{ time.Time }
 
+func (t Timestamp) IsZero() bool {
+	if t.Time.IsZero() {
+		return true
+	}
+	return t.Unix() <= 0
+}
+
 func (t Timestamp) Value() (driver.Value, error) {
 	return t.Unix(), nil
 }
