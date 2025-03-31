@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.61.1](https://github.com/MunifTanjim/stremthru/compare/0.61.0...0.61.1) (2025-03-31)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** guard against invalid store config in userdata ([ecb489a](https://github.com/MunifTanjim/stremthru/commit/ecb489a65349aa01c73e191b9137ed2ebc14340d))
+
 ## [0.61.0](https://github.com/MunifTanjim/stremthru/compare/0.60.0...0.61.0) (2025-03-20)
 
 
