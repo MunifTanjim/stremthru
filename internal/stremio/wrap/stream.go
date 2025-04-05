@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -21,6 +22,8 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	log := ctx.Log
 
 	eud := ud.GetEncoded()
+
+	stremId := strings.TrimSuffix(id, ".json")
 
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameStream, rType, id)
 	if err != nil {
@@ -52,11 +55,13 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			streams := res.Data.Streams
 			wstreams := make([]WrappedStream, len(streams))
 			errs[i] = err
+			tInfoData := []torrent_info.TorrentInfoInsertData{}
 			if err == nil {
 				extractor, err := up.extractor.Parse()
 				if err != nil {
 					errs[i] = err
 				} else {
+					addonHostname := up.baseUrl.Hostname()
 					transformer := StreamTransformer{
 						Extractor: extractor,
 						Template:  template,
@@ -71,9 +76,13 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 							wstream.noContentProxy = true
 						}
 						wstreams[i] = *wstream
+						if cData := torrent_info.ExtractCreateDataFromStream(addonHostname, wstream.Stream); cData != nil {
+							tInfoData = append(tInfoData, *cData)
+						}
 					}
 				}
 			}
+			go torrent_info.Insert(tInfoData, stremId)
 			chunks[i] = wstreams
 		}()
 	}
@@ -109,8 +118,6 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			magnetByHash[magnet.Hash] = magnet
 		}
 	}
-
-	stremId := strings.TrimSuffix(id, ".json")
 
 	isCachedByHash := map[string]string{}
 	if len(hashes) > 0 {

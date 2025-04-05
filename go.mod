@@ -1,6 +1,6 @@
 module github.com/MunifTanjim/stremthru
 
-go 1.23.3
+go 1.24.1
 
 require (
 	github.com/elastic/go-freelru v0.15.0
@@ -41,6 +41,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/lmittmann/tint v1.0.7
+	github.com/madflojo/tasks v1.2.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pressly/goose/v3 v3.24.1
