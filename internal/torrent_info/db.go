@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -609,4 +610,109 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 	}
 
 	return tInfos, nil
+}
+
+var upsert_parsed_on_conflict_columns = append([]string{
+	Column.ParserVersion,
+}, Columns[slices.Index(Columns, Column.Audio):]...)
+var upsert_parsed_query_before_values = fmt.Sprintf(
+	`INSERT INTO %s (%s) VALUES `,
+	TableName,
+	db.JoinColumnNames(Columns...),
+)
+var upsert_parsed_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", len(Columns), ","))
+var upsert_parsed_query_on_confict = fmt.Sprintf(
+	` ON CONFLICT (%s) DO UPDATE SET (%s) = (%s), (%s, %s) = `,
+	Column.Hash,
+	db.JoinColumnNames(upsert_parsed_on_conflict_columns...),
+	strings.Join(
+		func() []string {
+			cols := make([]string, len(upsert_parsed_on_conflict_columns))
+			for i := range upsert_parsed_on_conflict_columns {
+				cols[i] = `EXCLUDED."` + upsert_parsed_on_conflict_columns[i] + `"`
+			}
+			return cols
+		}(),
+		",",
+	),
+	Column.ParsedAt,
+	Column.UpdatedAt,
+)
+
+func get_upsert_parsed_query(count int) string {
+	return upsert_parsed_query_before_values +
+		util.RepeatJoin(upsert_parsed_query_values_placeholder, count, ",") +
+		upsert_parsed_query_on_confict +
+		"(" + db.CurrentTimestamp + "," + db.CurrentTimestamp + ")"
+}
+
+func UpsertParsed(tInfos []*TorrentInfo) error {
+	for cTInfos := range slices.Chunk(tInfos, 200) {
+		count := len(cTInfos)
+		query := get_upsert_parsed_query(count)
+
+		args := make([]any, 0, len(Columns)*count)
+		for i := range cTInfos {
+			tInfo := cTInfos[i]
+			args = append(
+				args,
+
+				tInfo.Hash,
+				tInfo.TorrentTitle,
+
+				tInfo.Source,
+				tInfo.Category,
+				tInfo.CreatedAt,
+				tInfo.UpdatedAt,
+				tInfo.ParsedAt,
+				tInfo.ParserVersion,
+
+				tInfo.Audio,
+				tInfo.BitDepth,
+				tInfo.Channels,
+				tInfo.Codec,
+				tInfo.Commentary,
+				tInfo.Complete,
+				tInfo.Container,
+				tInfo.Convert,
+				tInfo.Date,
+				tInfo.Documentary,
+				tInfo.Dubbed,
+				tInfo.Edition,
+				tInfo.EpisodeCode,
+				tInfo.Episodes,
+				tInfo.Extended,
+				tInfo.Extension,
+				tInfo.Group,
+				tInfo.HDR,
+				tInfo.Hardcoded,
+				tInfo.Languages,
+				tInfo.Network,
+				tInfo.Proper,
+				tInfo.Quality,
+				tInfo.Region,
+				tInfo.Remastered,
+				tInfo.Repack,
+				tInfo.Resolution,
+				tInfo.Retail,
+				tInfo.Seasons,
+				tInfo.Site,
+				tInfo.Size,
+				tInfo.Subbed,
+				tInfo.ThreeD,
+				tInfo.Title,
+				tInfo.Uncensored,
+				tInfo.Unrated,
+				tInfo.Upscaled,
+				tInfo.Volumes,
+				tInfo.Year,
+				tInfo.YearEnd,
+			)
+		}
+
+		if _, err := db.Exec(query, args...); err != nil {
+			return err
+		}
+	}
+	return nil
 }

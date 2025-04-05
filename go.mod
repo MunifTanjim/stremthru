@@ -34,6 +34,7 @@ require (
 )
 
 require (
+	github.com/MunifTanjim/go-ptt v0.3.0
 	github.com/dpotapov/slogpfx v0.0.0-20230917063348-41a73c95c536
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-redis/cache/v9 v9.0.0
@@ -41,6 +42,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/lmittmann/tint v1.0.7
+	github.com/madflojo/tasks v1.2.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/pressly/goose/v3 v3.24.1
