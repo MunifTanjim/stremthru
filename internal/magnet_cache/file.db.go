@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
@@ -232,5 +233,24 @@ func RecordStreams(items []MCFileInsertData) {
 		if err != nil {
 			mcfLog.Error("failed partially to record streams", "error", err)
 		}
+	}
+}
+
+var tag_strem_id_query = fmt.Sprintf(
+	"UPDATE %s SET %s = ?, %s = ? WHERE %s = ? AND %s = ? AND %s IN ('', '*')",
+	FileTableName,
+	MCFileColumn.SId,
+	MCFileColumn.UAt,
+	MCFileColumn.Hash,
+	MCFileColumn.Name,
+	MCFileColumn.SId,
+)
+
+func TagStremId(hash string, filename string, sid string) {
+	_, err := db.Exec(tag_strem_id_query, sid, db.Timestamp{Time: time.Now()}, hash, filename)
+	if err != nil {
+		mcfLog.Error("failed to tag strem id", "error", err, "hash", hash, "fname", filename, "sid", sid)
+	} else {
+		mcfLog.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
 	}
 }

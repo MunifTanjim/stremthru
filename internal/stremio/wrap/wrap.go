@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
+	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
@@ -333,6 +334,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 				error_log:   "no matching file found for (" + sid + " - " + magnet.Hash + ")",
 				error_video: "no_matching_file",
 			}, nil
+		}
+
+		if strings.HasPrefix(sid, "tt") {
+			magnet_cache.TagStremId(magnet.Hash, file.Name, sid)
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, ctx, link)
