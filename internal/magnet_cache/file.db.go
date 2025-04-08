@@ -105,7 +105,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	return byHash, nil
 }
 
-func TrackFiles(hash string, files Files, sid string, discardIdx bool) {
+func TrackFiles(hash string, files Files, discardIdx bool) {
 	if len(files) == 0 {
 		return
 	}
@@ -124,7 +124,7 @@ func TrackFiles(hash string, files Files, sid string, discardIdx bool) {
 		query.WriteString(placeholder)
 		fsid := file.SId
 		if fsid == "" {
-			fsid = sid
+			fsid = "*"
 		}
 		idx := file.Idx
 		if discardIdx {
@@ -156,14 +156,14 @@ func execBulkTrackFiles(count int, args []any) {
 	}
 }
 
-func BulkTrackFiles(filesByHash map[string]Files, sid string, discardIdx bool) {
+func BulkTrackFiles(filesByHash map[string]Files, discardIdx bool) {
 	count := 0
 	args := []any{}
 	for hash, files := range filesByHash {
 		for _, file := range files {
 			fsid := file.SId
 			if fsid == "" {
-				fsid = sid
+				fsid = "*"
 			}
 			idx := file.Idx
 			if discardIdx {

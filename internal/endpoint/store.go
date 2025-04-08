@@ -59,7 +59,6 @@ type TrackMagnetPayload struct {
 	Hash   string             `json:"hash"`
 	Files  []store.MagnetFile `json:"files"`
 	IsMiss bool               `json:"is_miss"`
-	SId    string             `json:"sid"`
 
 	// bulk
 	FilesByHash map[string][]store.MagnetFile `json:"files_by_hash"`
@@ -93,7 +92,7 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Hash != "" {
-		go buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.SId, payload.IsMiss, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.IsMiss, ctx.StoreAuthToken)
 	} else {
 		go buddy.BulkTrackMagnet(ctx.Store, payload.FilesByHash, ctx.StoreAuthToken)
 	}
@@ -203,7 +202,7 @@ func addMagnet(ctx *context.StoreContext, magnet string) (*store.AddMagnetData, 
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, "*", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -249,7 +248,7 @@ func getMagnet(ctx *context.StoreContext, magnetId string) (*store.GetMagnetData
 	params.Id = magnetId
 	data, err := ctx.Store.GetMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, "*", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }

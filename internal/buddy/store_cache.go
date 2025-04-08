@@ -61,7 +61,6 @@ type TrackMagnetCacheParams struct {
 	Hash      string             `json:"hash"`
 	Files     []store.MagnetFile `json:"files"`
 	CacheMiss bool               `json:"cache_miss"`
-	SId       string             `json:"sid"`
 
 	// bulk
 	FilesByHash map[string][]store.MagnetFile `json:"files_by_hash"`

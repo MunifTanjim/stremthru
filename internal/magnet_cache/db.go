@@ -146,7 +146,7 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	return mcs, nil
 }
 
-func Touch(storeCode store.StoreCode, hash string, files Files, sid string) {
+func Touch(storeCode store.StoreCode, hash string, files Files) {
 	buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
 	var result sql.Result
 	var err error
@@ -164,10 +164,10 @@ func Touch(storeCode store.StoreCode, hash string, files Files, sid string) {
 		mcLog.Error("failed to touch", "error", err)
 		return
 	}
-	TrackFiles(hash, files, sid, storeCode != store.StoreCodeRealDebrid)
+	TrackFiles(hash, files, storeCode != store.StoreCodeRealDebrid)
 }
 
-func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, sid string) {
+func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files) {
 	var hit_query strings.Builder
 	hit_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES ")
 	hit_placeholder := "(?,?,true,?)"
@@ -205,7 +205,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, sid stri
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
 		}
-		BulkTrackFiles(filesByHash, sid, storeCode != store.StoreCodeRealDebrid)
+		BulkTrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
 	}
 
 	if miss_count > 0 {

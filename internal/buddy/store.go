@@ -25,14 +25,14 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 
 var peerLog = logger.Scoped("buddy:upstream")
 
-func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, sid string, cacheMiss bool, storeToken string) {
+func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss bool, storeToken string) {
 	mcFiles := magnet_cache.Files{}
 	if !cacheMiss {
 		for _, f := range files {
 			mcFiles = append(mcFiles, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
 		}
 	}
-	magnet_cache.Touch(s.GetName().Code(), hash, mcFiles, sid)
+	magnet_cache.Touch(s.GetName().Code(), hash, mcFiles)
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
@@ -40,7 +40,6 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, sid strin
 			Hash:      hash,
 			Files:     files,
 			CacheMiss: cacheMiss,
-			SId:       sid,
 		}
 		start := time.Now()
 		if _, err := Buddy.TrackMagnetCache(params); err != nil {
@@ -57,7 +56,6 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, sid strin
 			Hash:       hash,
 			Files:      files,
 			IsMiss:     cacheMiss,
-			SId:        sid,
 		}
 		go func() {
 			start := time.Now()
@@ -79,7 +77,7 @@ func BulkTrackMagnet(s store.Store, filesByHash map[string][]store.MagnetFile, s
 		}
 		mcFilesByHash[hash] = mcFiles
 	}
-	magnet_cache.BulkTouch(s.GetName().Code(), mcFilesByHash, "*")
+	magnet_cache.BulkTouch(s.GetName().Code(), mcFilesByHash)
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
@@ -199,7 +197,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 				data.Items = append(data.Items, res_item)
 				filesByHash[item.Hash] = files
 			}
-			go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, sid)
+			go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash)
 			return data, nil
 		}
 	}
@@ -243,7 +241,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 				filesByHash[item.Hash] = files
 				data.Items = append(data.Items, item)
 			}
-			go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, sid)
+			go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash)
 			return data, nil
 		}
 	}

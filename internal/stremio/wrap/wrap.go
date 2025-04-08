@@ -267,7 +267,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Files, sid, magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Files, magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		var file *store.MagnetFile
 		if fileName != "" {
