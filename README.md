@@ -275,6 +275,7 @@ Add magnet link for download.
     "hash": "string",
     "magnet": "string",
     "name": "string",
+    "size": "int",
     "status": "MagnetStatus",
     "files": [
       {
@@ -313,6 +314,7 @@ List magnets on user's account.
         "id": "string",
         "hash": "string",
         "name": "string",
+        "size": "int",
         "status": "MagnetStatus",
         "added_at": "datetime"
       }
@@ -340,6 +342,7 @@ Get magnet on user's account.
     "id": "string",
     "hash": "string",
     "name": "string",
+    "size": "int",
     "status": "MagnetStatus",
     "files": [
       {

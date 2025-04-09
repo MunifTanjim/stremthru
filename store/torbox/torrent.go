@@ -11,7 +11,7 @@ import (
 
 type CheckTorrentsCachedDataItemFile struct {
 	Name string `json:"name"` // full path
-	Size int    `json:"size"`
+	Size int64  `json:"size"`
 }
 
 func (f CheckTorrentsCachedDataItemFile) GetName() string {
@@ -96,7 +96,7 @@ type TorrentFile struct {
 	MD5       string `json:"md5"`
 	S3Path    string `json:"s3_path"`
 	Name      string `json:"name"`
-	Size      int    `json:"size"`
+	Size      int64  `json:"size"`
 	MimeType  string `json:"mimetype"`
 	ShortName string `json:"short_name"`
 }
@@ -119,7 +119,7 @@ type Torrent struct {
 	CreatedAt        string               `json:"created_at"`
 	UpdatedAt        string               `json:"updated_at"`
 	Magnet           string               `json:"magnet"`
-	Size             int                  `json:"size"`
+	Size             int64                `json:"size"`
 	Active           bool                 `json:"active"`
 	AuthId           string               `json:"auth_id"`
 	DownloadState    TorrentDownloadState `json:"download_state"`

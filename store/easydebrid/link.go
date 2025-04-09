@@ -3,7 +3,7 @@ package easydebrid
 import "net/http"
 
 type LookupLinkDetailsDataItemFile struct {
-	Size   int    `json:"size"`
+	Size   int64  `json:"size"`
 	Name   string `json:"name"`
 	Folder string `json:"folder"`
 }
@@ -34,7 +34,7 @@ func (c APIClient) LookupLinkDetails(params *LookupLinkDetailsParams) (APIRespon
 type GenerateLinkDataFile struct {
 	Filename  string   `json:"filename"`
 	Directory []string `json:"directory"`
-	Size      int      `json:"size"`
+	Size      int64    `json:"size"`
 	URL       string   `json:"url"`
 }
 

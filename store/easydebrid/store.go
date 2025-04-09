@@ -265,11 +265,13 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      params.Id,
 		Hash:    magnet.Hash,
 		Name:    magnet.Name,
+		Size:    0,
 		Status:  store.MagnetStatusDownloaded,
 		Files:   []store.MagnetFile{},
 		AddedAt: time.Unix(0, 0),
 	}
 	for idx, f := range detail.Files {
+		data.Size += f.Size
 		if core.HasVideoExtension(f.Name) {
 			data.Files = append(data.Files, store.MagnetFile{
 				Idx:  idx,

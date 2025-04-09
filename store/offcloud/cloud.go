@@ -86,8 +86,8 @@ type GetCloudDownloadStatusDataStatus struct {
 	Status      CloudDownloadStatus `json:"status"`
 	Amount      int                 `json:"amount"`
 	RequestId   string              `json:"requestId"`
-	FileName    string              `json:"fileName"`
-	FileSize    int                 `json:"fileSize"`
+	FileName    string              `json:"fileName"` // can be renamed
+	FileSize    int64               `json:"fileSize"`
 	Server      string              `json:"server"`
 	IsDirectory bool                `json:"isDirectory"`
 }

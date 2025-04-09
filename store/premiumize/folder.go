@@ -30,7 +30,7 @@ type ListFolderDataContentItem struct {
 	Id              string          `json:"id"`
 	Name            string          `json:"name"`
 	Type            FolderItemType  `json:"type"`
-	Size            int             `json:"size"`
+	Size            int64           `json:"size"`
 	CreatedAt       int64           `json:"created_at"`
 	MimeType        string          `json:"mime_type"`
 	TranscodeStatus TranscodeStatus `json:"transcode_status"`

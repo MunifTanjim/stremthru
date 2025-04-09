@@ -24,7 +24,7 @@ type ResponseMagnetFile struct {
 	Children *[]ResponseMagnetFile `json:"e"`
 	Link     string                `json:"l"`
 	Name     string                `json:"n"`
-	Size     int                   `json:"s"`
+	Size     int64                 `json:"s"`
 }
 
 type MagnetFile struct {
@@ -32,7 +32,7 @@ type MagnetFile struct {
 	Link string
 	Name string
 	Path string
-	Size int
+	Size int64
 	Type store.MagnetFileType
 }
 
@@ -113,7 +113,7 @@ type UploadMagnetDataMagnet struct {
 	Magnet           string       `json:"magnet"`
 	Name             string       `json:"name"`
 	Ready            bool         `json:"ready"`
-	Size             int          `json:"size"`
+	Size             int64        `json:"size"`
 }
 
 type UploadMagnetData struct {
@@ -183,7 +183,7 @@ type GetMagnetStatusDataMagnet struct {
 	MagnetFilesContainer
 	Id             int              `json:"id"`
 	Filename       string           `json:"filename"`
-	Size           int              `json:"size"`
+	Size           int64            `json:"size"`
 	Hash           string           `json:"hash"`
 	Type           string           `json:"type"`
 	Version        int              `json:"version"`

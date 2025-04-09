@@ -102,7 +102,7 @@ type MagnetFile struct {
 	Link string `json:"link,omitempty"`
 	Name string `json:"name"`
 	Path string `json:"path,omitempty"`
-	Size int    `json:"size"`
+	Size int64  `json:"size"`
 }
 
 type MagnetStatus string
@@ -143,6 +143,7 @@ type AddMagnetData struct {
 	Hash    string       `json:"hash"`
 	Magnet  string       `json:"magnet"`
 	Name    string       `json:"name"`
+	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
 	Files   []MagnetFile `json:"files"`
 	AddedAt time.Time    `json:"added_at"`
@@ -158,6 +159,7 @@ type GetMagnetData struct {
 	Id      string       `json:"id"`
 	Name    string       `json:"name"`
 	Hash    string       `json:"hash"`
+	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
 	Files   []MagnetFile `json:"files"`
 	AddedAt time.Time    `json:"added_at"`
@@ -172,6 +174,7 @@ type ListMagnetsDataItem struct {
 	Id      string       `json:"id"`
 	Hash    string       `json:"hash"`
 	Name    string       `json:"name"`
+	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
 	AddedAt time.Time    `json:"added_at"`
 }

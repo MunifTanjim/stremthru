@@ -135,7 +135,7 @@ const (
 type GetTorrentInfoDataFile struct {
 	Id       int    `json:"id"`       // File unique identifier
 	Path     string `json:"path"`     // Path to the file inside the torrent, starting with "/"
-	Bytes    int    `json:"bytes"`    // Size of the file in bytes
+	Bytes    int64  `json:"bytes"`    // Size of the file in bytes
 	Selected int    `json:"selected"` // Whether the file is selected (0 or 1)
 }
 

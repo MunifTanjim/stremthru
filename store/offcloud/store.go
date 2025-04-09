@@ -71,8 +71,8 @@ func (s *StoreClient) getMagnetFiles(ctx Ctx, requestId string, server string) (
 		if err != nil {
 			return nil, err
 		}
-		size := -1
-		// // too expensive, should enable for non-public deployments later
+		size := int64(-1)
+		// // too expensive, should enable for non-eublic deployments later
 		// if size_res, err := s.client.GetFileSize(&GetFileSizeParams{Ctx: ctx, Link: string(link)}); err == nil {
 		// 	size = size_res.Data
 		// }
@@ -104,6 +104,7 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	data := &store.AddMagnetData{
 		Hash:   magnet.Hash,
 		Magnet: magnet.Link,
+		Size:   -1,
 		Files:  []store.MagnetFile{},
 	}
 
@@ -114,6 +115,7 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		data.Name = cloudDownload.FileName
 		data.Status = getMagnetStatus(cloudDownload.Status)
 		data.AddedAt = cloudDownload.CreatedOn
+		data.Size = cloudDownload.FileSize
 
 		server = cloudDownload.Server
 	} else {
@@ -214,6 +216,7 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      params.Id,
 		Name:    magnet.FileName,
 		Hash:    "",
+		Size:    magnet.FileSize,
 		Status:  getMagnetStatus(magnet.Status),
 		Files:   []store.MagnetFile{},
 		AddedAt: time.Unix(0, 0),
@@ -288,6 +291,7 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			Id:      m.RequestId,
 			Hash:    magnet.Hash,
 			Name:    m.FileName,
+			Size:    m.FileSize,
 			Status:  getMagnetStatus(m.Status),
 			AddedAt: m.CreatedOn,
 		}

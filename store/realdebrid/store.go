@@ -279,6 +279,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Hash:    magnet.Hash,
 		Magnet:  magnet.Link,
 		Name:    magnet.Name,
+		Size:    t.OriginalBytes,
 		Status:  m.Status,
 		Files:   m.Files,
 		AddedAt: m.AddedAt,
@@ -377,6 +378,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      res.Data.Id,
 		Hash:    res.Data.Hash,
 		Name:    res.Data.Filename,
+		Size:    res.Data.OriginalBytes,
 		Status:  torrentStatusToMagnetStatus(res.Data.Status),
 		Files:   []store.MagnetFile{},
 		AddedAt: res.Data.GetAddedAt(),
@@ -434,6 +436,7 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			Id:      t.Id,
 			Hash:    t.Hash,
 			Name:    t.Filename,
+			Size:    t.Bytes,
 			Status:  torrentStatusToMagnetStatus(t.Status),
 			AddedAt: t.GetAddedAt(),
 		}

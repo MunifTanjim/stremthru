@@ -132,6 +132,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Hash:    t.HashString,
 		Magnet:  magnet.Link,
 		Name:    t.Name,
+		Size:    t.TotalSize,
 		Status:  store.MagnetStatusQueued,
 		Files:   []store.MagnetFile{},
 		AddedAt: t.GetAddedAt(),
@@ -174,6 +175,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      t.Id,
 		Hash:    t.HashString,
 		Name:    t.Name,
+		Size:    t.TotalSize,
 		Status:  store.MagnetStatusUnknown,
 		Files:   []store.MagnetFile{},
 		AddedAt: t.GetAddedAt(),
@@ -240,6 +242,7 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 				Id:      t.Id,
 				Hash:    t.HashString,
 				Name:    t.Name,
+				Size:    t.TotalSize,
 				Status:  store.MagnetStatusUnknown,
 				AddedAt: t.GetAddedAt(),
 			}

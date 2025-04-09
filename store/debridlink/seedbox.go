@@ -12,7 +12,7 @@ type SeedboxTorrentFile struct {
 	Name            string `json:"name"`
 	DownloadUrl     string `json:"downloadUrl"`
 	Downloaded      bool   `json:"downloaded"`
-	Size            int    `json:"size"`
+	Size            int64  `json:"size"`
 	DownloadPercent int    `json:"downloadPercent"`
 }
 
@@ -33,7 +33,7 @@ type SeedboxTorrent struct {
 	PeersConnected  int                     `json:"peersConnected"`
 	Status          int                     `json:"status"`
 	ActProgress     bool                    `json:"act_progress"`
-	TotalSize       int                     `json:"totalSize"`
+	TotalSize       int64                   `json:"totalSize"`
 	Files           []SeedboxTorrentFile    `json:"files"`
 	Trackers        []SeedboxTorrentTracker `json:"trackers"`
 	IsZip           bool                    `json:"isZip"`

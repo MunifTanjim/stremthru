@@ -282,6 +282,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	if err != nil {
 		return nil, err
 	}
+	data.Size = t.Data.Size
 	data.AddedAt = t.Data.GetAddedAt()
 	if t.Data.DownloadFinished && t.Data.DownloadPresent {
 		data.Status = store.MagnetStatusDownloaded
@@ -384,6 +385,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      params.Id,
 		Hash:    res.Data.Hash,
 		Name:    res.Data.Name,
+		Size:    res.Data.Size,
 		Status:  store.MagnetStatusQueued,
 		Files:   []store.MagnetFile{},
 		AddedAt: res.Data.GetAddedAt(),
@@ -427,6 +429,7 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			Id:      strconv.Itoa(t.Id),
 			Hash:    t.Hash,
 			Name:    t.Name,
+			Size:    t.Size,
 			Status:  store.MagnetStatusUnknown,
 			AddedAt: t.GetAddedAt(),
 		}

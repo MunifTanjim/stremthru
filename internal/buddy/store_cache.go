@@ -18,7 +18,7 @@ type CheckMagnetCacheParams struct {
 type CheckMagnetCacheDataItemFile struct {
 	Idx  int    `json:"i"`
 	Name string `json:"n"`
-	Size int    `json:"s"`
+	Size int64  `json:"s"`
 	SId  string `json:"sid"`
 }
 

@@ -13,12 +13,12 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-func toSize(sizeStr string) int {
+func toSize(sizeStr string) int64 {
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
 		size = -1
 	}
-	return size
+	return int64(size)
 }
 
 type StoreClientConfig struct {
@@ -148,6 +148,7 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Hash:    magnet.Hash,
 		Magnet:  magnet.Link,
 		Name:    "",
+		Size:    -1,
 		Status:  store.MagnetStatusQueued,
 		Files:   []store.MagnetFile{},
 		AddedAt: time.Now(),
@@ -348,6 +349,7 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      res.Data.Id,
 		Name:    res.Data.Name,
 		Hash:    magnet.Hash,
+		Size:    -1,
 		Status:  store.MagnetStatusDownloading,
 		Files:   []store.MagnetFile{},
 		AddedAt: addedAt,
@@ -462,6 +464,7 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 					Id:      f.Id,
 					Name:    f.Name,
 					Hash:    magnet.Hash,
+					Size:    -1,
 					Status:  store.MagnetStatusDownloading,
 					AddedAt: addedAt,
 				}

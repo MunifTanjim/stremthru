@@ -98,7 +98,7 @@ func (c APIClient) CreateTransfer(params *CreateTransferParams) (APIResponse[Cre
 
 type CreateDirectDownloadLinkDataContent struct {
 	Path            string          `json:"path"`
-	Size            int             `json:"size"`
+	Size            int64           `json:"size"`
 	Link            string          `json:"link"`
 	StreamLink      string          `json:"stream_link"`
 	TranscodeStatus TranscodeStatus `json:"transcode_status"`

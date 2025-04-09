@@ -362,8 +362,13 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			Magnet:  magnet.Link,
 			Name:    magnet.Name,
 			Status:  store.MagnetStatusDownloaded,
+			Size:    0,
 			Files:   cm.Files,
 			AddedAt: time.Unix(0, 0).UTC(),
+		}
+
+		for i := range cm.Files {
+			data.Size += cm.Files[i].Size
 		}
 
 		c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
@@ -391,6 +396,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Hash:    magnet.Hash,
 		Magnet:  magnet.Link,
 		Name:    ct_res.Data.Name,
+		Size:    -1,
 		Status:  store.MagnetStatusQueued,
 		AddedAt: time.Now().UTC(),
 	}
@@ -414,6 +420,11 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 
 		data.Files = files
+
+		data.Size = 0
+		for i := range files {
+			data.Size += files[i].Size
+		}
 	}
 
 	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
@@ -448,9 +459,13 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 			Id:      params.Id,
 			Hash:    magnet.Hash,
 			Name:    "",
+			Size:    0,
 			Status:  store.MagnetStatusDownloaded,
 			Files:   files,
 			AddedAt: time.Unix(0, 0).UTC(),
+		}
+		for i := range files {
+			data.Size += files[i].Size
 		}
 
 		return data, nil
@@ -475,6 +490,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		Id:      transfer.Id,
 		Hash:    magnet.Hash,
 		Name:    transfer.Name,
+		Size:    -1,
 		Status:  getMagnetStatsForTransfer(transfer),
 		AddedAt: transfer.GetAddedAt(),
 	}
@@ -487,6 +503,10 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 			return nil, err
 		}
 		data.Files = files
+		data.Size = 0
+		for i := range files {
+			data.Size += files[i].Size
+		}
 	}
 
 	return data, nil
@@ -517,6 +537,7 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 				Id:      m.Name,
 				Hash:    CachedMagnetId(m.Name).toHash(),
 				Name:    "",
+				Size:    -1,
 				Status:  store.MagnetStatusDownloaded,
 				AddedAt: m.GetAddedAt(),
 			}
@@ -533,6 +554,7 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 				Id:      t.Id,
 				Hash:    magnet.Hash,
 				Name:    t.Name,
+				Size:    -1,
 				Status:  getMagnetStatsForTransfer(&t),
 				AddedAt: t.GetAddedAt(),
 			}
