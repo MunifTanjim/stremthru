@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS "public"."torrent_info" (
   "updated_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "parsed_at" timestamptz,
   "parser_version" int NOT NULL DEFAULT 0,
+  "parser_input" text NOT NULL DEFAULT '',
 
   "audio" text NOT NULL DEFAULT '',
   "bit_depth" text NOT NULL DEFAULT '',

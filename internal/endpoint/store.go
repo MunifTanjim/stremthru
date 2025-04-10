@@ -13,7 +13,10 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
-	"github.com/MunifTanjim/stremthru/internal/store/video"
+	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
+	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -55,13 +58,18 @@ func checkMagnet(ctx *context.StoreContext, magnets []string, sid string, localO
 }
 
 type TrackMagnetPayload struct {
+	TorrentInfoCategory torrent_info.TorrentInfoCategory `json:"tinfo_category"`
+
 	// single
 	Hash   string             `json:"hash"`
+	Name   string             `json:"name"`
+	Size   int64              `json:"size"`
 	Files  []store.MagnetFile `json:"files"`
 	IsMiss bool               `json:"is_miss"`
 
 	// bulk
-	FilesByHash map[string][]store.MagnetFile `json:"files_by_hash"`
+	TorrentInfos []buddy.TorrentInfoInput      `json:"tinfos"`
+	FilesByHash  map[string][]store.MagnetFile `json:"files_by_hash"`
 }
 
 type TrackMagnetData struct {
@@ -92,9 +100,9 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.Hash != "" {
-		go buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Files, payload.IsMiss, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Name, payload.Size, payload.Files, payload.TorrentInfoCategory, payload.IsMiss, ctx.StoreAuthToken)
 	} else {
-		go buddy.BulkTrackMagnet(ctx.Store, payload.FilesByHash, ctx.StoreAuthToken)
+		go buddy.BulkTrackMagnet(ctx.Store, payload.TorrentInfos, payload.FilesByHash, payload.TorrentInfoCategory, ctx.StoreAuthToken)
 	}
 
 	SendResponse(w, r, 202, &TrackMagnetData{}, nil)
@@ -171,9 +179,13 @@ func listMagnets(ctx *context.StoreContext, r *http.Request) (*store.ListMagnets
 	params.APIKey = ctx.StoreAuthToken
 	data, err := ctx.Store.ListMagnets(params)
 
-	if err == nil && data.Items == nil {
-		data.Items = []store.ListMagnetsDataItem{}
+	if err == nil {
+		if data.Items == nil {
+			data.Items = []store.ListMagnetsDataItem{}
+		}
+		go store_util.RecordTorrentInfoFromListMagnets(ctx.Store.GetName().Code(), data.Items)
 	}
+
 	return data, err
 }
 
@@ -202,7 +214,7 @@ func addMagnet(ctx *context.StoreContext, magnet string) (*store.AddMagnetData, 
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -248,7 +260,7 @@ func getMagnet(ctx *context.StoreContext, magnetId string) (*store.GetMagnetData
 	params.Id = magnetId
 	data, err := ctx.Store.GetMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Files, data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -390,7 +402,7 @@ func handleStoreLinkAccess(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	bytesWritten, err := shared.ProxyResponse(w, r, link, tunnelType)
-	ctx.Log.Info("[proxy] connection closed", "user", user, "size", shared.ToSize(bytesWritten), "error", err)
+	ctx.Log.Info("[proxy] connection closed", "user", user, "size", util.ToSize(bytesWritten), "error", err)
 }
 
 func handleStatic(w http.ResponseWriter, r *http.Request) {

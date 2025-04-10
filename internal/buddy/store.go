@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/peer"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -25,7 +26,7 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 
 var peerLog = logger.Scoped("buddy:upstream")
 
-func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss bool, storeToken string) {
+func TrackMagnet(s store.Store, hash string, name string, size int64, files []store.MagnetFile, tInfoCategory torrent_info.TorrentInfoCategory, cacheMiss bool, storeToken string) {
 	mcFiles := magnet_cache.Files{}
 	if !cacheMiss {
 		for _, f := range files {
@@ -33,6 +34,16 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 		}
 	}
 	magnet_cache.Touch(s.GetName().Code(), hash, mcFiles)
+
+	if name != "" {
+		go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{{
+			Hash:         hash,
+			TorrentTitle: name,
+			Size:         size,
+			Source:       torrent_info.TorrentInfoSource(s.GetName().Code()),
+			Files:        mcFiles,
+		}}, tInfoCategory)
+	}
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
@@ -54,6 +65,8 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 			StoreName:  s.GetName(),
 			StoreToken: storeToken,
 			Hash:       hash,
+			Name:       name,
+			Size:       size,
 			Files:      files,
 			IsMiss:     cacheMiss,
 		}
@@ -68,7 +81,9 @@ func TrackMagnet(s store.Store, hash string, files []store.MagnetFile, cacheMiss
 	}
 }
 
-func BulkTrackMagnet(s store.Store, filesByHash map[string][]store.MagnetFile, storeToken string) {
+type TorrentInfoInput = peer.TrackMagnetParamsTorrentInfo
+
+func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, filesByHash map[string][]store.MagnetFile, tInfoCategory torrent_info.TorrentInfoCategory, storeToken string) {
 	mcFilesByHash := map[string]magnet_cache.Files{}
 	for hash, files := range filesByHash {
 		mcFiles := magnet_cache.Files{}
@@ -78,6 +93,30 @@ func BulkTrackMagnet(s store.Store, filesByHash map[string][]store.MagnetFile, s
 		mcFilesByHash[hash] = mcFiles
 	}
 	magnet_cache.BulkTouch(s.GetName().Code(), mcFilesByHash)
+
+	if len(tInfos) > 0 {
+		go func() {
+			source := torrent_info.TorrentInfoSource(s.GetName().Code())
+			items := []torrent_info.TorrentInfoInsertData{}
+			for i := range tInfos {
+				tInfo := &tInfos[i]
+				if tInfo.TorrentTitle == "" {
+					continue
+				}
+				item := torrent_info.TorrentInfoInsertData{
+					Hash:         tInfo.Hash,
+					TorrentTitle: tInfo.TorrentTitle,
+					Size:         tInfo.Size,
+					Source:       source,
+				}
+				if files, ok := mcFilesByHash[tInfo.Hash]; ok {
+					item.Files = files
+				}
+				items = append(items, item)
+			}
+			go torrent_info.Upsert(items, tInfoCategory)
+		}()
+	}
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
@@ -94,9 +133,11 @@ func BulkTrackMagnet(s store.Store, filesByHash map[string][]store.MagnetFile, s
 
 	if config.HasPeer && config.PeerAuthToken != "" {
 		params := &peer.TrackMagnetParams{
-			StoreName:   s.GetName(),
-			StoreToken:  storeToken,
-			FilesByHash: filesByHash,
+			StoreName:           s.GetName(),
+			StoreToken:          storeToken,
+			TorrentInfoCategory: tInfoCategory,
+			TorrentInfos:        tInfos,
+			FilesByHash:         filesByHash,
 		}
 		go func() {
 			start := time.Now()

@@ -71,7 +71,15 @@ func (csi *CommaSeperatedInt) Scan(value any) error {
 type TorrentInfoSource string
 
 const (
-	TorrentInfoSourceTorrentio TorrentInfoSource = "tio"
+	TorrentInfoSourceTorrentio  TorrentInfoSource = "tio"
+	TorrentInfoSourceAllDebrid  TorrentInfoSource = "ad"
+	TorrentInfoSourceDebridLink TorrentInfoSource = "dl"
+	TorrentInfoSourceEasyDebrid TorrentInfoSource = "ed"
+	TorrentInfoSourceOffcloud   TorrentInfoSource = "oc"
+	TorrentInfoSourcePikPak     TorrentInfoSource = "pp"
+	TorrentInfoSourcePremiumize TorrentInfoSource = "pm"
+	TorrentInfoSourceRealDebrid TorrentInfoSource = "rd"
+	TorrentInfoSourceTorBox     TorrentInfoSource = "tb"
 )
 
 type TorrentInfoCategory string
@@ -93,6 +101,7 @@ type TorrentInfo struct {
 	UpdatedAt     db.Timestamp        `json:"updated_at"`
 	ParsedAt      db.Timestamp        `json:"parsed_at"`
 	ParserVersion int                 `json:"parser_version"`
+	ParserInput   string              `json:"parser_input"`
 
 	Audio       CommaSeperatedString `json:"audio"`
 	BitDepth    string               `json:"bit_depth"`
@@ -148,6 +157,7 @@ type ColumnStruct struct {
 	UpdatedAt     string
 	ParsedAt      string
 	ParserVersion string
+	ParserInput   string
 
 	Audio       string
 	BitDepth    string
@@ -201,6 +211,7 @@ var Column = ColumnStruct{
 	UpdatedAt:     "updated_at",
 	ParsedAt:      "parsed_at",
 	ParserVersion: "parser_version",
+	ParserInput:   "parser_input",
 
 	Audio:       "audio",
 	BitDepth:    "bit_depth",
@@ -254,6 +265,7 @@ var Columns = []string{
 	Column.UpdatedAt,
 	Column.ParsedAt,
 	Column.ParserVersion,
+	Column.ParserInput,
 
 	Column.Audio,
 	Column.BitDepth,
@@ -317,6 +329,7 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 		&tInfo.UpdatedAt,
 		&tInfo.ParsedAt,
 		&tInfo.ParserVersion,
+		&tInfo.ParserInput,
 
 		&tInfo.Audio,
 		&tInfo.BitDepth,
@@ -405,6 +418,7 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 			&tInfo.UpdatedAt,
 			&tInfo.ParsedAt,
 			&tInfo.ParserVersion,
+			&tInfo.ParserInput,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
@@ -455,25 +469,19 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 	return byHash, nil
 }
 
-type TorrentInfoInsertDataFile struct {
-	Name string
-	Idx  int
-	Size int64
-	SId  string
-}
+type TorrentInfoInsertDataFile = torrent_stream.File
 
 type TorrentInfoInsertData struct {
 	Hash         string
 	TorrentTitle string
 	Size         int64
 	Source       TorrentInfoSource
-	Category     TorrentInfoCategory
 
 	Files []TorrentInfoInsertDataFile
 }
 
 var insert_query_before_values = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES `,
+	`INSERT INTO %s AS ti (%s) VALUES `,
 	TableName,
 	strings.Join([]string{
 		Column.Hash,
@@ -484,29 +492,56 @@ var insert_query_before_values = fmt.Sprintf(
 	}, ","),
 )
 var insert_query_values_placeholder = "(" + util.RepeatJoin("?", 5, ",") + ")"
-var insert_query_after_values = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END`,
+var insert_query_on_conflict = fmt.Sprintf(
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s`,
 	Column.Hash,
-	Column.Size,
-	TableName,
-	Column.Size,
-	Column.Size,
-	TableName,
-	Column.Size,
+	fmt.Sprintf(
+		"%s = CASE WHEN ti.%s NOT IN ('tio','ad','dl','rd','tb') THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.TorrentTitle,
+		Column.Source,
+		Column.TorrentTitle,
+		Column.TorrentTitle,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN ti.%s = -1 THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Size,
+		Column.Size,
+		Column.Size,
+		Column.Size,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN ti.%s NOT IN ('tio','ad','dl','rd','tb') THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Source,
+		Column.Source,
+		Column.Source,
+		Column.Source,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN ti.%s = '' THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Category,
+		Column.Category,
+		Column.Category,
+		Column.Category,
+	),
+	fmt.Sprintf(
+		"%s = ",
+		Column.UpdatedAt,
+	),
 )
 
 func get_insert_query(count int) string {
-	return insert_query_before_values + util.RepeatJoin(insert_query_values_placeholder, count, ",") + insert_query_after_values
+	return insert_query_before_values +
+		util.RepeatJoin(insert_query_values_placeholder, count, ",") +
+		insert_query_on_conflict + db.CurrentTimestamp
 }
 
-func Insert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
+func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 	count := len(items)
 	if count == 0 {
 		return
 	}
 
 	streamsInsertData := []torrent_stream.InsertData{}
-	query := get_insert_query(count)
 	args := make([]any, 0, 5*count)
 	for _, t := range items {
 		for i := range t.Files {
@@ -524,18 +559,22 @@ func Insert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 		args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, category)
 	}
 
+	query := get_insert_query(count)
 	_, err := db.Exec(query, args...)
 	if err != nil {
-		log.Error("failed to insert torrent info", "count", count, "error", err)
+		log.Error("failed to upsert torrent info", "count", count, "error", err)
 	}
-	go torrent_stream.Record(streamsInsertData)
+	if len(streamsInsertData) > 0 {
+		go torrent_stream.Record(streamsInsertData)
+	}
 }
 
 var get_unparsed_query = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s IS NULL",
-	`"`+strings.Join(Columns, `","`)+`"`,
+	"SELECT %s FROM %s WHERE %s != %s",
+	db.JoinColumnNames(Columns...),
 	TableName,
-	Column.ParsedAt,
+	Column.TorrentTitle,
+	Column.ParserInput,
 )
 
 func GetUnparsed(limit int) ([]TorrentInfo, error) {
@@ -562,6 +601,7 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 			&tInfo.UpdatedAt,
 			&tInfo.ParsedAt,
 			&tInfo.ParserVersion,
+			&tInfo.ParserInput,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
@@ -614,6 +654,7 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 
 var upsert_parsed_on_conflict_columns = append([]string{
 	Column.ParserVersion,
+	Column.ParserInput,
 }, Columns[slices.Index(Columns, Column.Audio):]...)
 var upsert_parsed_query_before_values = fmt.Sprintf(
 	`INSERT INTO %s (%s) VALUES `,
@@ -666,6 +707,7 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 				tInfo.UpdatedAt,
 				tInfo.ParsedAt,
 				tInfo.ParserVersion,
+				tInfo.ParserInput,
 
 				tInfo.Audio,
 				tInfo.BitDepth,

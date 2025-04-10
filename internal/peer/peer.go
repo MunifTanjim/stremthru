@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -192,19 +193,28 @@ func (c APIClient) CheckMagnet(params *CheckMagnetParams) (request.APIResponse[s
 	return request.NewAPIResponse(res, response.Data), err
 }
 
+type TrackMagnetParamsTorrentInfo struct {
+	Hash         string
+	TorrentTitle string
+	Size         int64
+}
+
 type TrackMagnetParams struct {
 	store.Ctx
-	StoreName  store.StoreName `json:"-"`
-	StoreToken string          `json:"-"`
+	StoreName           store.StoreName                  `json:"-"`
+	StoreToken          string                           `json:"-"`
+	TorrentInfoCategory torrent_info.TorrentInfoCategory `json:"tinfo_category"`
 
 	// single
 	Hash   string             `json:"hash"`
+	Name   string             `json:"name"`
+	Size   int64              `json:"size"`
 	Files  []store.MagnetFile `json:"files"`
 	IsMiss bool               `json:"is_miss"`
-	SId    string             `json:"sid"`
 
 	// bulk
-	FilesByHash map[string][]store.MagnetFile `json:"files_by_hash"`
+	TorrentInfos []TrackMagnetParamsTorrentInfo `json:"tinfos"`
+	FilesByHash  map[string][]store.MagnetFile  `json:"files_by_hash"`
 }
 
 type TrackMagnetData struct{}

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `torrent_info` (
   `updated_at` datetime NOT NULL DEFAULT (unixepoch()),
   `parsed_at` datetime,
   `parser_version` int NOT NULL DEFAULT 0,
+  `parser_input` varchar NOT NULL DEFAULT '',
 
   `audio` varchar NOT NULL DEFAULT '',
   `bit_depth` varchar NOT NULL DEFAULT '',

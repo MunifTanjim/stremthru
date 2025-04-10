@@ -9,7 +9,7 @@ import (
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
-	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/madflojo/tasks"
 )
 
@@ -22,6 +22,7 @@ func parse(t *TorrentInfo) *TorrentInfo {
 
 	t.ParsedAt = db.Timestamp{Time: time.Now()}
 	t.ParserVersion = ptt.Version().Int()
+	t.ParserInput = t.TorrentTitle
 
 	t.Audio = r.Audio
 	t.BitDepth = r.BitDepth
@@ -54,7 +55,7 @@ func parse(t *TorrentInfo) *TorrentInfo {
 	t.Seasons = r.Seasons
 	t.Site = r.Site
 	if r.Size != "" {
-		t.Size = shared.ToBytes(r.Size)
+		t.Size = util.ToBytes(r.Size)
 	}
 	t.Subbed = r.Subbed
 	t.ThreeD = r.ThreeD

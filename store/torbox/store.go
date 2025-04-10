@@ -185,6 +185,7 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 	data := &store.CheckMagnetData{
 		Items: []store.CheckMagnetDataItem{},
 	}
+	tInfos := []buddy.TorrentInfoInput{}
 	filesByHash := map[string][]store.MagnetFile{}
 	for _, hash := range hashes {
 		if item, ok := foundItemByHash[hash]; ok {
@@ -208,11 +209,16 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 					Size: f.Size,
 				})
 			}
+			tInfos = append(tInfos, buddy.TorrentInfoInput{
+				Hash:         hash,
+				TorrentTitle: t.Name,
+				Size:         t.Size,
+			})
 		}
 		data.Items = append(data.Items, item)
 		filesByHash[hash] = item.Files
 	}
-	go buddy.BulkTrackMagnet(c, filesByHash, params.GetAPIKey(c.client.apiKey))
+	go buddy.BulkTrackMagnet(c, tInfos, filesByHash, "", params.GetAPIKey(c.client.apiKey))
 	return data, nil
 }
 

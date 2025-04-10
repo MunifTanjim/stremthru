@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -44,7 +44,7 @@ func extractInputFromTorrentioStream(data *TorrentInfoInsertData, sid string, st
 		file.Idx = stream.FileIndex
 	}
 	if match := torrentioStreamSizeRegex.FindStringSubmatch(description); len(match) > 1 {
-		file.Size = shared.ToBytes(match[1])
+		file.Size = util.ToBytes(match[1])
 	}
 	if file.Name != "" {
 		data.Files = append(data.Files, file)

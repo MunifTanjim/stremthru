@@ -206,7 +206,7 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		filesByHash[hash] = item.Files
 
 	}
-	go buddy.BulkTrackMagnet(s, filesByHash, params.GetAPIKey(s.client.apiKey))
+	go buddy.BulkTrackMagnet(s, []buddy.TorrentInfoInput{}, filesByHash, "", params.GetAPIKey(s.client.apiKey))
 	return data, nil
 }
 

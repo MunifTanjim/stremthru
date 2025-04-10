@@ -41,14 +41,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	}
 
 	isImdbStremId := strings.HasPrefix(stremId, "tt")
-	torrentInfoCategory := torrent_info.TorrentInfoCategoryUnknown
-	if isImdbStremId {
-		if strings.Contains(stremId, ":") {
-			torrentInfoCategory = torrent_info.TorrentInfoCategorySeries
-		} else {
-			torrentInfoCategory = torrent_info.TorrentInfoCategoryMovie
-		}
-	}
+	torrentInfoCategory := torrent_info.GetCategoryFromStremId(stremId)
 
 	var wg sync.WaitGroup
 	for i := range upstreams {
@@ -95,7 +88,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 			}
 			if isImdbStremId {
-				go torrent_info.Insert(tInfoData, torrentInfoCategory)
+				go torrent_info.Upsert(tInfoData, torrentInfoCategory)
 			}
 			chunks[i] = wstreams
 		}()

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 func getResolutionRank(input string) int {
@@ -87,7 +87,7 @@ func getQualityRank(input string) int {
 }
 
 func getSizeRank(input string) int64 {
-	return shared.ToBytes(input)
+	return util.ToBytes(input)
 }
 
 func (str StreamTransformerResult) GetFieldRank(field string) any {

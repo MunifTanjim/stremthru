@@ -17,6 +17,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -268,7 +269,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Files, magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Files, torrent_info.GetCategoryFromStremId(sid), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		var file *store.MagnetFile
 		if fileName != "" {

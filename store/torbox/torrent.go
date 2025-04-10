@@ -24,7 +24,7 @@ func (f CheckTorrentsCachedDataItemFile) GetPath() string {
 
 type CheckTorrentsCachedDataItem struct {
 	Name  string                            `json:"name"`
-	Size  int                               `json:"size"`
+	Size  int64                             `json:"size"`
 	Hash  string                            `json:"hash"`
 	Files []CheckTorrentsCachedDataItemFile `json:"files"`
 }
