@@ -3,15 +3,13 @@ package magnet_cache
 import (
 	"bytes"
 	"database/sql"
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -19,43 +17,8 @@ const TableName = "magnet_cache"
 
 var mcLog = logger.Scoped(TableName)
 
-type File struct {
-	Idx  int    `json:"i"`
-	Name string `json:"n"`
-	Size int64  `json:"s"`
-	SId  string `json:"-"`
-}
-
-type Files []File
-
-func (files Files) Value() (driver.Value, error) {
-	return json.Marshal(files)
-}
-
-func (files *Files) Scan(value any) error {
-	var bytes []byte
-	switch v := value.(type) {
-	case string:
-		bytes = []byte(v)
-	case []byte:
-		bytes = v
-	default:
-		return errors.New("failed to convert value to []byte")
-	}
-	return json.Unmarshal(bytes, files)
-}
-
-func (arr Files) ToStoreMagnetFile() []store.MagnetFile {
-	files := make([]store.MagnetFile, len(arr))
-	for i, f := range arr {
-		files[i] = store.MagnetFile{
-			Idx:  f.Idx,
-			Name: f.Name,
-			Size: f.Size,
-		}
-	}
-	return files
-}
+type File = torrent_stream.File
+type Files = torrent_stream.Files
 
 type MagnetCache struct {
 	Store      store.StoreCode
@@ -91,7 +54,7 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 		return []MagnetCache{}, nil
 	}
 
-	filesByHash, err := GetFilesByHashes(hashes)
+	filesByHash, err := torrent_stream.GetFilesByHashes(hashes)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +68,7 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 
 	query := "SELECT store, hash, is_cached, modified_at, files FROM " + TableName
 	if sid != "" {
-		query += " LEFT JOIN " + FileTableName + " ON " + TableName + ".hash = " + FileTableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + FileTableName + ".sid IN (?, '*')) AND"
+		query += " LEFT JOIN " + torrent_stream.TableName + " ON " + TableName + ".hash = " + torrent_stream.TableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + torrent_stream.TableName + ".sid IN (?, '*')) AND"
 		args[arg_idx] = sid
 		arg_idx += 1
 	} else {
@@ -135,7 +98,7 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 			return nil, err
 		}
 		if files, ok := filesByHash[smc.Hash]; ok && len(files) > 0 {
-			smc.Files = files
+			smc.Files = Files(files)
 		}
 		mcs = append(mcs, smc)
 	}
@@ -164,7 +127,7 @@ func Touch(storeCode store.StoreCode, hash string, files Files) {
 		mcLog.Error("failed to touch", "error", err)
 		return
 	}
-	TrackFiles(hash, files, storeCode != store.StoreCodeRealDebrid)
+	torrent_stream.TrackFiles(hash, torrent_stream.Files(files), storeCode != store.StoreCodeRealDebrid)
 }
 
 func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files) {
@@ -205,7 +168,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files) {
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
 		}
-		BulkTrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
+		torrent_stream.BulkTrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
 	}
 
 	if miss_count > 0 {

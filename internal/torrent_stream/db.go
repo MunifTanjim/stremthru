@@ -1,29 +1,60 @@
-package magnet_cache
+package torrent_stream
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/store"
 )
 
-const FileTableName = "magnet_cache_file"
-
-var mcfLog = logger.Scoped(FileTableName)
-
-type MagnetCacheFile struct {
-	Hash string `json:"-"`
+type File struct {
 	Name string `json:"n"`
 	Idx  int    `json:"i"`
 	Size int64  `json:"s"`
 	SId  string `json:"-"`
 }
 
-type MCFile struct {
+type Files []File
+
+func (files Files) Value() (driver.Value, error) {
+	return json.Marshal(files)
+}
+
+func (files *Files) Scan(value any) error {
+	var bytes []byte
+	switch v := value.(type) {
+	case string:
+		bytes = []byte(v)
+	case []byte:
+		bytes = v
+	default:
+		return errors.New("failed to convert value to []byte")
+	}
+	return json.Unmarshal(bytes, files)
+}
+
+func (arr Files) ToStoreMagnetFile() []store.MagnetFile {
+	files := make([]store.MagnetFile, len(arr))
+	for i, f := range arr {
+		files[i] = store.MagnetFile{
+			Idx:  f.Idx,
+			Name: f.Name,
+			Size: f.Size,
+		}
+	}
+	return files
+}
+
+const TableName = "torrent_stream"
+
+type TorrentStream struct {
 	Hash   string       `json:"h"`
 	Name   string       `json:"n"`
 	Idx    int          `json:"i"`
@@ -32,10 +63,9 @@ type MCFile struct {
 	Source string       `json:"src"`
 	CAt    db.Timestamp `json:"cat"`
 	UAt    db.Timestamp `json:"uat"`
-	SAt    db.Timestamp `json:"sat,omitzero"`
 }
 
-type MCFileColumnStruct struct {
+type ColumnStruct struct {
 	Hash   string
 	Name   string
 	Idx    string
@@ -44,10 +74,9 @@ type MCFileColumnStruct struct {
 	Source string
 	CAt    string
 	UAt    string
-	SAt    string
 }
 
-var MCFileColumn = MCFileColumnStruct{
+var Column = ColumnStruct{
 	Hash:   "h",
 	Name:   "n",
 	Idx:    "i",
@@ -56,19 +85,17 @@ var MCFileColumn = MCFileColumnStruct{
 	Source: "src",
 	CAt:    "cat",
 	UAt:    "uat",
-	SAt:    "sat",
 }
 
-var MCFileColumns = []string{
-	MCFileColumn.Hash,
-	MCFileColumn.SId,
-	MCFileColumn.Name,
-	MCFileColumn.Idx,
-	MCFileColumn.Size,
-	MCFileColumn.Source,
-	MCFileColumn.CAt,
-	MCFileColumn.UAt,
-	MCFileColumn.SAt,
+var Columns = []string{
+	Column.Hash,
+	Column.SId,
+	Column.Name,
+	Column.Idx,
+	Column.Size,
+	Column.Source,
+	Column.CAt,
+	Column.UAt,
 }
 
 func GetFilesByHashes(hashes []string) (map[string]Files, error) {
@@ -85,7 +112,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		hashPlaceholders[i] = "?"
 	}
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s)) AS files FROM "+FileTableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +139,7 @@ func TrackFiles(hash string, files Files, discardIdx bool) {
 	}
 
 	var query strings.Builder
-	query.WriteString("INSERT INTO " + FileTableName + " (h,i,n,s,sid) VALUES ")
+	query.WriteString("INSERT INTO " + TableName + " (h,i,n,s,sid) VALUES ")
 	placeholder := "(?,?,?,?,?)"
 	count := 0
 
@@ -135,24 +162,24 @@ func TrackFiles(hash string, files Files, discardIdx bool) {
 		count++
 	}
 
-	query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + FileTableName + ".i = -1 THEN excluded.i ELSE " + FileTableName + ".i END, s = CASE WHEN " + FileTableName + ".s = -1 THEN excluded.s ELSE " + FileTableName + ".s END, sid = CASE WHEN " + FileTableName + ".sid IN ('', '*') THEN excluded.sid ELSE " + FileTableName + ".sid END, uat = " + db.CurrentTimestamp)
+	query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + TableName + ".i = -1 THEN excluded.i ELSE " + TableName + ".i END, s = CASE WHEN " + TableName + ".s = -1 THEN excluded.s ELSE " + TableName + ".s END, sid = CASE WHEN " + TableName + ".sid IN ('', '*') THEN excluded.sid ELSE " + TableName + ".sid END, uat = " + db.CurrentTimestamp)
 	_, err := db.Exec(query.String(), args...)
 	if err != nil {
-		mcfLog.Error("failed to track", "error", err)
+		log.Error("failed to track", "error", err)
 	}
 }
 
 func execBulkTrackFiles(count int, args []any) {
 	var query strings.Builder
-	query.WriteString("INSERT INTO " + FileTableName + " (h,i,n,s,sid) VALUES ")
+	query.WriteString("INSERT INTO " + TableName + " (h,i,n,s,sid) VALUES ")
 
 	placeholder := "(?,?,?,?,?)"
 	if count > 0 {
 		query.WriteString(util.RepeatJoin(placeholder, count, ","))
-		query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + FileTableName + ".i = -1 THEN EXCLUDED.i ELSE " + FileTableName + ".i END, s = CASE WHEN " + FileTableName + ".s = -1 THEN EXCLUDED.s ELSE " + FileTableName + ".s END, sid = CASE WHEN " + FileTableName + ".sid IN ('', '*') THEN EXCLUDED.sid ELSE " + FileTableName + ".sid END, uat = " + db.CurrentTimestamp)
+		query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + TableName + ".i = -1 THEN EXCLUDED.i ELSE " + TableName + ".i END, s = CASE WHEN " + TableName + ".s = -1 THEN EXCLUDED.s ELSE " + TableName + ".s END, sid = CASE WHEN " + TableName + ".sid IN ('', '*') THEN EXCLUDED.sid ELSE " + TableName + ".sid END, uat = " + db.CurrentTimestamp)
 		_, err := db.Exec(query.String(), args...)
 		if err != nil {
-			mcfLog.Error("failed to partially bulk track", "error", err)
+			log.Error("failed to partially bulk track", "error", err)
 		}
 	}
 }
@@ -182,7 +209,7 @@ func BulkTrackFiles(filesByHash map[string]Files, discardIdx bool) {
 	execBulkTrackFiles(count, args)
 }
 
-type MCFileInsertData struct {
+type InsertData struct {
 	Hash   string
 	Name   string
 	Idx    int
@@ -193,28 +220,28 @@ type MCFileInsertData struct {
 
 var record_streams_query_before_values = fmt.Sprintf(
 	"INSERT INTO %s (%s) VALUES ",
-	FileTableName,
+	TableName,
 	db.JoinColumnNames(
-		MCFileColumn.Hash,
-		MCFileColumn.Name,
-		MCFileColumn.Idx,
-		MCFileColumn.Size,
-		MCFileColumn.SId,
-		MCFileColumn.Source,
+		Column.Hash,
+		Column.Name,
+		Column.Idx,
+		Column.Size,
+		Column.SId,
+		Column.Source,
 	),
 )
 var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 6, ","))
 var record_streams_query_on_conflict = fmt.Sprintf(
 	"ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, uat = ",
-	MCFileColumn.Hash,
-	MCFileColumn.Name,
-	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", MCFileColumn.Idx, FileTableName, MCFileColumn.Idx, MCFileColumn.Idx, FileTableName, MCFileColumn.Idx),
-	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", MCFileColumn.Size, FileTableName, MCFileColumn.Size, MCFileColumn.Size, FileTableName, MCFileColumn.Size),
-	fmt.Sprintf("%s = CASE WHEN %s.%s IN ('', '*') THEN EXCLUDED.%s ELSE %s.%s END", MCFileColumn.SId, FileTableName, MCFileColumn.SId, MCFileColumn.SId, FileTableName, MCFileColumn.SId),
-	fmt.Sprintf("%s = EXCLUDED.%s", MCFileColumn.Source, MCFileColumn.Source),
+	Column.Hash,
+	Column.Name,
+	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", Column.Idx, TableName, Column.Idx, Column.Idx, TableName, Column.Idx),
+	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", Column.Size, TableName, Column.Size, Column.Size, TableName, Column.Size),
+	fmt.Sprintf("%s = CASE WHEN %s.%s IN ('', '*') THEN EXCLUDED.%s ELSE %s.%s END", Column.SId, TableName, Column.SId, Column.SId, TableName, Column.SId),
+	fmt.Sprintf("%s = EXCLUDED.%s", Column.Source, Column.Source),
 )
 
-func RecordStreams(items []MCFileInsertData) {
+func Record(items []InsertData) {
 	for cItems := range slices.Chunk(items, 200) {
 		count := len(cItems)
 		args := make([]any, 0, count*6)
@@ -231,26 +258,26 @@ func RecordStreams(items []MCFileInsertData) {
 			record_streams_query_on_conflict + db.CurrentTimestamp
 		_, err := db.Exec(query, args...)
 		if err != nil {
-			mcfLog.Error("failed partially to record streams", "error", err)
+			log.Error("failed partially to record streams", "error", err)
 		}
 	}
 }
 
 var tag_strem_id_query = fmt.Sprintf(
 	"UPDATE %s SET %s = ?, %s = ? WHERE %s = ? AND %s = ? AND %s IN ('', '*')",
-	FileTableName,
-	MCFileColumn.SId,
-	MCFileColumn.UAt,
-	MCFileColumn.Hash,
-	MCFileColumn.Name,
-	MCFileColumn.SId,
+	TableName,
+	Column.SId,
+	Column.UAt,
+	Column.Hash,
+	Column.Name,
+	Column.SId,
 )
 
 func TagStremId(hash string, filename string, sid string) {
 	_, err := db.Exec(tag_strem_id_query, sid, db.Timestamp{Time: time.Now()}, hash, filename)
 	if err != nil {
-		mcfLog.Error("failed to tag strem id", "error", err, "hash", hash, "fname", filename, "sid", sid)
+		log.Error("failed to tag strem id", "error", err, "hash", hash, "fname", filename, "sid", sid)
 	} else {
-		mcfLog.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
+		log.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
 	}
 }

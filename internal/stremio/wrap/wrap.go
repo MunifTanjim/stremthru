@@ -13,11 +13,11 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
-	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"golang.org/x/sync/singleflight"
@@ -337,7 +337,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if strings.HasPrefix(sid, "tt") {
-			magnet_cache.TagStremId(magnet.Hash, file.Name, sid)
+			torrent_stream.TagStremId(magnet.Hash, file.Name, sid)
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, ctx, link)

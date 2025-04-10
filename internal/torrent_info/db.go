@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -505,13 +505,13 @@ func Insert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 		return
 	}
 
-	streamsInsertData := []magnet_cache.MCFileInsertData{}
+	streamsInsertData := []torrent_stream.InsertData{}
 	query := get_insert_query(count)
 	args := make([]any, 0, 5*count)
 	for _, t := range items {
 		for i := range t.Files {
 			f := &t.Files[i]
-			streamsInsertData = append(streamsInsertData, magnet_cache.MCFileInsertData{
+			streamsInsertData = append(streamsInsertData, torrent_stream.InsertData{
 				Hash:   t.Hash,
 				Name:   f.Name,
 				Idx:    f.Idx,
@@ -528,7 +528,7 @@ func Insert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 	if err != nil {
 		log.Error("failed to insert torrent info", "count", count, "error", err)
 	}
-	go magnet_cache.RecordStreams(streamsInsertData)
+	go torrent_stream.Record(streamsInsertData)
 }
 
 var get_unparsed_query = fmt.Sprintf(
