@@ -88,7 +88,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 			}
 			if isImdbStremId {
-				go torrent_info.Upsert(tInfoData, torrentInfoCategory)
+				go torrent_info.Upsert(tInfoData, torrentInfoCategory, false)
 			}
 			chunks[i] = wstreams
 		}()

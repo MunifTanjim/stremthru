@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -178,7 +179,7 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 	data := &store.CheckMagnetData{
 		Items: []store.CheckMagnetDataItem{},
 	}
-	filesByHash := map[string][]store.MagnetFile{}
+	tInfos := []buddy.TorrentInfoInput{}
 	for _, hash := range hashes {
 		if item, ok := foundItemByHash[hash]; ok {
 			data.Items = append(data.Items, item)
@@ -192,21 +193,33 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			Status: store.MagnetStatusUnknown,
 			Files:  []store.MagnetFile{},
 		}
-		if detail, ok := ldByHash[hash]; ok && detail.Cached {
+		tInfo := buddy.TorrentInfoInput{
+			Hash:  hash,
+			Files: []torrent_stream.File{},
+		}
+		if detail, ok := ldByHash[hash]; ok {
+			if !detail.Cached {
+				continue
+			}
 			item.Status = store.MagnetStatusCached
 			for idx, f := range detail.Files {
-				item.Files = append(item.Files, store.MagnetFile{
+				file := torrent_stream.File{
 					Idx:  idx,
 					Name: f.Name,
 					Size: f.Size,
+				}
+				tInfo.Files = append(tInfo.Files, file)
+				item.Files = append(item.Files, store.MagnetFile{
+					Idx:  file.Idx,
+					Name: file.Name,
+					Size: file.Size,
 				})
 			}
 		}
 		data.Items = append(data.Items, item)
-		filesByHash[hash] = item.Files
-
+		tInfos = append(tInfos, tInfo)
 	}
-	go buddy.BulkTrackMagnet(s, []buddy.TorrentInfoInput{}, filesByHash, "", params.GetAPIKey(s.client.apiKey))
+	go buddy.BulkTrackMagnet(s, tInfos, "", params.GetAPIKey(s.client.apiKey))
 	return data, nil
 }
 

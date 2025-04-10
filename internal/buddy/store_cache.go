@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -63,7 +64,7 @@ type TrackMagnetCacheParams struct {
 	CacheMiss bool               `json:"cache_miss"`
 
 	// bulk
-	FilesByHash map[string][]store.MagnetFile `json:"files_by_hash"`
+	FilesByHash map[string]torrent_stream.Files `json:"files_by_hash"`
 }
 
 func (c APIClient) TrackMagnetCache(params *TrackMagnetCacheParams) (APIResponse[TrackMagnetCacheData], error) {

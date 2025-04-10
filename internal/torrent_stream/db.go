@@ -15,10 +15,11 @@ import (
 )
 
 type File struct {
-	Name string `json:"n"`
-	Idx  int    `json:"i"`
-	Size int64  `json:"s"`
-	SId  string `json:"-"`
+	Name   string `json:"n"`
+	Idx    int    `json:"i"`
+	Size   int64  `json:"s"`
+	SId    string `json:"sid,omitempty"`
+	Source string `json:"src,omitempty"`
 }
 
 type Files []File
@@ -133,93 +134,23 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	return byHash, nil
 }
 
-func TrackFiles(hash string, files Files, discardIdx bool) {
-	if len(files) == 0 {
-		return
-	}
-
-	var query strings.Builder
-	query.WriteString("INSERT INTO " + TableName + " (h,i,n,s,sid) VALUES ")
-	placeholder := "(?,?,?,?,?)"
-	count := 0
-
-	var args []any
-
-	for _, file := range files {
-		if count > 0 {
-			query.WriteString(",")
-		}
-		query.WriteString(placeholder)
-		fsid := file.SId
-		if fsid == "" {
-			fsid = "*"
-		}
-		idx := file.Idx
-		if discardIdx {
-			idx = -1
-		}
-		args = append(args, hash, idx, file.Name, file.Size, fsid)
-		count++
-	}
-
-	query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + TableName + ".i = -1 THEN excluded.i ELSE " + TableName + ".i END, s = CASE WHEN " + TableName + ".s = -1 THEN excluded.s ELSE " + TableName + ".s END, sid = CASE WHEN " + TableName + ".sid IN ('', '*') THEN excluded.sid ELSE " + TableName + ".sid END, uat = " + db.CurrentTimestamp)
-	_, err := db.Exec(query.String(), args...)
-	if err != nil {
-		log.Error("failed to track", "error", err)
-	}
-}
-
-func execBulkTrackFiles(count int, args []any) {
-	var query strings.Builder
-	query.WriteString("INSERT INTO " + TableName + " (h,i,n,s,sid) VALUES ")
-
-	placeholder := "(?,?,?,?,?)"
-	if count > 0 {
-		query.WriteString(util.RepeatJoin(placeholder, count, ","))
-		query.WriteString(" ON CONFLICT (h, n) DO UPDATE SET i = CASE WHEN " + TableName + ".i = -1 THEN EXCLUDED.i ELSE " + TableName + ".i END, s = CASE WHEN " + TableName + ".s = -1 THEN EXCLUDED.s ELSE " + TableName + ".s END, sid = CASE WHEN " + TableName + ".sid IN ('', '*') THEN EXCLUDED.sid ELSE " + TableName + ".sid END, uat = " + db.CurrentTimestamp)
-		_, err := db.Exec(query.String(), args...)
-		if err != nil {
-			log.Error("failed to partially bulk track", "error", err)
-		}
-	}
-}
-
-func BulkTrackFiles(filesByHash map[string]Files, discardIdx bool) {
-	count := 0
-	args := []any{}
+func TrackFiles(filesByHash map[string]Files, discardIdx bool) {
+	items := []InsertData{}
 	for hash, files := range filesByHash {
 		for _, file := range files {
-			fsid := file.SId
-			if fsid == "" {
-				fsid = "*"
-			}
-			idx := file.Idx
-			if discardIdx {
-				idx = -1
-			}
-			args = append(args, hash, idx, file.Name, file.Size, fsid)
-			count++
-		}
-		if count >= 200 {
-			execBulkTrackFiles(count, args)
-			count = 0
-			args = []any{}
+			items = append(items, InsertData{Hash: hash, File: file})
 		}
 	}
-	execBulkTrackFiles(count, args)
+	Record(items, discardIdx)
 }
 
 type InsertData struct {
-	Hash   string
-	Name   string
-	Idx    int
-	Size   int64
-	SId    string
-	Source string
+	Hash string
+	File
 }
 
 var record_streams_query_before_values = fmt.Sprintf(
-	"INSERT INTO %s (%s) VALUES ",
+	"INSERT INTO %s AS ts (%s) VALUES ",
 	TableName,
 	db.JoinColumnNames(
 		Column.Hash,
@@ -232,33 +163,43 @@ var record_streams_query_before_values = fmt.Sprintf(
 )
 var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 6, ","))
 var record_streams_query_on_conflict = fmt.Sprintf(
-	"ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, uat = ",
+	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, uat = ",
 	Column.Hash,
 	Column.Name,
-	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", Column.Idx, TableName, Column.Idx, Column.Idx, TableName, Column.Idx),
-	fmt.Sprintf("%s = CASE WHEN %s.%s = -1 THEN EXCLUDED.%s ELSE %s.%s END", Column.Size, TableName, Column.Size, Column.Size, TableName, Column.Size),
-	fmt.Sprintf("%s = CASE WHEN %s.%s IN ('', '*') THEN EXCLUDED.%s ELSE %s.%s END", Column.SId, TableName, Column.SId, Column.SId, TableName, Column.SId),
-	fmt.Sprintf("%s = EXCLUDED.%s", Column.Source, Column.Source),
+	fmt.Sprintf("%s = CASE WHEN ts.%s = -1 THEN EXCLUDED.%s ELSE ts.%s END", Column.Idx, Column.Idx, Column.Idx, Column.Idx),
+	fmt.Sprintf("%s = CASE WHEN ts.%s = -1 THEN EXCLUDED.%s ELSE ts.%s END", Column.Size, Column.Size, Column.Size, Column.Size),
+	fmt.Sprintf("%s = CASE WHEN ts.%s IN ('', '*') THEN EXCLUDED.%s ELSE ts.%s END", Column.SId, Column.SId, Column.SId, Column.SId),
+	fmt.Sprintf("%s = CASE WHEN EXCLUDED.%s != '' THEN EXCLUDED.%s ELSE ts.%s END", Column.Source, Column.Source, Column.Source, Column.Source),
 )
 
-func Record(items []InsertData) {
+func Record(items []InsertData, discardIdx bool) {
+	if len(items) == 0 {
+		return
+	}
+
 	for cItems := range slices.Chunk(items, 200) {
 		count := len(cItems)
 		args := make([]any, 0, count*6)
 		for i := range cItems {
 			item := &cItems[i]
+			idx := item.Idx
+			if discardIdx {
+				idx = -1
+			}
 			sid := item.SId
 			if sid == "" {
 				sid = "*"
 			}
-			args = append(args, item.Hash, item.Name, item.Idx, item.Size, sid, item.Source)
+			args = append(args, item.Hash, item.Name, idx, item.Size, sid, item.Source)
 		}
 		query := record_streams_query_before_values +
 			util.RepeatJoin(record_streams_query_values_placeholder, count, ",") +
 			record_streams_query_on_conflict + db.CurrentTimestamp
 		_, err := db.Exec(query, args...)
 		if err != nil {
-			log.Error("failed partially to record streams", "error", err)
+			log.Error("failed partially to record", "error", err)
+		} else {
+			log.Debug("recorded torrent stream", "count", count)
 		}
 	}
 }

@@ -68,8 +68,7 @@ type TrackMagnetPayload struct {
 	IsMiss bool               `json:"is_miss"`
 
 	// bulk
-	TorrentInfos []buddy.TorrentInfoInput      `json:"tinfos"`
-	FilesByHash  map[string][]store.MagnetFile `json:"files_by_hash"`
+	TorrentInfos []buddy.TorrentInfoInput `json:"tinfos"`
 }
 
 type TrackMagnetData struct {
@@ -102,7 +101,7 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 	if payload.Hash != "" {
 		go buddy.TrackMagnet(ctx.Store, payload.Hash, payload.Name, payload.Size, payload.Files, payload.TorrentInfoCategory, payload.IsMiss, ctx.StoreAuthToken)
 	} else {
-		go buddy.BulkTrackMagnet(ctx.Store, payload.TorrentInfos, payload.FilesByHash, payload.TorrentInfoCategory, ctx.StoreAuthToken)
+		go buddy.BulkTrackMagnet(ctx.Store, payload.TorrentInfos, payload.TorrentInfoCategory, ctx.StoreAuthToken)
 	}
 
 	SendResponse(w, r, 202, &TrackMagnetData{}, nil)

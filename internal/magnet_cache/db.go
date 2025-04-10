@@ -109,11 +109,11 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	return mcs, nil
 }
 
-func Touch(storeCode store.StoreCode, hash string, files Files) {
+func Touch(storeCode store.StoreCode, hash string, files Files, isCached bool, skipFileTracking bool) {
 	buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
 	var result sql.Result
 	var err error
-	if len(files) == 0 {
+	if !isCached {
 		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, false) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
 		result, err = db.Exec(buf.String(), storeCode, hash)
 	} else {
@@ -127,10 +127,12 @@ func Touch(storeCode store.StoreCode, hash string, files Files) {
 		mcLog.Error("failed to touch", "error", err)
 		return
 	}
-	torrent_stream.TrackFiles(hash, torrent_stream.Files(files), storeCode != store.StoreCodeRealDebrid)
+	if !skipFileTracking {
+		torrent_stream.TrackFiles(map[string]Files{hash: files}, storeCode != store.StoreCodeRealDebrid)
+	}
 }
 
-func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files) {
+func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, skipFileTracking bool) {
 	var hit_query strings.Builder
 	hit_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES ")
 	hit_placeholder := "(?,?,true,?)"
@@ -168,7 +170,9 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files) {
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
 		}
-		torrent_stream.BulkTrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
+		if !skipFileTracking {
+			torrent_stream.TrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
+		}
 	}
 
 	if miss_count > 0 {

@@ -262,14 +262,15 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		if sid == "" {
 			sid = "*"
 		}
+
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Files, torrent_info.GetCategoryFromStremId(sid), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+
 		var pattern *regexp.Regexp
 		if re := query.Get("re"); re != "" {
 			if pat, err := regexp.Compile(re); err == nil {
 				pattern = pat
 			}
 		}
-
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Files, torrent_info.GetCategoryFromStremId(sid), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		var file *store.MagnetFile
 		if fileName != "" {

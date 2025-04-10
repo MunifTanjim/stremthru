@@ -535,51 +535,59 @@ func get_insert_query(count int) string {
 		insert_query_on_conflict + db.CurrentTimestamp
 }
 
-func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
-	count := len(items)
-	if count == 0 {
+func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) {
+	if len(items) == 0 {
 		return
 	}
 
-	seenHash := map[string]struct{}{}
-	streamsInsertData := []torrent_stream.InsertData{}
-	args := make([]any, 0, 5*count)
-	for _, t := range items {
-		for i := range t.Files {
-			f := &t.Files[i]
-			streamsInsertData = append(streamsInsertData, torrent_stream.InsertData{
-				Hash:   t.Hash,
-				Name:   f.Name,
-				Idx:    f.Idx,
-				Size:   f.Size,
-				SId:    f.SId,
-				Source: string(t.Source),
-			})
+	streamItems := []torrent_stream.InsertData{}
+
+	for cItems := range slices.Chunk(items, 200) {
+		count := len(cItems)
+		seenHash := map[string]struct{}{}
+		args := make([]any, 0, 5*count)
+		for _, t := range cItems {
+			if _, seen := seenHash[t.Hash]; seen {
+				count--
+				continue
+			}
+			seenHash[t.Hash] = struct{}{}
+
+			tSource := string(t.Source)
+			for _, f := range t.Files {
+				f.Source = tSource
+				streamItems = append(streamItems, torrent_stream.InsertData{
+					Hash: t.Hash,
+					File: f,
+				})
+			}
+
+			if t.TorrentTitle == "" {
+				count--
+				continue
+			}
+
+			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, category)
 		}
-		if t.TorrentTitle == "" {
-			continue
-		}
-		if _, seen := seenHash[t.Hash]; seen {
-			count--
+
+		if count == 0 {
 			continue
 		}
 
-		seenHash[t.Hash] = struct{}{}
-		args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, category)
+		query := get_insert_query(count)
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			log.Error("failed to upsert torrent info", "count", count, "error", err)
+		} else {
+			log.Debug("upserted torrent info", "count", count)
+		}
 	}
 
-	query := get_insert_query(count)
-	_, err := db.Exec(query, args...)
-	if err != nil {
-		log.Error("failed to upsert torrent info", "count", count, "error", err)
-	}
-	if len(streamsInsertData) > 0 {
-		go torrent_stream.Record(streamsInsertData)
-	}
+	go torrent_stream.Record(streamItems, discardFileIdx)
 }
 
 var get_unparsed_query = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s != %s",
+	"SELECT %s FROM %s WHERE %s != %s LIMIT ?",
 	db.JoinColumnNames(Columns...),
 	TableName,
 	Column.TorrentTitle,
@@ -591,7 +599,7 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 		limit = 5000
 	}
 
-	rows, err := db.Query(get_unparsed_query+" LIMIT ?", limit)
+	rows, err := db.Query(get_unparsed_query, limit)
 	if err != nil {
 		return nil, err
 	}

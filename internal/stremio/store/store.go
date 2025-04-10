@@ -439,7 +439,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Second)
 		}
 		catalogCache.Add(cacheKey, items)
-		go torrent_info.Upsert(tInfoItems, "")
+		go torrent_info.Upsert(tInfoItems, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
 	}
 
 	if extra.Search != "" {
@@ -581,7 +581,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "")
+	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
 
 	SendResponse(w, r, 200, res)
 }

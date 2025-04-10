@@ -193,12 +193,6 @@ func (c APIClient) CheckMagnet(params *CheckMagnetParams) (request.APIResponse[s
 	return request.NewAPIResponse(res, response.Data), err
 }
 
-type TrackMagnetParamsTorrentInfo struct {
-	Hash         string
-	TorrentTitle string
-	Size         int64
-}
-
 type TrackMagnetParams struct {
 	store.Ctx
 	StoreName           store.StoreName                  `json:"-"`
@@ -213,8 +207,7 @@ type TrackMagnetParams struct {
 	IsMiss bool               `json:"is_miss"`
 
 	// bulk
-	TorrentInfos []TrackMagnetParamsTorrentInfo `json:"tinfos"`
-	FilesByHash  map[string][]store.MagnetFile  `json:"files_by_hash"`
+	TorrentInfos []torrent_info.TorrentInfoInsertData `json:"tinfos"`
 }
 
 type TrackMagnetData struct{}

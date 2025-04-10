@@ -25,6 +25,6 @@ func RecordTorrentInfoFromListMagnets(storeCode store.StoreCode, items []store.L
 			Size:         item.Size,
 			Source:       ti.TorrentInfoSource(storeCode),
 		})
-		ti.Upsert(upsertItems, ti.TorrentInfoCategoryUnknown)
+		ti.Upsert(upsertItems, ti.TorrentInfoCategoryUnknown, storeCode != store.StoreCodeRealDebrid)
 	}
 }

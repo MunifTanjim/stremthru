@@ -11,6 +11,11 @@ import (
 
 var torrentioStreamHashRegex = regexp.MustCompile(`(?i)\/([a-f0-9]{40})\/[^/]+\/(?:(\d+)|null|undefined)\/`)
 var torrentioStreamSizeRegex = regexp.MustCompile(`💾 (?:([\d.]+ [^ ]+)|.+?)`)
+var torrentioDebridTrustedFileIndexRegex = regexp.MustCompile(`\[(?:RD|DL)`)
+
+func isTorrentioDebridFileIndexTrustable(name string) bool {
+	return torrentioDebridTrustedFileIndexRegex.MatchString(name)
+}
 
 func extractInputFromTorrentioStream(data *TorrentInfoInsertData, sid string, stream *stremio.Stream) *TorrentInfoInsertData {
 	description := stream.Description
@@ -33,7 +38,7 @@ func extractInputFromTorrentioStream(data *TorrentInfoInsertData, sid string, st
 	if stream.InfoHash == "" {
 		if match := torrentioStreamHashRegex.FindStringSubmatch(stream.URL); len(match) > 0 {
 			data.Hash = match[1]
-			if len(match) > 2 {
+			if isTorrentioDebridFileIndexTrustable(stream.Name) && len(match) > 2 {
 				if idx, err := strconv.Atoi(match[2]); err == nil {
 					file.Idx = idx
 				}
