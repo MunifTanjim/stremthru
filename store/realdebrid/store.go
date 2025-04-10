@@ -278,7 +278,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Id:      t.Id,
 		Hash:    magnet.Hash,
 		Magnet:  magnet.Link,
-		Name:    magnet.Name,
+		Name:    m.Name,
 		Size:    t.OriginalBytes,
 		Status:  m.Status,
 		Files:   m.Files,
