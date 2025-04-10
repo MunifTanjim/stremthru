@@ -555,7 +555,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 				Source: string(t.Source),
 			})
 		}
-
+		if t.TorrentTitle == "" {
+			continue
+		}
 		args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, category)
 	}
 

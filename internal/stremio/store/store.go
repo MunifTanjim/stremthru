@@ -16,6 +16,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
+	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/sahilm/fuzzy"
@@ -400,6 +401,9 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 	if !catalogCache.Get(cacheKey, &items) {
 		idPrefix := getIdPrefix(ud.getStoreCode())
 
+		tInfoItems := []torrent_info.TorrentInfoInsertData{}
+		tInfoSource := torrent_info.TorrentInfoSource(ctx.Store.GetName().Code())
+
 		limit := 500
 		offset := 0
 		hasMore := true
@@ -423,12 +427,19 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 						Description: item.Hash,
 					})
 				}
+				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
+					Hash:         item.Hash,
+					TorrentTitle: item.Name,
+					Size:         item.Size,
+					Source:       tInfoSource,
+				})
 			}
 			offset += limit
 			hasMore = len(res.Items) == limit && offset < res.TotalItems
 			time.Sleep(1 * time.Second)
 		}
 		catalogCache.Add(cacheKey, items)
+		go torrent_info.Upsert(tInfoItems, "")
 	}
 
 	if extra.Search != "" {
@@ -547,6 +558,14 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	tInfo := torrent_info.TorrentInfoInsertData{
+		Hash:         magnet.Hash,
+		TorrentTitle: magnet.Name,
+		Size:         magnet.Size,
+		Source:       torrent_info.TorrentInfoSource(ctx.Store.GetName().Code()),
+		Files:        []torrent_info.TorrentInfoInsertDataFile{},
+	}
+
 	for _, f := range magnet.Files {
 		videoId := id + ":" + url.PathEscape(f.Link)
 		res.Meta.Videos = append(res.Meta.Videos, stremio.MetaVideo{
@@ -555,7 +574,14 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			Available: true,
 			Released:  magnet.AddedAt,
 		})
+		tInfo.Files = append(tInfo.Files, torrent_info.TorrentInfoInsertDataFile{
+			Name: f.Name,
+			Idx:  f.Idx,
+			Size: f.Size,
+		})
 	}
+
+	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "")
 
 	SendResponse(w, r, 200, res)
 }
