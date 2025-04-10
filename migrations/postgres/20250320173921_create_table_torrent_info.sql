@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "public"."torrent_info" (
   "complete" boolean NOT NULL DEFAULT false,
   "container" text NOT NULL DEFAULT '',
   "convert" boolean NOT NULL DEFAULT false,
-  "date" date NOT NULL DEFAULT '',
+  "date" date,
   "documentary" boolean NOT NULL DEFAULT false,
   "dubbed" boolean NOT NULL DEFAULT false,
   "edition" text NOT NULL DEFAULT '',

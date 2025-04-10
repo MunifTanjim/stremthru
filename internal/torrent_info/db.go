@@ -111,7 +111,7 @@ type TorrentInfo struct {
 	Complete    bool                 `json:"complete"`
 	Container   string               `json:"container"`
 	Convert     bool                 `json:"convert"`
-	Date        string               `json:"date"`
+	Date        db.DateOnly          `json:"date"`
 	Documentary bool                 `json:"documentary"`
 	Dubbed      bool                 `json:"dubbed"`
 	Edition     string               `json:"edition"`
@@ -541,6 +541,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 		return
 	}
 
+	seenHash := map[string]struct{}{}
 	streamsInsertData := []torrent_stream.InsertData{}
 	args := make([]any, 0, 5*count)
 	for _, t := range items {
@@ -558,6 +559,12 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory) {
 		if t.TorrentTitle == "" {
 			continue
 		}
+		if _, seen := seenHash[t.Hash]; seen {
+			count--
+			continue
+		}
+
+		seenHash[t.Hash] = struct{}{}
 		args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, category)
 	}
 

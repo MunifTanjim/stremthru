@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `torrent_info` (
   `complete` bool NOT NULL DEFAULT false,
   `container` varchar NOT NULL DEFAULT '',
   `convert` bool NOT NULL DEFAULT false,
-  `date` date NOT NULL DEFAULT '',
+  `date` date,
   `documentary` bool NOT NULL DEFAULT false,
   `dubbed` bool NOT NULL DEFAULT false,
   `edition` varchar NOT NULL DEFAULT '',

@@ -32,7 +32,11 @@ func parse(t *TorrentInfo) *TorrentInfo {
 	t.Complete = r.Complete
 	t.Container = r.Container
 	t.Convert = r.Convert
-	t.Date = r.Date
+	if r.Date != "" {
+		if date, err := time.Parse(time.DateOnly, r.Date); err == nil {
+			t.Date = db.DateOnly{Time: date}
+		}
+	}
 	t.Documentary = r.Documentary
 	t.Dubbed = r.Dubbed
 	t.Edition = r.Edition
