@@ -17,6 +17,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/sahilm/fuzzy"
@@ -420,11 +421,19 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 
 			for _, item := range res.Items {
 				if item.Status == store.MagnetStatusDownloaded {
+					magnet, _ := core.ParseMagnetLink(item.Hash)
 					items = append(items, stremio.MetaPreview{
 						Id:          idPrefix + item.Id,
 						Type:        ContentTypeOther,
 						Name:        item.Name,
-						Description: item.Hash,
+						Description: "[Hash: " + item.Hash + "]",
+						Links: []stremio.MetaLink{
+							{
+								Name:     "Magnet",
+								Category: "share",
+								URL:      magnet.Link,
+							},
+						},
 					})
 				}
 				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
@@ -454,6 +463,30 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 	limit := 100
 	totalItems := len(items)
 	items = items[min(extra.Skip, totalItems):min(extra.Skip+limit, totalItems)]
+
+	hashes := make([]string, len(items))
+	for i := range items {
+		item := &items[i]
+		if len(item.Links) > 0 {
+			magnet, _ := core.ParseMagnetLink(item.Links[0].URL)
+			hashes[i] = magnet.Hash
+		} else {
+			hashes[i] = ""
+		}
+	}
+	log.Debug("H", "h", hashes)
+
+	if stremIdByHash, err := torrent_stream.GetStremIdByHashes(hashes); err != nil {
+		log.Error("failed to get strem id by hashes", "error", err)
+	} else {
+		for i, hash := range hashes {
+			if stremId, found := stremIdByHash[hash]; found {
+				item := &items[i]
+				stremId, _, _ = strings.Cut(stremId, ":")
+				item.Poster = getPosterUrl(stremId)
+			}
+		}
+	}
 
 	if len(items) > 0 {
 		res.Metas = items
@@ -547,15 +580,40 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := stremio.MetaHandlerResponse{
-		Meta: stremio.Meta{
-			Id:          id,
-			Type:        ContentTypeOther,
-			Name:        magnet.Name,
-			Description: magnet.Hash,
-			Released:    magnet.AddedAt,
-			Videos:      []stremio.MetaVideo{},
-		},
+	meta := stremio.Meta{
+		Id:          id,
+		Type:        ContentTypeOther,
+		Name:        magnet.Name,
+		Description: "[Hash: " + magnet.Hash + "]",
+		Released:    magnet.AddedAt,
+		Videos:      []stremio.MetaVideo{},
+	}
+
+	stremType, stremId := "movie", ""
+	if stremIdByHashes, err := torrent_stream.GetStremIdByHashes([]string{magnet.Hash}); err != nil {
+		log.Error("failed to get strem id by hashes", "error", err)
+	} else {
+		if sid, found := stremIdByHashes[magnet.Hash]; found {
+			sid, _, isSeries := strings.Cut(sid, ":")
+			stremId = sid
+			if isSeries {
+				stremType = "series"
+			}
+		}
+	}
+
+	if stremId != "" {
+		if r, err := fetchMeta(stremType, stremId, core.GetRequestIP(r)); err != nil {
+			log.Error("failed to fetch meta", "error", err)
+		} else {
+			m := r.Meta
+			meta.Description += " " + m.Description
+			meta.Poster = m.Poster
+			meta.Background = m.Background
+			meta.Links = m.Links
+			meta.Logo = m.Logo
+			meta.Released = m.Released
+		}
 	}
 
 	tInfo := torrent_info.TorrentInfoInsertData{
@@ -568,7 +626,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 
 	for _, f := range magnet.Files {
 		videoId := id + ":" + url.PathEscape(f.Link)
-		res.Meta.Videos = append(res.Meta.Videos, stremio.MetaVideo{
+		meta.Videos = append(meta.Videos, stremio.MetaVideo{
 			Id:        videoId,
 			Title:     f.Name,
 			Available: true,
@@ -582,6 +640,10 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
+
+	res := stremio.MetaHandlerResponse{
+		Meta: meta,
+	}
 
 	SendResponse(w, r, 200, res)
 }
