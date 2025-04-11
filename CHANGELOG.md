@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.5](https://github.com/MunifTanjim/stremthru/compare/0.62.4...0.62.5) (2025-04-11)
+
+
+### Bug Fixes
+
+* **torrent_info:** log warning for failed to parse title ([21b74f4](https://github.com/MunifTanjim/stremthru/commit/21b74f400664791f0a534be0c9f419057b300cf8))
+
 ## [0.62.4](https://github.com/MunifTanjim/stremthru/compare/0.62.3...0.62.4) (2025-04-11)
 
 
