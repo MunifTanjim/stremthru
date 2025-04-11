@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.2](https://github.com/MunifTanjim/stremthru/compare/0.62.1...0.62.2) (2025-04-11)
+
+
+### Bug Fixes
+
+* upgrade Dockerfile golang version ([8767378](https://github.com/MunifTanjim/stremthru/commit/87673783ae0bf633f75721adfc0434b738fd6a0b))
+
 ## [0.62.1](https://github.com/MunifTanjim/stremthru/compare/0.62.0...0.62.1) (2025-04-11)
 
 
