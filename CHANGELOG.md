@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.4](https://github.com/MunifTanjim/stremthru/compare/0.62.3...0.62.4) (2025-04-11)
+
+
+### Bug Fixes
+
+* **torrent_info:** discard bad torrent titles ([8ebd750](https://github.com/MunifTanjim/stremthru/commit/8ebd750cec6ce1fca0e213293797246035abb296))
+
 ## [0.62.3](https://github.com/MunifTanjim/stremthru/compare/0.62.2...0.62.3) (2025-04-11)
 
 
