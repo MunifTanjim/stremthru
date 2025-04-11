@@ -40,6 +40,7 @@ func main() {
 	endpoint.AddProxyEndpoints(mux)
 	endpoint.AddStoreEndpoints(mux)
 	endpoint.AddStremioEndpoints(mux)
+	endpoint.AddDebugEndpoints(mux)
 
 	handler := shared.RootServerContext(mux)
 

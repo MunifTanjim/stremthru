@@ -136,3 +136,18 @@ func StoreRequired(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func AdminAuthed(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Basic "))
+		if token == "" {
+			shared.ErrorUnauthorized(r).Send(w, r)
+			return
+		}
+		if auth, err := core.ParseBasicAuth(token); err != nil || config.AdminPassword.GetPassword(auth.Username) != auth.Password {
+			shared.ErrorUnauthorized(r).Send(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

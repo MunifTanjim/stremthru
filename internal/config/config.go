@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 func getEnv(key string, defaultValue string) string {
@@ -71,11 +72,11 @@ func (m StoreAuthTokenMap) addStore(user, store string) {
 	m.setToken(user, "*", stores)
 }
 
-type ProxyAuthPasswordMap map[string]string
+type UserPasswordMap map[string]string
 
-func (m ProxyAuthPasswordMap) GetPassword(userName string) string {
-	if token, ok := m[userName]; ok {
-		return token
+func (m UserPasswordMap) GetPassword(user string) string {
+	if password, ok := m[user]; ok {
+		return password
 	}
 	return ""
 }
@@ -143,8 +144,9 @@ type Config struct {
 
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
-	ProxyAuthPassword           ProxyAuthPasswordMap
+	ProxyAuthPassword           UserPasswordMap
 	AuthAdmin                   AuthAdminMap
+	AdminPassword               UserPasswordMap
 	BuddyURL                    string
 	HasBuddy                    bool
 	PeerURL                     string
@@ -180,7 +182,7 @@ var config = func() Config {
 	proxyAuthCredList := strings.FieldsFunc(getEnv("STREMTHRU_PROXY_AUTH", ""), func(c rune) bool {
 		return c == ','
 	})
-	proxyAuthPasswordMap := make(ProxyAuthPasswordMap)
+	proxyAuthPasswordMap := make(UserPasswordMap)
 
 	for _, cred := range proxyAuthCredList {
 		if basicAuth, err := core.ParseBasicAuth(cred); err == nil {
@@ -188,18 +190,28 @@ var config = func() Config {
 		}
 	}
 
-	authAdminMap := make(AuthAdminMap)
+	authAdminMap := AuthAdminMap{}
 	authAdminList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_ADMIN", ""), func(c rune) bool {
 		return c == ','
 	})
-	if len(authAdminList) > 0 {
-		for _, username := range authAdminList {
-			authAdminMap[username] = true
+	adminPasswordMap := UserPasswordMap{}
+	for _, admin := range authAdminList {
+		if strings.Contains(admin, ":") {
+			username, password, _ := strings.Cut(admin, ":")
+			adminPasswordMap[username] = password
+		} else {
+			authAdminMap[admin] = true
 		}
-	} else {
+	}
+	if len(authAdminMap) == 0 {
 		for username := range proxyAuthPasswordMap {
 			authAdminMap[username] = true
 		}
+	}
+	if len(adminPasswordMap) == 0 {
+		username := "st-" + util.GenerateRandomString(7, util.CharSet.AlphaNumeric)
+		password := util.GenerateRandomString(27, util.CharSet.AlphaNumericMixedCase)
+		adminPasswordMap[username] = password
 	}
 
 	storeAlldebridTokenList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_AUTH", ""), func(c rune) bool {
@@ -273,6 +285,7 @@ var config = func() Config {
 		Port:                        getEnv("STREMTHRU_PORT", "8080"),
 		ProxyAuthPassword:           proxyAuthPasswordMap,
 		AuthAdmin:                   authAdminMap,
+		AdminPassword:               adminPasswordMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
 		HasBuddy:                    len(buddyUrl) > 0,
@@ -297,6 +310,7 @@ var LogFormat = config.LogFormat
 var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var AuthAdmin = config.AuthAdmin
+var AdminPassword = config.AdminPassword
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var HasBuddy = config.HasBuddy
@@ -436,6 +450,16 @@ func PrintConfig(state *AppState) {
 		l.Println("   - " + string(store) + storeConfig)
 	}
 	l.Println()
+
+	if len(AdminPassword) == 1 {
+		for username, password := range AdminPassword {
+			if strings.HasPrefix(username, "st-") {
+				l.Println(" (Auto Generated) Admin Creds:")
+				l.Println("   " + username + ":" + password)
+				l.Println()
+			}
+		}
+	}
 
 	if HasBuddy {
 		l.Println(" Buddy URI:")

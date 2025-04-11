@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -469,7 +469,7 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 	return byHash, nil
 }
 
-type TorrentInfoInsertDataFile = torrent_stream.File
+type TorrentInfoInsertDataFile = ts.File
 
 type TorrentInfoInsertData struct {
 	Hash         string
@@ -540,7 +540,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 		return
 	}
 
-	streamItems := []torrent_stream.InsertData{}
+	streamItems := []ts.InsertData{}
 
 	for cItems := range slices.Chunk(items, 200) {
 		count := len(cItems)
@@ -556,7 +556,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			tSource := string(t.Source)
 			for _, f := range t.Files {
 				f.Source = tSource
-				streamItems = append(streamItems, torrent_stream.InsertData{
+				streamItems = append(streamItems, ts.InsertData{
 					Hash: t.Hash,
 					File: f,
 				})
@@ -583,7 +583,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 		}
 	}
 
-	go torrent_stream.Record(streamItems, discardFileIdx)
+	go ts.Record(streamItems, discardFileIdx)
 }
 
 var get_unparsed_query = fmt.Sprintf(
@@ -774,4 +774,58 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 		}
 	}
 	return nil
+}
+
+var debug_torrents_query = fmt.Sprintf(`
+select ti.%s,
+       ti.%s,
+       case when ti.%s > 0 then ti.%s else coalesce(sum(ts.%s), -1) end,
+       (ti.%s <= 0)
+from %s ti
+         left join %s ts
+                   on ti.%s <= 0 and ts.%s = ti.%s and ts.%s >= 0
+                       and ts.%s != '' and ts.%s not like '%%:%%'
+group by ti.%s
+`,
+	Column.Hash,
+	Column.TorrentTitle,
+	Column.Size, Column.Size, ts.Column.Size,
+	Column.Size,
+	TableName,
+	ts.TableName,
+	Column.Size, ts.Column.Hash, Column.Hash, ts.Column.Size,
+	ts.Column.SId, ts.Column.SId,
+	Column.Hash,
+)
+
+type DebugTorrentsItem struct {
+	Hash         string `json:"hash"`
+	Name         string `json:"name"`
+	Size         int64  `json:"size"`
+	IsSizeApprox bool   `json:"_size_approx"`
+}
+
+func DebugTorrents(noApproxSize bool, noMissingSize bool) ([]DebugTorrentsItem, error) {
+	rows, err := db.Query(debug_torrents_query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []DebugTorrentsItem{}
+	for rows.Next() {
+		var item DebugTorrentsItem
+		if err := rows.Scan(&item.Hash, &item.Name, &item.Size, &item.IsSizeApprox); err != nil {
+			return nil, err
+		}
+		if noApproxSize && item.IsSizeApprox {
+			item.Size = -1
+			item.IsSizeApprox = false
+		}
+		if noMissingSize && item.Size <= 0 {
+			continue
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }
