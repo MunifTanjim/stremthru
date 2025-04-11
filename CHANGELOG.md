@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.3](https://github.com/MunifTanjim/stremthru/compare/0.62.2...0.62.3) (2025-04-11)
+
+
+### Bug Fixes
+
+* **torrent_info:** handle worker panic ([7748c97](https://github.com/MunifTanjim/stremthru/commit/7748c976bb3030eded9e1ef63d175a127f4932f1))
+
 ## [0.62.2](https://github.com/MunifTanjim/stremthru/compare/0.62.1...0.62.2) (2025-04-11)
 
 
