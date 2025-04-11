@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.62.0](https://github.com/MunifTanjim/stremthru/compare/0.61.1...0.62.0) (2025-04-11)
+
+
+### Features
+
+* make torrent_info and torrent_stream robust ([6a0aafc](https://github.com/MunifTanjim/stremthru/commit/6a0aafceaba5fd747c97f47bf0f38344dfab84e8))
+* **store:** include magnet total size in response ([0230cc2](https://github.com/MunifTanjim/stremthru/commit/0230cc2c64e1cd1c47062cfa1398b3c1f267290a))
+* **stremio/wrap:** add built-in peerflix extractor ([fc81408](https://github.com/MunifTanjim/stremthru/commit/fc814086f677e05bd2f08b60632e635e1aeefafb))
+* **stremio/wrap:** improve built-in torrentio extractor ([91b2307](https://github.com/MunifTanjim/stremthru/commit/91b2307386b2e52f9c2f37120663c97e45708746))
+* **stremio/wrap:** tag strem id for matched file ([0a4df3c](https://github.com/MunifTanjim/stremthru/commit/0a4df3c6713be92b39cf9a59d75b86258a955d27))
+* **torrent_info:** add debug torrents endpoint ([173d10a](https://github.com/MunifTanjim/stremthru/commit/173d10a289027908bdfbded191a6773dc707cbba))
+* **torrent_info:** collect torrent info from store operations ([5985d65](https://github.com/MunifTanjim/stremthru/commit/5985d65f5572908196c0d6ef41588e355ec69df6))
+* **torrent_info:** collect torrent info from stremio/store ([0afc8e7](https://github.com/MunifTanjim/stremthru/commit/0afc8e732b7d11d7c17bf4d81c3139b05b7c81ef))
+* **torrent_info:** collect torrent info from stremio/wrap ([bc5296f](https://github.com/MunifTanjim/stremthru/commit/bc5296f9b5dbb61c6b2111cdf285ee0ac16e1366))
+* **torrent_info:** try to parse title at regular interval ([ca82daa](https://github.com/MunifTanjim/stremthru/commit/ca82daa96ad6a9474615f649f07c36a27b6df537))
+* **torrent_stream:** rename magnet_cache_file to torrent_stream ([134316a](https://github.com/MunifTanjim/stremthru/commit/134316a032e84f20cf76ea837c163f30ab6ef9ef))
+* upgrade to golang 1.24 ([80ca29e](https://github.com/MunifTanjim/stremthru/commit/80ca29ec7f9bd39f299a220e177c0cee1e61459c))
+
+
+### Bug Fixes
+
+* **magnet_cache:** do not track file with wrong sid ([b4d2892](https://github.com/MunifTanjim/stremthru/commit/b4d28921975738210b2cb3df671ea26b18299254))
+* **store/debridlink:** add missing .path in add/get magnet response ([36867e0](https://github.com/MunifTanjim/stremthru/commit/36867e055b5b37dfed2f4254bff0d473ee901be1))
+* **store/realdebrid:** add missing .name in add magnet response ([0c5d0aa](https://github.com/MunifTanjim/stremthru/commit/0c5d0aa0525ee06e0400b6126ef8fd22b8eee37e))
+* **torrent_info:** resolve compatibility issues for postgresql ([0fca0b0](https://github.com/MunifTanjim/stremthru/commit/0fca0b08c95c3eb1639fcaa0cf371ba9010827f7))
+
 ## [0.61.1](https://github.com/MunifTanjim/stremthru/compare/0.61.0...0.61.1) (2025-03-31)
 
 
