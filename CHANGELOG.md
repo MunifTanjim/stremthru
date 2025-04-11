@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.1](https://github.com/MunifTanjim/stremthru/compare/0.62.0...0.62.1) (2025-04-11)
+
+
+### Bug Fixes
+
+* **store:** restore compatibility for older downstream version ([0e8923a](https://github.com/MunifTanjim/stremthru/commit/0e8923ab73a6cf46f4fe9014c3de6e033d8569ce))
+
 ## [0.62.0](https://github.com/MunifTanjim/stremthru/compare/0.61.1...0.62.0) (2025-04-11)
 
 
