@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.6](https://github.com/MunifTanjim/stremthru/compare/0.62.5...0.62.6) (2025-04-11)
+
+
+### Bug Fixes
+
+* **torrent_info:** extract torrent info before transform ([89ec613](https://github.com/MunifTanjim/stremthru/commit/89ec613b6cae5e610ffd120d82385e01ed824746))
+
 ## [0.62.5](https://github.com/MunifTanjim/stremthru/compare/0.62.4...0.62.5) (2025-04-11)
 
 
