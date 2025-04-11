@@ -17,6 +17,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/sahilm/fuzzy"
@@ -319,20 +320,13 @@ func getExtra(r *http.Request) *ExtraData {
 	return extra
 }
 
-type CatalogSearchDataset struct {
-	items []stremio.MetaPreview
+type CachedCatalogItem struct {
+	stremio.MetaPreview
+	hash string
 }
 
-func (d CatalogSearchDataset) String(i int) string {
-	return d.items[i].Name
-}
-
-func (d CatalogSearchDataset) Len() int {
-	return len(d.items)
-}
-
-var catalogCache = func() cache.Cache[[]stremio.MetaPreview] {
-	c := cache.NewCache[[]stremio.MetaPreview](&cache.CacheConfig{
+var catalogCache = func() cache.Cache[[]CachedCatalogItem] {
+	c := cache.NewCache[[]CachedCatalogItem](&cache.CacheConfig{
 		Lifetime: 5 * time.Minute,
 		Name:     "stremio:store:catalog",
 	})
@@ -343,6 +337,66 @@ func getCatalogCacheKey(ctx *context.StoreContext) string {
 	return string(ctx.Store.GetName().Code()) + ":" + ctx.StoreAuthToken
 }
 
+func getCatalogItems(ctx *context.StoreContext, ud *UserData, searchQuery string) []CachedCatalogItem {
+	items := []CachedCatalogItem{}
+
+	cacheKey := getCatalogCacheKey(ctx)
+	if !catalogCache.Get(cacheKey, &items) {
+		idPrefix := getIdPrefix(ud.getStoreCode())
+
+		tInfoItems := []torrent_info.TorrentInfoInsertData{}
+		tInfoSource := torrent_info.TorrentInfoSource(ctx.Store.GetName().Code())
+
+		limit := 500
+		offset := 0
+		hasMore := true
+		for hasMore && offset < 2000 {
+			params := &store.ListMagnetsParams{
+				Limit:  limit,
+				Offset: offset,
+			}
+			params.APIKey = ctx.StoreAuthToken
+			res, err := ctx.Store.ListMagnets(params)
+			if err != nil {
+				break
+			}
+
+			for _, item := range res.Items {
+				if item.Status == store.MagnetStatusDownloaded {
+					items = append(items, CachedCatalogItem{stremio.MetaPreview{
+						Id:          idPrefix + item.Id,
+						Type:        ContentTypeOther,
+						Name:        item.Name,
+						Description: "[Hash: " + item.Hash + "]",
+					}, item.Hash})
+				}
+				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
+					Hash:         item.Hash,
+					TorrentTitle: item.Name,
+					Size:         item.Size,
+					Source:       tInfoSource,
+				})
+			}
+			offset += limit
+			hasMore = len(res.Items) == limit && offset < res.TotalItems
+			time.Sleep(1 * time.Second)
+		}
+		catalogCache.Add(cacheKey, items)
+		go torrent_info.Upsert(tInfoItems, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
+	}
+
+	if searchQuery != "" {
+		matches := fuzzy.FindFrom(searchQuery, &CatalogSearchDataset{items: items})
+		filteredItems := make([]CachedCatalogItem, len(matches))
+		for i := range matches {
+			filteredItems[i] = items[matches[i].Index]
+		}
+		items = filteredItems
+	}
+
+	return items
+}
+
 func getStoreActionMetaPreview(storeCode string) stremio.MetaPreview {
 	meta := stremio.MetaPreview{
 		Id:   getStoreActionId(storeCode),
@@ -350,6 +404,18 @@ func getStoreActionMetaPreview(storeCode string) stremio.MetaPreview {
 		Name: "StremThru Store Actions",
 	}
 	return meta
+}
+
+type CatalogSearchDataset struct {
+	items []CachedCatalogItem
+}
+
+func (d CatalogSearchDataset) String(i int) string {
+	return d.items[i].Name
+}
+
+func (d CatalogSearchDataset) Len() int {
+	return len(d.items)
 }
 
 func handleCatalog(w http.ResponseWriter, r *http.Request) {
@@ -395,68 +461,31 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := []stremio.MetaPreview{}
-
-	cacheKey := getCatalogCacheKey(ctx)
-	if !catalogCache.Get(cacheKey, &items) {
-		idPrefix := getIdPrefix(ud.getStoreCode())
-
-		tInfoItems := []torrent_info.TorrentInfoInsertData{}
-		tInfoSource := torrent_info.TorrentInfoSource(ctx.Store.GetName().Code())
-
-		limit := 500
-		offset := 0
-		hasMore := true
-		for hasMore && offset < 2000 {
-			params := &store.ListMagnetsParams{
-				Limit:  limit,
-				Offset: offset,
-			}
-			params.APIKey = ctx.StoreAuthToken
-			res, err := ctx.Store.ListMagnets(params)
-			if err != nil {
-				break
-			}
-
-			for _, item := range res.Items {
-				if item.Status == store.MagnetStatusDownloaded {
-					items = append(items, stremio.MetaPreview{
-						Id:          idPrefix + item.Id,
-						Type:        ContentTypeOther,
-						Name:        item.Name,
-						Description: item.Hash,
-					})
-				}
-				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
-					Hash:         item.Hash,
-					TorrentTitle: item.Name,
-					Size:         item.Size,
-					Source:       tInfoSource,
-				})
-			}
-			offset += limit
-			hasMore = len(res.Items) == limit && offset < res.TotalItems
-			time.Sleep(1 * time.Second)
-		}
-		catalogCache.Add(cacheKey, items)
-		go torrent_info.Upsert(tInfoItems, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
-	}
-
-	if extra.Search != "" {
-		matches := fuzzy.FindFrom(extra.Search, &CatalogSearchDataset{items: items})
-		filteredItems := make([]stremio.MetaPreview, len(matches))
-		for i := range matches {
-			filteredItems[i] = items[matches[i].Index]
-		}
-		items = filteredItems
-	}
+	items := getCatalogItems(ctx, ud, extra.Search)
 
 	limit := 100
 	totalItems := len(items)
 	items = items[min(extra.Skip, totalItems):min(extra.Skip+limit, totalItems)]
 
-	if len(items) > 0 {
-		res.Metas = items
+	hashes := make([]string, len(items))
+	for i := range items {
+		item := &items[i]
+		hashes[i] = item.hash
+	}
+
+	res.Metas = make([]stremio.MetaPreview, len(hashes))
+
+	stremIdByHash, err := torrent_stream.GetStremIdByHashes(hashes)
+	if err != nil {
+		log.Error("failed to get strem id by hashes", "error", err)
+	}
+	for i := range items {
+		item := &items[i]
+		if stremId, found := stremIdByHash[item.hash]; found {
+			stremId, _, _ = strings.Cut(stremId, ":")
+			item.Poster = getPosterUrl(stremId)
+		}
+		res.Metas[i] = item.MetaPreview
 	}
 
 	SendResponse(w, r, 200, res)
@@ -547,15 +576,40 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := stremio.MetaHandlerResponse{
-		Meta: stremio.Meta{
-			Id:          id,
-			Type:        ContentTypeOther,
-			Name:        magnet.Name,
-			Description: magnet.Hash,
-			Released:    magnet.AddedAt,
-			Videos:      []stremio.MetaVideo{},
-		},
+	meta := stremio.Meta{
+		Id:          id,
+		Type:        ContentTypeOther,
+		Name:        magnet.Name,
+		Description: "[Hash: " + magnet.Hash + "]",
+		Released:    magnet.AddedAt,
+		Videos:      []stremio.MetaVideo{},
+	}
+
+	stremType, stremId := "movie", ""
+	if stremIdByHashes, err := torrent_stream.GetStremIdByHashes([]string{magnet.Hash}); err != nil {
+		log.Error("failed to get strem id by hashes", "error", err)
+	} else {
+		if sid, found := stremIdByHashes[magnet.Hash]; found {
+			sid, _, isSeries := strings.Cut(sid, ":")
+			stremId = sid
+			if isSeries {
+				stremType = "series"
+			}
+		}
+	}
+
+	if stremId != "" {
+		if r, err := fetchMeta(stremType, stremId, core.GetRequestIP(r)); err != nil {
+			log.Error("failed to fetch meta", "error", err)
+		} else {
+			m := r.Meta
+			meta.Description += " " + m.Description
+			meta.Poster = m.Poster
+			meta.Background = m.Background
+			meta.Links = m.Links
+			meta.Logo = m.Logo
+			meta.Released = m.Released
+		}
 	}
 
 	tInfo := torrent_info.TorrentInfoInsertData{
@@ -568,7 +622,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 
 	for _, f := range magnet.Files {
 		videoId := id + ":" + url.PathEscape(f.Link)
-		res.Meta.Videos = append(res.Meta.Videos, stremio.MetaVideo{
+		meta.Videos = append(meta.Videos, stremio.MetaVideo{
 			Id:        videoId,
 			Title:     f.Name,
 			Available: true,
@@ -582,6 +636,10 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
+
+	res := stremio.MetaHandlerResponse{
+		Meta: meta,
+	}
 
 	SendResponse(w, r, 200, res)
 }

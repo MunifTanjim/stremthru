@@ -222,3 +222,42 @@ func TagStremId(hash string, filename string, sid string) {
 		log.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
 	}
 }
+
+func GetStremIdByHashes(hashes []string) (map[string]string, error) {
+	byHash := map[string]string{}
+	count := len(hashes)
+	if count == 0 {
+		return byHash, nil
+	}
+
+	query := fmt.Sprintf(
+		`SELECT %s, %s FROM %s WHERE %s IN (%s) AND %s like 'tt%%' GROUP BY %s`,
+		Column.Hash, Column.SId,
+		TableName,
+		Column.Hash, util.RepeatJoin("?", count, ","),
+		Column.SId,
+		Column.Hash,
+	)
+	args := make([]any, count)
+	for i, hash := range hashes {
+		args[i] = hash
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return byHash, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hash, sid string
+		if err := rows.Scan(&hash, &sid); err != nil {
+			return byHash, err
+		}
+		byHash[hash] = sid
+	}
+
+	if err := rows.Err(); err != nil {
+		return byHash, err
+	}
+	return byHash, nil
+}
