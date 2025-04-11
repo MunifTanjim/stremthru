@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.7](https://github.com/MunifTanjim/stremthru/compare/0.62.6...0.62.7) (2025-04-11)
+
+
+### Bug Fixes
+
+* **torrent_info:** upgrade go-ptt ([0654663](https://github.com/MunifTanjim/stremthru/commit/0654663dd7cf912db2fa2c142ad012e4ea3081ad))
+
 ## [0.62.6](https://github.com/MunifTanjim/stremthru/compare/0.62.5...0.62.6) (2025-04-11)
 
 
