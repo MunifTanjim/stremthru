@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.63.0](https://github.com/MunifTanjim/stremthru/compare/0.62.8...0.63.0) (2025-04-13)
+
+
+### Features
+
+* **store/debridlink:** forward client ip ([6561375](https://github.com/MunifTanjim/stremthru/commit/6561375509013908bec9588405e00f52388cc969))
+* **stremio/store:** integrate directly into movie streams ([e632e17](https://github.com/MunifTanjim/stremthru/commit/e632e179bda3b73dec7575085dc7b292fe3034fb))
+* **stremio/store:** integrate directly into series streams ([b82e978](https://github.com/MunifTanjim/stremthru/commit/b82e978fc6f2c841cdb44677373b30c1856f2783))
+* **stremio/store:** support cinemeta metadata ([08305ee](https://github.com/MunifTanjim/stremthru/commit/08305eedf16a1567cce4b338cccbaa1a778788e7))
+* **stremio/store:** support cinemeta metadata for series episodes ([ff100b2](https://github.com/MunifTanjim/stremthru/commit/ff100b28bf91cf935cef54b1f3ee69497435b06e))
+* **stremio/store:** update catalog search strategy ([ffa6487](https://github.com/MunifTanjim/stremthru/commit/ffa6487a9b4630060e79cfec4df347ca028b182c))
+* **stremio/store:** update templates for data ([d17cca7](https://github.com/MunifTanjim/stremthru/commit/d17cca783fce07e68eb0b618e26a604811816c20))
+
+
+### Bug Fixes
+
+* **stremio/store:** fix back button behavior ([cffba87](https://github.com/MunifTanjim/stremthru/commit/cffba87fd5b8f4cdcdad4557493c52fd54ee16cf))
+
 ## [0.62.8](https://github.com/MunifTanjim/stremthru/compare/0.62.7...0.62.8) (2025-04-11)
 
 
