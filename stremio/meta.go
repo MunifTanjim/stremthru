@@ -50,8 +50,8 @@ type MetaVideo struct {
 	Thumbnail string    `json:"thumbnail,omitempty"`
 	Streams   []Stream  `json:"streams,omitempty"`
 	Available bool      `json:"available,omitempty"`
-	Episode   int       `json:"episode,omitempty"`
-	Season    int       `json:"season,omitempty"`
+	Episode   int       `json:"episode"`
+	Season    int       `json:"season"`
 	Trailers  []Stream  `json:"trailers,omitempty"`
 	Overview  string    `json:"overview,omitempty"`
 

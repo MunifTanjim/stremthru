@@ -651,9 +651,11 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 				s, ep := -1, 0
 				if len(pttr.Seasons) > 0 {
 					s = pttr.Seasons[0]
+					video.Season = s
 				}
 				if len(pttr.Episodes) > 0 {
 					ep = pttr.Episodes[0]
+					video.Episode = ep
 				}
 				key := strconv.Itoa(s) + ":" + strconv.Itoa(ep)
 
