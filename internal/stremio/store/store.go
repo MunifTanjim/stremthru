@@ -590,21 +590,24 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		Videos:      []stremio.MetaVideo{},
 	}
 
-	stremType, stremId := "movie", ""
+	sType, sId := "", ""
 	if stremIdByHashes, err := torrent_stream.GetStremIdByHashes([]string{magnet.Hash}); err != nil {
 		log.Error("failed to get strem id by hashes", "error", err)
 	} else {
 		if sid, found := stremIdByHashes[magnet.Hash]; found {
 			sid, _, isSeries := strings.Cut(sid, ":")
-			stremId = sid
+			sId = sid
 			if isSeries {
-				stremType = "series"
+				sType = "series"
+			} else {
+				sType = "movie"
 			}
 		}
 	}
 
-	if stremId != "" {
-		if r, err := fetchMeta(stremType, stremId, core.GetRequestIP(r)); err != nil {
+	metaVideoByKey := map[string]*stremio.MetaVideo{}
+	if sId != "" {
+		if r, err := fetchMeta(sType, sId, core.GetRequestIP(r)); err != nil {
 			log.Error("failed to fetch meta", "error", err)
 		} else {
 			m := r.Meta
@@ -614,6 +617,14 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			meta.Links = m.Links
 			meta.Logo = m.Logo
 			meta.Released = m.Released
+
+			if sType == "series" {
+				for i := range m.Videos {
+					video := &m.Videos[i]
+					key := strconv.Itoa(video.Season) + ":" + strconv.Itoa(video.Episode)
+					metaVideoByKey[key] = video
+				}
+			}
 		}
 	}
 
@@ -627,12 +638,54 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 
 	for _, f := range magnet.Files {
 		videoId := id + ":" + url.PathEscape(f.Link)
-		meta.Videos = append(meta.Videos, stremio.MetaVideo{
+		video := stremio.MetaVideo{
 			Id:        videoId,
 			Title:     f.Name,
 			Available: true,
 			Released:  magnet.AddedAt,
-		})
+		}
+
+		if sType == "series" {
+			pttr := ptt.Parse(f.Name)
+			if err := pttr.Error(); err == nil {
+				s, ep := -1, 0
+				if len(pttr.Seasons) > 0 {
+					s = pttr.Seasons[0]
+				}
+				if len(pttr.Episodes) > 0 {
+					ep = pttr.Episodes[0]
+				}
+				key := strconv.Itoa(s) + ":" + strconv.Itoa(ep)
+
+				video.Title = ""
+				if pttr.Quality != "" {
+					video.Title += " 🎥 " + pttr.Quality
+				}
+				if pttr.Codec != "" {
+					video.Title += " 🎞️ " + pttr.Codec
+				}
+				video.Title += " 📦 " + util.ToSize(f.Size)
+				if len(pttr.HDR) > 0 {
+					video.Title += " 📺 " + strings.Join(pttr.HDR, ",")
+				}
+				if pttr.Site != "" {
+					video.Title += " 🔗 " + pttr.Site
+				}
+				if mVideo, ok := metaVideoByKey[key]; ok {
+					video.Thumbnail = mVideo.Thumbnail
+					video.Title += " 📄 [S" + strconv.Itoa(mVideo.Season) + "E" + strconv.Itoa(mVideo.Episode) + "] "
+					video.Title += mVideo.Name
+				} else if pttr.Title != "" {
+					video.Title += " 📄 " + pttr.Title
+
+				}
+				video.Title += "\n✏️ " + f.Name
+			} else {
+				log.Warn("failed to parse", "error", err, "title", f.Name)
+			}
+		}
+
+		meta.Videos = append(meta.Videos, video)
 		tInfo.Files = append(tInfo.Files, torrent_info.TorrentInfoInsertDataFile{
 			Name: f.Name,
 			Idx:  f.Idx,
