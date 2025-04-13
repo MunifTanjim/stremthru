@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -25,6 +26,22 @@ import (
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/paul-mannino/go-fuzzywuzzy"
 )
+
+var streamTemplate = func() *stremio_transformer.StreamTemplate {
+	tmplBlob := stremio_transformer.StreamTemplateBlob{
+		Name: `Store
+{{ if ne .Resolution ""}}{{.Resolution}}{{end}}`,
+		Description: `✏️ {{.Title}}
+{{if ne .Quality ""}} 💿 {{.Quality}} {{end}}{{if ne .Codec ""}} 🎞️ {{.Codec}} {{end}}{{if gt (len .HDR) 0}} 📺 {{str_join .HDR ","}}{{end}}{{if gt (len .Audio) 0}} 🎧 {{str_join .Audio ","}}{{if gt (len .Channels) 0}} | {{str_join .Channels ","}}{{end}}{{end}}
+{{if ne .Size ""}} 📦 {{.Size}}{{end}}{{if ne .Group ""}} ⚙️ {{.Group}}{{end}}
+📄 {{.Raw.Name}}`,
+	}
+	tmpl, err := tmplBlob.Parse()
+	if err != nil {
+		panic(err)
+	}
+	return tmpl
+}()
 
 type UserData struct {
 	StoreName  string `json:"store_name"`
@@ -340,6 +357,51 @@ func getCatalogCacheKey(ctx *context.StoreContext) string {
 	return string(ctx.Store.GetName().Code()) + ":" + ctx.StoreAuthToken
 }
 
+func getMetaPreviewDescription(hash, name string) string {
+	pttr := ptt.Parse(name).Normalize()
+	description := "[ 🧲 " + hash + " ]"
+	if err := pttr.Error(); err == nil {
+		if pttr.Resolution != "" {
+			description += " [ 🎥 " + pttr.Resolution + " ]"
+		}
+		if pttr.Quality != "" {
+			description += " [ 💿 " + pttr.Quality + " ]"
+		}
+		if pttr.Codec != "" {
+			description += " [ 🎞️ " + pttr.Codec + " ]"
+		}
+		if len(pttr.HDR) > 0 {
+			description += " [ 📺 " + strings.Join(pttr.HDR, ",") + " ]"
+		}
+		if audioCount, channelCount := len(pttr.Audio), len(pttr.Channels); audioCount > 0 || channelCount > 0 {
+			description += " [ 🎧 "
+			if audioCount > 0 {
+				description += strings.Join(pttr.Audio, ",")
+				if channelCount > 0 {
+					description += " | "
+				}
+			}
+			if channelCount > 0 {
+				description += strings.Join(pttr.Channels, ",")
+			}
+			description += " ]"
+		}
+		if pttr.ThreeD != "" {
+			description += " [ 🎲 " + pttr.ThreeD + " ]"
+		}
+		if pttr.Network != "" {
+			description += " [ 📡 " + pttr.Network + " ]"
+		}
+		if pttr.Group != "" {
+			description += " [ ⚙️ " + pttr.Group + " ]"
+		}
+		if pttr.Site != "" {
+			description += " [ 🔗 " + pttr.Site + " ]"
+		}
+	}
+	return description
+}
+
 func getCatalogItems(ctx *context.StoreContext, ud *UserData) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
@@ -370,7 +432,7 @@ func getCatalogItems(ctx *context.StoreContext, ud *UserData) []CachedCatalogIte
 						Id:          idPrefix + item.Id,
 						Type:        ContentTypeOther,
 						Name:        item.Name,
-						Description: "[Hash: " + item.Hash + "]",
+						Description: getMetaPreviewDescription(item.Hash, item.Name),
 					}, item.Hash})
 				}
 				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
@@ -585,7 +647,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		Id:          id,
 		Type:        ContentTypeOther,
 		Name:        magnet.Name,
-		Description: "[Hash: " + magnet.Hash + "]",
+		Description: getMetaPreviewDescription(magnet.Hash, magnet.Name),
 		Released:    magnet.AddedAt,
 		Videos:      []stremio.MetaVideo{},
 	}
@@ -646,9 +708,9 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if sType == "series" {
-			pttr := ptt.Parse(f.Name)
+			pttr := ptt.Parse(f.Name).Normalize()
 			if err := pttr.Error(); err == nil {
-				s, ep := -1, 0
+				s, ep := -1, -1
 				if len(pttr.Seasons) > 0 {
 					s = pttr.Seasons[0]
 					video.Season = s
@@ -658,30 +720,13 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 					video.Episode = ep
 				}
 				key := strconv.Itoa(s) + ":" + strconv.Itoa(ep)
-
-				video.Title = ""
-				if pttr.Quality != "" {
-					video.Title += " 🎥 " + pttr.Quality
+				if metaVideo, ok := metaVideoByKey[key]; ok {
+					video.Released = metaVideo.Released
+					video.Thumbnail = metaVideo.Thumbnail
+					video.Title = metaVideo.Name + "\n📄 " + f.Name
+				} else {
+					video.Title = pttr.Title + "\n📄 " + f.Name
 				}
-				if pttr.Codec != "" {
-					video.Title += " 🎞️ " + pttr.Codec
-				}
-				video.Title += " 📦 " + util.ToSize(f.Size)
-				if len(pttr.HDR) > 0 {
-					video.Title += " 📺 " + strings.Join(pttr.HDR, ",")
-				}
-				if pttr.Site != "" {
-					video.Title += " 🔗 " + pttr.Site
-				}
-				if mVideo, ok := metaVideoByKey[key]; ok {
-					video.Thumbnail = mVideo.Thumbnail
-					video.Title += " 📄 [S" + strconv.Itoa(mVideo.Season) + "E" + strconv.Itoa(mVideo.Episode) + "] "
-					video.Title += mVideo.Name
-				} else if pttr.Title != "" {
-					video.Title += " 📄 " + pttr.Title
-
-				}
-				video.Title += "\n✏️ " + f.Name
 			} else {
 				log.Warn("failed to parse", "error", err, "title", f.Name)
 			}
@@ -765,6 +810,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var meta *stremio.Meta
+	season, episode := -1, -1
+
 	matchers := []StreamFileMatcher{}
 
 	if isStremThruStoreId {
@@ -784,25 +832,14 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isImdbId {
-		sId, sType, s, ep := videoIdWithLink, "movie", 0, 0
-		if strings.Contains(sId, ":") {
-			id, sep, _ := strings.Cut(sId, ":")
-			sId = id
-			strS, strEp, _ := strings.Cut(sep, ":")
-			intS, errS := strconv.Atoi(strS)
-			intEp, errEp := strconv.Atoi(strEp)
-			if errS == nil && errEp == nil {
-				s = intS
-				ep = intEp
-			}
-			sType = "series"
-		}
+		sType, sId := "", ""
+		sType, sId, season, episode = parseStremId(videoIdWithLink)
 		mres, err := fetchMeta(sType, sId, core.GetRequestIP(r))
 		if err != nil {
 			SendError(w, r, err)
 			return
 		}
-		meta := mres.Meta
+		meta = &mres.Meta
 
 		items := getCatalogItems(ctx, ud)
 		if meta.Name != "" {
@@ -823,8 +860,8 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			if sType == "series" {
 				matchers = append(matchers, StreamFileMatcher{
 					MagnetId: id,
-					Season:   s,
-					Episode:  ep,
+					Season:   season,
+					Episode:  episode,
 				})
 			} else {
 				matchers = append(matchers, StreamFileMatcher{
@@ -835,8 +872,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/store/" + eud + "/_/strem/")
 	var pttr *ptt.Result
+
+	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/store/" + eud + "/_/strem/")
 	for _, matcher := range matchers {
 		params := &store.GetMagnetParams{Id: matcher.MagnetId}
 		params.APIKey = ctx.StoreAuthToken
@@ -844,6 +882,23 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			SendError(w, r, err)
 			return
+		}
+
+		if meta == nil {
+			stremIdByHash, err := torrent_stream.GetStremIdByHashes([]string{magnet.Hash})
+			log.Debug("strem id by hash", "hash", magnet.Hash, "stremIdByHash", stremIdByHash, "err", err)
+			if err != nil {
+				log.Error("failed to get strem id by hashes", "error", err)
+			}
+			if stremId, found := stremIdByHash[magnet.Hash]; found {
+				sType, sId := "", ""
+				sType, sId, season, episode = parseStremId(stremId)
+				if mRes, err := fetchMeta(sType, sId, core.GetRequestIP(r)); err == nil {
+					meta = &mRes.Meta
+				} else {
+					log.Error("failed to fetch meta", "error", err)
+				}
+			}
 		}
 
 		var file *store.MagnetFile
@@ -859,14 +914,14 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			} else if matcher.Episode > 0 {
 				pttr = ptt.Parse(f.Name)
 				if err := pttr.Error(); err == nil {
-					s, ep := -1, 0
+					season, episode := -1, -1
 					if len(pttr.Seasons) > 0 {
-						s = pttr.Seasons[0]
+						season = pttr.Seasons[0]
 					}
 					if len(pttr.Episodes) > 0 {
-						ep = pttr.Episodes[0]
+						episode = pttr.Episodes[0]
 					}
-					if s == matcher.Season && ep == matcher.Episode {
+					if season == matcher.Season && episode == matcher.Episode {
 						file = f
 						break
 					}
@@ -886,9 +941,8 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 		streamId := idPrefix + matcher.MagnetId + ":" + file.Link
 		stream := stremio.Stream{
-			URL:         streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
-			Name:        magnet.Name,
-			Description: file.Name,
+			URL:  streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
+			Name: file.Name,
 		}
 		if pttr == nil {
 			r := ptt.Parse(file.Name).Normalize()
@@ -899,30 +953,19 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if pttr != nil {
-			stream.Name = "Store"
-			if pttr.Resolution != "" {
-				stream.Name += "\n" + pttr.Resolution
+			pttr.Size = util.ToSize(file.Size)
+			if meta != nil && season != -1 && episode != -1 {
+				for i := range meta.Videos {
+					video := &meta.Videos[i]
+					if video.Season == season && video.Episode == episode {
+						pttr.Title = video.Name
+						break
+					}
+				}
 			}
-			stream.Description = ""
-			if pttr.Quality != "" {
-				stream.Description += " 🎥 " + pttr.Quality
+			if _, err := streamTemplate.Execute(&stream, &stremio_transformer.StreamTemplateData{Result: pttr}); err != nil {
+				log.Error("failed to execute stream template", "error", err)
 			}
-			if pttr.Codec != "" {
-				stream.Description += " 🎞️ " + pttr.Codec
-			}
-			stream.Description += "\n"
-			stream.Description += "📦 " + util.ToSize(file.Size) + " "
-			if len(pttr.HDR) > 0 {
-				stream.Description += "📺 " + strings.Join(pttr.HDR, ",") + " "
-			}
-			if pttr.Site != "" {
-				stream.Description += "🔗 " + pttr.Site
-			}
-			stream.Description += "\n"
-			if pttr.Title != "" {
-				stream.Description += "📄 " + pttr.Title
-			}
-			stream.Description += "\n" + file.Name
 		}
 		res.Streams = append(res.Streams, stream)
 	}
