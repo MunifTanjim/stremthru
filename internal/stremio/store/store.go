@@ -654,6 +654,8 @@ type StreamFileMatcher struct {
 	FileLink       string
 	FileName       string
 	UseLargestFile bool
+	Episode        int
+	Season         int
 }
 
 func handleStream(w http.ResponseWriter, r *http.Request) {
@@ -680,7 +682,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else if isImdbId {
-		if contentType != string(stremio.ContentTypeMovie) {
+		if contentType != string(stremio.ContentTypeMovie) && contentType != string(stremio.ContentTypeSeries) {
 			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
 			return
 		}
@@ -727,33 +729,49 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isImdbId {
-		sId, sType := videoIdWithLink, "movie"
+		sId, sType, s, ep := videoIdWithLink, "movie", 0, 0
 		if strings.Contains(sId, ":") {
-			sId, _, _ = strings.Cut(sId, ":")
+			id, sep, _ := strings.Cut(sId, ":")
+			sId = id
+			strS, strEp, _ := strings.Cut(sep, ":")
+			intS, errS := strconv.Atoi(strS)
+			intEp, errEp := strconv.Atoi(strEp)
+			if errS == nil && errEp == nil {
+				s = intS
+				ep = intEp
+			}
 			sType = "series"
 		}
-		if sType == "movie" {
-			mres, err := fetchMeta(sType, sId, core.GetRequestIP(r))
-			if err != nil {
-				SendError(w, r, err)
-				return
-			}
+		mres, err := fetchMeta(sType, sId, core.GetRequestIP(r))
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		meta := mres.Meta
 
-			items := getCatalogItems(ctx, ud)
-			if mres.Meta.Name != "" {
-				query := strings.ToLower(mres.Meta.Name)
-				filteredItems := []CachedCatalogItem{}
-				for i := range items {
-					item := &items[i]
-					if fuzzy.TokenSetRatio(query, strings.ToLower(item.Name), false, true) > 90 {
-						filteredItems = append(filteredItems, *item)
-					}
-				}
-				items = filteredItems
-			}
-
+		items := getCatalogItems(ctx, ud)
+		if meta.Name != "" {
+			query := strings.ToLower(meta.Name)
+			filteredItems := []CachedCatalogItem{}
 			for i := range items {
-				id := strings.TrimPrefix(items[i].Id, idPrefix)
+				item := &items[i]
+				if fuzzy.TokenSetRatio(query, strings.ToLower(item.Name), false, true) > 90 {
+					filteredItems = append(filteredItems, *item)
+				}
+			}
+			items = filteredItems
+		}
+
+		for i := range items {
+			item := &items[i]
+			id := strings.TrimPrefix(item.Id, idPrefix)
+			if sType == "series" {
+				matchers = append(matchers, StreamFileMatcher{
+					MagnetId: id,
+					Season:   s,
+					Episode:  ep,
+				})
+			} else {
 				matchers = append(matchers, StreamFileMatcher{
 					MagnetId:       id,
 					UseLargestFile: true,
@@ -763,6 +781,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/store/" + eud + "/_/strem/")
+	var pttr *ptt.Result
 	for _, matcher := range matchers {
 		params := &store.GetMagnetParams{Id: matcher.MagnetId}
 		params.APIKey = ctx.StoreAuthToken
@@ -782,6 +801,23 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			} else if matcher.FileName != "" && matcher.FileName == f.Name {
 				file = f
 				break
+			} else if matcher.Episode > 0 {
+				pttr = ptt.Parse(f.Name)
+				if err := pttr.Error(); err == nil {
+					s, ep := -1, 0
+					if len(pttr.Seasons) > 0 {
+						s = pttr.Seasons[0]
+					}
+					if len(pttr.Episodes) > 0 {
+						ep = pttr.Episodes[0]
+					}
+					if s == matcher.Season && ep == matcher.Episode {
+						file = f
+						break
+					}
+				} else {
+					log.Warn("failed to parse", "error", err, "title", f.Name)
+				}
 			} else if matcher.UseLargestFile {
 				if file == nil || file.Size < f.Size {
 					file = f
@@ -789,44 +825,51 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if file != nil {
-			streamId := idPrefix + matcher.MagnetId + ":" + file.Link
-			stream := stremio.Stream{
-				URL:         streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
-				Name:        magnet.Name,
-				Description: file.Name,
-			}
+		if file == nil {
+			continue
+		}
+
+		streamId := idPrefix + matcher.MagnetId + ":" + file.Link
+		stream := stremio.Stream{
+			URL:         streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
+			Name:        magnet.Name,
+			Description: file.Name,
+		}
+		if pttr == nil {
 			r := ptt.Parse(file.Name).Normalize()
 			if err := r.Error(); err == nil {
-				stream.Name = "Store"
-				if r.Resolution != "" {
-					stream.Name += "\n" + r.Resolution
-				}
-				stream.Description = ""
-				if r.Quality != "" {
-					stream.Description += " 🎥 " + r.Quality
-				}
-				if r.Codec != "" {
-					stream.Description += " 🎞️ " + r.Codec
-				}
-				stream.Description += "\n"
-				stream.Description += "📦 " + util.ToSize(file.Size) + " "
-				if len(r.HDR) > 0 {
-					stream.Description += "📺 " + strings.Join(r.HDR, ",") + " "
-				}
-				if r.Site != "" {
-					stream.Description += "🔗 " + r.Site
-				}
-				stream.Description += "\n"
-				if r.Title != "" {
-					stream.Description += "📄 " + r.Title
-				}
-				stream.Description += "\n" + file.Name
+				pttr = r
 			} else {
-				log.Debug("failed to parse", "error", err, "title", file.Name)
+				log.Warn("failed to parse", "error", err, "title", file.Name)
 			}
-			res.Streams = append(res.Streams, stream)
 		}
+		if pttr != nil {
+			stream.Name = "Store"
+			if pttr.Resolution != "" {
+				stream.Name += "\n" + pttr.Resolution
+			}
+			stream.Description = ""
+			if pttr.Quality != "" {
+				stream.Description += " 🎥 " + pttr.Quality
+			}
+			if pttr.Codec != "" {
+				stream.Description += " 🎞️ " + pttr.Codec
+			}
+			stream.Description += "\n"
+			stream.Description += "📦 " + util.ToSize(file.Size) + " "
+			if len(pttr.HDR) > 0 {
+				stream.Description += "📺 " + strings.Join(pttr.HDR, ",") + " "
+			}
+			if pttr.Site != "" {
+				stream.Description += "🔗 " + pttr.Site
+			}
+			stream.Description += "\n"
+			if pttr.Title != "" {
+				stream.Description += "📄 " + pttr.Title
+			}
+			stream.Description += "\n" + file.Name
+		}
+		res.Streams = append(res.Streams, stream)
 	}
 
 	SendResponse(w, r, 200, res)
