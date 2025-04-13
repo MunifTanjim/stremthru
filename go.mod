@@ -19,7 +19,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
-	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
@@ -45,8 +44,8 @@ require (
 	github.com/madflojo/tasks v1.2.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/paul-mannino/go-fuzzywuzzy v0.0.0-20241117160931-a1769aeb6b21
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/rs/xid v1.6.0
-	github.com/sahilm/fuzzy v0.1.1
 	github.com/stretchr/testify v1.10.0
 )

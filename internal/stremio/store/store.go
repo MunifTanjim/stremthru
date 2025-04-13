@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
-	"github.com/sahilm/fuzzy"
 )
 
 type UserData struct {
@@ -337,7 +337,7 @@ func getCatalogCacheKey(ctx *context.StoreContext) string {
 	return string(ctx.Store.GetName().Code()) + ":" + ctx.StoreAuthToken
 }
 
-func getCatalogItems(ctx *context.StoreContext, ud *UserData, searchQuery string) []CachedCatalogItem {
+func getCatalogItems(ctx *context.StoreContext, ud *UserData) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
 	cacheKey := getCatalogCacheKey(ctx)
@@ -385,15 +385,6 @@ func getCatalogItems(ctx *context.StoreContext, ud *UserData, searchQuery string
 		go torrent_info.Upsert(tInfoItems, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
 	}
 
-	if searchQuery != "" {
-		matches := fuzzy.FindFrom(searchQuery, &CatalogSearchDataset{items: items})
-		filteredItems := make([]CachedCatalogItem, len(matches))
-		for i := range matches {
-			filteredItems[i] = items[matches[i].Index]
-		}
-		items = filteredItems
-	}
-
 	return items
 }
 
@@ -406,17 +397,7 @@ func getStoreActionMetaPreview(storeCode string) stremio.MetaPreview {
 	return meta
 }
 
-type CatalogSearchDataset struct {
-	items []CachedCatalogItem
-}
-
-func (d CatalogSearchDataset) String(i int) string {
-	return d.items[i].Name
-}
-
-func (d CatalogSearchDataset) Len() int {
-	return len(d.items)
-}
+var whitespacesRegex = regexp.MustCompile(`\s+`)
 
 func handleCatalog(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) {
@@ -461,7 +442,28 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := getCatalogItems(ctx, ud, extra.Search)
+	items := getCatalogItems(ctx, ud)
+
+	if extra.Search != "" {
+		query := strings.ToLower(extra.Search)
+		parts := whitespacesRegex.Split(query, -1)
+		for i := range parts {
+			parts[i] = regexp.QuoteMeta(parts[i])
+		}
+		regex, err := regexp.Compile(strings.Join(parts, ".*"))
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		filteredItems := []CachedCatalogItem{}
+		for i := range items {
+			item := &items[i]
+			if regex.MatchString(strings.ToLower(item.Name)) {
+				filteredItems = append(filteredItems, *item)
+			}
+		}
+		items = filteredItems
+	}
 
 	limit := 100
 	totalItems := len(items)
