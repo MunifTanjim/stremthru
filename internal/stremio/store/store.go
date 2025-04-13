@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -19,8 +20,10 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
+	"github.com/paul-mannino/go-fuzzywuzzy"
 )
 
 type UserData struct {
@@ -405,14 +408,14 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := getContentType(r); err != nil {
-		err.Send(w, r)
-		return
-	}
-
 	ud, err := getUserData(r)
 	if err != nil {
 		SendError(w, r, err)
+		return
+	}
+
+	if _, err := getContentType(r); err != nil {
+		err.Send(w, r)
 		return
 	}
 
@@ -646,14 +649,16 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, res)
 }
 
+type StreamFileMatcher struct {
+	MagnetId       string
+	FileLink       string
+	FileName       string
+	UseLargestFile bool
+}
+
 func handleStream(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) {
 		shared.ErrorMethodNotAllowed(r).Send(w, r)
-		return
-	}
-
-	if _, err := getContentType(r); err != nil {
-		err.Send(w, r)
 		return
 	}
 
@@ -665,8 +670,21 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	idPrefix := getIdPrefix(ud.getStoreCode())
 
+	contentType := r.PathValue("contentType")
 	videoIdWithLink := getId(r)
-	if !strings.HasPrefix(videoIdWithLink, idPrefix) {
+	isStremThruStoreId := strings.HasPrefix(videoIdWithLink, idPrefix)
+	isImdbId := strings.HasPrefix(videoIdWithLink, "tt")
+	if isStremThruStoreId {
+		if contentType != ContentTypeOther {
+			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
+			return
+		}
+	} else if isImdbId {
+		if contentType != string(stremio.ContentTypeMovie) {
+			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
+			return
+		}
+	} else {
 		shared.ErrorBadRequest(r, "unsupported id: "+videoIdWithLink).Send(w, r)
 		return
 	}
@@ -684,40 +702,130 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		Streams: []stremio.Stream{},
 	}
 
-	videoId := strings.TrimPrefix(videoIdWithLink, idPrefix)
-	videoId, escapedLink, _ := strings.Cut(videoId, ":")
-	link, err := url.PathUnescape(escapedLink)
-	if err != nil {
-		LogError(r, "failed to parse link", err)
-		SendError(w, r, err)
-		return
-	}
-
-	params := &store.GetMagnetParams{
-		Id: videoId,
-	}
-	params.APIKey = ctx.StoreAuthToken
-	magnet, err := ctx.Store.GetMagnet(params)
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-
 	eud, err := ud.GetEncoded()
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	baseUrl := ExtractRequestBaseURL(r)
-	for _, f := range magnet.Files {
-		if f.Link == link {
-			streamId := idPrefix + videoId + ":" + link
-			res.Streams = append(res.Streams, stremio.Stream{
-				URL:         baseUrl.JoinPath("/stremio/store/" + eud + "/_/strem/" + url.PathEscape(streamId)).String(),
+	matchers := []StreamFileMatcher{}
+
+	if isStremThruStoreId {
+		videoId := strings.TrimPrefix(videoIdWithLink, idPrefix)
+		videoId, escapedLink, _ := strings.Cut(videoId, ":")
+		link, err := url.PathUnescape(escapedLink)
+		if err != nil {
+			LogError(r, "failed to parse link", err)
+			SendError(w, r, err)
+			return
+		}
+
+		matchers = append(matchers, StreamFileMatcher{
+			MagnetId: videoId,
+			FileLink: link,
+		})
+	}
+
+	if isImdbId {
+		sId, sType := videoIdWithLink, "movie"
+		if strings.Contains(sId, ":") {
+			sId, _, _ = strings.Cut(sId, ":")
+			sType = "series"
+		}
+		if sType == "movie" {
+			mres, err := fetchMeta(sType, sId, core.GetRequestIP(r))
+			if err != nil {
+				SendError(w, r, err)
+				return
+			}
+
+			items := getCatalogItems(ctx, ud)
+			if mres.Meta.Name != "" {
+				query := strings.ToLower(mres.Meta.Name)
+				filteredItems := []CachedCatalogItem{}
+				for i := range items {
+					item := &items[i]
+					if fuzzy.TokenSetRatio(query, strings.ToLower(item.Name), false, true) > 90 {
+						filteredItems = append(filteredItems, *item)
+					}
+				}
+				items = filteredItems
+			}
+
+			for i := range items {
+				id := strings.TrimPrefix(items[i].Id, idPrefix)
+				matchers = append(matchers, StreamFileMatcher{
+					MagnetId:       id,
+					UseLargestFile: true,
+				})
+			}
+		}
+	}
+
+	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/store/" + eud + "/_/strem/")
+	for _, matcher := range matchers {
+		params := &store.GetMagnetParams{Id: matcher.MagnetId}
+		params.APIKey = ctx.StoreAuthToken
+		magnet, err := ctx.Store.GetMagnet(params)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		var file *store.MagnetFile
+
+		for i := range magnet.Files {
+			f := &magnet.Files[i]
+			if matcher.FileLink != "" && matcher.FileLink == f.Link {
+				file = f
+				break
+			} else if matcher.FileName != "" && matcher.FileName == f.Name {
+				file = f
+				break
+			} else if matcher.UseLargestFile {
+				if file == nil || file.Size < f.Size {
+					file = f
+				}
+			}
+		}
+
+		if file != nil {
+			streamId := idPrefix + matcher.MagnetId + ":" + file.Link
+			stream := stremio.Stream{
+				URL:         streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
 				Name:        magnet.Name,
-				Description: f.Name,
-			})
+				Description: file.Name,
+			}
+			r := ptt.Parse(file.Name).Normalize()
+			if err := r.Error(); err == nil {
+				stream.Name = "Store"
+				if r.Resolution != "" {
+					stream.Name += "\n" + r.Resolution
+				}
+				stream.Description = ""
+				if r.Quality != "" {
+					stream.Description += " 🎥 " + r.Quality
+				}
+				if r.Codec != "" {
+					stream.Description += " 🎞️ " + r.Codec
+				}
+				stream.Description += "\n"
+				stream.Description += "📦 " + util.ToSize(file.Size) + " "
+				if len(r.HDR) > 0 {
+					stream.Description += "📺 " + strings.Join(r.HDR, ",") + " "
+				}
+				if r.Site != "" {
+					stream.Description += "🔗 " + r.Site
+				}
+				stream.Description += "\n"
+				if r.Title != "" {
+					stream.Description += "📄 " + r.Title
+				}
+				stream.Description += "\n" + file.Name
+			} else {
+				log.Debug("failed to parse", "error", err, "title", file.Name)
+			}
+			res.Streams = append(res.Streams, stream)
 		}
 	}
 

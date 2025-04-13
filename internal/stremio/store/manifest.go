@@ -97,8 +97,8 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 			},
 			{
 				Name:       stremio.ResourceNameStream,
-				Types:      []stremio.ContentType{ContentTypeOther},
-				IDPrefixes: []string{idPrefix},
+				Types:      []stremio.ContentType{ContentTypeOther, stremio.ContentTypeMovie},
+				IDPrefixes: []string{idPrefix, "tt"},
 			},
 		},
 		Types: []stremio.ContentType{},
