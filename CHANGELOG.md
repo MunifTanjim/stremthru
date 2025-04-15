@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.64.0](https://github.com/MunifTanjim/stremthru/compare/0.63.0...0.64.0) (2025-04-15)
+
+
+### Features
+
+* **store/pikpak:** add size to list magnet response when available ([bf94d30](https://github.com/MunifTanjim/stremthru/commit/bf94d30bfc579fcec1cc0dea96dc5e6bfdb2c8d3))
+* **store/pikpak:** sort list magnet response by .addedAt ([ae7d37b](https://github.com/MunifTanjim/stremthru/commit/ae7d37bb91cb8fc3f6feba78d79df7eacde03aa5))
+* **stremio/store:** add title, year, date in meta preview description ([f2fdd6f](https://github.com/MunifTanjim/stremthru/commit/f2fdd6fc0369e53d6cdf906bdc6e3af6d0e4435d))
+* **stremio/store:** allow episode number without season ([887a00b](https://github.com/MunifTanjim/stremthru/commit/887a00b55a4e83ddec1466f73238d973653da7f9))
+* **stremio/store:** always set parsed season and episode for videos ([494651a](https://github.com/MunifTanjim/stremthru/commit/494651a04bb5f43a7726f1a15f33ef8bd8e9448f))
+* **stremio/store:** hide non-video files ([5eaba46](https://github.com/MunifTanjim/stremthru/commit/5eaba465d96a387ab4bff5801af6467d4217f770))
+* **stremio/store:** increase catalog items cache time to 10m ([422e815](https://github.com/MunifTanjim/stremthru/commit/422e81576e9561c28f71a678625e678a0fce22ff))
+* **torrent_info:** discard extracted data only for empty hash ([c73d9aa](https://github.com/MunifTanjim/stremthru/commit/c73d9aa8431ae48e7ab980bbf343adb9e9071789))
+* **torrent_info:** extract data from mediafusion ([35f2d9f](https://github.com/MunifTanjim/stremthru/commit/35f2d9f81a651e7b832e7c519d908c4b2f1a8e19))
+
+
+### Bug Fixes
+
+* **config:** use default peer uri only if buddy uri is empty ([802c92b](https://github.com/MunifTanjim/stremthru/commit/802c92bf0b7c24320e4a604e0a9494da1fc92fbf))
+* **torrent_info:** extract filename from title for torrentio correctly ([fb7cbcf](https://github.com/MunifTanjim/stremthru/commit/fb7cbcf2ee457310c9c10aeae626c40bf979b8c8))
+
+
+### Performance Improvements
+
+* **stremio/store:** cache response for fetch meta ([a9b14c7](https://github.com/MunifTanjim/stremthru/commit/a9b14c73c4d1ad0949d341c5641d50ee7d3060ef))
+
 ## [0.63.0](https://github.com/MunifTanjim/stremthru/compare/0.62.8...0.63.0) (2025-04-13)
 
 
