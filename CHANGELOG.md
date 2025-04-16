@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.64.1](https://github.com/MunifTanjim/stremthru/compare/0.64.0...0.64.1) (2025-04-16)
+
+
+### Bug Fixes
+
+* **buddy:** skip bulk track for empty list ([44b90e6](https://github.com/MunifTanjim/stremthru/commit/44b90e61d2545227007659ba3d587876d3085c8a))
+* **torrent_stream:** fix sql query to record streams ([2091966](https://github.com/MunifTanjim/stremthru/commit/2091966330c4d0268e3bb78ec300684e5ee488e6))
+
 ## [0.64.0](https://github.com/MunifTanjim/stremthru/compare/0.63.0...0.64.0) (2025-04-15)
 
 
