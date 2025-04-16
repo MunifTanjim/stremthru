@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.65.0](https://github.com/MunifTanjim/stremthru/compare/0.64.1...0.65.0) (2025-04-16)
+
+
+### Features
+
+* **torrent_info:** set up sharing ([a5f1e79](https://github.com/MunifTanjim/stremthru/commit/a5f1e79feaab76c08f87281bf0c341ecf5986e67))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** do not set configurable on reload ([a3d11fe](https://github.com/MunifTanjim/stremthru/commit/a3d11fe20b3241426b5c1b0dd0482d1ef8bc435b))
+* **stremio:** normalize manifest url sceheme correctly ([2dbae6b](https://github.com/MunifTanjim/stremthru/commit/2dbae6b90d6e626a387fe381fa5b9ca970834d6c))
+
 ## [0.64.1](https://github.com/MunifTanjim/stremthru/compare/0.64.0...0.64.1) (2025-04-16)
 
 
