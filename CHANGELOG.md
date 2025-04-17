@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.66.0](https://github.com/MunifTanjim/stremthru/compare/0.65.1...0.66.0) (2025-04-17)
+
+
+### Features
+
+* **store/premiumize:** improve error code detection ([1585318](https://github.com/MunifTanjim/stremthru/commit/1585318085783119fe9436cce4214b8e33fccc11))
+* **stremio/store:** add fallback for parsed title ([7250851](https://github.com/MunifTanjim/stremthru/commit/725085197f98216865ccda50d091246075fc55e3))
+* **stremio/store:** support multi store for st ([9ef6b37](https://github.com/MunifTanjim/stremthru/commit/9ef6b37bd0d238ca25841e9081ed23535408868f))
+
+
+### Bug Fixes
+
+* **store/alldebrid:** remove pointer from slice field ([0a1cbce](https://github.com/MunifTanjim/stremthru/commit/0a1cbce31a66bd8e0121c827a74123e1a0376d04))
+* **torrent_info:** update go-ptt ([bfd57be](https://github.com/MunifTanjim/stremthru/commit/bfd57beca08d80460463f76af37dab12cbfaa7db))
+
 ## [0.65.1](https://github.com/MunifTanjim/stremthru/compare/0.65.0...0.65.1) (2025-04-17)
 
 
