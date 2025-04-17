@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.65.1](https://github.com/MunifTanjim/stremthru/compare/0.65.0...0.65.1) (2025-04-17)
+
+
+### Bug Fixes
+
+* **torrent_stream:** fix query for GetStremIdByHashes ([115530e](https://github.com/MunifTanjim/stremthru/commit/115530e3e0300cbf13c7967afdc08f79fac031e2))
+
 ## [0.65.0](https://github.com/MunifTanjim/stremthru/compare/0.64.1...0.65.0) (2025-04-16)
 
 
