@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.66.1](https://github.com/MunifTanjim/stremthru/compare/0.66.0...0.66.1) (2025-04-18)
+
+
+### Bug Fixes
+
+* **stremio/store:** add compatibility for older installation ([b69f905](https://github.com/MunifTanjim/stremthru/commit/b69f905977fc991655192103edbd1f9acd628c6f))
+
 ## [0.66.0](https://github.com/MunifTanjim/stremthru/compare/0.65.1...0.66.0) (2025-04-17)
 
 
