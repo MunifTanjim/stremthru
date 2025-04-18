@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.67.0](https://github.com/MunifTanjim/stremthru/compare/0.66.3...0.67.0) (2025-04-18)
+
+
+### Features
+
+* **experiment:** add torrents endpoint for zilean ingestion ([2a9a6e9](https://github.com/MunifTanjim/stremthru/commit/2a9a6e92ad6af28a00d0c355f68b3af52a57fb90))
+* **stremio/wrap:** support empty extractor even with template ([084e0b8](https://github.com/MunifTanjim/stremthru/commit/084e0b888eb0b7c28973297f550433f367c5e8ff))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** make default template consistent ([c461e9c](https://github.com/MunifTanjim/stremthru/commit/c461e9c043057b0ac8654d68519f7550191b68fb))
+
 ## [0.66.3](https://github.com/MunifTanjim/stremthru/compare/0.66.2...0.66.3) (2025-04-18)
 
 
