@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.66.3](https://github.com/MunifTanjim/stremthru/compare/0.66.2...0.66.3) (2025-04-18)
+
+
+### Bug Fixes
+
+* **stremio/store:** support deprecated id format ([3ced695](https://github.com/MunifTanjim/stremthru/commit/3ced6952e12e174bb3185ccba48b08fff1f96d5b))
+
 ## [0.66.2](https://github.com/MunifTanjim/stremthru/compare/0.66.1...0.66.2) (2025-04-18)
 
 
