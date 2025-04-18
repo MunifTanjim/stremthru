@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.67.2](https://github.com/MunifTanjim/stremthru/compare/0.67.1...0.67.2) (2025-04-18)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** fix stream endpoint for imdb ids ([4e6a702](https://github.com/MunifTanjim/stremthru/commit/4e6a702581c3826ebee5b04b03a932a5f74fade5))
+* **torrent_info:** decrease trust for torrent title from torbox ([b7ef712](https://github.com/MunifTanjim/stremthru/commit/b7ef712853bc43e4c1db233b6a27e30d68d9a189))
+
 ## [0.67.1](https://github.com/MunifTanjim/stremthru/compare/0.67.0...0.67.1) (2025-04-18)
 
 
