@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.66.2](https://github.com/MunifTanjim/stremthru/compare/0.66.1...0.66.2) (2025-04-18)
+
+
+### Bug Fixes
+
+* **stremio/store:** fix id parser for backward compatibility ([146c78d](https://github.com/MunifTanjim/stremthru/commit/146c78d65aa6a8710211714c99b0fd71ef41c33c))
+
 ## [0.66.1](https://github.com/MunifTanjim/stremthru/compare/0.66.0...0.66.1) (2025-04-18)
 
 
