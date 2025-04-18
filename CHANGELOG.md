@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.67.1](https://github.com/MunifTanjim/stremthru/compare/0.67.0...0.67.1) (2025-04-18)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** handle missing fields in built-in mediafusion extractor ([3541c31](https://github.com/MunifTanjim/stremthru/commit/3541c31e4319cb448451c3f0879612aa2c6421f0))
+
 ## [0.67.0](https://github.com/MunifTanjim/stremthru/compare/0.66.3...0.67.0) (2025-04-18)
 
 
