@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.68.0](https://github.com/MunifTanjim/stremthru/compare/0.67.2...0.68.0) (2025-04-21)
+
+
+### Features
+
+* **store/torbox:** add usenet endpoints to api client ([80a2c79](https://github.com/MunifTanjim/stremthru/commit/80a2c798ad2c81001e975af3eb28be1cc3142c63))
+* **store/torbox:** forward client ip ([6a42eea](https://github.com/MunifTanjim/stremthru/commit/6a42eea6f00841b5e592bc0954330b70a6b7966a))
+* **stremio/store:** add support for torbox usenet ([5a4c9eb](https://github.com/MunifTanjim/stremthru/commit/5a4c9eb50b90de4a67a42125956502e0e05f3ea0))
+* **stremio/usenet:** add torbox support ([51a6fa3](https://github.com/MunifTanjim/stremthru/commit/51a6fa302667f2ee1b861d7b777e9d41df8b4f8f))
+* **stremio/wrap:** support copying saved userdata ([bfea0d5](https://github.com/MunifTanjim/stremthru/commit/bfea0d5decc0ad2460b0121011e3bcb562aab496))
+* **torrent_info:** add endpoint for stats ([4e51c40](https://github.com/MunifTanjim/stremthru/commit/4e51c403d1f4ac76d4dc3a295ad15f7ef064e4f2))
+
+
+### Bug Fixes
+
+* **shared:** do not use url base as filename if missing extension ([1383686](https://github.com/MunifTanjim/stremthru/commit/13836868b7f663ab606360f1161280920641d9d9))
+* **store/torbox:** fix total_items for list magnets ([c1d50d4](https://github.com/MunifTanjim/stremthru/commit/c1d50d4d3e9057dcbe19ad68b4b9ce9eff9140ac))
+
 ## [0.67.2](https://github.com/MunifTanjim/stremthru/compare/0.67.1...0.67.2) (2025-04-18)
 
 
