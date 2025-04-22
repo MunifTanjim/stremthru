@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.68.1](https://github.com/MunifTanjim/stremthru/compare/0.68.0...0.68.1) (2025-04-22)
+
+
+### Bug Fixes
+
+* **torrent_info:** refine pull query ([7b6253d](https://github.com/MunifTanjim/stremthru/commit/7b6253d923924e893d5e65a6af4d3e35936ebf6a))
+
 ## [0.68.0](https://github.com/MunifTanjim/stremthru/compare/0.67.2...0.68.0) (2025-04-21)
 
 
