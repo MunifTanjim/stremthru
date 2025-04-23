@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.69.0](https://github.com/MunifTanjim/stremthru/compare/0.68.1...0.69.0) (2025-04-23)
+
+
+### Features
+
+* **store:** log peer token validation failure ([bb1d774](https://github.com/MunifTanjim/stremthru/commit/bb1d774f7db4e166f8fa90a980b13707b50ae4f8))
+* **stremio/sidekick:** display addon logo ([170e892](https://github.com/MunifTanjim/stremthru/commit/170e89274eaad065646c5f13254a9efb94495cfb))
+* **stremio/sidekick:** support modifying logo ([8dee0a1](https://github.com/MunifTanjim/stremthru/commit/8dee0a1ab60dc66087b94177eb06c3a6a1d28bcf))
+* **stremio/store:** add behaviorHints for streams ([42c2f15](https://github.com/MunifTanjim/stremthru/commit/42c2f155ce23416e0a04b577be146ba88ccd3118))
+* **torrent_info:** support no_missing_size query param ([d6a4b89](https://github.com/MunifTanjim/stremthru/commit/d6a4b8962731241ea28d0b1100dbeb2d4474408f))
+
+
+### Bug Fixes
+
+* **core/error:** consistently add .request_id ([db7179b](https://github.com/MunifTanjim/stremthru/commit/db7179bf9da4258c45c8bba801086943eae62bf6))
+* **core/error:** make .status_code consistent w/ .code ([84fd115](https://github.com/MunifTanjim/stremthru/commit/84fd115ab41ae19ba36a3d5fe81d4b5b1510eede))
+* **store/torbox:** deal with inconsistent data type for error ([3f937df](https://github.com/MunifTanjim/stremthru/commit/3f937df3acc0dfae06917b306bf6f35447701996))
+* **stremio/store:** explicitly set posterShape for catalog items ([58c3098](https://github.com/MunifTanjim/stremthru/commit/58c3098db56658f43313d934095254fc859625ae))
+* **stremio/wrap:** handle empty store config gracefully ([f8902b3](https://github.com/MunifTanjim/stremthru/commit/f8902b3b083a5f595568d8f1e97518c2e020589b))
+* **stremio:** remove stray event listener in htmx-modal ([dc29065](https://github.com/MunifTanjim/stremthru/commit/dc2906503ed1ac289df6aabb7077a2adc9a9fcdb))
+* **stremio:** update type for MetaVideo.Rating ([8dcb423](https://github.com/MunifTanjim/stremthru/commit/8dcb423baa372f8e85cb43f03a7860f78cdcac26))
+* **worker:** tweak torrent_pusher sid ([041808e](https://github.com/MunifTanjim/stremthru/commit/041808e07e567c4e63a3be154e0f02ca119bb61e))
+
 ## [0.68.1](https://github.com/MunifTanjim/stremthru/compare/0.68.0...0.68.1) (2025-04-22)
 
 
