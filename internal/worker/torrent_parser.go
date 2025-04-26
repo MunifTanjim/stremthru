@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -96,32 +95,37 @@ func InitParseTorrentWorker() *tasks.Scheduler {
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
-				if e := recover(); e != nil {
-					if pe, ok := e.(error); ok {
-						err = pe
-					} else {
-						err = errors.New("something went wrong")
-					}
+				if perr, stack := util.RecoverPanic(true); perr != nil {
+					err = perr
+					log.Error("Worker Panic", "error", err, "stack", stack)
 				}
 			}()
 
-			tInfos, err := ti.GetUnparsed(5000)
-			if err != nil {
-				return err
-			}
-
-			for cTInfos := range slices.Chunk(tInfos, 600) {
-				parsedTInfos := []*ti.TorrentInfo{}
-				for i := range cTInfos {
-					if t := parseTorrentInfo(&cTInfos[i]); t != nil {
-						parsedTInfos = append(parsedTInfos, t)
-					}
-				}
-				if err := ti.UpsertParsed(parsedTInfos); err != nil {
+			for {
+				tInfos, err := ti.GetUnparsed(5000)
+				if err != nil {
 					return err
 				}
-				log.Info("upserted parsed torrent info", "count", len(parsedTInfos))
-				time.Sleep(1 * time.Second)
+
+				for cTInfos := range slices.Chunk(tInfos, 500) {
+					parsedTInfos := []*ti.TorrentInfo{}
+					for i := range cTInfos {
+						if t := parseTorrentInfo(&cTInfos[i]); t != nil {
+							parsedTInfos = append(parsedTInfos, t)
+						}
+					}
+					if err := ti.UpsertParsed(parsedTInfos); err != nil {
+						return err
+					}
+					log.Info("upserted parsed torrent info", "count", len(parsedTInfos))
+					time.Sleep(1 * time.Second)
+				}
+
+				if len(tInfos) < 5000 {
+					break
+				}
+
+				time.Sleep(5 * time.Second)
 			}
 
 			return nil
