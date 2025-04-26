@@ -3,6 +3,8 @@ package worker
 import (
 	"sync"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/kv"
 )
 
 type IdQueue struct {
@@ -53,4 +55,70 @@ func (q *WorkerQueue[T]) process(f func(item T)) {
 		}
 		return true
 	})
+}
+
+type Error struct {
+	string
+	cause error
+}
+
+func (e Error) Error() string {
+	return e.string + "\n" + e.cause.Error()
+}
+
+type Job[T any] struct {
+	Status string `json:"status"`
+	Err    string `json:"err"`
+	Data   *T     `json:"data,omitempty"`
+}
+
+type JobTracker[T any] struct {
+	kv kv.KVStore[Job[T]]
+}
+
+func (t JobTracker[T]) Get(id string) (*Job[T], error) {
+	var j Job[T]
+	err := t.kv.Get(id, &j)
+	if err != nil || j.Status == "" {
+		return nil, err
+	}
+	return &j, err
+}
+
+func (t JobTracker[T]) cleanup(fn func(id string, j *Job[T]) bool) error {
+	items, err := t.kv.List()
+	if err != nil {
+		return err
+	}
+	for i := range items {
+		if fn(items[i].Key, &items[i].Value) {
+			err := t.kv.Del(items[i].Key)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (t JobTracker[T]) Set(id string, status string, err string, data *T) error {
+	terr := t.kv.Set(id, Job[T]{
+		Status: status,
+		Err:    err,
+		Data:   data,
+	})
+	return terr
+}
+
+func NewJobTracker[T any](name string, shouldClean func(id string, j *Job[T]) bool) JobTracker[T] {
+	tracker := JobTracker[T]{
+		kv: kv.NewKVStore[Job[T]](&kv.KVStoreConfig{
+			Type: "job:" + name,
+		}),
+	}
+	err := tracker.cleanup(shouldClean)
+	if err != nil {
+		panic(err)
+	}
+	return tracker
 }

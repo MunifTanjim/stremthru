@@ -12,7 +12,7 @@ COPY store ./store
 COPY stremio ./stremio
 COPY *.go ./
 
-RUN CGO_ENABLED=1 GOOS=linux go build -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'
+RUN CGO_ENABLED=1 GOOS=linux go build --tags 'fts5' -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'
 
 FROM scratch
 

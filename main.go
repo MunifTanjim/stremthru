@@ -34,6 +34,7 @@ func main() {
 	pttWorker := worker.InitParseTorrentWorker()
 	ptiWorker := worker.InitPushTorrentsWorker()
 	cwWorker := worker.InitCrawlStoreWorker()
+	simWorker := worker.InitSyncIMDBWorker()
 
 	mux := http.NewServeMux()
 
@@ -59,6 +60,7 @@ func main() {
 		pttWorker.Stop()
 		ptiWorker.Stop()
 		cwWorker.Stop()
+		simWorker.Stop()
 
 		log.Fatalf("failed to start stremthru: %v", err)
 	}

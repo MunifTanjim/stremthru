@@ -15,10 +15,10 @@ test:
 	go test -v ./...
 
 build: clean
-	go build
+	go build --tags "fts5"
 
 run:
-	go run .
+	go run --tags "fts5" .
 
 docker-build:
 	docker buildx build \
