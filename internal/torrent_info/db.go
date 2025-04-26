@@ -71,6 +71,7 @@ func (csi *CommaSeperatedInt) Scan(value any) error {
 type TorrentInfoSource string
 
 const (
+	TorrentInfoSourceDMM         TorrentInfoSource = "dmm"
 	TorrentInfoSourceMediaFusion TorrentInfoSource = "mfn"
 	TorrentInfoSourceTorrentio   TorrentInfoSource = "tio"
 	TorrentInfoSourceAllDebrid   TorrentInfoSource = "ad"
@@ -989,4 +990,44 @@ func GetStats() (*Stats, error) {
 		stats.Streams = tsStats
 	}
 	return stats, nil
+}
+
+var exists_by_hash_query = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s IN ",
+	Column.Hash,
+	TableName,
+	Column.Hash,
+)
+
+func ExistsByHash(hashes []string) (map[string]bool, error) {
+	exists := make(map[string]bool, len(hashes))
+	if len(hashes) == 0 {
+		return exists, nil
+	}
+
+	for cHashes := range slices.Chunk(hashes, 2000) {
+		query := exists_by_hash_query + "(" + util.RepeatJoin("?", len(cHashes), ",") + ")"
+		args := make([]any, len(cHashes))
+		for i, hash := range cHashes {
+			args[i] = hash
+		}
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var hash string
+			if err := rows.Scan(&hash); err != nil {
+				return nil, err
+			}
+			exists[hash] = true
+		}
+
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return exists, nil
 }
