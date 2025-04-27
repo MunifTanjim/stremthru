@@ -1,12 +1,12 @@
 package worker
 
 import (
-	"errors"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/madflojo/tasks"
 )
@@ -36,12 +36,9 @@ func InitCrawlStoreWorker() *tasks.Scheduler {
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
-				if e := recover(); e != nil {
-					if pe, ok := e.(error); ok {
-						err = pe
-					} else {
-						err = errors.New("something went wrong")
-					}
+				if perr, stack := util.RecoverPanic(true); perr != nil {
+					err = perr
+					log.Error("Worker Panic", "error", err, "stack", stack)
 				}
 			}()
 

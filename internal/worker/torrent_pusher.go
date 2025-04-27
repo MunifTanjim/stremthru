@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"errors"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/peer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	tss "github.com/MunifTanjim/stremthru/internal/torrent_stream/torrent_stream_syncinfo"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/madflojo/tasks"
 )
 
@@ -41,12 +41,9 @@ func InitPushTorrentsWorker() *tasks.Scheduler {
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
-				if e := recover(); e != nil {
-					if pe, ok := e.(error); ok {
-						err = pe
-					} else {
-						err = errors.New("something went wrong")
-					}
+				if perr, stack := util.RecoverPanic(true); perr != nil {
+					err = perr
+					log.Error("Worker Panic", "error", err, "stack", stack)
 				}
 			}()
 
