@@ -23,6 +23,37 @@ var CurrentTimestamp string
 var FnJSONGroupArray string
 var FnJSONObject string
 
+var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
+	uri, err := ParseConnectionURI(config.DatabaseURI)
+	if err != nil {
+		log.Fatalf("[db] failed to parse uri: %v\n", err)
+	}
+
+	Dialect = uri.Dialect
+	dsnModifiers := []DSNModifier{}
+
+	switch Dialect {
+	case DBDialectSQLite:
+		BooleanFalse = "0"
+		CurrentTimestamp = "unixepoch()"
+		FnJSONGroupArray = "json_group_array"
+		FnJSONObject = "json_object"
+
+		dsnModifiers = append(dsnModifiers, func(u *url.URL, q *url.Values) {
+			u.Scheme = "file"
+		})
+	case DBDialectPostgres:
+		BooleanFalse = "false"
+		CurrentTimestamp = "current_timestamp"
+		FnJSONGroupArray = "json_agg"
+		FnJSONObject = "json_build_object"
+	default:
+		log.Fatalf("[db] unsupported dialect: %v\n", Dialect)
+	}
+
+	return uri, dsnModifiers
+}()
+
 func Exec(query string, args ...any) (sql.Result, error) {
 	return db.Exec(adaptQuery(query), args...)
 }
@@ -72,40 +103,13 @@ func Ping() {
 }
 
 func Open() *DB {
-	uri, err := ParseConnectionURI(config.DatabaseURI)
-	if err != nil {
-		log.Fatalf("[db] failed to parse uri: %v\n", err)
-	}
-
-	Dialect = uri.Dialect
-	dsnModifiers := []DSNModifier{}
-
-	switch Dialect {
-	case DBDialectSQLite:
-		BooleanFalse = "0"
-		CurrentTimestamp = "unixepoch()"
-		FnJSONGroupArray = "json_group_array"
-		FnJSONObject = "json_object"
-
-		dsnModifiers = append(dsnModifiers, func(u *url.URL, q *url.Values) {
-			u.Scheme = "file"
-		})
-	case DBDialectPostgres:
-		BooleanFalse = "false"
-		CurrentTimestamp = "current_timestamp"
-		FnJSONGroupArray = "json_agg"
-		FnJSONObject = "json_build_object"
-	default:
-		log.Fatalf("[db] unsupported dialect: %v\n", Dialect)
-	}
-
-	database, err := sql.Open(uri.driverName, uri.DSN(dsnModifiers...))
+	database, err := sql.Open(connUri.driverName, connUri.DSN(dsnModifiers...))
 	if err != nil {
 		log.Fatalf("[db] failed to open: %v\n", err)
 	}
 	db = &DB{
 		DB:  database,
-		URI: uri,
+		URI: connUri,
 	}
 
 	return db
