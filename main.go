@@ -36,6 +36,7 @@ func main() {
 	cwWorker := worker.InitCrawlStoreWorker()
 	sdhWorker := worker.InitSyncDMMHashlistWorker()
 	simWorker := worker.InitSyncIMDBWorker()
+	mitWorker := worker.InitMapIMDBTorrentWorker()
 
 	mux := http.NewServeMux()
 
@@ -63,6 +64,7 @@ func main() {
 		cwWorker.Stop()
 		sdhWorker.Stop()
 		simWorker.Stop()
+		mitWorker.Stop()
 
 		log.Fatalf("failed to start stremthru: %v", err)
 	}

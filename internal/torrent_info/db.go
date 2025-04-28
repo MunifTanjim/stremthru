@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
+	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -146,6 +147,10 @@ type TorrentInfo struct {
 	Volumes     CommaSeperatedInt    `json:"volumes"`
 	Year        int                  `json:"year"`
 	YearEnd     int                  `json:"year_end"`
+}
+
+func (ti TorrentInfo) IsParsed() bool {
+	return ti.TorrentTitle == ti.ParserInput
 }
 
 const TableName = "torrent_info"
@@ -1030,4 +1035,38 @@ func ExistsByHash(hashes []string) (map[string]bool, error) {
 		}
 	}
 	return exists, nil
+}
+
+var query_get_unmapped_hashes = fmt.Sprintf(
+	"SELECT ti.%s FROM %s ti LEFT JOIN %s ito ON ti.%s = ito.%s WHERE ito.%s IS NULL LIMIT ?",
+	Column.Hash,
+	TableName,
+	imdb_torrent.TableName,
+	Column.Hash,
+	imdb_torrent.Column.Hash,
+	imdb_torrent.Column.TId,
+)
+
+func GetUnmappedHashes(limit int) ([]string, error) {
+	hashes := []string{}
+	limit = max(1, min(limit, 20000))
+
+	rows, err := db.Query(query_get_unmapped_hashes, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return hashes, nil
 }
