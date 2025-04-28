@@ -897,7 +897,7 @@ func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, 
 	return data, nil
 }
 
-var dump_torrents_query = fmt.Sprintf(`
+var query_dump_torrents_before_cond = fmt.Sprintf(`
 SELECT ti.%s,
        ti.%s,
        CASE WHEN ti.%s > 0 THEN ti.%s ELSE COALESCE(SUM(ts.%s), -1) END,
@@ -905,9 +905,7 @@ SELECT ti.%s,
 FROM %s ti
          LEFT JOIN %s ts
                    ON ti.%s <= 0 AND ts.%s = ti.%s AND ts.%s >= 0
-                       AND ts.%s != '' AND ts.%s NOT LIKE '%%:%%'
-GROUP BY ti.%s
-`,
+                       AND ts.%s != '' AND ts.%s NOT LIKE '%%:%%'`,
 	Column.Hash,
 	Column.TorrentTitle,
 	Column.Size, Column.Size, ts.Column.Size,
@@ -916,6 +914,9 @@ GROUP BY ti.%s
 	ts.TableName,
 	Column.Size, ts.Column.Hash, Column.Hash, ts.Column.Size,
 	ts.Column.SId, ts.Column.SId,
+)
+var query_dump_torrents_after_cond = fmt.Sprintf(
+	"GROUP BY ti.%s",
 	Column.Hash,
 )
 
@@ -926,8 +927,22 @@ type DumpTorrentsItem struct {
 	IsSizeApprox bool   `json:"_size_approx"`
 }
 
-func DumpTorrents(noApproxSize bool, noMissingSize bool) ([]DumpTorrentsItem, error) {
-	rows, err := db.Query(dump_torrents_query)
+func DumpTorrents(noApproxSize bool, noMissingSize bool, excludeSource []string) ([]DumpTorrentsItem, error) {
+	var query string
+	args := make([]any, len(excludeSource))
+
+	if len(excludeSource) == 0 {
+		query = query_dump_torrents_before_cond + query_dump_torrents_after_cond
+	} else {
+		query = query_dump_torrents_before_cond +
+			" WHERE ti." + Column.Source + " NOT IN (" + util.RepeatJoin("?", len(excludeSource), ",") + ") " +
+			query_dump_torrents_after_cond
+		for i, src := range excludeSource {
+			args[i] = src
+		}
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
