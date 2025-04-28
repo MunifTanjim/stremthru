@@ -811,21 +811,19 @@ var list_query_columns = strings.Join(
 	",",
 )
 
-func get_list_query_select() string {
-	return fmt.Sprintf(
-		"SELECT %s, %s(%s('n',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'src',ts.%s)) AS files",
-		list_query_columns,
-		db.FnJSONGroupArray,
-		db.FnJSONObject,
-		ts.Column.Name,
-		ts.Column.Idx,
-		ts.Column.Size,
-		ts.Column.SId,
-		ts.Column.Source,
-	)
-}
+var query_list_select = fmt.Sprintf(
+	"SELECT %s, %s(%s('n',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'src',ts.%s)) AS files",
+	list_query_columns,
+	db.FnJSONGroupArray,
+	db.FnJSONObject,
+	ts.Column.Name,
+	ts.Column.Idx,
+	ts.Column.Size,
+	ts.Column.SId,
+	ts.Column.Source,
+)
 
-var list_query_after_select = fmt.Sprintf(
+var query_list_after_select = fmt.Sprintf(
 	" FROM %s ti LEFT JOIN %s ts ON ti.%s = ts.%s AND ts.%s != ''",
 	TableName,
 	ts.TableName,
@@ -833,43 +831,46 @@ var list_query_after_select = fmt.Sprintf(
 	ts.Column.Hash,
 	ts.Column.Source,
 )
-var list_query_cond_hashes = fmt.Sprintf(
-	"%s IN (SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ?)",
+var query_list_cond_hashes = fmt.Sprintf(
+	"%s IN (SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ? UNION SELECT %s FROM %s WHERE %s = ?)",
 	Column.Hash,
+
 	ts.Column.Hash,
 	ts.TableName,
 	ts.Column.SId,
 	ts.Column.SId,
+
+	imdb_torrent.Column.Hash,
+	imdb_torrent.TableName,
+	imdb_torrent.Column.TId,
 )
-var list_query_cond_no_missing_size = fmt.Sprintf(
+var query_list_cond_no_missing_size = fmt.Sprintf(
 	"%s > 0",
 	Column.Size,
 )
-var list_query_after_cond = fmt.Sprintf(
+var query_list_after_cond = fmt.Sprintf(
 	" GROUP BY %s",
 	Column.Hash,
 )
 
-func get_list_query(excludeMissingSize bool) string {
-	query := get_list_query_select() + list_query_after_select + " WHERE " + list_query_cond_hashes
-	if excludeMissingSize {
-		query += " AND " + list_query_cond_no_missing_size
-	}
-	query += list_query_after_cond
-	return query
-}
-
 func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, error) {
-	args := make([]any, 2)
+	args := make([]any, 3)
 	if strings.Contains(stremId, ":") {
 		args[0] = stremId
 		args[1], _, _ = strings.Cut(stremId, ":")
+		args[2] = args[1]
 	} else {
 		args[0] = stremId
 		args[1] = stremId + ":%"
+		args[2] = stremId
 	}
 
-	query := get_list_query(excludeMissingSize)
+	query := query_list_select + query_list_after_select + " WHERE " + query_list_cond_hashes
+	if excludeMissingSize {
+		query += " AND " + query_list_cond_no_missing_size
+	}
+	query += query_list_after_cond
+
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		log.Error("failed to list torrents by strem id", "error", err, "stremId", stremId)
