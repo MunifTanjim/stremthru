@@ -14,11 +14,12 @@ COPY *.go ./
 
 RUN CGO_ENABLED=1 GOOS=linux go build --tags 'fts5' -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'
 
-FROM scratch
+FROM alpine
+
+RUN apk add --no-cache git
 
 WORKDIR /app
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /workspace/stremthru ./stremthru
 
 VOLUME ["/app/data"]
