@@ -70,6 +70,10 @@ func InitMapIMDBTorrentWorker() *tasks.Scheduler {
 							log.Error("failed to get torrent info", "error", err)
 							return
 						}
+						hashesByCategory := map[torrent_info.TorrentInfoCategory][]string{
+							torrent_info.TorrentInfoCategoryMovie:  {},
+							torrent_info.TorrentInfoCategorySeries: {},
+						}
 						for hash, tInfo := range tInfoByHash {
 							if !tInfo.IsParsed() {
 								continue
@@ -87,12 +91,15 @@ func InitMapIMDBTorrentWorker() *tasks.Scheduler {
 							titleType := imdb_title.SearchTitleTypeUnknown
 							if tInfo.Category == torrent_info.TorrentInfoCategoryMovie {
 								titleType = imdb_title.SearchTitleTypeMovie
+								hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
 							} else if tInfo.Category == torrent_info.TorrentInfoCategorySeries || len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0 {
 								titleType = imdb_title.SearchTitleTypeShow
+								hashesByCategory[torrent_info.TorrentInfoCategorySeries] = append(hashesByCategory[torrent_info.TorrentInfoCategorySeries], hash)
 							} else if tInfo.Category == torrent_info.TorrentInfoCategoryXXX {
 								// ¯\_(ツ)_/¯
 							} else {
 								titleType = imdb_title.SearchTitleTypeMovie
+								hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
 							}
 
 							imdbTitle, err := imdb_title.SearchOne(tInfo.Title, titleType, tInfo.Year, false)
@@ -110,6 +117,7 @@ func InitMapIMDBTorrentWorker() *tasks.Scheduler {
 							log.Error("failed to map imdb torrent", "error", err)
 							return
 						}
+						torrent_info.SetMissingCategory(hashesByCategory)
 
 						log.Info("mapped imdb torrent", "count", len(items))
 					}()

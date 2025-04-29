@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
@@ -1085,4 +1086,40 @@ func GetUnmappedHashes(limit int) ([]string, error) {
 		return nil, err
 	}
 	return hashes, nil
+}
+
+var query_set_missing_category = fmt.Sprintf(
+	"UPDATE %s SET %s = ? WHERE %s = '' AND %s IN ",
+	TableName,
+	Column.Category,
+	Column.Category,
+	Column.Hash,
+)
+
+func SetMissingCategory(hashesByCategory map[TorrentInfoCategory][]string) {
+	var wg sync.WaitGroup
+	for category, hashes := range hashesByCategory {
+		count := len(hashes)
+		if count == 0 {
+			continue
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			query := query_set_missing_category + "(" + util.RepeatJoin("?", count, ",") + ")"
+			args := make([]any, count+1)
+			args[0] = category
+			for i, hash := range hashes {
+				args[i+1] = hash
+			}
+			if _, err := db.Exec(query, args...); err != nil {
+				log.Error("failed to update missing category", "error", err, "category", category, "count", count)
+			} else {
+				log.Info("updated missing category", "category", category, "count", count)
+			}
+		}()
+	}
+	wg.Wait()
 }
