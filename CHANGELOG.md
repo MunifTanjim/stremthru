@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.70.0](https://github.com/MunifTanjim/stremthru/compare/0.69.0...0.70.0) (2025-05-02)
+
+
+### Features
+
+* **config:** add config for data directory ([3f1cb0a](https://github.com/MunifTanjim/stremthru/commit/3f1cb0a5420ff6db2f21018c633c84c580df1b9e))
+* **config:** add config to toggle specific feature ([0e54c2e](https://github.com/MunifTanjim/stremthru/commit/0e54c2e27615fe34acfe64ae4dcfba40c5a0deb8))
+* **config:** add STREMTHRU_ENV config ([a4f8656](https://github.com/MunifTanjim/stremthru/commit/a4f86569ea9c0487f1cc27ff998b4edf40345624))
+* **config:** merge STREMTHRU_STREMIO_ADDON into STREMTHRU_FEATURE ([3115fd6](https://github.com/MunifTanjim/stremthru/commit/3115fd6d216eaee5ece61594d17c8a7803902ade))
+* **db:** do dialect detection eagerly at top level ([3e33088](https://github.com/MunifTanjim/stremthru/commit/3e33088b1e2ededf0aed30eff8d38f9c1b2a70be))
+* **db:** increase sqlite busy timeout to 5s ([5667061](https://github.com/MunifTanjim/stremthru/commit/5667061524d9d12631d21c960eb887ccaa14fe18))
+* **db:** retry Exec for sqlite3 busy error ([91f786b](https://github.com/MunifTanjim/stremthru/commit/91f786b1c5821c24d1e94f27e1d60de8bd291c49))
+* **dmm_hashlist:** introduce dmm hashlist ([2f40853](https://github.com/MunifTanjim/stremthru/commit/2f408537165a65596803e637555ba2ddaf5755e7))
+* **experiment:** add exclude_source param for zilean torrents endpoint ([33663ba](https://github.com/MunifTanjim/stremthru/commit/33663bafac005ca8a324d6ce0e53e3bf6ec2a3ec))
+* **imdb_title:** add SearchIds function ([3c64469](https://github.com/MunifTanjim/stremthru/commit/3c644692572ef848630d57fb4a0831298b237e10))
+* **imdb_title:** introduce imdb title ([c0d08ad](https://github.com/MunifTanjim/stremthru/commit/c0d08adaa7fd26ec80dd8a26aed6895f399b55da))
+* **premiumize:** utilize torrent_info for name and size ([c9ed305](https://github.com/MunifTanjim/stremthru/commit/c9ed3054c3493714943437c5e4af0b8599a4be70))
+* **proxy:** add endpoint to proxify links ([8db6b7c](https://github.com/MunifTanjim/stremthru/commit/8db6b7cebc5726a525d9c57fafcbe9f58173aa28))
+* **proxy:** revamp endpoints ([20b01e7](https://github.com/MunifTanjim/stremthru/commit/20b01e728b74d7aa200d6370d5b165eb9fb4677f))
+* **proxy:** support proxy link without encryption ([ef3c87a](https://github.com/MunifTanjim/stremthru/commit/ef3c87a912cf0b958ff060d3bfe6d3dff40e28bb))
+* **shared/server:** respond for OPTIONS method in CORS middleware ([40c4e76](https://github.com/MunifTanjim/stremthru/commit/40c4e76034a2281f0b486d04c35057b169ad307f))
+* **shared:** strip ip headers from req for proxy response ([aab82eb](https://github.com/MunifTanjim/stremthru/commit/aab82ebf3a738f730e1668e54e59ba331798e6b4))
+* **shared:** support CreateProxyLink without expiration ([8e5450e](https://github.com/MunifTanjim/stremthru/commit/8e5450e7c42473b246f82c59796fe61a457c9149))
+* **store/alldebrid:** update error codes ([6cdd911](https://github.com/MunifTanjim/stremthru/commit/6cdd9117debd2ce0e4582a3c50cb6c4a59976197))
+* **store/debridlink:** update api client for latest updates ([c113560](https://github.com/MunifTanjim/stremthru/commit/c113560a302b5cdbdeb79d3c3f8c0a41ce33d3bc))
+* **store/offcloud:** improve ListMagnets to go past first page ([e1e7876](https://github.com/MunifTanjim/stremthru/commit/e1e78769202fb3c357a4a6b5c8608c5d8842db52))
+* **stremio/wrap:** log addon hostname for failed fetch streams ([eee0c1a](https://github.com/MunifTanjim/stremthru/commit/eee0c1a37506fa6d03edbe8f8ef646a911caf510))
+* **stremio:** add support for semi-official verification ([154678e](https://github.com/MunifTanjim/stremthru/commit/154678ee6be022eb33c9ca792f1b67907c7845e7))
+* **torrent_info:** update missing category in imdb torrent mapper worker ([4459aa8](https://github.com/MunifTanjim/stremthru/commit/4459aa8a962ae5583c36113382e904959636b828))
+* **torrent_info:** use imdb torrent map for ListByStremId ([b182602](https://github.com/MunifTanjim/stremthru/commit/b18260255cc7ccbc79652eafe44aea2abaed32ad))
+* **torznab:** add api endpoint ([0aa8c81](https://github.com/MunifTanjim/stremthru/commit/0aa8c8125d8c070a1d4112c38237bf680aa7bc00))
+* **torznab:** support text search ([de7c401](https://github.com/MunifTanjim/stremthru/commit/de7c401297393ab1c8cc0557630c076588327011))
+* **worker/store_crawler:** asynchronously crawl store when necessary ([c06215f](https://github.com/MunifTanjim/stremthru/commit/c06215fef9b844f549cc1c6dd88fe21a99a93ecf))
+* **worker/torrent_parser:** do all unparsed items at once ([1f1112b](https://github.com/MunifTanjim/stremthru/commit/1f1112bbbbcb1287b6d5cd2a386978247865480a))
+* **worker:** add mutual exclusion conditions for workers ([870c35d](https://github.com/MunifTanjim/stremthru/commit/870c35db169325b26b50ee23eb5d8ea21be297f6))
+* **worker:** do not run sync_dmm_hashlist and torrent_parser together ([3004222](https://github.com/MunifTanjim/stremthru/commit/30042221946bc9864c58260d8955380191ad6cb2))
+* **worker:** improve panic recovery ([7a1dcb9](https://github.com/MunifTanjim/stremthru/commit/7a1dcb90ea5dabb6b9613b1f6bb76333d6e7ab31))
+* **worker:** map imdb tid to torrent hash ([723ed24](https://github.com/MunifTanjim/stremthru/commit/723ed24b4473c5bcd37e7fbdad1fc1c09ae74492))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** decouple extractor from template ([9a59f9d](https://github.com/MunifTanjim/stremthru/commit/9a59f9d316b5802bfb8ae5c2c1cb0b8d5d364608))
+* **stremio:** handle bad data type in Meta and MetaVideo ([c3381db](https://github.com/MunifTanjim/stremthru/commit/c3381db0d3464ae50ce311ea837486e9a3d03b4a))
+* **stremio:** handle non-existent saved userdata id gracefully ([d1a0738](https://github.com/MunifTanjim/stremthru/commit/d1a07383cf16b55db5e873b1d979abdc0942405c))
+* **torrent_info:** correct query in ListByStremId for series ([7ed8dde](https://github.com/MunifTanjim/stremthru/commit/7ed8dde36595604fb4bd513c4c0fc7626990b9d6))
+* **worker/torrent_parser:** update go-ptt ([925b430](https://github.com/MunifTanjim/stremthru/commit/925b430638b46e9fd169390c3169f0fdc55d7ca6))
+* **worker:** resolve nil pointer issue for JobTracker ([c66bea7](https://github.com/MunifTanjim/stremthru/commit/c66bea7e49a29b3fc447a2afbde8f4851f498483))
+
+
+### Performance Improvements
+
+* **stremio/store:** fetch streams in parallel ([2698c22](https://github.com/MunifTanjim/stremthru/commit/2698c2227bcbde5c0fb544f3973e3e1f5f9694bb))
+* **stremio/store:** optimize meta fetching ([0eb4006](https://github.com/MunifTanjim/stremthru/commit/0eb4006517e7cd7da95c32bf8dc07f86fab00ef6))
+
 ## [0.69.0](https://github.com/MunifTanjim/stremthru/compare/0.68.1...0.69.0) (2025-04-23)
 
 
