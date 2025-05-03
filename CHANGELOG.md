@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.5](https://github.com/MunifTanjim/stremthru/compare/0.70.4...0.70.5) (2025-05-03)
+
+
+### Bug Fixes
+
+* **worker:** fix torrent_parser crash when dmm_hashlist is disabled ([9539c83](https://github.com/MunifTanjim/stremthru/commit/9539c8335c11c136a064f53ef19d8453f49a521b))
+
 ## [0.70.4](https://github.com/MunifTanjim/stremthru/compare/0.70.3...0.70.4) (2025-05-03)
 
 
