@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.2](https://github.com/MunifTanjim/stremthru/compare/0.70.1...0.70.2) (2025-05-03)
+
+
+### Bug Fixes
+
+* **torrent_info:** fix GetUnmappedHashes to only include parsed ones ([111fb56](https://github.com/MunifTanjim/stremthru/commit/111fb56019f9ffa801c2fb11edc58379caded6e1))
+
 ## [0.70.1](https://github.com/MunifTanjim/stremthru/compare/0.70.0...0.70.1) (2025-05-03)
 
 
