@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.1](https://github.com/MunifTanjim/stremthru/compare/0.70.0...0.70.1) (2025-05-03)
+
+
+### Bug Fixes
+
+* **imdb_title:** fix SearchIds query for sqlite ([c8a9924](https://github.com/MunifTanjim/stremthru/commit/c8a9924a0b17915541b06f0e1e99f02f80bdadc8))
+
 ## [0.70.0](https://github.com/MunifTanjim/stremthru/compare/0.69.0...0.70.0) (2025-05-02)
 
 
