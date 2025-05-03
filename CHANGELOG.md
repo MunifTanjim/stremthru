@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.70.4](https://github.com/MunifTanjim/stremthru/compare/0.70.3...0.70.4) (2025-05-03)
+
+
+### Bug Fixes
+
+* **torrent_info:** upgrade go-ptt ([7472a07](https://github.com/MunifTanjim/stremthru/commit/7472a076fa8b91ca685b79fe9f634223c55f9459))
+* **torznab:** do not send error for empty Search result ([b93aca6](https://github.com/MunifTanjim/stremthru/commit/b93aca67fe96a67043b64e0fa3359a042ec9db0c))
+
 ## [0.70.3](https://github.com/MunifTanjim/stremthru/compare/0.70.2...0.70.3) (2025-05-03)
 
 
