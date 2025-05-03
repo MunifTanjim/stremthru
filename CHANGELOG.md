@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.3](https://github.com/MunifTanjim/stremthru/compare/0.70.2...0.70.3) (2025-05-03)
+
+
+### Bug Fixes
+
+* **db:** escape double quote in PrepareFTS5Query ([944a165](https://github.com/MunifTanjim/stremthru/commit/944a165c6a5917f0ec1cc18046fbf087865dc40a))
+
 ## [0.70.2](https://github.com/MunifTanjim/stremthru/compare/0.70.1...0.70.2) (2025-05-03)
 
 
