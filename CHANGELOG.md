@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.8](https://github.com/MunifTanjim/stremthru/compare/0.70.7...0.70.8) (2025-05-04)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** fix typo in store limit check ([741ec4d](https://github.com/MunifTanjim/stremthru/commit/741ec4d541331612edf834bdb7a2a4d253855f17))
+
 ## [0.70.7](https://github.com/MunifTanjim/stremthru/compare/0.70.6...0.70.7) (2025-05-04)
 
 
