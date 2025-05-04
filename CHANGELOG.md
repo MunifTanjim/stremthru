@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.70.6](https://github.com/MunifTanjim/stremthru/compare/0.70.5...0.70.6) (2025-05-04)
+
+
+### Bug Fixes
+
+* **proxy:** accept req_headers for each url separately ([404a6bc](https://github.com/MunifTanjim/stremthru/commit/404a6bca85a9e0f99c6f9fbc72c4fa1fc9515f97))
+* **proxy:** redact token in query param for request logs ([3e1e74e](https://github.com/MunifTanjim/stremthru/commit/3e1e74e6887122894dd1ace0dd40f4b4015f7ab1))
+
 ## [0.70.5](https://github.com/MunifTanjim/stremthru/compare/0.70.4...0.70.5) (2025-05-03)
 
 
