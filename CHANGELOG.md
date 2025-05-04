@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.7](https://github.com/MunifTanjim/stremthru/compare/0.70.6...0.70.7) (2025-05-04)
+
+
+### Bug Fixes
+
+* **proxy:** move away from problematic Proxy-Authorization header ([845affd](https://github.com/MunifTanjim/stremthru/commit/845affdc0f07bec1ef6afab73d586dad75d41d64))
+
 ## [0.70.6](https://github.com/MunifTanjim/stremthru/compare/0.70.5...0.70.6) (2025-05-04)
 
 
