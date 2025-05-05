@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.9](https://github.com/MunifTanjim/stremthru/compare/0.70.8...0.70.9) (2025-05-05)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** stop showing uncached content for easydebrid ([082c2cb](https://github.com/MunifTanjim/stremthru/commit/082c2cbbb8ade4da5b9ed0e870774ea0ca8f2213))
+
 ## [0.70.8](https://github.com/MunifTanjim/stremthru/compare/0.70.7...0.70.8) (2025-05-04)
 
 
