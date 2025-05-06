@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.70.10](https://github.com/MunifTanjim/stremthru/compare/0.70.9...0.70.10) (2025-05-06)
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** extract disabled addon manifest url correctly ([005051a](https://github.com/MunifTanjim/stremthru/commit/005051a8766dfe240ea4b2414209bc8b0dd865b6))
+
 ## [0.70.9](https://github.com/MunifTanjim/stremthru/compare/0.70.8...0.70.9) (2025-05-05)
 
 
