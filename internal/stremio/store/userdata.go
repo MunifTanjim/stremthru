@@ -16,7 +16,7 @@ import (
 type UserData struct {
 	StoreName  string `json:"store_name"`
 	StoreToken string `json:"store_token"`
-	CatalogsOnly bool `json:"catalogs_only,omitempty"`
+	HideStream bool   `json:"hide_stream,omitempty"`
 	encoded    string `json:"-"`
 
 	idPrefixes []string `json:"-"`
@@ -144,7 +144,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 	if IsMethod(r, http.MethodPost) {
 		data.StoreName = r.FormValue("store_name")
 		data.StoreToken = r.FormValue("store_token")
-		data.CatalogsOnly = r.FormValue("catalogs_only") == "on"
+		data.HideStream = r.FormValue("hide_stream") == "on"
 		encoded, err := data.GetEncoded()
 		if err != nil {
 			return nil, err

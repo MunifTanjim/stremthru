@@ -75,13 +75,13 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	// Add logging to debug the request details
 	log.Info("Stream request details",
 		"path", r.URL.Path,
-		"catalogs_only", ud.CatalogsOnly,
+		"hide_stream", ud.HideStream,
 		"content_type", contentType,
 		"video_id", videoIdWithLink)
 
-	// Block streams if CatalogsOnly is enabled and the request is not from store
-	if ud.CatalogsOnly && !isStremThruStoreId {
-		log.Info("Blocking streams due to CatalogsOnly setting - non-store request")
+	// Block streams if HideStream is enabled and the request is not from store
+	if ud.HideStream && !isStremThruStoreId {
+		log.Info("Blocking streams due to HideStream setting - non-store request")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"streams": []interface{}{},
 		})
