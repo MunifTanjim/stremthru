@@ -49,6 +49,13 @@ func getTemplateData(ud *UserData) *configure.TemplateData {
 				Description: "",
 				Required:    true,
 			},
+			{
+				Key:         "catalogs_only",
+				Type:        configure.ConfigTypeCheckbox,
+				Default:     map[bool]string{true: "checked", false: ""}[ud.CatalogsOnly],
+				Title:       "Show Debrid Catalogs Only (Hide Streams)",
+				Description: "When enabled, debrid catalogs will be visible but their streams will be hidden",
+			},
 		},
 		Script: configure.GetScriptStoreTokenDescription("'#store_name'", "'#store_token'"),
 	}
