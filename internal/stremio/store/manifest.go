@@ -108,6 +108,16 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 		name = "StremThru Store"
 	}
 
+	streamResource := stremio.Resource{
+		Name:       stremio.ResourceNameStream,
+		Types:      []stremio.ContentType{ContentTypeOther},
+		IDPrefixes: idPrefixes,
+	}
+	if !ud.HideStream {
+		streamResource.IDPrefixes = append([]string{"tt"}, idPrefixes...)
+		streamResource.Types = append(streamResource.Types, stremio.ContentTypeMovie, stremio.ContentTypeSeries)
+	}
+
 	manifest := &stremio.Manifest{
 		ID:          id,
 		Name:        name,
@@ -120,16 +130,7 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 				Types:      []stremio.ContentType{ContentTypeOther},
 				IDPrefixes: idPrefixes,
 			},
-			{
-				Name:  stremio.ResourceNameStream,
-				Types: []stremio.ContentType{ContentTypeOther, stremio.ContentTypeMovie, stremio.ContentTypeSeries},
-				IDPrefixes: func() []string {
-					if ud.HideStream {
-						return idPrefixes
-					}
-					return append([]string{"tt"}, idPrefixes...)
-				}(),
-			},
+			streamResource,
 		},
 		Types:    []stremio.ContentType{},
 		Catalogs: catalogs,

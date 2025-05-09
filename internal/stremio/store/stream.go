@@ -1,8 +1,6 @@
 package stremio_store
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -64,30 +62,10 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	ctx = context.WithValue(ctx, "user_data", ud)
-
 	videoIdWithLink := getId(r)
 	contentType := r.PathValue("contentType")
 	isStremThruStoreId := isStoreId(videoIdWithLink)
 	isImdbId := strings.HasPrefix(videoIdWithLink, "tt")
-
-	// Add logging to debug the request details
-	log.Info("Stream request details",
-		"path", r.URL.Path,
-		"hide_stream", ud.HideStream,
-		"content_type", contentType,
-		"video_id", videoIdWithLink)
-
-	// Block streams if HideStream is enabled and the request is not from store
-	if ud.HideStream && !isStremThruStoreId {
-		log.Info("Blocking streams due to HideStream setting - non-store request")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"streams": []interface{}{},
-		})
-		return
-	}
-
 	if isStremThruStoreId {
 		if contentType != ContentTypeOther {
 			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
