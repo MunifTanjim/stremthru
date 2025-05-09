@@ -2,9 +2,10 @@ package stremio_transformer
 
 import (
 	"bytes"
+	"regexp"
+	"strings"
 	"text/template"
 
-	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -46,30 +47,20 @@ type StreamTemplateDataRaw struct {
 	Description string
 }
 
-type StreamTemplateData struct {
-	*ptt.Result
-	Raw       StreamTemplateDataRaw
-	StoreCode string
-}
+var newlinesRegex = regexp.MustCompile("\n\n+")
 
-func (t StreamTemplate) Execute(stream *stremio.Stream, data *StreamTemplateData) (*stremio.Stream, error) {
-	data.Raw.Name = stream.Name
-	data.Raw.Description = stream.Description
-	if stream.Description == "" {
-		data.Raw.Description = stream.Title
-	}
-
+func (t StreamTemplate) Execute(stream *stremio.Stream, data *StreamExtractorResult) (*stremio.Stream, error) {
 	var name bytes.Buffer
 	if err := t.Name.Execute(&name, data); err != nil {
 		return stream, err
 	}
-	stream.Name = name.String()
+	stream.Name = strings.TrimSpace(name.String())
 
 	var description bytes.Buffer
 	if err := t.Description.Execute(&description, data); err != nil {
 		return stream, err
 	}
-	stream.Description = description.String()
+	stream.Description = newlinesRegex.ReplaceAllLiteralString(strings.TrimSpace(description.String()), "\n")
 	if stream.Title != "" {
 		stream.Title = ""
 	}

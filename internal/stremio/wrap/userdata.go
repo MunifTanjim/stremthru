@@ -17,6 +17,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -52,12 +53,12 @@ func (usr upstreamsResolver) resolve(ud UserData, rName stremio.ResourceName, rT
 }
 
 type UserDataUpstream struct {
-	URL              string                         `json:"u"`
-	baseUrl          *url.URL                       `json:"-"`
-	ExtractorId      string                         `json:"e,omitempty"`
-	extractor        StreamTransformerExtractorBlob `json:"-"`
-	NoContentProxy   bool                           `json:"ncp,omitempty"`
-	ReconfigureStore bool                           `json:"rs,omitempty"`
+	URL              string                                  `json:"u"`
+	baseUrl          *url.URL                                `json:"-"`
+	ExtractorId      string                                  `json:"e,omitempty"`
+	extractor        stremio_transformer.StreamExtractorBlob `json:"-"`
+	NoContentProxy   bool                                    `json:"ncp,omitempty"`
+	ReconfigureStore bool                                    `json:"rs,omitempty"`
 }
 
 type UserDataStoreCode string
@@ -92,8 +93,8 @@ type UserData struct {
 
 	CachedOnly bool `json:"cached,omitempty"`
 
-	TemplateId string                        `json:"template,omitempty"`
-	template   StreamTransformerTemplateBlob `json:"-"`
+	TemplateId string                                 `json:"template,omitempty"`
+	template   stremio_transformer.StreamTemplateBlob `json:"-"`
 
 	Sort string `json:"sort,omitempty"`
 
@@ -466,7 +467,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		data.Sort = r.Form.Get("sort")
 
 		data.TemplateId = r.Form.Get("transformer.template_id")
-		data.template = StreamTransformerTemplateBlob{
+		data.template = stremio_transformer.StreamTemplateBlob{
 			Name:        r.Form.Get("transformer.template.name"),
 			Description: r.Form.Get("transformer.template.description"),
 		}
@@ -483,7 +484,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 			}
 			extractor := r.Form.Get("upstreams[" + strconv.Itoa(idx) + "].transformer.extractor")
 			if extractor != "" {
-				up.extractor = StreamTransformerExtractorBlob(extractor)
+				up.extractor = stremio_transformer.StreamExtractorBlob(extractor)
 			}
 			if upURL != "" || extractorId != "" || extractor != "" {
 				up.NoContentProxy = r.Form.Get("upstreams["+strconv.Itoa(idx)+"].no_content_proxy") == "on"

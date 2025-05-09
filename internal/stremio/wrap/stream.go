@@ -79,7 +79,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 								tInfoData = append(tInfoData, *cData)
 							}
 						}
-						wstream, err := transformer.Do(&stream, up.ReconfigureStore)
+						wstream, err := transformer.Do(&stream, rType, up.ReconfigureStore)
 						if err != nil {
 							LogError(r, "failed to transform stream", err)
 						}
@@ -161,8 +161,8 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				surl = surl.JoinPath(url.PathEscape(stream.BehaviorHints.Filename))
 			}
 			surl.RawQuery = "sid=" + stremId
-			if stream.r != nil && stream.r.Season != "" && stream.r.Episode != "" {
-				surl.RawQuery += "&re=" + url.QueryEscape(stream.r.Season+".{1,3}"+stream.r.Episode)
+			if stream.r != nil && stream.r.Season != -1 && stream.r.Episode != -1 {
+				surl.RawQuery += "&re=" + url.QueryEscape(strconv.Itoa(stream.r.Season)+".{1,3}"+strconv.Itoa(stream.r.Episode))
 			}
 			stream.InfoHash = ""
 			stream.FileIndex = 0
@@ -205,7 +205,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 					}
 				}
 			}
-			if stream.r == nil || stream.r.IsCached {
+			if stream.r == nil || stream.r.Store.IsCached {
 				cachedStreams = append(cachedStreams, *stream.Stream)
 			} else {
 				uncachedStreams = append(uncachedStreams, *stream.Stream)

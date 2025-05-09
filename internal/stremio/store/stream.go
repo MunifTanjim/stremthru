@@ -20,9 +20,9 @@ import (
 
 var streamTemplate = func() *stremio_transformer.StreamTemplate {
 	tmplBlob := stremio_transformer.StreamTemplateBlob{
-		Name: `Store {{.StoreCode}}
+		Name: `Store {{.Store.Code}}
 {{ if ne .Resolution ""}}{{.Resolution}}{{end}}`,
-		Description: `✏️ {{.Title}}
+		Description: `✏️ {{.TTitle}}
 {{if ne .Quality ""}} 💿 {{.Quality}} {{end}}{{if ne .Codec ""}} 🎞️ {{.Codec}} {{end}}{{if gt (len .HDR) 0}} 📺 {{str_join .HDR ","}}{{end}}{{if gt (len .Audio) 0}} 🎧 {{str_join .Audio ","}}{{if gt (len .Channels) 0}} | {{str_join .Channels ","}}{{end}}{{end}}
 {{if ne .Size ""}} 📦 {{.Size}}{{end}}{{if ne .Group ""}} ⚙️ {{.Group}}{{end}}
 📄 {{.Raw.Name}}`,
@@ -358,10 +358,22 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-				if _, err := streamTemplate.Execute(&stream, &stremio_transformer.StreamTemplateData{
-					Result:    pttr,
-					StoreCode: strings.ToUpper(matcher.StoreCode),
-				}); err != nil {
+				data := &stremio_transformer.StreamExtractorResult{
+					Result: pttr,
+					Raw: stremio_transformer.StreamExtractorResultRaw{
+						Name:        stream.Name,
+						Description: stream.Description,
+					},
+					Store: stremio_transformer.StreamExtractorResultStore{
+						Code:     strings.ToUpper(matcher.StoreCode),
+						Name:     string(store.StoreCode(matcher.StoreCode).Name()),
+						IsCached: true,
+					},
+				}
+				if stream.Description == "" {
+					data.Raw.Description = stream.Title
+				}
+				if _, err := streamTemplate.Execute(&stream, data); err != nil {
 					log.Error("failed to execute stream template", "error", err)
 				}
 			}

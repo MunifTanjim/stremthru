@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 )
 
 func redirectToConfigurePage(w http.ResponseWriter, r *http.Request, ud *UserData, tryInstall bool) {
@@ -109,7 +110,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				}
 				up.Extractor = value
 			} else {
-				up.Extractor = StreamTransformerExtractorBlob("")
+				up.Extractor = stremio_transformer.StreamExtractorBlob("")
 			}
 		case "save-extractor":
 			if td.IsAuthed {
@@ -188,7 +189,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				}
 				td.Template = value
 			} else {
-				td.Template = StreamTransformerTemplateBlob{}
+				td.Template = stremio_transformer.StreamTemplateBlob{}
 			}
 		case "save-template":
 			if td.IsAuthed {
@@ -225,7 +226,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 						}
 						td.TemplateIds = templateIds
 						td.TemplateId = ""
-						td.Template = StreamTransformerTemplateBlob{}
+						td.Template = stremio_transformer.StreamTemplateBlob{}
 					} else {
 						if err := templateStore.Set(id, value); err != nil {
 							LogError(r, "failed to save template", err)

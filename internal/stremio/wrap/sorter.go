@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -26,21 +27,24 @@ func getResolutionRank(input string) int {
 func getQualityRank(input string) int {
 	quality := strings.ToLower(input)
 
-	if strings.Contains(quality, "mux") {
+	if strings.Contains(quality, "remux") {
 		return 100
+	}
+	if strings.Contains(quality, "mux") {
+		return 99
 	}
 
 	if strings.Contains(quality, "bluray") {
-		return 99
+		return 98
 	}
 	if strings.Contains(quality, "br") {
-		return 97
+		return 96
 	}
 	if strings.Contains(quality, "bd") {
-		return 95
+		return 94
 	}
 	if strings.Contains(quality, "uhd") {
-		return 93
+		return 92
 	}
 
 	if strings.Contains(quality, "web") {
@@ -90,7 +94,7 @@ func getSizeRank(input string) int64 {
 	return util.ToBytes(input)
 }
 
-func (str StreamTransformerResult) GetFieldRank(field string) any {
+func getFieldRank(str *stremio_transformer.StreamExtractorResult, field string) any {
 	switch field {
 	case "resolution":
 		return getResolutionRank(str.Resolution)
@@ -110,7 +114,7 @@ type StreamSortConfig struct {
 
 func parseSortConfig(config string) []StreamSortConfig {
 	sortConfigs := []StreamSortConfig{}
-	for _, part := range strings.Split(config, ",") {
+	for part := range strings.SplitSeq(config, ",") {
 		part = strings.TrimSpace(part)
 		desc := strings.HasPrefix(part, "-")
 		field := strings.TrimPrefix(part, "-")
@@ -142,8 +146,8 @@ func (ss StreamSorter) Less(a, b int) bool {
 	}
 
 	for _, config := range ss.config {
-		va := aData.GetFieldRank(config.Field)
-		vb := bData.GetFieldRank(config.Field)
+		va := getFieldRank(aData, config.Field)
+		vb := getFieldRank(bData, config.Field)
 
 		if va == vb {
 			continue

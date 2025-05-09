@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 )
 
@@ -202,7 +203,7 @@ type UpstreamAddon struct {
 	IsConfigurable   bool
 	Error            string
 	ExtractorId      string
-	Extractor        StreamTransformerExtractorBlob
+	Extractor        stremio_transformer.StreamExtractorBlob
 	ExtractorError   string
 	NoContentProxy   bool
 	ReconfigureStore bool
@@ -242,8 +243,8 @@ type TemplateData struct {
 	ExtractorIds  []string
 	TemplateIds   []string
 	TemplateId    string
-	Template      StreamTransformerTemplateBlob
-	TemplateError StreamTransformerTemplateBlob
+	Template      stremio_transformer.StreamTemplateBlob
+	TemplateError stremio_transformer.StreamTemplateBlob
 	SortConfig    configure.Config
 
 	SavedUserDataKey     string
