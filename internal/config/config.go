@@ -42,7 +42,9 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_LOG_LEVEL":  "DEBUG",
 	},
 	EnvProd: {},
-	EnvTest: {},
+	EnvTest: {
+		"STREMTHRU_DATA_DIR": os.TempDir(),
+	},
 	"": {
 		"STREMTHRU_CONTENT_PROXY_CONNECTION_LIMIT": "*:0",
 		"STREMTHRU_DATABASE_URI":                   "sqlite://./data/stremthru.db",
