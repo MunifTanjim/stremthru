@@ -23,5 +23,5 @@ func ToBytes(size string) int64 {
 }
 
 func ToSize(bytes int64) string {
-	return humanize.Bytes(uint64(bytes))
+	return strings.Replace(humanize.IBytes(uint64(bytes)), "iB", "B", 1)
 }
