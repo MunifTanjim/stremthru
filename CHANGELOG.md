@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.71.0](https://github.com/MunifTanjim/stremthru/compare/0.70.10...0.71.0) (2025-05-10)
+
+
+### Features
+
+* **config:** add store client user agent ([84d8fe8](https://github.com/MunifTanjim/stremthru/commit/84d8fe86c334de82a13786c5c8264684b14fb997))
+* **config:** allow unsetting peer uri ([07a96eb](https://github.com/MunifTanjim/stremthru/commit/07a96eb24581b35b4cf1a29eb6adc51d4ad59dd7))
+* **config:** show details about tunnel ips ([58d8677](https://github.com/MunifTanjim/stremthru/commit/58d8677d538510c14a2c1ed6ac6694145b4ee5e8))
+* **magnet_cache:** update stale time ([23f0ed1](https://github.com/MunifTanjim/stremthru/commit/23f0ed19f6f05405816bf7184fd9cd0b0f16febd))
+* **proxy:** accept explicit filename for url ([21e104e](https://github.com/MunifTanjim/stremthru/commit/21e104efa61114482b94ae13327fc50f03504e28))
+* **stremio/sidekick:** support renaming catalogs ([d746ac5](https://github.com/MunifTanjim/stremthru/commit/d746ac5744c8d52b2438da76e121fadf900dfd35))
+* **stremio/store:** support hiding catalogs ([cd4bbb9](https://github.com/MunifTanjim/stremthru/commit/cd4bbb9956254688274d4962e46b474182c7ece0))
+* **stremio/store:** support hiding streams ([cd5208e](https://github.com/MunifTanjim/stremthru/commit/cd5208eb23b25a9769a3ec094494bc75d446464c))
+* **stremio/wrap:** document default stream sort config ([3eaa265](https://github.com/MunifTanjim/stremthru/commit/3eaa265b9e71686120698af57143cb1f6a2ae74f))
+* **stremio:** revamp stream transformer ([0419abe](https://github.com/MunifTanjim/stremthru/commit/0419abebdc90d3840029589969ab5cb4e42c2716))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** fix regression for resolution sort ([969522d](https://github.com/MunifTanjim/stremthru/commit/969522d3dba9e7912654f7a4f153359799e22bbc))
+* **util:** fix ToSize conversion ([f485614](https://github.com/MunifTanjim/stremthru/commit/f48561496c5ceee31540ff87600a2438d44039fa))
+
 ## [0.70.10](https://github.com/MunifTanjim/stremthru/compare/0.70.9...0.70.10) (2025-05-06)
 
 
