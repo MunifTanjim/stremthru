@@ -28,7 +28,7 @@ docker-build:
 
 docker-run:
 	docker run --rm -it --name $(NAME) \
-		-p 8080:8080 \
+		-p 7860:7860 \
 		$(DOCKER_ID)/$(NAME)
 
 docker-push:
