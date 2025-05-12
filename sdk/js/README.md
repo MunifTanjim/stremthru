@@ -25,7 +25,7 @@ yarn add stremthru
 import { StremThru } from "stremthru";
 
 const st = new StremThru({
-  baseUrl: "http://127.0.0.1:8080",
+  baseUrl: "http://127.0.0.1:7860",
   auth: "user:pass",
 });
 ```
