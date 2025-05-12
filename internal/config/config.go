@@ -53,7 +53,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_LANDING_PAGE":                   "{}",
 		"STREMTHRU_LOG_FORMAT":                     "json",
 		"STREMTHRU_LOG_LEVEL":                      "INFO",
-		"STREMTHRU_PORT":                           "8080",
+		"STREMTHRU_PORT":                           "7860",
 		"STREMTHRU_STORE_CONTENT_PROXY":            "*:true",
 		"STREMTHRU_STORE_TUNNEL":                   "*:true",
 		"STREMTHRU_STORE_CLIENT_USER_AGENT":        "stremthru",
