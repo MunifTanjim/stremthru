@@ -24,6 +24,6 @@ COPY --from=builder /workspace/stremthru ./stremthru
 
 VOLUME ["/app/data"]
 
-EXPOSE 8080
+EXPOSE 7860
 
 ENTRYPOINT ["./stremthru"]
