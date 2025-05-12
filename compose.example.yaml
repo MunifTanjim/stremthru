@@ -6,7 +6,7 @@ services:
       dockerfile: ./Dockerfile
     image: muniftanjim/stremthru
     ports:
-      - 8080:8080
+      - 7860:7860
     env_file:
       - .env
     restart: unless-stopped
