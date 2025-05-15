@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.72.0](https://github.com/MunifTanjim/stremthru/compare/0.71.0...0.72.0) (2025-05-15)
+
+
+### Features
+
+* **imdb_title:** support incremental sync ([d581386](https://github.com/MunifTanjim/stremthru/commit/d581386b9d2dd6c4de918fbb0c2ceecc05b262a6))
+* **store/torbox:** add webdl endpoints to api client ([6e0e97f](https://github.com/MunifTanjim/stremthru/commit/6e0e97f47f20bc8b0a8b328b4dc45f670e698882))
+* **stremio/sidekick:** increase session duration to 7 days ([4ec0c91](https://github.com/MunifTanjim/stremthru/commit/4ec0c918effef410fa814d5105d898b566a2cf22))
+* **stremio/store:** add support for torbox webdl ([2f21977](https://github.com/MunifTanjim/stremthru/commit/2f2197787b757713683f63a03285b917c92512d6))
+* **stremio/store:** make webdl opt-in ([d98dc94](https://github.com/MunifTanjim/stremthru/commit/d98dc944384c63057598ddd8b2d268c1de578bad))
+* **stremio/torz:** initial implementation ([3bf342b](https://github.com/MunifTanjim/stremthru/commit/3bf342bbd1bc972e418ca4ad457bd9f5b8f35a83))
+* **stremio:** do not show disabled addons in ui ([b1fd301](https://github.com/MunifTanjim/stremthru/commit/b1fd301251edf30a7ed08f6de91ebbe05c54c5ec))
+* **stremio:** share admin authorization across addons ([19b2e01](https://github.com/MunifTanjim/stremthru/commit/19b2e01d45989e488e3d603d8db131474512e3b2))
+* **torrent_info:** add parse method ([5705972](https://github.com/MunifTanjim/stremthru/commit/5705972718c4bc8d00494d76a80ea58dd318bdb9))
+* **torrent_info:** upgrade go-ptt ([a6563e6](https://github.com/MunifTanjim/stremthru/commit/a6563e6856ccee72523b1ea447ab47bf2b117129))
+
+
+### Bug Fixes
+
+* **buddy:** handle upstream check manget limit ([0ae3a1d](https://github.com/MunifTanjim/stremthru/commit/0ae3a1ddffb58872f714764b74df5afe2b0f15ff))
+* **store/torbox:** track uncached magnet in local db ([b7283c1](https://github.com/MunifTanjim/stremthru/commit/b7283c12004fd21d3c389c07e36b1fef7b34c55c))
+* **stremio:** resolve some issues with transformer ([52aea2b](https://github.com/MunifTanjim/stremthru/commit/52aea2b74eb83d549cf64fc408b1d2a85bdc40e1))
+* **torrent_stream:** ignore file with empty name ([c8295bf](https://github.com/MunifTanjim/stremthru/commit/c8295bf3137960111362df491bfd33029f1bde19))
+
 ## [0.71.0](https://github.com/MunifTanjim/stremthru/compare/0.70.10...0.71.0) (2025-05-10)
 
 
