@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.72.1](https://github.com/MunifTanjim/stremthru/compare/0.72.0...0.72.1) (2025-05-16)
+
+
+### Bug Fixes
+
+* **stremio/transformer:** add panic recovery for template exec ([31845df](https://github.com/MunifTanjim/stremthru/commit/31845df415e2783cd879ebc1db6163a84d6bc8ff))
+
 ## [0.72.0](https://github.com/MunifTanjim/stremthru/compare/0.71.0...0.72.0) (2025-05-15)
 
 
