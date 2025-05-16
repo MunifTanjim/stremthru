@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.72.2](https://github.com/MunifTanjim/stremthru/compare/0.72.1...0.72.2) (2025-05-16)
+
+
+### Bug Fixes
+
+* **stremio:** handle empty template ([6fb1632](https://github.com/MunifTanjim/stremthru/commit/6fb1632066d72f0bcf660b1544a74c358c40cd17))
+* **util:** fix panic recovery ([805a952](https://github.com/MunifTanjim/stremthru/commit/805a9529774caefc655e832aeb953efff90f3674))
+* **util:** handle nil error in panic recovery ([a789366](https://github.com/MunifTanjim/stremthru/commit/a789366bf7a46b66b8344f4ddcbe1398b7219d0a))
+
 ## [0.72.1](https://github.com/MunifTanjim/stremthru/compare/0.72.0...0.72.1) (2025-05-16)
 
 
