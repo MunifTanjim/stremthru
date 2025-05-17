@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.73.1](https://github.com/MunifTanjim/stremthru/compare/0.73.0...0.73.1) (2025-05-17)
+
+
+### Bug Fixes
+
+* **stremio/store:** ignore non-video files for stream ([3cc69ff](https://github.com/MunifTanjim/stremthru/commit/3cc69ffa45b9317d7db6c805d76986d97383bc21))
+
 ## [0.73.0](https://github.com/MunifTanjim/stremthru/compare/0.72.2...0.73.0) (2025-05-17)
 
 
