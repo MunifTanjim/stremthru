@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/server"
@@ -134,29 +135,37 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		shouldTagStream := strings.HasPrefix(sid, "tt")
 
+		videoFiles := []store.MagnetFile{}
+		for i := range magnet.Files {
+			f := &magnet.Files[i]
+			if core.HasVideoExtension(f.Name) {
+				videoFiles = append(videoFiles, *f)
+			}
+		}
+
 		var file *store.MagnetFile
 		if fileName != "" {
-			if file = stremio_shared.MatchFileByName(magnet.Files, fileName); file != nil {
+			if file = stremio_shared.MatchFileByName(videoFiles, fileName); file != nil {
 				log.Debug("matched file using filename", "filename", file.Name)
 			}
 		}
 		if file == nil && strings.Contains(sid, ":") {
-			if file = stremio_shared.MatchFileByStremId(magnet.Files, sid, magnetHash, storeCode); file != nil {
+			if file = stremio_shared.MatchFileByStremId(videoFiles, sid, magnetHash, storeCode); file != nil {
 				log.Debug("matched file using stream id", "sid", sid, "filename", file.Name)
 			}
 		}
 		if file == nil {
-			if file = stremio_shared.MatchFileByIdx(magnet.Files, fileIdx, storeCode); file != nil {
+			if file = stremio_shared.MatchFileByIdx(videoFiles, fileIdx, storeCode); file != nil {
 				log.Debug("matched file using fileidx", "fileidx", file.Idx, "filename", file.Name)
 			}
 		}
 		if file == nil && pattern != nil {
-			if file = stremio_shared.MatchFileByPattern(magnet.Files, pattern); file != nil {
+			if file = stremio_shared.MatchFileByPattern(videoFiles, pattern); file != nil {
 				log.Debug("matched file using pattern", "pattern", pattern.String(), "filename", file.Name)
 			}
 		}
 		if file == nil {
-			if file = stremio_shared.MatchFileByLargestSize(magnet.Files); file != nil {
+			if file = stremio_shared.MatchFileByLargestSize(videoFiles); file != nil {
 				log.Debug("matched file using largest size", "filename", file.Name)
 				shouldTagStream = false
 			}
