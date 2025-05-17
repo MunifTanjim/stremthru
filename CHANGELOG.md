@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.73.2](https://github.com/MunifTanjim/stremthru/compare/0.73.1...0.73.2) (2025-05-17)
+
+
+### Bug Fixes
+
+* **stremio/torz:** ignore non-video files for stream ([96f25f4](https://github.com/MunifTanjim/stremthru/commit/96f25f428cb1e32a6672e83ef01306d31debdd2d))
+* **stremio/wrap:** ignore non-video files for stream ([a73cafc](https://github.com/MunifTanjim/stremthru/commit/a73cafc73ecfae25193e9dc4bfeaaca124a9a0b6))
+
 ## [0.73.1](https://github.com/MunifTanjim/stremthru/compare/0.73.0...0.73.1) (2025-05-17)
 
 
