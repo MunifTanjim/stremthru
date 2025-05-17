@@ -15,6 +15,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
@@ -46,6 +47,10 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	isImdbStremId := strings.HasPrefix(stremId, "tt")
 	torrentInfoCategory := torrent_info.GetCategoryFromStremId(stremId)
 
+	if isImdbStremId {
+		go buddy.PullTorrentsByStremId(stremId, "")
+	}
+
 	var wg sync.WaitGroup
 	for i := range upstreams {
 		wg.Add(1)
@@ -61,7 +66,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			streams := res.Data.Streams
 			wstreams := make([]WrappedStream, len(streams))
 			errs[i] = err
-			tInfoData := []torrent_info.TorrentInfoInsertData{}
+			tInfos := []torrent_info.TorrentInfoInsertData{}
 			if err == nil {
 				extractor, err := up.extractor.Parse()
 				if err != nil {
@@ -76,7 +81,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 						stream := streams[i]
 						if isImdbStremId {
 							if cData := torrent_info.ExtractCreateDataFromStream(addonHostname, stremId, &stream); cData != nil {
-								tInfoData = append(tInfoData, *cData)
+								tInfos = append(tInfos, *cData)
 							}
 						}
 						wstream, err := transformer.Do(&stream, rType, up.ReconfigureStore)
@@ -91,11 +96,10 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 			}
 			if isImdbStremId {
-				if len(tInfoData) > 0 {
+				if len(tInfos) > 0 {
 					worker.TorrentPusherQueue.Queue(stremId)
 				}
-				go torrent_info.Upsert(tInfoData, torrentInfoCategory, false)
-				go buddy.PullTorrentsByStremId(stremId, "")
+				go torrent_info.Upsert(tInfos, torrentInfoCategory, false)
 			}
 			chunks[i] = wstreams
 		}()
@@ -113,7 +117,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	}
 
 	if template != nil {
-		SortWrappedStreams(allStreams, ud.Sort)
+		stremio_transformer.SortStreams(allStreams, ud.Sort)
 	}
 
 	totalStreams := len(allStreams)
@@ -173,13 +177,18 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				stream.URL = surl.String()
 				stream.Name = "⚡ [" + storeCode + "] " + stream.Name
 
+				if ctx.IsProxyAuthorized && config.StoreContentProxy.IsEnabled(string(ud.GetStoreByCode(storeCode).Store.GetName())) {
+					stream.Name = "✨ " + stream.Name
+				}
+
 				cachedStreams = append(cachedStreams, *stream.Stream)
 			} else if !ud.CachedOnly {
 				surlRawQuery := surl.RawQuery
 				stores := ud.GetStores()
 				for i := range stores {
 					s := &stores[i]
-					storeCode := strings.ToUpper(string(s.Store.GetName().Code()))
+					storeName := s.Store.GetName()
+					storeCode := strings.ToUpper(string(storeName.Code()))
 					if storeCode == "ED" {
 						continue
 					}
@@ -188,6 +197,10 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 					surl.RawQuery = surlRawQuery + "&s=" + storeCode
 					stream.URL = surl.String()
 					stream.Name = "[" + storeCode + "] " + stream.Name
+
+					if ctx.IsProxyAuthorized && config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.IsProxyAuthorized {
+						stream.Name = "✨ " + stream.Name
+					}
 
 					uncachedStreams = append(uncachedStreams, stream)
 				}

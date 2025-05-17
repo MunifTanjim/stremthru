@@ -5,8 +5,7 @@ import (
 	"runtime"
 )
 
-func RecoverPanic(captureStack bool) (err error, stack string) {
-	e := recover()
+func HandlePanic(e any, captureStack bool) (err error, stack string) {
 	if e == nil {
 		return nil, stack
 	}

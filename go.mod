@@ -33,7 +33,7 @@ require (
 )
 
 require (
-	github.com/MunifTanjim/go-ptt v0.6.1
+	github.com/MunifTanjim/go-ptt v0.8.0
 	github.com/dpotapov/slogpfx v0.0.0-20230917063348-41a73c95c536
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-redis/cache/v9 v9.0.0

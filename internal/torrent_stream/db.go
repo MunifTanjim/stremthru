@@ -1,6 +1,7 @@
 package torrent_stream
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
@@ -100,6 +101,26 @@ var Columns = []string{
 	Column.UAt,
 }
 
+var query_get_file = fmt.Sprintf(
+	"SELECT %s, %s, %s FROM %s WHERE %s = ? AND %s = ?",
+	Column.Name, Column.Idx, Column.Size,
+	TableName,
+	Column.Hash,
+	Column.SId,
+)
+
+func GetFile(hash string, sid string) (*File, error) {
+	row := db.QueryRow(query_get_file, hash, sid)
+	var file File
+	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
+		if err != sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &file, nil
+}
+
 func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	byHash := map[string]Files{}
 
@@ -114,7 +135,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		hashPlaceholders[i] = "?"
 	}
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s, 'sid', sid, 'src', src)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +160,9 @@ func TrackFiles(filesByHash map[string]Files, discardIdx bool) {
 	items := []InsertData{}
 	for hash, files := range filesByHash {
 		for _, file := range files {
+			if file.Name == "" {
+				continue
+			}
 			items = append(items, InsertData{Hash: hash, File: file})
 		}
 	}

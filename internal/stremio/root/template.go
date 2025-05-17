@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/stremio/template"
 )
 
@@ -51,6 +52,7 @@ func getTemplateData(r *http.Request) *TemplateData {
 
 var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/wrap", func(td *TemplateData) *TemplateData {
+		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
 		return td
 	}, template.FuncMap{}, "root.html")

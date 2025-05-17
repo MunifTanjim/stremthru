@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -19,15 +20,22 @@ func (blob StreamTemplateBlob) IsEmpty() bool {
 }
 
 type StreamTemplate struct {
+	Blob        StreamTemplateBlob
 	Name        *template.Template
 	Description *template.Template
 }
 
+func (t StreamTemplate) IsEmpty() bool {
+	return t.Name == nil && t.Description == nil
+}
+
 func (blob StreamTemplateBlob) Parse() (*StreamTemplate, error) {
-	if blob.IsEmpty() {
-		return nil, nil
+	t := &StreamTemplate{
+		Blob: blob,
 	}
-	t := &StreamTemplate{}
+	if blob.IsEmpty() {
+		return t, nil
+	}
 	var err error
 	t.Name, err = template.New("name").Funcs(funcMap).Parse(blob.Name)
 	if err != nil {
@@ -42,6 +50,14 @@ func (blob StreamTemplateBlob) Parse() (*StreamTemplate, error) {
 	return t, nil
 }
 
+func (blob StreamTemplateBlob) MustParse() *StreamTemplate {
+	st, err := blob.Parse()
+	if err != nil {
+		panic(err)
+	}
+	return st
+}
+
 type StreamTemplateDataRaw struct {
 	Name        string
 	Description string
@@ -49,20 +65,32 @@ type StreamTemplateDataRaw struct {
 
 var newlinesRegex = regexp.MustCompile("\n\n+")
 
-func (t StreamTemplate) Execute(stream *stremio.Stream, data *StreamExtractorResult) (*stremio.Stream, error) {
-	var name bytes.Buffer
-	if err := t.Name.Execute(&name, data); err != nil {
-		return stream, err
-	}
-	stream.Name = strings.TrimSpace(name.String())
+func (t StreamTemplate) Execute(stream *stremio.Stream, data *StreamExtractorResult) (s *stremio.Stream, err error) {
+	defer func() {
+		if perr, stack := util.HandlePanic(recover(), true); perr != nil {
+			err = perr
+			log.Error("StreamTemplate panic", "error", err, "stack", stack)
+		}
+	}()
 
-	var description bytes.Buffer
-	if err := t.Description.Execute(&description, data); err != nil {
-		return stream, err
+	s = stream
+	if t.Name != nil {
+		var name bytes.Buffer
+		if err := t.Name.Execute(&name, data); err != nil {
+			return stream, err
+		}
+		stream.Name = strings.TrimSpace(name.String())
 	}
-	stream.Description = newlinesRegex.ReplaceAllLiteralString(strings.TrimSpace(description.String()), "\n")
-	if stream.Title != "" {
-		stream.Title = ""
+
+	if t.Description != nil {
+		var description bytes.Buffer
+		if err := t.Description.Execute(&description, data); err != nil {
+			return stream, err
+		}
+		stream.Description = newlinesRegex.ReplaceAllLiteralString(strings.TrimSpace(description.String()), "\n")
+		if stream.Title != "" {
+			stream.Title = ""
+		}
 	}
 
 	return stream, nil

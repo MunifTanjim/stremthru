@@ -12,7 +12,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
-	stremio_usenet "github.com/MunifTanjim/stremthru/internal/stremio/usenet"
+	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
+	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -68,9 +69,25 @@ func getPosterUrl(imdbId string) string {
 	return "https://images.metahub.space/poster/small/" + imdbId + "/img"
 }
 
-func getMetaPreviewDescription(description string, r *ptt.Result) string {
+func getMetaPreviewDescription(description string, r *ptt.Result, includeSeriesMeta bool) string {
 	if r.Title != "" {
 		description += " [ ✏️ " + r.Title + " ]"
+	}
+	if includeSeriesMeta {
+		meta := ""
+		if len(r.Seasons) > 0 {
+			meta += "S" + strconv.Itoa(r.Seasons[0])
+		}
+		if len(r.Episodes) > 0 {
+			if meta != "" {
+				meta += " · "
+			}
+			meta += "E"
+			meta += strconv.Itoa(r.Episodes[0])
+		}
+		if meta != "" {
+			description += " [ " + meta + " ]"
+		}
 	}
 	if r.Year != "" || r.Date != "" {
 		description += " [ 📅 "
@@ -134,7 +151,7 @@ func getMetaPreviewDescriptionForTorrent(hash, name string) string {
 		return description
 	}
 
-	return getMetaPreviewDescription(description, r)
+	return getMetaPreviewDescription(description, r, false)
 }
 
 func getMetaPreviewDescriptionForUsenet(hash, name string, largestFilename string) string {
@@ -198,7 +215,19 @@ func getMetaPreviewDescriptionForUsenet(hash, name string, largestFilename strin
 		}
 	}
 
-	return getMetaPreviewDescription(description, r)
+	return getMetaPreviewDescription(description, r, false)
+}
+
+func getMetaPreviewDescriptionForWebDL(hash, name string, includeSeriesMeta bool) string {
+	description := "[ 📥 " + hash + " ]"
+
+	r, err := util.ParseTorrentTitle(name)
+	if err != nil {
+		pttLog.Warn("failed to parse", "error", err, "title", name)
+		return description
+	}
+
+	return getMetaPreviewDescription(description, r, includeSeriesMeta)
 }
 
 type contentInfo struct {
@@ -206,17 +235,17 @@ type contentInfo struct {
 	largestFilename string
 }
 
-func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp string, isUsenet bool) (*contentInfo, error) {
-	if isUsenet {
+func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp string, idr *ParsedId) (*contentInfo, error) {
+	if idr.isUsenet {
 		if s.GetName() != store.StoreNameTorBox {
 			return nil, nil
 		}
 
-		params := &stremio_usenet.GetNewsParams{
+		params := &stremio_store_usenet.GetNewsParams{
 			Id: id,
 		}
 		params.APIKey = storeToken
-		news, err := stremio_usenet.GetNews(params, s.GetName())
+		news, err := stremio_store_usenet.GetNews(params, s.GetName())
 		if err != nil {
 			return nil, err
 		}
@@ -238,6 +267,39 @@ func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp s
 
 		}
 		return &contentInfo{cInfo, news.GetLargestFileName()}, nil
+	}
+
+	if idr.isWebDL {
+		if s.GetName() != store.StoreNameTorBox {
+			return nil, nil
+		}
+
+		params := &stremio_store_webdl.GetWebDLParams{
+			Id: id,
+		}
+		params.APIKey = storeToken
+		webdl, err := stremio_store_webdl.GetWebDL(params, s.GetName())
+		if err != nil {
+			return nil, err
+		}
+		cInfo := &store.GetMagnetData{
+			AddedAt: webdl.AddedAt,
+			Hash:    webdl.Hash,
+			Id:      webdl.Id,
+			Name:    webdl.Name,
+			Size:    webdl.Size,
+			Status:  webdl.Status,
+		}
+		for _, f := range webdl.Files {
+			cInfo.Files = append(cInfo.Files, store.MagnetFile{
+				Idx:  f.Idx,
+				Name: f.Name,
+				Size: f.Size,
+				Link: f.Link,
+			})
+
+		}
+		return &contentInfo{cInfo, ""}, nil
 	}
 
 	params := &store.GetMagnetParams{
@@ -303,7 +365,8 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idPrefix := getIdPrefix(idr.getStoreCode())
+	idStoreCode := idr.getStoreCode()
+	idPrefix := getIdPrefix(idStoreCode)
 
 	if !strings.HasPrefix(id, idPrefix) {
 		shared.ErrorBadRequest(r, "unsupported id: "+id).Send(w, r)
@@ -319,7 +382,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if id == getStoreActionId(idr.getStoreCode()) {
+	if id == getStoreActionId(idStoreCode) {
 		eud, err := ud.GetEncoded()
 		if err != nil {
 			SendError(w, r, err)
@@ -327,14 +390,23 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res := stremio.MetaHandlerResponse{
-			Meta: getStoreActionMeta(r, idr.getStoreCode(), eud),
+			Meta: getStoreActionMeta(r, idStoreCode, eud),
 		}
 
 		SendResponse(w, r, 200, res)
 		return
 	}
 
-	cInfo, err := getStoreContentInfo(ctx.Store, ctx.StoreAuthToken, strings.TrimPrefix(id, idPrefix), ctx.ClientIP, idr.isUsenet)
+	if idr.storeCode == store.StoreCodeRealDebrid && id == getRDWebDLsId(idStoreCode) {
+		res := stremio.MetaHandlerResponse{
+			Meta: getRDWebDLsMeta(r, ctx, idStoreCode),
+		}
+
+		SendResponse(w, r, 200, res)
+		return
+	}
+
+	cInfo, err := getStoreContentInfo(ctx.Store, ctx.StoreAuthToken, strings.TrimPrefix(id, idPrefix), ctx.ClientIP, idr)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -352,6 +424,8 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 
 	if idr.isUsenet {
 		meta.Description = getMetaPreviewDescriptionForUsenet(cInfo.Hash, cInfo.Name, cInfo.largestFilename)
+	} else if idr.isWebDL {
+		meta.Description = getMetaPreviewDescriptionForWebDL(cInfo.Hash, cInfo.Name, false)
 	} else {
 		meta.Description = getMetaPreviewDescriptionForTorrent(cInfo.Hash, cInfo.Name)
 
@@ -386,7 +460,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 			if sType == "series" {
 				for i := range m.Videos {
 					video := &m.Videos[i]
-					key := strconv.Itoa(video.Season) + ":" + strconv.Itoa(video.Episode)
+					key := video.Season.String() + ":" + video.Episode.String()
 					metaVideoByKey[key] = video
 				}
 			}
@@ -426,14 +500,14 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		} else {
 			if len(pttr.Seasons) > 0 {
 				season = pttr.Seasons[0]
-				video.Season = season
+				video.Season = stremio.ZeroIndexedInt(season)
 			} else if len(tpttr.Seasons) == 1 {
 				season = tpttr.Seasons[0]
-				video.Season = season
+				video.Season = stremio.ZeroIndexedInt(season)
 			}
 			if len(pttr.Episodes) > 0 {
 				episode = pttr.Episodes[0]
-				video.Episode = episode
+				video.Episode = stremio.ZeroIndexedInt(episode)
 			}
 		}
 		if season != -1 && episode != -1 {
@@ -458,7 +532,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if !idr.isUsenet {
+	if !idr.isUsenet && !idr.isWebDL {
 		go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
 	}
 

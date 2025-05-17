@@ -108,9 +108,10 @@ type StreamExtractorResultFile struct {
 }
 
 type StreamExtractorResultStore struct {
-	Name     string
-	Code     string
-	IsCached bool
+	Name      string
+	Code      string
+	IsCached  bool
+	IsProxied bool
 }
 
 type StreamExtractorResultAddon struct {

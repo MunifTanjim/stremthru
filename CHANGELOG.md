@@ -1,5 +1,79 @@
 # Changelog
 
+## [0.73.1](https://github.com/MunifTanjim/stremthru/compare/0.73.0...0.73.1) (2025-05-17)
+
+
+### Bug Fixes
+
+* **stremio/store:** ignore non-video files for stream ([3cc69ff](https://github.com/MunifTanjim/stremthru/commit/3cc69ffa45b9317d7db6c805d76986d97383bc21))
+
+## [0.73.0](https://github.com/MunifTanjim/stremthru/compare/0.72.2...0.73.0) (2025-05-17)
+
+
+### Features
+
+* **store/realdebrid:** add list downloads endpoint to api client ([d6d5d3c](https://github.com/MunifTanjim/stremthru/commit/d6d5d3c2237a2a6aa9f2d43ce8941f5509c54024))
+* **stremio/store:** add support for realdebrid webdl ([088af96](https://github.com/MunifTanjim/stremthru/commit/088af9624ddae3f7deea2177a5614e8275e2f977))
+* **stremio/torz:** pull torrents from peer ([e41056c](https://github.com/MunifTanjim/stremthru/commit/e41056c925ffab669131cfb7fba3fa1ccf62e7ff))
+* **stremio:** improve episode file matching using sid for playback ([46fd314](https://github.com/MunifTanjim/stremthru/commit/46fd31427e378fb2cb592bd4c5b67c9c29345f74))
+* **stremio:** show stream proxy indicator consistently ([2aee50e](https://github.com/MunifTanjim/stremthru/commit/2aee50ea4037cb00181e8cb996ddf4031b669dd6))
+* **torrent_info:** improve ListByStremId for season packs ([da36531](https://github.com/MunifTanjim/stremthru/commit/da365313254c82e6082c659ed7d6e62811b2f682))
+* **torrent_info:** improve ListHashesByStremId for season packs ([7f1ae56](https://github.com/MunifTanjim/stremthru/commit/7f1ae567af35479da589280bb7cf9a3abea88eaf))
+
+
+### Bug Fixes
+
+* **stremio/sidekick:** fix modal close button ([f997f48](https://github.com/MunifTanjim/stremthru/commit/f997f48b9e88059281c1176e6f538e950d7fba00))
+* **stremio/store:** clear rd downloads cache on action ([5fed2c2](https://github.com/MunifTanjim/stremthru/commit/5fed2c225a5fd705396a83ffb24ba1b58caf8b23))
+* **stremio/store:** fix title detection for series episode ([bf00a78](https://github.com/MunifTanjim/stremthru/commit/bf00a78dcf4089cc0056a1ee9130670f0c87896b))
+* **stremio:** resolve missing early return for errors ([7539fcd](https://github.com/MunifTanjim/stremthru/commit/7539fcdcc927b390f586af70ad9416f7f71b0b1c))
+* **worker:** resolve torrent pusher memory leak ([6d6aaa9](https://github.com/MunifTanjim/stremthru/commit/6d6aaa91a24e9bfe741b8581bbcbe470a771df62))
+
+
+### Performance Improvements
+
+* **torrent_stream:** tweak pull torrent frequency ([6f538b5](https://github.com/MunifTanjim/stremthru/commit/6f538b5188863e569d41a8961ae11035e45efa3a))
+
+## [0.72.2](https://github.com/MunifTanjim/stremthru/compare/0.72.1...0.72.2) (2025-05-16)
+
+
+### Bug Fixes
+
+* **stremio:** handle empty template ([6fb1632](https://github.com/MunifTanjim/stremthru/commit/6fb1632066d72f0bcf660b1544a74c358c40cd17))
+* **util:** fix panic recovery ([805a952](https://github.com/MunifTanjim/stremthru/commit/805a9529774caefc655e832aeb953efff90f3674))
+* **util:** handle nil error in panic recovery ([a789366](https://github.com/MunifTanjim/stremthru/commit/a789366bf7a46b66b8344f4ddcbe1398b7219d0a))
+
+## [0.72.1](https://github.com/MunifTanjim/stremthru/compare/0.72.0...0.72.1) (2025-05-16)
+
+
+### Bug Fixes
+
+* **stremio/transformer:** add panic recovery for template exec ([31845df](https://github.com/MunifTanjim/stremthru/commit/31845df415e2783cd879ebc1db6163a84d6bc8ff))
+
+## [0.72.0](https://github.com/MunifTanjim/stremthru/compare/0.71.0...0.72.0) (2025-05-15)
+
+
+### Features
+
+* **imdb_title:** support incremental sync ([d581386](https://github.com/MunifTanjim/stremthru/commit/d581386b9d2dd6c4de918fbb0c2ceecc05b262a6))
+* **store/torbox:** add webdl endpoints to api client ([6e0e97f](https://github.com/MunifTanjim/stremthru/commit/6e0e97f47f20bc8b0a8b328b4dc45f670e698882))
+* **stremio/sidekick:** increase session duration to 7 days ([4ec0c91](https://github.com/MunifTanjim/stremthru/commit/4ec0c918effef410fa814d5105d898b566a2cf22))
+* **stremio/store:** add support for torbox webdl ([2f21977](https://github.com/MunifTanjim/stremthru/commit/2f2197787b757713683f63a03285b917c92512d6))
+* **stremio/store:** make webdl opt-in ([d98dc94](https://github.com/MunifTanjim/stremthru/commit/d98dc944384c63057598ddd8b2d268c1de578bad))
+* **stremio/torz:** initial implementation ([3bf342b](https://github.com/MunifTanjim/stremthru/commit/3bf342bbd1bc972e418ca4ad457bd9f5b8f35a83))
+* **stremio:** do not show disabled addons in ui ([b1fd301](https://github.com/MunifTanjim/stremthru/commit/b1fd301251edf30a7ed08f6de91ebbe05c54c5ec))
+* **stremio:** share admin authorization across addons ([19b2e01](https://github.com/MunifTanjim/stremthru/commit/19b2e01d45989e488e3d603d8db131474512e3b2))
+* **torrent_info:** add parse method ([5705972](https://github.com/MunifTanjim/stremthru/commit/5705972718c4bc8d00494d76a80ea58dd318bdb9))
+* **torrent_info:** upgrade go-ptt ([a6563e6](https://github.com/MunifTanjim/stremthru/commit/a6563e6856ccee72523b1ea447ab47bf2b117129))
+
+
+### Bug Fixes
+
+* **buddy:** handle upstream check manget limit ([0ae3a1d](https://github.com/MunifTanjim/stremthru/commit/0ae3a1ddffb58872f714764b74df5afe2b0f15ff))
+* **store/torbox:** track uncached magnet in local db ([b7283c1](https://github.com/MunifTanjim/stremthru/commit/b7283c12004fd21d3c389c07e36b1fef7b34c55c))
+* **stremio:** resolve some issues with transformer ([52aea2b](https://github.com/MunifTanjim/stremthru/commit/52aea2b74eb83d549cf64fc408b1d2a85bdc40e1))
+* **torrent_stream:** ignore file with empty name ([c8295bf](https://github.com/MunifTanjim/stremthru/commit/c8295bf3137960111362df491bfd33029f1bde19))
+
 ## [0.71.0](https://github.com/MunifTanjim/stremthru/compare/0.70.10...0.71.0) (2025-05-10)
 
 

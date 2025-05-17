@@ -2,6 +2,7 @@ package stremio
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -61,17 +62,31 @@ func (rn *Number) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type ZeroIndexedInt int
+
+func (zii ZeroIndexedInt) IsZero() bool {
+	return zii == -1
+}
+
+func (zii ZeroIndexedInt) String() string {
+	return strconv.Itoa(int(zii))
+}
+
+func (zii ZeroIndexedInt) Equal(i int) bool {
+	return int(zii) == i
+}
+
 type MetaVideo struct {
-	Id        string    `json:"id"`
-	Title     string    `json:"title"`
-	Released  time.Time `json:"released"`
-	Thumbnail string    `json:"thumbnail,omitempty"`
-	Streams   []Stream  `json:"streams,omitempty"`
-	Available bool      `json:"available,omitempty"`
-	Episode   int       `json:"episode"`
-	Season    int       `json:"season"`
-	Trailers  []Stream  `json:"trailers,omitempty"`
-	Overview  string    `json:"overview,omitempty"`
+	Id        string         `json:"id"`
+	Title     string         `json:"title"`
+	Released  time.Time      `json:"released"`
+	Thumbnail string         `json:"thumbnail,omitempty"`
+	Streams   []Stream       `json:"streams,omitempty"`
+	Available bool           `json:"available,omitempty"`
+	Episode   ZeroIndexedInt `json:"episode,omitzero"`
+	Season    ZeroIndexedInt `json:"season,omitzero"`
+	Trailers  []Stream       `json:"trailers,omitempty"`
+	Overview  string         `json:"overview,omitempty"`
 
 	// deprecated / undocumented
 	Name        string     `json:"name,omitempty"`

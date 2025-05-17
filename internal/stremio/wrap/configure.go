@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 )
 
@@ -59,7 +60,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				} else if !config.AuthAdmin.IsAdmin(user) {
 					td.AuthError = "Not Authorized!"
 				} else {
-					setCookie(w, user, pass)
+					stremio_shared.SetAdminCookie(w, user, pass)
 					td.IsAuthed = true
 					if r.Header.Get("hx-request") == "true" {
 						w.Header().Add("hx-refresh", "true")
@@ -67,7 +68,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		case "deauthorize":
-			unsetCookie(w)
+			stremio_shared.UnsetAdminCookie(w)
 			td.IsAuthed = false
 		case "add-upstream":
 			if td.IsAuthed || len(td.Upstreams) < MaxPublicInstanceUpstreamCount {

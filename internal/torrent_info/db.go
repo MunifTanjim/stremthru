@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -152,6 +154,140 @@ type TorrentInfo struct {
 
 func (ti TorrentInfo) IsParsed() bool {
 	return ti.TorrentTitle == ti.ParserInput
+}
+
+func (ti TorrentInfo) ToParsedResult() (*ptt.Result, error) {
+	err := ti.Parse()
+	if err != nil {
+		return nil, err
+	}
+
+	pttr := &ptt.Result{
+		Audio:       ti.Audio,
+		BitDepth:    ti.BitDepth,
+		Channels:    ti.Channels,
+		Codec:       ti.Codec,
+		Commentary:  ti.Commentary,
+		Complete:    ti.Complete,
+		Container:   ti.Container,
+		Convert:     ti.Convert,
+		Date:        ti.Date.String(),
+		Documentary: ti.Documentary,
+		Dubbed:      ti.Dubbed,
+		Edition:     ti.Edition,
+		EpisodeCode: ti.EpisodeCode,
+		Episodes:    ti.Episodes,
+		Extended:    ti.Extended,
+		Extension:   ti.Extension,
+		Group:       ti.Group,
+		HDR:         ti.HDR,
+		Hardcoded:   ti.Hardcoded,
+		Languages:   ti.Languages,
+		Network:     ti.Network,
+		Proper:      ti.Proper,
+		Quality:     ti.Quality,
+		Region:      ti.Region,
+		Remastered:  ti.Remastered,
+		Repack:      ti.Repack,
+		Resolution:  ti.Resolution,
+		Retail:      ti.Retail,
+		Seasons:     ti.Seasons,
+		Site:        ti.Site,
+		Subbed:      ti.Subbed,
+		ThreeD:      ti.ThreeD,
+		Title:       ti.Title,
+		Uncensored:  ti.Uncensored,
+		Unrated:     ti.Unrated,
+		Upscaled:    ti.Upscaled,
+		Volumes:     ti.Volumes,
+	}
+	if ti.Size > 0 {
+		pttr.Size = util.ToSize(ti.Size)
+	}
+	if ti.Year != 0 {
+		pttr.Year = strconv.Itoa(ti.Year)
+	}
+	if ti.YearEnd != 0 {
+		pttr.Year += "-" + strconv.Itoa(ti.YearEnd)
+	}
+	return pttr, nil
+}
+
+func (ti *TorrentInfo) Parse() error {
+	if ti.IsParsed() {
+		return nil
+	}
+
+	return ti.parse()
+}
+
+func (ti *TorrentInfo) ForceParse() error {
+	return ti.parse()
+}
+
+func (ti *TorrentInfo) parse() error {
+	r, err := util.ParseTorrentTitle(ti.TorrentTitle)
+	if err != nil {
+		return err
+	}
+
+	ti.ParsedAt = db.Timestamp{Time: time.Now()}
+	ti.ParserVersion = ptt.Version().Int()
+	ti.ParserInput = ti.TorrentTitle
+
+	ti.Audio = r.Audio
+	ti.BitDepth = r.BitDepth
+	ti.Channels = r.Channels
+	ti.Codec = r.Codec
+	ti.Commentary = r.Commentary
+	ti.Complete = r.Complete
+	ti.Container = r.Container
+	ti.Convert = r.Convert
+	if r.Date != "" {
+		if date, err := time.Parse(time.DateOnly, r.Date); err == nil {
+			ti.Date = db.DateOnly{Time: date}
+		}
+	}
+	ti.Documentary = r.Documentary
+	ti.Dubbed = r.Dubbed
+	ti.Edition = r.Edition
+	ti.EpisodeCode = r.EpisodeCode
+	ti.Episodes = r.Episodes
+	ti.Extended = r.Extended
+	ti.Extension = r.Extension
+	ti.Group = r.Group
+	ti.HDR = r.HDR
+	ti.Hardcoded = r.Hardcoded
+	ti.Languages = r.Languages
+	ti.Network = r.Network
+	ti.Proper = r.Proper
+	ti.Quality = r.Quality
+	ti.Region = r.Region
+	ti.Remastered = r.Remastered
+	ti.Repack = r.Repack
+	ti.Resolution = r.Resolution
+	ti.Retail = r.Retail
+	ti.Seasons = r.Seasons
+	ti.Site = r.Site
+	if r.Size != "" {
+		ti.Size = util.ToBytes(r.Size)
+	}
+	ti.Subbed = r.Subbed
+	ti.ThreeD = r.ThreeD
+	ti.Title = r.Title
+	ti.Uncensored = r.Uncensored
+	ti.Unrated = r.Unrated
+	ti.Upscaled = r.Upscaled
+	ti.Volumes = r.Volumes
+	if r.Year != "" {
+		year, year_end, _ := strings.Cut(r.Year, "-")
+		ti.Year, _ = strconv.Atoi(year)
+		if year_end != "" {
+			ti.YearEnd, _ = strconv.Atoi(year_end)
+		}
+	}
+
+	return nil
 }
 
 const TableName = "torrent_info"
@@ -557,6 +693,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 
 			tSource := string(t.Source)
 			for _, f := range t.Files {
+				if f.Name == "" {
+					continue
+				}
 				if f.Source == "" {
 					f.Source = tSource
 				}
@@ -785,6 +924,85 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 	return nil
 }
 
+var query_list_hashes_by_stremid_from_torrent_stream = fmt.Sprintf(
+	"SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ?",
+	ts.Column.Hash,
+	ts.TableName,
+	ts.Column.SId,
+	ts.Column.SId,
+)
+var query_list_hashes_by_stremid_from_imdb_torrent = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s = ?",
+	imdb_torrent.Column.Hash,
+	imdb_torrent.TableName,
+	imdb_torrent.Column.TId,
+)
+
+var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
+	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?) AND (ti.%s = '' OR ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+	imdb_torrent.Column.Hash,
+	imdb_torrent.TableName,
+	TableName,
+	imdb_torrent.Column.Hash,
+	Column.Hash,
+	imdb_torrent.Column.TId,
+	Column.Seasons,
+	Column.Seasons,
+	Column.Episodes,
+	Column.Episodes,
+	Column.Episodes,
+)
+
+func ListHashesByStremId(stremId string) ([]string, error) {
+	if !strings.HasPrefix(stremId, "tt") {
+		return nil, fmt.Errorf("unsupported strem id: %s", stremId)
+	}
+
+	query := ""
+	var args []any
+
+	if strings.Contains(stremId, ":") {
+		args = make([]any, 0, 7)
+		query += query_list_hashes_by_stremid_from_torrent_stream
+		args = append(args, stremId)
+		if parts := strings.SplitN(stremId, ":", 3); len(parts) == 3 {
+			args = append(args, parts[0])
+
+			query += " UNION " + query_list_hashes_by_stremid_from_imdb_torrent_for_series
+			args = append(args, parts[0], parts[1], "%,"+parts[1]+",%", parts[2], "%,"+parts[2]+",%")
+		} else {
+			imdbId, _, _ := strings.Cut(stremId, ":")
+			args = append(args, imdbId)
+		}
+	} else {
+		args = make([]any, 0, 3)
+		query += query_list_hashes_by_stremid_from_torrent_stream + " UNION " + query_list_hashes_by_stremid_from_imdb_torrent
+		args = append(args, stremId, stremId+":%", stremId)
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Error("failed to list hashes by strem id", "error", err, "stremId", stremId)
+		return nil, err
+	}
+	defer rows.Close()
+
+	hashes := []string{}
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return hashes, nil
+}
+
 type TorrentItem struct {
 	Hash         string              `json:"hash"`
 	TorrentTitle string              `json:"name"`
@@ -832,29 +1050,17 @@ var query_list_by_stremid_after_select = fmt.Sprintf(
 	ts.Column.Hash,
 	ts.Column.Source,
 )
-var query_list_by_stremid_subquery_from_torrent_stream = fmt.Sprintf(
-	"SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ?",
-	ts.Column.Hash,
-	ts.TableName,
-	ts.Column.SId,
-	ts.Column.SId,
-)
-var query_list_by_stremid_subquery_from_imdb_torrent = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s = ?",
-	imdb_torrent.Column.Hash,
-	imdb_torrent.TableName,
-	imdb_torrent.Column.TId,
-)
-var query_list_by_stremid_cond_hashes_from_ts = fmt.Sprintf(
-	"%s IN (%s)",
-	Column.Hash,
-	query_list_by_stremid_subquery_from_torrent_stream,
-)
-var query_list_by_stremid_cond_hashes_from_ts_union_ito = fmt.Sprintf(
+var query_list_by_stremid_cond_hashes_for_series = fmt.Sprintf(
 	"%s IN (%s UNION %s)",
 	Column.Hash,
-	query_list_by_stremid_subquery_from_torrent_stream,
-	query_list_by_stremid_subquery_from_imdb_torrent,
+	query_list_hashes_by_stremid_from_torrent_stream,
+	query_list_hashes_by_stremid_from_imdb_torrent_for_series,
+)
+var query_list_by_stremid_cond_hashes_for_movie = fmt.Sprintf(
+	"%s IN (%s UNION %s)",
+	Column.Hash,
+	query_list_hashes_by_stremid_from_torrent_stream,
+	query_list_hashes_by_stremid_from_imdb_torrent,
 )
 var query_list_by_stremid_cond_no_missing_size = fmt.Sprintf(
 	"%s > 0",
@@ -867,18 +1073,22 @@ var query_list_by_stremid_after_cond = fmt.Sprintf(
 
 func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, error) {
 	query := query_list_by_stremid_select + query_list_by_stremid_after_select + " WHERE "
-	args := make([]any, 3)
+	var args []any
 
 	if strings.Contains(stremId, ":") {
-		query += query_list_by_stremid_cond_hashes_from_ts
-		args[0] = stremId
-		args[1], _, _ = strings.Cut(stremId, ":")
-		args = args[0:2]
+		args = make([]any, 0, 7)
+		query += query_list_by_stremid_cond_hashes_for_series
+		args = append(args, stremId)
+		if parts := strings.SplitN(stremId, ":", 3); len(parts) == 3 {
+			args = append(args, parts[0], parts[0], parts[1], "%,"+parts[1]+",%", parts[2], "%,"+parts[2]+",%")
+		} else {
+			imdbId, _, _ := strings.Cut(stremId, ":")
+			args = append(args, imdbId)
+		}
 	} else {
-		query += query_list_by_stremid_cond_hashes_from_ts_union_ito
-		args[0] = stremId
-		args[1] = stremId + ":%"
-		args[2] = stremId
+		args = make([]any, 0, 3)
+		query += query_list_by_stremid_cond_hashes_for_movie
+		args = append(args, stremId, stremId+":%", stremId)
 	}
 
 	if excludeMissingSize {

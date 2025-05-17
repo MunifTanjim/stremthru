@@ -2,6 +2,8 @@ package buddy
 
 import (
 	"regexp"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -225,44 +227,57 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		if Peer.IsHaltedCheckMagnet() {
 			return data, nil
 		}
-		params := &peer.CheckMagnetParams{
-			StoreName:  s.GetName(),
-			StoreToken: storeToken,
-		}
-		params.Magnets = staleOrMissingHashes
-		params.ClientIP = clientIp
-		params.SId = sid
-		start := time.Now()
-		res, err := Peer.CheckMagnet(params)
-		duration := time.Since(start)
-		if duration.Seconds() > 10 {
-			Peer.HaltCheckMagnet()
-		}
-		if err != nil {
-			peerLog.Error("failed to check magnet", "store", s.GetName(), "error", core.PackError(err), "duration", duration)
-			return data, nil
-		} else {
-			peerLog.Info("check magnet", "store", s.GetName(), "hash_count", len(staleOrMissingHashes), "duration", duration)
-			filesByHash := map[string]magnet_cache.Files{}
-			for _, item := range res.Data.Items {
-				files := magnet_cache.Files{}
-				if item.Status == store.MagnetStatusCached {
-					seenByName := map[string]bool{}
-					for _, f := range item.Files {
-						if _, seen := seenByName[f.Name]; seen {
-							peerLog.Info("found duplicate file", "hash", item.Hash, "filename", f.Name)
-							continue
+
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		filesByHash := map[string]magnet_cache.Files{}
+		for cHashes := range slices.Chunk(staleOrMissingHashes, 500) {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				params := &peer.CheckMagnetParams{
+					StoreName:  s.GetName(),
+					StoreToken: storeToken,
+				}
+				params.Magnets = cHashes
+				params.ClientIP = clientIp
+				params.SId = sid
+				start := time.Now()
+				res, err := Peer.CheckMagnet(params)
+				duration := time.Since(start)
+				if duration.Seconds() > 10 {
+					Peer.HaltCheckMagnet()
+				}
+				if err != nil {
+					peerLog.Error("failed partially to check magnet", "store", s.GetName(), "error", core.PackError(err), "duration", duration)
+				} else {
+					mu.Lock()
+					defer mu.Unlock()
+
+					peerLog.Info("check magnet", "store", s.GetName(), "hash_count", len(cHashes), "duration", duration)
+					for _, item := range res.Data.Items {
+						files := magnet_cache.Files{}
+						if item.Status == store.MagnetStatusCached {
+							seenByName := map[string]bool{}
+							for _, f := range item.Files {
+								if _, seen := seenByName[f.Name]; seen {
+									peerLog.Info("found duplicate file", "hash", item.Hash, "filename", f.Name)
+									continue
+								}
+								seenByName[f.Name] = true
+								files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+							}
 						}
-						seenByName[f.Name] = true
-						files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+						filesByHash[item.Hash] = files
+						data.Items = append(data.Items, item)
 					}
 				}
-				filesByHash[item.Hash] = files
-				data.Items = append(data.Items, item)
-			}
-			go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, false)
-			return data, nil
+			}()
 		}
+		wg.Wait()
+		go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, false)
+		return data, nil
 	}
 
 	return data, nil

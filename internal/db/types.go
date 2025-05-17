@@ -48,6 +48,13 @@ func (t DateOnly) IsZero() bool {
 	return t.Unix() <= 0
 }
 
+func (t DateOnly) String() string {
+	if t.Time.IsZero() {
+		return ""
+	}
+	return t.Format(time.DateOnly)
+}
+
 func (t DateOnly) Value() (driver.Value, error) {
 	if t.IsZero() {
 		return nil, nil

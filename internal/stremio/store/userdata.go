@@ -18,6 +18,7 @@ type UserData struct {
 	StoreToken  string `json:"store_token"`
 	HideCatalog bool   `json:"hide_catalog,omitempty"`
 	HideStream  bool   `json:"hide_stream,omitempty"`
+	EnableWebDL bool   `json:"webdl,omitempty"`
 	encoded     string `json:"-"`
 
 	idPrefixes []string `json:"-"`
@@ -51,6 +52,11 @@ func (ud *UserData) getIdPrefixes() []string {
 						if storeName == store.StoreNameTorBox {
 							code := storeCode + "-usenet"
 							ud.idPrefixes = append(ud.idPrefixes, getIdPrefix(code))
+
+							if ud.EnableWebDL {
+								code := storeCode + "-webdl"
+								ud.idPrefixes = append(ud.idPrefixes, getIdPrefix(code))
+							}
 						}
 					}
 				}
@@ -62,6 +68,11 @@ func (ud *UserData) getIdPrefixes() []string {
 			if storeName == store.StoreNameTorBox {
 				code := storeCode + "-usenet"
 				ud.idPrefixes = append(ud.idPrefixes, getIdPrefix(code))
+
+				if ud.EnableWebDL {
+					code := storeCode + "-webdl"
+					ud.idPrefixes = append(ud.idPrefixes, getIdPrefix(code))
+				}
 			}
 		}
 	}
@@ -147,6 +158,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		data.StoreToken = r.FormValue("store_token")
 		data.HideCatalog = r.FormValue("hide_catalog") == "on"
 		data.HideStream = r.FormValue("hide_stream") == "on"
+		data.EnableWebDL = r.FormValue("enable_webdl") == "on"
 		encoded, err := data.GetEncoded()
 		if err != nil {
 			return nil, err

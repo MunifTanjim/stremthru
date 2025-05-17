@@ -135,12 +135,11 @@
             modal.replaceWith(modal.cloneNode(true));
           }
 
-          document
-            .querySelector(modalSelector + " [data-modal-close]")
-            ?.addEventListener("click", onClose);
-
           trigger.addEventListener("click", function(e) {
             const modal = document.querySelector(modalSelector);
+
+            modal.querySelector(modalSelector + " [data-modal-close]")
+              ?.addEventListener("click", onClose);
 
             window[modalOnOpenFnName](e, { modal, onClose, trigger });
 
@@ -188,9 +187,9 @@
             </summary>
             <ul dir="rtl">
               <li><a href="/stremio/">Stremio</a></li>
-              <li><a href="/stremio/wrap/">Wrap</a></li>
-              <li><a href="/stremio/store/">Store</a></li>
-              <li><a href="/stremio/sidekick/">Sidekick</a></li>
+              {{range .StremThruAddons}}
+              <li><a href="{{.URL}}">{{.Name}}</a></li>
+              {{end}}
             </ul>
           </details>
         </li>

@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/stremio/root"
 	"github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	"github.com/MunifTanjim/stremthru/internal/stremio/store"
+	stremio_torz "github.com/MunifTanjim/stremthru/internal/stremio/torz"
 	"github.com/MunifTanjim/stremthru/internal/stremio/wrap"
 )
 
@@ -23,5 +24,8 @@ func AddStremioEndpoints(mux *http.ServeMux) {
 	if config.Feature.IsEnabled(config.FeatureStremioSidekick) {
 		stremio_sidekick.AddStremioSidekickEndpoints(mux)
 		stremio_disabled.AddStremioDisabledEndpoints(mux)
+	}
+	if config.Feature.IsEnabled(config.FeatureStremioTorz) {
+		stremio_torz.AddStremioTorzEndpoints(mux)
 	}
 }

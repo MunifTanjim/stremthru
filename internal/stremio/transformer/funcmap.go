@@ -2,16 +2,18 @@ package stremio_transformer
 
 import (
 	"html/template"
-	"slices"
 	"strconv"
 	"strings"
 )
 
 var lang_code_to_emoji = map[string]string{
-	"dub":  "🗣️",
-	"daud": "🔉",
-	"maud": "🔊",
-	"msub": "🔤",
+	"dub":         "🗣️",
+	"daud":        "🔉",
+	"dual audio":  "🔉",
+	"maud":        "🔊",
+	"multi audio": "🔊",
+	"msub":        "🔤",
+	"multi subs":  "🔤",
 
 	"en":     "🇬🇧",
 	"ja":     "🇯🇵",
@@ -72,10 +74,13 @@ func langToEmoji(lang string) string {
 }
 
 var lang_code_to_text = map[string]string{
-	"dub":  "Dubbed",
-	"daud": "Dual Audio",
-	"maud": "Multi Audio",
-	"msub": "Multi Subs",
+	"dub":         "Dubbed",
+	"daud":        "Dual Audio",
+	"dual audio":  "Dual Audio",
+	"maud":        "Multi Audio",
+	"multi audio": "Multi Audio",
+	"msub":        "Multi Subs",
+	"multi subs":  "Multi Subs",
 
 	"en":     "English",
 	"ja":     "Japanese",
@@ -129,10 +134,13 @@ var lang_code_to_text = map[string]string{
 }
 
 var lang_code_to_iso = map[string]string{
-	"dub":  "Dub",
-	"daud": "DAud",
-	"maud": "MAud",
-	"msub": "MSubs",
+	"dub":         "Dub",
+	"daud":        "DAud",
+	"dual audio":  "DAud",
+	"maud":        "MAud",
+	"multi audio": "MAud",
+	"msub":        "MSubs",
+	"multi subs":  "MSubs",
 
 	"en":     "ENG",
 	"ja":     "JPN",
@@ -202,9 +210,6 @@ func langToISO(lang string) string {
 var funcMap = template.FuncMap{
 	"str_join":   strings.Join,
 	"int_to_str": strconv.Itoa,
-	"slice_concat": func(a []any, b []any) []any {
-		return slices.Concat(a, b)
-	},
 	"lang_join": func(languages []string, sep string, format string) string {
 		var fn func(string) string
 		switch format {

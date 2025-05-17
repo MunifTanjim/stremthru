@@ -1,11 +1,11 @@
 package stremio_root
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		shared.SendError(w, r, err)
 		return
 	}
-	shared.SendHTML(w, 200, page)
+	stremio_shared.SendHTML(w, 200, page)
 	return
 }
 
@@ -33,11 +33,7 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 
 	manifest := getManifest(r)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	if err := json.NewEncoder(w).Encode(manifest); err != nil {
-		LogError(r, "failed to encode json", err)
-	}
+	stremio_shared.SendResponse(w, r, 200, manifest)
 }
 
 func handleConfigure(w http.ResponseWriter, r *http.Request) {
@@ -57,11 +53,7 @@ func handleAddonCatalog(w http.ResponseWriter, r *http.Request) {
 
 	res := getAddonCatalog(r)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		LogError(r, "failed to encode json", err)
-	}
+	stremio_shared.SendResponse(w, r, 200, res)
 }
 
 func commonMiddleware(next http.Handler) http.Handler {

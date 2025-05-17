@@ -20,6 +20,7 @@ var TorrentPusherQueue = IdQueue{
 		sid, _, _ = strings.Cut(sid, ":")
 		return sid
 	},
+	disabled: !config.HasPeer || config.PeerAuthToken == "",
 }
 
 var Peer = peer.NewAPIClient(&peer.APIClientConfig{
@@ -28,7 +29,7 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 })
 
 func InitPushTorrentsWorker(conf *WorkerConfig) *Worker {
-	if !config.HasPeer || config.PeerAuthToken == "" {
+	if TorrentPusherQueue.disabled {
 		return nil
 	}
 
@@ -46,7 +47,7 @@ func InitPushTorrentsWorker(conf *WorkerConfig) *Worker {
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
-				if perr, stack := util.RecoverPanic(true); perr != nil {
+				if perr, stack := util.HandlePanic(recover(), true); perr != nil {
 					err = perr
 					log.Error("Worker Panic", "error", err, "stack", stack)
 				}

@@ -1,4 +1,4 @@
-package stremio_usenet
+package stremio_store_webdl
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ var tbClient = torbox.NewAPIClient(&torbox.APIClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 })
 
-type NewsFile struct {
+type WebDLFile struct {
 	Idx  int    `json:"index"`
 	Link string `json:"link,omitempty"`
 	Name string `json:"name"`
@@ -25,63 +25,49 @@ type NewsFile struct {
 	Size int64  `json:"size"`
 }
 
-type ListNewsParams struct {
+type ListWebDLsParams struct {
 	request.Ctx
 	Limit    int // min 1, max 500, default 100
 	Offset   int // default 0
 	ClientIP string
 }
 
-type NewsStatus = store.MagnetStatus
+type WebDLStatus = store.MagnetStatus
 
-type News struct {
-	Id      string     `json:"id"`
-	Hash    string     `json:"hash"`
-	Name    string     `json:"name"`
-	Size    int64      `json:"size"`
-	Status  NewsStatus `json:"status"`
-	AddedAt time.Time  `json:"added_at"`
-	Files   []NewsFile `json:"files"`
+type WebDL struct {
+	Id      string      `json:"id"`
+	Hash    string      `json:"hash"`
+	Name    string      `json:"name"`
+	Size    int64       `json:"size"`
+	Status  WebDLStatus `json:"status"`
+	AddedAt time.Time   `json:"added_at"`
+	Files   []WebDLFile `json:"files"`
 }
 
-func (n News) GetLargestFileName() string {
-	name, size := "", int64(0)
-	for i, file := range n.Files {
-		if file.Size > size {
-			name = file.Name
-			size = file.Size
-		}
-		if i > 99 {
-			break
-		}
-	}
-	return name
+type ListWebDLsData struct {
+	Items      []WebDL `json:"items"`
+	TotalItems int     `json:"total_items"`
 }
 
-type ListNewsData struct {
-	Items      []News `json:"items"`
-	TotalItems int    `json:"total_items"`
-}
-
-func ListNews(params *ListNewsParams, storeName store.StoreName) (*ListNewsData, error) {
+func ListWebDLs(params *ListWebDLsParams, storeName store.StoreName) (*ListWebDLsData, error) {
 	params.Limit = max(1, min(params.Limit, 500))
 
 	switch storeName {
 	case store.StoreNameTorBox:
-		rParams := &torbox.ListUsenetDownloadParams{
+		rParams := &torbox.ListWebDLDownloadParams{
 			Ctx:    params.Ctx,
 			Limit:  params.Limit,
 			Offset: params.Offset,
 		}
-		res, err := tbClient.ListUsenetDownload(rParams)
+		res, err := tbClient.ListWebDLDownload(rParams)
 		if err != nil {
 			return nil, err
 		}
 
-		data := ListNewsData{}
+		data := ListWebDLsData{}
 		for i := range res.Data {
 			und := &res.Data[i]
-			item := News{
+			item := WebDL{
 				Id:      strconv.Itoa(und.Id),
 				Hash:    und.Hash,
 				Name:    und.Name,
@@ -96,7 +82,7 @@ func ListNews(params *ListNewsParams, storeName store.StoreName) (*ListNewsData,
 			}
 			for i := range und.Files {
 				f := &und.Files[i]
-				file := NewsFile{
+				file := WebDLFile{
 					Idx:  f.Id,
 					Link: torbox.LockedFileLink("").Create(und.Id, f.Id),
 					Name: f.ShortName,
@@ -121,37 +107,37 @@ func ListNews(params *ListNewsParams, storeName store.StoreName) (*ListNewsData,
 
 		return &data, nil
 	default:
-		return &ListNewsData{}, nil
+		return &ListWebDLsData{}, nil
 	}
 }
 
-type GetNewsParams struct {
+type GetWebDLParams struct {
 	request.Ctx
 	Id          string
 	ClientIP    string
 	BypassCache bool
 }
 
-type GetNewsData = News
+type GetWebDLData = WebDL
 
-func GetNews(params *GetNewsParams, storeName store.StoreName) (*News, error) {
+func GetWebDL(params *GetWebDLParams, storeName store.StoreName) (*WebDL, error) {
 	switch storeName {
 	case store.StoreNameTorBox:
 		id, err := strconv.Atoi(params.Id)
 		if err != nil {
 			return nil, err
 		}
-		rParams := &torbox.GetUsenetDownloadParams{
+		rParams := &torbox.GetWebDLDownloadParams{
 			Ctx:         params.Ctx,
 			Id:          id,
 			BypassCache: params.BypassCache,
 		}
-		res, err := tbClient.GetUsenetDownload(rParams)
+		res, err := tbClient.GetWebDLDownload(rParams)
 		if err != nil {
 			return nil, err
 		}
 		und := &res.Data
-		item := News{
+		item := WebDL{
 			Id:      strconv.Itoa(und.Id),
 			Hash:    und.Hash,
 			Name:    und.Name,
@@ -167,7 +153,7 @@ func GetNews(params *GetNewsParams, storeName store.StoreName) (*News, error) {
 		}
 		for i := range und.Files {
 			f := &und.Files[i]
-			file := NewsFile{
+			file := WebDLFile{
 				Idx:  f.Id,
 				Link: torbox.LockedFileLink("").Create(und.Id, f.Id),
 				Name: f.ShortName,
@@ -202,13 +188,13 @@ func GenerateLink(params *GenerateLinkParams, storeName store.StoreName) (*Gener
 			error.Cause = err
 			return nil, error
 		}
-		rParams := &torbox.RequestUsenetDownloadLinkParams{
-			Ctx:      params.Ctx,
-			UsenetId: id,
-			FileId:   fileId,
-			UserIP:   params.CLientIP,
+		rParams := &torbox.RequestWebDLDownloadLinkParams{
+			Ctx:     params.Ctx,
+			WebDLId: id,
+			FileId:  fileId,
+			UserIP:  params.CLientIP,
 		}
-		res, err := tbClient.RequestUsenetDownloadLink(rParams)
+		res, err := tbClient.RequestWebDLDownloadLink(rParams)
 		if err != nil {
 			return nil, err
 		}

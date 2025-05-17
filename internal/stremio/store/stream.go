@@ -9,6 +9,7 @@ import (
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -19,18 +20,9 @@ import (
 )
 
 var streamTemplate = func() *stremio_transformer.StreamTemplate {
-	tmplBlob := stremio_transformer.StreamTemplateBlob{
-		Name: `Store {{.Store.Code}}
-{{ if ne .Resolution ""}}{{.Resolution}}{{end}}`,
-		Description: `✏️ {{.TTitle}}
-{{if ne .Quality ""}} 💿 {{.Quality}} {{end}}{{if ne .Codec ""}} 🎞️ {{.Codec}} {{end}}{{if gt (len .HDR) 0}} 📺 {{str_join .HDR ","}}{{end}}{{if gt (len .Audio) 0}} 🎧 {{str_join .Audio ","}}{{if gt (len .Channels) 0}} | {{str_join .Channels ","}}{{end}}{{end}}
-{{if ne .Size ""}} 📦 {{.Size}}{{end}}{{if ne .Group ""}} ⚙️ {{.Group}}{{end}}
-📄 {{.Raw.Name}}`,
-	}
-	tmpl, err := tmplBlob.Parse()
-	if err != nil {
-		panic(err)
-	}
+	tmplBlob := stremio_transformer.StreamTemplateDefault.Blob
+	tmplBlob.Description = "✏️ {{.Title}}\n" + tmplBlob.Description
+	tmpl := tmplBlob.MustParse()
 	return tmpl
 }()
 
@@ -42,12 +34,12 @@ type StreamFileMatcher struct {
 	Episode        int
 	Season         int
 
+	IdR        *ParsedId
 	IdPrefix   string
 	Store      store.Store
 	StoreCode  string
 	StoreToken string
 	ClientIP   string
-	IsUsenet   bool
 }
 
 func handleStream(w http.ResponseWriter, r *http.Request) {
@@ -127,11 +119,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			FileLink: link,
 
 			IdPrefix:   idPrefix,
+			IdR:        idr,
 			Store:      ctx.Store,
 			StoreCode:  idr.getStoreCode(),
 			StoreToken: ctx.StoreAuthToken,
 			ClientIP:   ctx.ClientIP,
-			IsUsenet:   idr.isUsenet,
 		})
 	}
 
@@ -170,8 +162,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				isUsenet := strings.HasSuffix(idPrefix, "-usenet:")
-				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, isUsenet)
+				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr)
 				if meta.Name != "" {
 					query := strings.ToLower(meta.Name)
 					filteredItems := []CachedCatalogItem{}
@@ -194,11 +185,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 							Episode:  episode,
 
 							IdPrefix:   idPrefix,
+							IdR:        idr,
 							Store:      ctx.Store,
 							StoreCode:  idr.getStoreCode(),
 							StoreToken: ctx.StoreAuthToken,
 							ClientIP:   ctx.ClientIP,
-							IsUsenet:   isUsenet,
 						})
 					} else {
 						matcherResults[idx] = append(matcherResults[idx], StreamFileMatcher{
@@ -206,11 +197,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 							UseLargestFile: true,
 
 							IdPrefix:   idPrefix,
+							IdR:        idr,
 							Store:      ctx.Store,
 							StoreCode:  idr.getStoreCode(),
 							StoreToken: ctx.StoreAuthToken,
 							ClientIP:   ctx.ClientIP,
-							IsUsenet:   isUsenet,
 						})
 					}
 				}
@@ -237,20 +228,22 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			defer wg.Done()
 
-			cInfo, err := getStoreContentInfo(matcher.Store, matcher.StoreToken, matcher.MagnetId, matcher.ClientIP, matcher.IsUsenet)
+			cInfo, err := getStoreContentInfo(matcher.Store, matcher.StoreToken, matcher.MagnetId, matcher.ClientIP, matcher.IdR)
 			if err != nil {
 				errs[i] = err
 				return
 			}
 
-			if !matcher.IsUsenet && meta == nil {
+			if !matcher.IdR.isUsenet && !matcher.IdR.isWebDL && meta == nil {
 				stremIdByHash, err := torrent_stream.GetStremIdByHashes([]string{cInfo.Hash})
 				if err != nil {
 					log.Error("failed to get strem id by hashes", "error", err)
 				}
 				if stremId := stremIdByHash.Get(cInfo.Hash); stremId != "" {
-					sType, sId := "", ""
-					sType, sId, season, episode = parseStremId(stremId)
+					sType, sId, sSeason, sEpisode := parseStremId(stremId)
+					if !isStremThruStoreId {
+						season, episode = sSeason, sEpisode
+					}
 					if mRes, err := fetchMeta(sType, sId, core.GetRequestIP(r)); err == nil {
 						meta = &mRes.Meta
 					} else {
@@ -263,9 +256,12 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				pttLog.Warn("failed to parse", "error", err, "title", cInfo.Name)
 			}
-			tSeason := -1
+			tSeason, tEpisode := -1, -1
 			if len(tpttr.Seasons) == 1 {
 				tSeason = tpttr.Seasons[0]
+			}
+			if len(tpttr.Episodes) == 1 {
+				tEpisode = tpttr.Episodes[0]
 			}
 
 			var pttr *ptt.Result
@@ -273,6 +269,10 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 			for i := range cInfo.Files {
 				f := &cInfo.Files[i]
+				if !core.HasVideoExtension(f.Name) {
+					continue
+				}
+
 				if matcher.FileLink != "" && matcher.FileLink == f.Link {
 					file = f
 					break
@@ -282,20 +282,26 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				} else if matcher.Episode > 0 {
 					if r, err := util.ParseTorrentTitle(f.Name); err == nil {
 						pttr = r
-						season, episode := tSeason, -1
+						fSeason, fEpisode := tSeason, tEpisode
 						if len(r.Seasons) > 0 {
-							season = r.Seasons[0]
+							fSeason = r.Seasons[0]
+						} else if tSeason != -1 {
+							r.Seasons = append(r.Seasons, tSeason)
 						}
 						if len(r.Episodes) > 0 {
-							episode = r.Episodes[0]
+							fEpisode = r.Episodes[0]
+						} else if tEpisode != -1 {
+							r.Episodes = append(r.Episodes, tEpisode)
 						}
-						if season == matcher.Season && episode == matcher.Episode {
+						if fSeason == matcher.Season && fEpisode == matcher.Episode {
 							file = f
+							season, episode = fSeason, fEpisode
 							break
 						}
 					} else {
 						pttLog.Warn("failed to parse", "error", err, "title", f.Name)
 					}
+					pttr = nil
 				} else if matcher.UseLargestFile {
 					if file == nil || file.Size < f.Size {
 						file = f
@@ -320,6 +326,16 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			if pttr == nil {
 				if r, err := util.ParseTorrentTitle(file.Name); err == nil {
 					pttr = r
+					if len(pttr.Seasons) > 0 {
+						season = pttr.Seasons[0]
+					} else {
+						season = tSeason
+					}
+					if len(pttr.Episodes) > 0 {
+						episode = pttr.Episodes[0]
+					} else {
+						episode = tEpisode
+					}
 				} else {
 					pttLog.Warn("failed to parse", "error", err, "title", file.Name)
 				}
@@ -352,26 +368,36 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				if meta != nil && season != -1 && episode != -1 {
 					for i := range meta.Videos {
 						video := &meta.Videos[i]
-						if video.Season == season && video.Episode == episode {
+						if video.Season.Equal(season) && video.Episode.Equal(episode) {
 							pttr.Title = video.Name
 							break
 						}
 					}
 				}
+				storeName := matcher.Store.GetName()
 				data := &stremio_transformer.StreamExtractorResult{
 					Result: pttr,
+					File: stremio_transformer.StreamExtractorResultFile{
+						Name: file.Name,
+						Idx:  file.Idx,
+						Size: pttr.Size,
+					},
 					Raw: stremio_transformer.StreamExtractorResultRaw{
-						Name:        stream.Name,
-						Description: stream.Description,
+						Name: stream.Name,
 					},
 					Store: stremio_transformer.StreamExtractorResultStore{
-						Code:     strings.ToUpper(matcher.StoreCode),
-						Name:     string(store.StoreCode(matcher.StoreCode).Name()),
-						IsCached: true,
+						Code:      strings.ToUpper(string(storeName.Code())),
+						Name:      string(storeName),
+						IsCached:  true,
+						IsProxied: matcher.IdR.isST && config.StoreContentProxy.IsEnabled(string(storeName)),
 					},
 				}
-				if stream.Description == "" {
-					data.Raw.Description = stream.Title
+				if matcher.IdR.isUsenet {
+					data.Addon.Name = "Usenet Store"
+				} else if matcher.IdR.isWebDL {
+					data.Addon.Name = "WebDL Store"
+				} else {
+					data.Addon.Name = "Store"
 				}
 				if _, err := streamTemplate.Execute(&stream, data); err != nil {
 					log.Error("failed to execute stream template", "error", err)

@@ -29,7 +29,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		page, err := configure.GetPage(td)
+		page, err := getPage(td)
 		if err != nil {
 			SendError(w, r, err)
 			return
@@ -87,7 +87,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if td.HasError() {
-		page, err := configure.GetPage(td)
+		page, err := getPage(td)
 		if err != nil {
 			SendError(w, r, err)
 			return

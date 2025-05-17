@@ -10,7 +10,8 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/shared"
-	stremio_usenet "github.com/MunifTanjim/stremthru/internal/stremio/usenet"
+	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
+	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/worker"
@@ -42,13 +43,13 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 		offset := 0
 		hasMore := true
 		for hasMore && offset < max_fetch_list_items {
-			params := &stremio_usenet.ListNewsParams{
+			params := &stremio_store_usenet.ListNewsParams{
 				Limit:    fetch_list_limit,
 				Offset:   offset,
 				ClientIP: clientIp,
 			}
 			params.APIKey = storeToken
-			res, err := stremio_usenet.ListNews(params, s.GetName())
+			res, err := stremio_store_usenet.ListNews(params, s.GetName())
 			if err != nil {
 				log.Error("failed to list news", "error", err, "offset", offset)
 				break
@@ -76,9 +77,55 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 	return items
 }
 
-func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, isUsenet bool) []CachedCatalogItem {
-	if isUsenet {
+func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string) []CachedCatalogItem {
+	items := []CachedCatalogItem{}
+
+	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
+	if !catalogCache.Get(cacheKey, &items) {
+		offset := 0
+		hasMore := true
+		for hasMore && offset < max_fetch_list_items {
+			params := &stremio_store_webdl.ListWebDLsParams{
+				Limit:    fetch_list_limit,
+				Offset:   offset,
+				ClientIP: clientIp,
+			}
+			params.APIKey = storeToken
+			res, err := stremio_store_webdl.ListWebDLs(params, s.GetName())
+			if err != nil {
+				log.Error("failed to list webdls", "error", err, "offset", offset)
+				break
+			}
+
+			for _, item := range res.Items {
+				if item.Status == store.MagnetStatusDownloaded {
+					cItem := CachedCatalogItem{stremio.MetaPreview{
+						Id:          idPrefix + item.Id,
+						Type:        ContentTypeOther,
+						Name:        item.Name,
+						PosterShape: stremio.MetaPosterShapePoster,
+					}, item.Hash}
+					cItem.Description = getMetaPreviewDescriptionForWebDL(cItem.hash, item.Name, false)
+					items = append(items, cItem)
+				}
+			}
+			offset += fetch_list_limit
+			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
+			time.Sleep(1 * time.Second)
+		}
+		catalogCache.Add(cacheKey, items)
+	}
+
+	return items
+}
+
+func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, idr *ParsedId) []CachedCatalogItem {
+	if idr.isUsenet {
 		return getUsenetCatalogItems(s, storeToken, clientIp, idPrefix)
+	}
+
+	if idr.isWebDL {
+		return getWebDLCatalogItems(s, storeToken, clientIp, idPrefix)
 	}
 
 	items := []CachedCatalogItem{}
@@ -224,15 +271,15 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		Metas: []stremio.MetaPreview{},
 	}
 
+	idStoreCode := idr.getStoreCode()
+
 	if extra.Genre == CatalogGenreStremThru {
-		res.Metas = append(res.Metas, getStoreActionMetaPreview(idr.getStoreCode()))
+		res.Metas = append(res.Metas, getStoreActionMetaPreview(idStoreCode))
 		SendResponse(w, r, 200, res)
 		return
 	}
 
-	idPrefix := getIdPrefix(idr.getStoreCode())
-
-	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr.isUsenet)
+	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, getIdPrefix(idStoreCode), idr)
 
 	if extra.Search != "" {
 		query := strings.ToLower(extra.Search)
@@ -252,7 +299,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		filteredItems := []CachedCatalogItem{}
 		if includeStoreActions {
 			filteredItems = append(filteredItems, CachedCatalogItem{
-				MetaPreview: getStoreActionMetaPreview(idr.getStoreCode()),
+				MetaPreview: getStoreActionMetaPreview(idStoreCode),
 			})
 		}
 		for i := range items {
@@ -274,7 +321,23 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		hashes[i] = item.hash
 	}
 
-	res.Metas = make([]stremio.MetaPreview, len(hashes))
+	includeRDDownlodsMetaPreview := ud.EnableWebDL && idr.storeCode == store.StoreCodeRealDebrid
+
+	count := len(hashes)
+	if includeRDDownlodsMetaPreview {
+		count += 1
+	}
+
+	res.Metas = make([]stremio.MetaPreview, 0, count)
+
+	if includeRDDownlodsMetaPreview {
+		res.Metas = append(res.Metas, stremio.MetaPreview{
+			Id:     getRDWebDLsId(idStoreCode),
+			Type:   ContentTypeOther,
+			Name:   "Web Downloads",
+			Poster: "https://emojiapi.dev/api/v1/inbox_tray/256.png",
+		})
+	}
 
 	stremIdByHash, err := torrent_stream.GetStremIdByHashes(hashes)
 	if err != nil {
@@ -286,7 +349,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			stremId, _, _ = strings.Cut(stremId, ":")
 			item.Poster = getPosterUrl(stremId)
 		}
-		res.Metas[i] = item.MetaPreview
+		res.Metas = append(res.Metas, item.MetaPreview)
 	}
 
 	SendResponse(w, r, 200, res)

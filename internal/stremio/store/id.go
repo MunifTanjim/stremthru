@@ -27,10 +27,19 @@ func getStoreActionIdPrefix(storeCode string) string {
 	return getStoreActionId(storeCode) + ":"
 }
 
+func getRDWebDLsId(storeCode string) string {
+	return getIdPrefix(storeCode) + "webdls"
+}
+
+func getRDWebDLsIdPrefix(storeCode string) string {
+	return getRDWebDLsId(storeCode) + ":"
+}
+
 type ParsedId struct {
 	storeCode    store.StoreCode
 	storeName    store.StoreName
 	isUsenet     bool
+	isWebDL      bool
 	isDeprecated bool
 	isST         bool
 	code         string
@@ -47,20 +56,20 @@ func (idr *ParsedId) getStoreCode() string {
 				idr.code = "st-" + string(idr.storeCode)
 				if idr.isUsenet {
 					idr.code += "-usenet"
+				} else if idr.isWebDL {
+					idr.code += "-webdl"
 				}
 			}
 		} else {
 			idr.code = string(idr.storeCode)
 			if idr.isUsenet {
 				idr.code += "-usenet"
+			} else if idr.isWebDL {
+				idr.code += "-webdl"
 			}
 		}
 	}
 	return idr.code
-}
-
-func (idr *ParsedId) getIdPrefix() string {
-	return getIdPrefix(idr.getStoreCode())
 }
 
 func parseId(id string) (*ParsedId, error) {
@@ -77,13 +86,23 @@ func parseId(id string) (*ParsedId, error) {
 		if scParts[0] == "st" {
 			r.isST = true
 			r.storeCode = store.StoreCode(scParts[1])
-			if len(scParts) > 2 && scParts[2] == "usenet" {
-				r.isUsenet = true
+			if len(scParts) > 2 {
+				switch scParts[2] {
+				case "usenet":
+					r.isUsenet = true
+				case "webdl":
+					r.isWebDL = true
+				}
 			}
 		} else {
 			r.storeCode = store.StoreCode(scParts[0])
-			if len(scParts) > 1 && scParts[1] == "usenet" {
-				r.isUsenet = true
+			if len(scParts) > 1 {
+				switch scParts[1] {
+				case "usenet":
+					r.isUsenet = true
+				case "webdl":
+					r.isWebDL = true
+				}
 			}
 		}
 	} else {

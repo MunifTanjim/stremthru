@@ -6,11 +6,17 @@ import (
 	"html/template"
 )
 
+type BaseDataStremThruAddon struct {
+	Name string
+	URL  string
+}
+
 type BaseData struct {
-	Title       string
-	Description string
-	NavTitle    string
-	Version     string
+	Title           string
+	Description     string
+	NavTitle        string
+	Version         string
+	StremThruAddons []BaseDataStremThruAddon
 }
 
 type Executor[T any] func(data *T, name string) (bytes.Buffer, error)

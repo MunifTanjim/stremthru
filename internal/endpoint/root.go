@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
 //go:embed root.html
@@ -57,22 +58,11 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		Addons:      []rootTemplateDataAddon{},
 		Sections:    rootTemplateData.Sections,
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioWrap) {
+	addons := stremio_shared.GetStremThruAddons()
+	for _, addon := range addons {
 		td.Addons = append(td.Addons, rootTemplateDataAddon{
-			Name: "Wrap",
-			URL:  "/stremio/wrap",
-		})
-	}
-	if config.Feature.IsEnabled(config.FeatureStremioStore) {
-		td.Addons = append(td.Addons, rootTemplateDataAddon{
-			Name: "Store",
-			URL:  "/stremio/store",
-		})
-	}
-	if config.Feature.IsEnabled(config.FeatureStremioSidekick) {
-		td.Addons = append(td.Addons, rootTemplateDataAddon{
-			Name: "Sidekick",
-			URL:  "/stremio/sidekick",
+			Name: addon.Name,
+			URL:  addon.URL,
 		})
 	}
 

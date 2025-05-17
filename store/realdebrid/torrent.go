@@ -233,7 +233,7 @@ func (c *listTorrentsData) UnmarshalJSON(data []byte) error {
 type ListTorrentsParams struct {
 	Ctx
 	Offset int    // Starting offset (must be within 0 and X-Total-Count HTTP header)
-	Limit  int    // 	Entries returned per page / request (must be within 0 and 5000, default: 100)
+	Limit  int    // Entries returned per page / request (must be within 0 and 5000, default: 100)
 	Page   int    //
 	Filter string // "active", list active torrents only
 }

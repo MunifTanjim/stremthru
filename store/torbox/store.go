@@ -200,12 +200,12 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			Status: store.MagnetStatusUnknown,
 			Files:  []store.MagnetFile{},
 		}
+		tInfo := buddy.TorrentInfoInput{
+			Hash: hash,
+		}
 		if t, ok := tByHash[hash]; ok {
-			tInfo := buddy.TorrentInfoInput{
-				Hash:         hash,
-				TorrentTitle: t.Name,
-				Size:         t.Size,
-			}
+			tInfo.TorrentTitle = t.Name
+			tInfo.Size = t.Size
 			item.Status = store.MagnetStatusCached
 			for idx, f := range t.Files {
 				file := torrent_stream.File{
@@ -220,8 +220,8 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 					Size: file.Size,
 				})
 			}
-			tInfos = append(tInfos, tInfo)
 		}
+		tInfos = append(tInfos, tInfo)
 		data.Items = append(data.Items, item)
 	}
 	go buddy.BulkTrackMagnet(c, tInfos, "", params.GetAPIKey(c.client.apiKey))

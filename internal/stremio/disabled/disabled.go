@@ -1,11 +1,11 @@
 package stremio_disabled
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
 func handleManifest(w http.ResponseWriter, r *http.Request) {
@@ -20,11 +20,7 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	if err := json.NewEncoder(w).Encode(manifest); err != nil {
-		LogError(r, "failed to encode json", err)
-	}
+	stremio_shared.SendResponse(w, r, 200, manifest)
 }
 
 func handleConfigure(w http.ResponseWriter, r *http.Request) {

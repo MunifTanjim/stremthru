@@ -25,13 +25,6 @@ type ManagerConfig struct {
 	AddonName string
 }
 
-type UserData[T any] interface {
-	GetEncoded() string
-	SetEncoded(encoded string)
-
-	Ptr() *T
-}
-
 type iManager[T any] struct {
 	addon string
 	cache cache.Cache[StremioUserData[T]]

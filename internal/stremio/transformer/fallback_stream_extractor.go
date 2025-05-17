@@ -21,7 +21,6 @@ func fallbackStreamExtractor(r *StreamExtractorResult) *StreamExtractorResult {
 	}
 	input += " " + r.Raw.Description
 
-	println(input)
 	if r.Codec == "" {
 		if match := codecRegex.FindString(input); match != "" {
 			r.Codec = match

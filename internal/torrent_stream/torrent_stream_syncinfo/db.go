@@ -48,7 +48,7 @@ var Columns = []string{
 	Column.PushedAt,
 }
 
-var staleTime = 12 * time.Hour
+var staleTime = 24 * time.Hour
 
 func ShouldPull(sid string) bool {
 	sid, _, _ = strings.Cut(sid, ":")

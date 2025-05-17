@@ -2,12 +2,9 @@ package worker
 
 import (
 	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/MunifTanjim/go-ptt"
-	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	ti "github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -22,67 +19,10 @@ func InitParseTorrentWorker(conf *WorkerConfig) *Worker {
 			return nil
 		}
 
-		r, err := util.ParseTorrentTitle(t.TorrentTitle)
-
+		err := t.ForceParse()
 		if err != nil {
 			log.Warn("failed to parse", "error", err, "title", t.TorrentTitle)
 			return nil
-		}
-
-		t.ParsedAt = db.Timestamp{Time: time.Now()}
-		t.ParserVersion = ptt.Version().Int()
-		t.ParserInput = t.TorrentTitle
-
-		t.Audio = r.Audio
-		t.BitDepth = r.BitDepth
-		t.Channels = r.Channels
-		t.Codec = r.Codec
-		t.Commentary = r.Commentary
-		t.Complete = r.Complete
-		t.Container = r.Container
-		t.Convert = r.Convert
-		if r.Date != "" {
-			if date, err := time.Parse(time.DateOnly, r.Date); err == nil {
-				t.Date = db.DateOnly{Time: date}
-			}
-		}
-		t.Documentary = r.Documentary
-		t.Dubbed = r.Dubbed
-		t.Edition = r.Edition
-		t.EpisodeCode = r.EpisodeCode
-		t.Episodes = r.Episodes
-		t.Extended = r.Extended
-		t.Extension = r.Extension
-		t.Group = r.Group
-		t.HDR = r.HDR
-		t.Hardcoded = r.Hardcoded
-		t.Languages = r.Languages
-		t.Network = r.Network
-		t.Proper = r.Proper
-		t.Quality = r.Quality
-		t.Region = r.Region
-		t.Remastered = r.Remastered
-		t.Repack = r.Repack
-		t.Resolution = r.Resolution
-		t.Retail = r.Retail
-		t.Seasons = r.Seasons
-		t.Site = r.Site
-		if r.Size != "" {
-			t.Size = util.ToBytes(r.Size)
-		}
-		t.Subbed = r.Subbed
-		t.ThreeD = r.ThreeD
-		t.Title = r.Title
-		t.Uncensored = r.Uncensored
-		t.Unrated = r.Unrated
-		t.Upscaled = r.Upscaled
-		t.Volumes = r.Volumes
-		if r.Year != "" {
-			year, year_end, _ := strings.Cut(r.Year, "-")
-			t.Year, _ = strconv.Atoi(year)
-			if year_end != "" {
-				t.YearEnd, _ = strconv.Atoi(year_end)
-			}
 		}
 
 		return t
@@ -100,7 +40,7 @@ func InitParseTorrentWorker(conf *WorkerConfig) *Worker {
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
-				if perr, stack := util.RecoverPanic(true); perr != nil {
+				if perr, stack := util.HandlePanic(recover(), true); perr != nil {
 					err = perr
 					log.Error("Worker Panic", "error", err, "stack", stack)
 				}

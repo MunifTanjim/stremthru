@@ -178,9 +178,9 @@ const (
 
 type ControlUsenetDownloadParams struct {
 	Ctx
-	UsenetId  int                     `json:"usenet_id"`
-	Operation ControlTorrentOperation `json:"operation"`
-	All       bool                    `json:"all"`
+	UsenetId  int                            `json:"usenet_id"`
+	Operation ControlUsenetDownloadOperation `json:"operation"`
+	All       bool                           `json:"all"`
 }
 
 type ControlUsenetDownloadData struct {

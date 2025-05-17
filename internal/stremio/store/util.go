@@ -1,30 +1,21 @@
 package stremio_store
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
 var IsMethod = shared.IsMethod
 var SendError = shared.SendError
 var ExtractRequestBaseURL = shared.ExtractRequestBaseURL
 
-func SendResponse(w http.ResponseWriter, r *http.Request, statusCode int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		LogError(r, "failed to encode json", err)
-	}
-}
-
-func SendHTML(w http.ResponseWriter, statusCode int, data bytes.Buffer) {
-	shared.SendHTML(w, statusCode, data)
-}
+var SendResponse = stremio_shared.SendResponse
+var SendHTML = stremio_shared.SendHTML
 
 func getPathParam(r *http.Request, name string) string {
 	if value := r.PathValue(name + "Json"); value != "" {
@@ -55,4 +46,12 @@ func parseStremId(sid string) (sType, sId string, season, episode int) {
 		sType = "movie"
 	}
 	return sType, sId, season, episode
+}
+
+func getContentType(r *http.Request) (string, *core.APIError) {
+	contentType := r.PathValue("contentType")
+	if contentType != ContentTypeOther {
+		return "", shared.ErrorBadRequest(r, "unsupported type: "+contentType)
+	}
+	return contentType, nil
 }

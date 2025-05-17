@@ -16,6 +16,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/internal/stremio/api"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -53,7 +54,7 @@ func setCookie(w http.ResponseWriter, authKey string, email string) {
 	cookie := &http.Cookie{
 		Name:     COOKIE_NAME,
 		Value:    value.Encode(),
-		Expires:  time.Now().Add(24 * time.Hour),
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
 		HttpOnly: true,
 		Path:     COOKIE_PATH,
 		Secure:   true,
@@ -117,7 +118,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 				} else if !config.AuthAdmin.IsAdmin(user) {
 					td.AuthAdminError = "Not Authorized!"
 				} else {
-					setAdminCookie(w, user, pass)
+					stremio_shared.SetAdminCookie(w, user, pass)
 					td.HasAuthAdmin = true
 					if r.Header.Get("hx-request") == "true" {
 						w.Header().Add("hx-refresh", "true")
@@ -125,7 +126,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		case "deauthorize":
-			unsetAdminCookie(w)
+			stremio_shared.UnsetAdminCookie(w)
 			td.HasAuthAdmin = false
 		}
 	}

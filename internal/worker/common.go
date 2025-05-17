@@ -11,9 +11,13 @@ type IdQueue struct {
 	m            sync.Map
 	debounceTime time.Duration
 	transform    func(id string) string
+	disabled     bool
 }
 
 func (q *IdQueue) Queue(sid string) {
+	if q.disabled {
+		return
+	}
 	q.m.Swap(q.transform(sid), time.Now().Add(q.debounceTime))
 }
 

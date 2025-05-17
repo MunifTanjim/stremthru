@@ -1,8 +1,11 @@
 package stremio_store
 
 import (
+	"bytes"
+
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
 func getStoreNameConfig(defaultValue string) configure.Config {
@@ -49,6 +52,14 @@ func getTemplateData(ud *UserData) *configure.TemplateData {
 	if ud.HideStream {
 		hideStreamConfig.Default = "checked"
 	}
+	enableWebDLConfig := configure.Config{
+		Key:   "enable_webdl",
+		Type:  configure.ConfigTypeCheckbox,
+		Title: "Enable WebDL",
+	}
+	if ud.EnableWebDL {
+		enableWebDLConfig.Default = "checked"
+	}
 	return &configure.TemplateData{
 		Base: configure.Base{
 			Title:       "StremThru Store",
@@ -67,7 +78,13 @@ func getTemplateData(ud *UserData) *configure.TemplateData {
 			},
 			hideCatalogConfig,
 			hideStreamConfig,
+			enableWebDLConfig,
 		},
 		Script: configure.GetScriptStoreTokenDescription("'#store_name'", "'#store_token'"),
 	}
+}
+
+func getPage(td *configure.TemplateData) (bytes.Buffer, error) {
+	td.StremThruAddons = stremio_shared.GetStremThruAddons()
+	return configure.GetPage(td)
 }

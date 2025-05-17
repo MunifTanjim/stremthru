@@ -1,9 +1,12 @@
-package stremio_sidekick
+package stremio_shared
 
 import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/server"
 )
 
 type AdminCookieValue struct {
@@ -22,7 +25,7 @@ func (cv *AdminCookieValue) Pass() string {
 const ADMIN_COOKIE_NAME = "stremio.auth.stremthru.admin"
 const ADMIN_COOKIE_PATH = "/stremio/"
 
-func setAdminCookie(w http.ResponseWriter, user string, pass string) {
+func SetAdminCookie(w http.ResponseWriter, user string, pass string) {
 	value := &url.Values{
 		"user": []string{user},
 		"pass": []string{pass},
@@ -38,7 +41,7 @@ func setAdminCookie(w http.ResponseWriter, user string, pass string) {
 	http.SetCookie(w, cookie)
 }
 
-func unsetAdminCookie(w http.ResponseWriter) {
+func UnsetAdminCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:    ADMIN_COOKIE_NAME,
 		Expires: time.Unix(0, 0),
@@ -46,7 +49,7 @@ func unsetAdminCookie(w http.ResponseWriter) {
 	})
 }
 
-func getAdminCookieValue(w http.ResponseWriter, r *http.Request) (*AdminCookieValue, error) {
+func GetAdminCookieValue(w http.ResponseWriter, r *http.Request) (*AdminCookieValue, error) {
 	cookie, err := r.Cookie(ADMIN_COOKIE_NAME)
 	value := &AdminCookieValue{}
 	if err != nil {
@@ -58,9 +61,11 @@ func getAdminCookieValue(w http.ResponseWriter, r *http.Request) (*AdminCookieVa
 	}
 
 	v, err := url.ParseQuery(cookie.Value)
+
 	if err != nil {
-		LogError(r, "failed to parse cookie value", err)
-		unsetAdminCookie(w)
+		ctx := server.GetReqCtx(r)
+		ctx.Log.Error("failed to parse cookie value", "error", core.PackError(err))
+		UnsetAdminCookie(w)
 		value.IsExpired = true
 		return value, nil
 	}

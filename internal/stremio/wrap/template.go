@@ -8,29 +8,11 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 )
-
-func getStoreCodeOptions() []configure.ConfigOption {
-	options := []configure.ConfigOption{
-		{Value: "", Label: "StremThru"},
-		{Value: "ad", Label: "AllDebrid"},
-		{Value: "dl", Label: "DebridLink"},
-		{Value: "ed", Label: "EasyDebrid"},
-		{Value: "oc", Label: "Offcloud"},
-		{Value: "pm", Label: "Premiumize"},
-		{Value: "pp", Label: "PikPak"},
-		{Value: "rd", Label: "RealDebrid"},
-		{Value: "tb", Label: "TorBox"},
-	}
-	if config.IsPublicInstance {
-		options[0].Disabled = true
-		options[0].Label = ""
-	}
-	return options
-}
 
 func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *TemplateData {
 	td := &TemplateData{
@@ -41,7 +23,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 		},
 		Upstreams:        []UpstreamAddon{},
 		Stores:           []StoreConfig{},
-		StoreCodeOptions: getStoreCodeOptions(),
+		StoreCodeOptions: stremio_shared.GetStoreCodeOptions(),
 		Configs: []configure.Config{
 			{
 				Key:     "cached",
@@ -57,14 +39,14 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Type:        "text",
 			Default:     ud.Sort,
 			Title:       "Stream Sort",
-			Description: "Comma separated fields: <code>resolution</code>, <code>quality</code>, <code>size</code>. Prefix with <code>-</code> for reverse sort. Default: <code>" + defaultSortConfig + "</code>",
+			Description: "Comma separated fields: <code>resolution</code>, <code>quality</code>, <code>size</code>. Prefix with <code>-</code> for reverse sort. Default: <code>" + stremio_transformer.StreamDefaultSortConfig + "</code>",
 		},
 
 		ExtractorIds: []string{},
 		TemplateIds:  []string{},
 	}
 
-	if cookie, err := getCookieValue(w, r); err == nil && !cookie.IsExpired {
+	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
 		td.IsAuthed = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
 	}
 
@@ -289,6 +271,7 @@ func (td *TemplateData) HasFieldError() bool {
 
 var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/wrap", func(td *TemplateData) *TemplateData {
+		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
 		td.CanAuthorize = !IsPublicInstance
 		td.CanAddUpstream = td.IsAuthed || len(td.Upstreams) < MaxPublicInstanceUpstreamCount
