@@ -1,0 +1,133 @@
+{{define "head"}}
+<style>
+</style>
+{{end}}
+
+{{define "header"}}
+<h1>
+  {{.Title}}
+</h1>
+<div>
+  <p>{{.Description}}</p>
+</div>
+{{end}}
+
+{{define "main"}}
+
+<form
+  id="configuration" action="configure" method="post" hx-boost="true"
+>
+  <div id="mdblist" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+    <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
+      <span class="px-2" style="background-color: var(--pico-background-color);">
+        MDBList
+      </span>
+    </header>
+
+    <div>
+      <div class="relative mb-8">
+        <label for="mdblist_api_key">API Key</label>
+        <input type="password" id="mdblist_api_key" name="mdblist_api_key" value="{{.MDBList.APIKey}}" {{if ne .MDBList.Error.APIKey ""}}aria-invalid="true"{{end}}>
+        <small><span class="error">{{.MDBList.Error.APIKey}}</span>{{if ne .MDBList.Error.APIKey ""}} | {{end}}<span class="description"><a href="https://mdblist.com/preferences/#api_key_uid" target="_blank">API Key</a></span></small>
+
+        <input type="hidden" name="mdblist_lists_length" value="{{ .MDBList.Lists | len }}" />
+
+        {{range $idx, $list := .MDBList.Lists}}
+        <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+          <label for="mdblist_lists[{{$idx}}].url">List URL</label>
+          <input type="url" id="mdblist_lists[{{$idx}}].url" name="mdblist_lists[{{$idx}}].url" value="{{$list.URL}}" {{if ne $list.Error.URL ""}}aria-invalid="true"{{end}} />
+          <small>{{if ne $list.Error.URL ""}}<span class="error">{{$list.Error.URL}}</span> | {{end}}<span class="description"></span></small>
+        </div>
+        {{end}}
+
+        <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
+          <small>
+            <button
+              {{if not .MDBList.CanRemoveList}}disabled{{end}}
+              id="configure-action-remove-mdblist-list"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"remove-mdblist-list"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              - Remove
+            </button>
+            <button
+              {{if not .MDBList.CanAddList}}disabled{{end}}
+              id="configure-action-add-mdblist-list"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"add-mdblist-list"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              + Add
+            </button>
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit">Install</button>
+</form>
+
+{{if ne .ManifestURL ""}}
+<div id="manifest_url_section">
+  <label for="__manifest_url__">Manifest URL</label>
+  <fieldset role="group">
+    <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
+    <button type="button" onclick="copyManifestUrl()">Copy</button>
+  </fieldset>
+</div>
+{{end}}
+
+{{end}}
+
+{{define "foot"}}
+<script>
+  function copyManifestUrl() {
+    const manifestUrl = document.querySelector("input#__manifest_url__")?.value;
+    if (!manifestUrl) {
+      return;
+    }
+    navigator.clipboard.writeText(manifestUrl);
+    return manifestUrl;
+  }
+
+  htmx.off("form#configuration", "try_install");
+  htmx.on("form#configuration", "try_install", function(evt) {
+    const manifestUrl = copyManifestUrl();
+    if (manifestUrl) {
+      window.location.href = manifestUrl.replace(/^.+:\/\//, 'stremio://');
+    }
+  });
+
+  htmx.off("form#configuration", "htmx:beforeRequest");
+  htmx.on("form#configuration", "htmx:beforeRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+    } else {
+      evt.detail.elt.ariaBusy = true;
+    }
+  });
+  htmx.off("form#configuration", "htmx:afterRequest");
+  htmx.on("form#configuration", "htmx:afterRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = false;
+    } else {
+      evt.detail.elt.ariaBusy = false;
+    }
+  });
+  htmx.on("form#configuration", "change", function(evt) {
+    document.querySelector('#manifest_url_section')?.remove();
+  }, { once: true });
+</script>
+{{end}}
+
+{{template "layout.html" .}}

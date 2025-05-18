@@ -153,6 +153,7 @@ const (
 const (
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
+	FeatureStremioList     string = "stremio_list"
 	FeatureStremioSidekick string = "stremio_sidekick"
 	FeatureStremioStore    string = "stremio_store"
 	FeatureStremioTorz     string = "stremio_torz"
@@ -162,6 +163,7 @@ const (
 var features = []string{
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
+	FeatureStremioList,
 	FeatureStremioSidekick,
 	FeatureStremioStore,
 	FeatureStremioWrap,

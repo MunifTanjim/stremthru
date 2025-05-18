@@ -12,6 +12,12 @@ import (
 func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 	addons := []stremio_template.BaseDataStremThruAddon{}
 
+	if config.Feature.IsEnabled(config.FeatureStremioList) {
+		addons = append(addons, stremio_template.BaseDataStremThruAddon{
+			Name: "List",
+			URL:  "/stremio/list",
+		})
+	}
 	if config.Feature.IsEnabled(config.FeatureStremioWrap) {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "Wrap",
