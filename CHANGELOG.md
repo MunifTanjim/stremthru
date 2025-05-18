@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.73.3](https://github.com/MunifTanjim/stremthru/compare/0.73.2...0.73.3) (2025-05-18)
+
+
+### Bug Fixes
+
+* **db:** break out of sqlite infinite retry loop ([b2ff6b6](https://github.com/MunifTanjim/stremthru/commit/b2ff6b67f41b8ab6b552e95368c84cb9b811b1c4))
+
 ## [0.73.2](https://github.com/MunifTanjim/stremthru/compare/0.73.1...0.73.2) (2025-05-17)
 
 
