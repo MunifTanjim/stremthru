@@ -5,21 +5,8 @@ import (
 	"slices"
 
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
-
-func redirectToConfigurePage(w http.ResponseWriter, r *http.Request, ud *UserData, tryInstall bool) {
-	url := ExtractRequestBaseURL(r).JoinPath("/stremio/torz/" + ud.GetEncoded() + "/configure")
-	if tryInstall {
-		w.Header().Add("hx-trigger", "try_install")
-	}
-
-	if r.Header.Get("hx-request") == "true" {
-		w.Header().Add("hx-location", url.String())
-		w.WriteHeader(200)
-	} else {
-		http.Redirect(w, r, url.String(), http.StatusFound)
-	}
-}
 
 func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) && !IsMethod(r, http.MethodPost) {
@@ -116,7 +103,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		redirectToConfigurePage(w, r, ud, true)
+		stremio_shared.RedirectToConfigurePage(w, r, "torz", ud, true)
 		return
 	}
 
