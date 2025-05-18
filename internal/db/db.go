@@ -16,7 +16,7 @@ type DB struct {
 	URI ConnectionURI
 }
 
-var db *DB
+var db = &DB{}
 var Dialect DBDialect
 
 var BooleanFalse string
@@ -55,7 +55,12 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 	return uri, dsnModifiers
 }()
 
-var Exec = func() func(query string, args ...any) (sql.Result, error) {
+type dbExec func(query string, args ...any) (sql.Result, error)
+type dbExecutor interface {
+	Exec(query string, args ...any) (sql.Result, error)
+}
+
+var getExec = func(db dbExecutor) dbExec {
 	if Dialect == DBDialectPostgres {
 		return func(query string, args ...any) (sql.Result, error) {
 			return db.Exec(adaptQuery(query), args...)
@@ -76,7 +81,9 @@ var Exec = func() func(query string, args ...any) (sql.Result, error) {
 		}
 		return r, err
 	}
-}()
+}
+
+var Exec = getExec(db)
 
 func Query(query string, args ...any) (*sql.Rows, error) {
 	return db.Query(adaptQuery(query), args...)
@@ -87,7 +94,8 @@ func QueryRow(query string, args ...any) *sql.Row {
 }
 
 type Tx struct {
-	tx *sql.Tx
+	tx   *sql.Tx
+	exec dbExec
 }
 
 func (tx *Tx) Commit() error {
@@ -95,7 +103,7 @@ func (tx *Tx) Commit() error {
 }
 
 func (tx *Tx) Exec(query string, args ...any) (sql.Result, error) {
-	return tx.tx.Exec(adaptQuery(query), args...)
+	return tx.exec(query, args...)
 }
 
 func (tx *Tx) Rollback() error {
@@ -107,7 +115,7 @@ func Begin() (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Tx{tx: tx}, nil
+	return &Tx{tx: tx, exec: getExec(tx)}, nil
 }
 
 func Ping() {
@@ -127,7 +135,7 @@ func Open() *DB {
 	if err != nil {
 		log.Fatalf("[db] failed to open: %v\n", err)
 	}
-	db = &DB{
+	*db = *&DB{
 		DB:  database,
 		URI: connUri,
 	}
