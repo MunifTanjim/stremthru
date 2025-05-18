@@ -194,7 +194,7 @@ type ExtraData struct {
 
 func getExtra(r *http.Request) *ExtraData {
 	extra := &ExtraData{}
-	if extraParams := getPathParam(r, "extra"); extraParams != "" {
+	if extraParams := GetPathValue(r, "extra"); extraParams != "" {
 		if q, err := url.ParseQuery(extraParams); err == nil {
 			if search := q.Get("search"); search != "" {
 				extra.Search = search

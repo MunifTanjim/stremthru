@@ -62,7 +62,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	contentType := r.PathValue("contentType")
-	id := stremio_shared.GetPathParam(r, "id", true)
+	id := stremio_shared.GetPathValue(r, "id")
 
 	isImdbId := strings.HasPrefix(id, "tt")
 	if isImdbId {

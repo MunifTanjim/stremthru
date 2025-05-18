@@ -11,4 +11,4 @@ var ExtractRequestBaseURL = shared.ExtractRequestBaseURL
 
 var SendResponse = stremio_shared.SendResponse
 var SendHTML = stremio_shared.SendHTML
-var GetPathParam = stremio_shared.GetPathParam
+var GetPathValue = stremio_shared.GetPathValue

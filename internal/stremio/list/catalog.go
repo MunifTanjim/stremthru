@@ -16,7 +16,7 @@ type ExtraData struct {
 
 func getExtra(r *http.Request) *ExtraData {
 	extra := &ExtraData{}
-	if extraParams := GetPathParam(r, "extra", true); extraParams != "" {
+	if extraParams := GetPathValue(r, "extra"); extraParams != "" {
 		if q, err := url.ParseQuery(extraParams); err == nil {
 			if skipStr := q.Get("skip"); skipStr != "" {
 				if skip, err := strconv.Atoi(skipStr); err == nil {
@@ -43,7 +43,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	catalogId := GetPathParam(r, "id", true)
+	catalogId := GetPathValue(r, "id")
 
 	idr := parseId(catalogId)
 

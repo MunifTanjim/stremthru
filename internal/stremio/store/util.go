@@ -16,16 +16,10 @@ var ExtractRequestBaseURL = shared.ExtractRequestBaseURL
 
 var SendResponse = stremio_shared.SendResponse
 var SendHTML = stremio_shared.SendHTML
-
-func getPathParam(r *http.Request, name string) string {
-	if value := r.PathValue(name + "Json"); value != "" {
-		return strings.TrimSuffix(value, ".json")
-	}
-	return r.PathValue(name)
-}
+var GetPathValue = stremio_shared.GetPathValue
 
 func getId(r *http.Request) string {
-	return getPathParam(r, "id")
+	return GetPathValue(r, "id")
 }
 
 func parseStremId(sid string) (sType, sId string, season, episode int) {
