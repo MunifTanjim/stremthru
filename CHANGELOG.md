@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.74.0](https://github.com/MunifTanjim/stremthru/compare/0.73.3...0.74.0) (2025-05-18)
+
+
+### Features
+
+* **db:** add dialect specific Tx.Exec ([e5ceb31](https://github.com/MunifTanjim/stremthru/commit/e5ceb3172ca19366099ea23c7210b7bb03dec9a1))
+* **stremio/list:** add auth ui for private instance ([d72fb22](https://github.com/MunifTanjim/stremthru/commit/d72fb2233664262567e315050f7d755faa7e591a))
+* **stremio/list:** add rpdb poster support ([68ac0ed](https://github.com/MunifTanjim/stremthru/commit/68ac0ed47de4541d4095d92ff3d48fdf6db1e8b2))
+* **stremio/list:** initial implementation ([4c93e24](https://github.com/MunifTanjim/stremthru/commit/4c93e24a4aa2989c0a5683a7b16d2c44961e05ab))
+* **stremio/list:** support genre filter ([ccd8a87](https://github.com/MunifTanjim/stremthru/commit/ccd8a87bf1aed313e6bab66da36e33cf9db6721f))
+* **stremio/list:** support mdblist import my lists ([7f294cf](https://github.com/MunifTanjim/stremthru/commit/7f294cf2e2f372e27fc011730db0812383288474))
+* **stremio/list:** support shuffle ([ddb13fc](https://github.com/MunifTanjim/stremthru/commit/ddb13fc62e3b8c7cb354714f6045fc05bdd83843))
+* **stremio/list:** validate mdblist api key on install ([578e3aa](https://github.com/MunifTanjim/stremthru/commit/578e3aad06f30e4023fbf08b6da89cebc00026b7))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** auto-open auth modal on error ([6e0daad](https://github.com/MunifTanjim/stremthru/commit/6e0daadb810fac5a8fad01964aae87c363b1f716))
+
 ## [0.73.3](https://github.com/MunifTanjim/stremthru/compare/0.73.2...0.73.3) (2025-05-18)
 
 
