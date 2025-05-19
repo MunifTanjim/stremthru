@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.74.1](https://github.com/MunifTanjim/stremthru/compare/0.74.0...0.74.1) (2025-05-19)
+
+
+### Bug Fixes
+
+* **stremio/list:** add database migration for postgresql ([0e2dd36](https://github.com/MunifTanjim/stremthru/commit/0e2dd36d833d3a9d370848f6f40425ae82b25780))
+
 ## [0.74.0](https://github.com/MunifTanjim/stremthru/compare/0.73.3...0.74.0) (2025-05-18)
 
 
