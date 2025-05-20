@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.75.0](https://github.com/MunifTanjim/stremthru/compare/0.74.1...0.75.0) (2025-05-20)
+
+
+### Features
+
+* **stremio/list:** dedupe lists when importing my lists ([f3e1e37](https://github.com/MunifTanjim/stremthru/commit/f3e1e37738f101e244fbf3ad2bbeba69e93c8f68))
+* **stremio/list:** disable autocomplete for rpdb api key ([08cd7d7](https://github.com/MunifTanjim/stremthru/commit/08cd7d7d9457da7dd545c9bcda2e1b2e540d1034))
+* **stremio/list:** improve empty lists validation ([00bebc4](https://github.com/MunifTanjim/stremthru/commit/00bebc430c13f276eabbdf796cafa198dc19a522))
+* **stremio/list:** improve template for mdblist api key ([7efcc81](https://github.com/MunifTanjim/stremthru/commit/7efcc81b867da13d588d160ca4785f36d809c009))
+* **stremio/list:** prepare to support multiple services ([e8bb0f1](https://github.com/MunifTanjim/stremthru/commit/e8bb0f1e0de7e68f58e2c69adb0152e208566deb))
+* **stremio/list:** support custom list name ([e82d447](https://github.com/MunifTanjim/stremthru/commit/e82d447790d85d907062e3c692e0046eb894aab8))
+* **stremio/list:** support saved userdata ([e0ec191](https://github.com/MunifTanjim/stremthru/commit/e0ec1912e7a82fe8d95fe02d633e471b1a297a0f))
+* **stremio/sidekick:** support hiding catalog from board ([0d9cce8](https://github.com/MunifTanjim/stremthru/commit/0d9cce850f95f73b2cbcd9f738d3e4b9f430f4bb))
+
+
+### Bug Fixes
+
+* **stremio/list:** insert items for large lists in chunks ([17b67c9](https://github.com/MunifTanjim/stremthru/commit/17b67c9dc8ee04fef5784feedf05eed82f684716))
+
 ## [0.74.1](https://github.com/MunifTanjim/stremthru/compare/0.74.0...0.74.1) (2025-05-19)
 
 
