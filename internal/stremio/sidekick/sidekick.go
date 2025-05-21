@@ -987,6 +987,11 @@ func handleAddonModify(w http.ResponseWriter, r *http.Request) {
 			if name := r.FormValue("catalog_name[" + strconv.Itoa(i) + "]"); name != "" {
 				catalog.Name = name
 			}
+			if hidden := r.FormValue("catalog_hidden[" + strconv.Itoa(i) + "]"); name != "" {
+				if canToggleCatalogBoard(catalog) {
+					toggleCatalogBoard(catalog, hidden == "true")
+				}
+			}
 		}
 		if td.HasAuthAdmin {
 			isConfigurable := r.FormValue("configurable") == "true"

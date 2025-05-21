@@ -21,84 +21,10 @@
 
 {{define "main"}}
 
-{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
-
 {{if .CanAuthorize}}
 <div class="flex flex-row flex-wrap align-center justify-between mb-8">
   <div>
-    {{if or .IsAuthed $hasSavedUserData}}
-    <fieldset role="group" class="flex flex-row align-center mb-0" {{if not .IsAuthed}}disabled{{end}}>
-      <label
-        for="userdata_key"
-        class="flex flex-row secondary"
-        style="
-          font-size: 0.75rem;
-          padding: 0.25em 0.75em;
-        "
-        role="button"
-      >
-        UserData
-      </label>
-      <select
-        class="mb-0"
-        style="font-size: 0.75rem; padding: 0.25em 2.5em 0.25em 1em;"
-        hx-target="body"
-        hx-post="configure"
-        hx-include="#configuration"
-        hx-headers='{"x-addon-configure-action":"set-userdata-key"}'
-        aria-label="Select Saved UserData"
-        id="userdata_key"
-        name="userdata_key"
-      >
-        {{range .SavedUserDataOptions}}
-        <option {{if eq $.SavedUserDataKey .Value}}selected{{end}} value="{{.Value}}">{{.Label}}</option>
-        {{end}}
-      </select>
-      {{if .IsAuthed}}
-      <button
-        class="secondary"
-        style="
-          {{if $hasSavedUserData}}--pico-background-color: #ad2201;{{end}}
-          font-size: 0.75rem;
-          padding: 0.25em 0.75em;
-        "
-        type="button"
-        hx-ext="htmx-modal"
-        data-modal="#userdata_{{if $hasSavedUserData}}delete{{else}}save{{end}}_modal"
-        data-modal-on-open="onOpenUserData{{if $hasSavedUserData}}Delete{{else}}Save{{end}}Modal"
-        hx-target="body"
-        hx-post="configure"
-        hx-include="#configuration"
-        hx-headers='{"x-addon-configure-action":"{{if $hasSavedUserData}}delete{{else}}save{{end}}-userdata"}'
-        hx-trigger="confirmed"
-        data-tooltip="{{if $hasSavedUserData}}Delete{{else}}Save{{end}} UserData"
-      >
-        {{if $hasSavedUserData}}🗑️{{else}}💾{{end}}
-      </button>
-      {{if $hasSavedUserData}}
-      <button
-        class="secondary"
-        style="
-          font-size: 0.75rem;
-          padding: 0.25em 0.75em;
-        "
-        type="button"
-        hx-ext="htmx-modal"
-        data-modal="#userdata_copy_modal"
-        data-modal-on-open="onOpenUserDataCopyModal"
-        hx-target="body"
-        hx-post="configure"
-        hx-include="#configuration"
-        hx-headers='{"x-addon-configure-action":"copy-userdata"}'
-        hx-trigger="confirmed"
-        data-tooltip="Copy UserData"
-      >
-        📋
-      </button>
-      {{end}}
-      {{end}}
-    </fieldset>
-    {{end}}
+    {{template "saved_userdata_field.html" .}}
   </div>
   <div>
     <button
@@ -121,11 +47,9 @@
 </div>
 {{end}}
 
-{{ $isRedacted := (and (not .IsAuthed) (ne .SavedUserDataKey "")) }}
-
 <form
   id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false" 
-  {{if $isRedacted}}inert{{end}}
+  {{if .IsRedacted}}inert{{end}}
 >
   <div id="upstream_addons" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
@@ -385,9 +309,7 @@
     {{end}}
   </div>
 
-  {{if not $isRedacted}}
-  <button type="submit">{{if eq .SavedUserDataKey ""}}Install{{else}}Update{{end}}</button>
-  {{end}}
+  {{template "configure_submit_button.html" .}}
 </form>
 
 {{if ne .ManifestURL ""}}
@@ -519,7 +441,9 @@
 <script>
   {{if and .CanAuthorize (ne .AuthError "")}}
   htmx.on("htmx:load", function(evt) {
-    document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+    setTimeout(() => {
+      document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+    }, 200);
   }, { once: true });
   {{end}}
 

@@ -20,11 +20,9 @@ func SendResponse(w http.ResponseWriter, r *http.Request, statusCode int, data a
 
 var SendHTML = shared.SendHTML
 
-func GetPathParam(r *http.Request, name string, tryJson bool) string {
-	if tryJson {
-		if value := r.PathValue(name + "Json"); value != "" {
-			return strings.TrimSuffix(value, ".json")
-		}
+func GetPathValue(r *http.Request, name string) string {
+	if value := r.PathValue(name + "Json"); value != "" {
+		return strings.TrimSuffix(value, ".json")
 	}
 	return r.PathValue(name)
 }

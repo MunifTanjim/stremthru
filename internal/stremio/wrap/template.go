@@ -229,8 +229,7 @@ type TemplateData struct {
 	TemplateError stremio_transformer.StreamTemplateBlob
 	SortConfig    configure.Config
 
-	SavedUserDataKey     string
-	SavedUserDataOptions []configure.ConfigOption
+	stremio_userdata.TemplateDataUserData
 }
 
 func (td *TemplateData) HasUpstreamError() bool {
@@ -289,7 +288,8 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		}
 		td.CanRemoveStore = len(td.Stores) > 1
 
-		if !td.IsAuthed && td.SavedUserDataKey != "" {
+		td.IsRedacted = !td.IsAuthed && td.SavedUserDataKey != ""
+		if td.IsRedacted {
 			redacted := "*******"
 			upstreamUrlPattern := regexp.MustCompile("^(.+)://([^/]+)/(?:[^/]+/)?(manifest.json)$")
 			for i := range td.Upstreams {
@@ -303,7 +303,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		}
 
 		return td
-	}, template.FuncMap{}, "configure_config.html", "wrap.html")
+	}, template.FuncMap{}, "configure_config.html", "configure_submit_button.html", "saved_userdata_field.html", "wrap.html")
 }()
 
 func getPage(td *TemplateData) (bytes.Buffer, error) {

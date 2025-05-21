@@ -18,13 +18,13 @@
 {{else}}
   {{if .Action.Visible}}
   <fieldset role="group" {{if ne .Error ""}}aria-invalid="true"{{end}}>
-    <input type="{{.Type}}" id="{{.Key}}" name="{{.Key}}" value="{{.Default}}" {{if .Required}}required{{end}}  {{if ne .Error ""}}aria-invalid="true"{{end}}>
+    <input type="{{.Type}}" id="{{.Key}}" name="{{.Key}}" {{if ne .Autocomplete ""}}autocomplete="{{.Autocomplete}}"{{end}} value="{{.Default}}" {{if .Required}}required{{end}}  {{if ne .Error ""}}aria-invalid="true"{{end}}>
     <input type="button" value="{{.Action.Label}}" onclick="{{.Action.OnClick}}" />
   </fieldset>
   {{else}}
-  <input type="{{.Type}}" id="{{.Key}}" name="{{.Key}}" value="{{.Default}}" {{if .Required}}required{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>
+  <input type="{{.Type}}" id="{{.Key}}" name="{{.Key}}" {{if ne .Autocomplete ""}}autocomplete="{{.Autocomplete}}"{{end}} value="{{.Default}}" {{if .Required}}required{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>
   {{end}}
 {{end}}
 {{if ne .Type "checkbox"}}
-<small>{{if ne .Error ""}}<span class="error">{{.Error}}</span> | {{end}}<span class="description">{{.Description}}</span></small>
+<small><span class="error">{{.Error}}</span>{{if and (ne .Error "") (ne .Description "")}} | {{end}}<span class="description">{{.Description}}</span></small>
 {{end}}

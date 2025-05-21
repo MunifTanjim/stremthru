@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.75.0](https://github.com/MunifTanjim/stremthru/compare/0.74.1...0.75.0) (2025-05-20)
+
+
+### Features
+
+* **stremio/list:** dedupe lists when importing my lists ([f3e1e37](https://github.com/MunifTanjim/stremthru/commit/f3e1e37738f101e244fbf3ad2bbeba69e93c8f68))
+* **stremio/list:** disable autocomplete for rpdb api key ([08cd7d7](https://github.com/MunifTanjim/stremthru/commit/08cd7d7d9457da7dd545c9bcda2e1b2e540d1034))
+* **stremio/list:** improve empty lists validation ([00bebc4](https://github.com/MunifTanjim/stremthru/commit/00bebc430c13f276eabbdf796cafa198dc19a522))
+* **stremio/list:** improve template for mdblist api key ([7efcc81](https://github.com/MunifTanjim/stremthru/commit/7efcc81b867da13d588d160ca4785f36d809c009))
+* **stremio/list:** prepare to support multiple services ([e8bb0f1](https://github.com/MunifTanjim/stremthru/commit/e8bb0f1e0de7e68f58e2c69adb0152e208566deb))
+* **stremio/list:** support custom list name ([e82d447](https://github.com/MunifTanjim/stremthru/commit/e82d447790d85d907062e3c692e0046eb894aab8))
+* **stremio/list:** support saved userdata ([e0ec191](https://github.com/MunifTanjim/stremthru/commit/e0ec1912e7a82fe8d95fe02d633e471b1a297a0f))
+* **stremio/sidekick:** support hiding catalog from board ([0d9cce8](https://github.com/MunifTanjim/stremthru/commit/0d9cce850f95f73b2cbcd9f738d3e4b9f430f4bb))
+
+
+### Bug Fixes
+
+* **stremio/list:** insert items for large lists in chunks ([17b67c9](https://github.com/MunifTanjim/stremthru/commit/17b67c9dc8ee04fef5784feedf05eed82f684716))
+
+## [0.74.1](https://github.com/MunifTanjim/stremthru/compare/0.74.0...0.74.1) (2025-05-19)
+
+
+### Bug Fixes
+
+* **stremio/list:** add database migration for postgresql ([0e2dd36](https://github.com/MunifTanjim/stremthru/commit/0e2dd36d833d3a9d370848f6f40425ae82b25780))
+
+## [0.74.0](https://github.com/MunifTanjim/stremthru/compare/0.73.3...0.74.0) (2025-05-18)
+
+
+### Features
+
+* **db:** add dialect specific Tx.Exec ([e5ceb31](https://github.com/MunifTanjim/stremthru/commit/e5ceb3172ca19366099ea23c7210b7bb03dec9a1))
+* **stremio/list:** add auth ui for private instance ([d72fb22](https://github.com/MunifTanjim/stremthru/commit/d72fb2233664262567e315050f7d755faa7e591a))
+* **stremio/list:** add rpdb poster support ([68ac0ed](https://github.com/MunifTanjim/stremthru/commit/68ac0ed47de4541d4095d92ff3d48fdf6db1e8b2))
+* **stremio/list:** initial implementation ([4c93e24](https://github.com/MunifTanjim/stremthru/commit/4c93e24a4aa2989c0a5683a7b16d2c44961e05ab))
+* **stremio/list:** support genre filter ([ccd8a87](https://github.com/MunifTanjim/stremthru/commit/ccd8a87bf1aed313e6bab66da36e33cf9db6721f))
+* **stremio/list:** support mdblist import my lists ([7f294cf](https://github.com/MunifTanjim/stremthru/commit/7f294cf2e2f372e27fc011730db0812383288474))
+* **stremio/list:** support shuffle ([ddb13fc](https://github.com/MunifTanjim/stremthru/commit/ddb13fc62e3b8c7cb354714f6045fc05bdd83843))
+* **stremio/list:** validate mdblist api key on install ([578e3aa](https://github.com/MunifTanjim/stremthru/commit/578e3aad06f30e4023fbf08b6da89cebc00026b7))
+
+
+### Bug Fixes
+
+* **stremio/wrap:** auto-open auth modal on error ([6e0daad](https://github.com/MunifTanjim/stremthru/commit/6e0daadb810fac5a8fad01964aae87c363b1f716))
+
+## [0.73.3](https://github.com/MunifTanjim/stremthru/compare/0.73.2...0.73.3) (2025-05-18)
+
+
+### Bug Fixes
+
+* **db:** break out of sqlite infinite retry loop ([b2ff6b6](https://github.com/MunifTanjim/stremthru/commit/b2ff6b67f41b8ab6b552e95368c84cb9b811b1c4))
+
 ## [0.73.2](https://github.com/MunifTanjim/stremthru/compare/0.73.1...0.73.2) (2025-05-17)
 
 

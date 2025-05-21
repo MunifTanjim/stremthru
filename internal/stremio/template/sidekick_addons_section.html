@@ -172,7 +172,7 @@
         data-configurable="{{if eq .Manifest.BehaviorHints nil}}false{{else}}{{.Manifest.BehaviorHints.Configurable}}{{end}}"
         data-protected="{{if eq .Flags nil}}false{{else}}{{.Flags.Protected}}{{end}}"
         data-version="{{.Manifest.Version}}"
-        data-catalog-names="{{range .Manifest.Catalogs}}{{.Type}}{{"\n"}}{{.Id}}{{"\n"}}{{.Name}}{{"\n\n"}}{{end}}"
+        data-catalog-names="{{range .Manifest.Catalogs}}{{.Type}}{{"\n"}}{{.Id}}{{"\n"}}{{.Name}}{{"\n"}}|{{if catalog_has_board .}}has_board|{{end}}{{if catalog_can_toggle_board .}}can_toggle_board|{{end}}{{"\n\n"}}{{end}}"
       >
         Modify
       </button>
@@ -233,8 +233,14 @@
         <legend>Catalogs:</legend>
 
         <div data-type="catalog_item_template" style="display: none;">
-          <label><small><span data-type="catalog_item_type"></span> [<span data-type="catalog_item_id"></span>]</small></label>
-          <input type="hidden" />
+          <label data-name="catalog_name">
+            <small><span data-type="catalog_item_type"></span> [<span data-type="catalog_item_id"></span>]</small>
+            <input type="hidden" style="margin-bottom: 0;" />
+          </label>
+          <label data-name="catalog_hidden" style="display: none; font-size: 0.75rem;">
+            <input type="hidden" style="font-size: 0.75rem;" />
+            Hide from Board <span style="border: 0;" data-tooltip="⚠️ Can break the addon!">⚠️</span>
+          </label>
         </div>
       </fieldset>
 
@@ -395,8 +401,14 @@ function onOpenAddonModifyModal(e, { modal, onClose, trigger }) {
   modal.querySelector("#addon_modify_new_logo").value = trigger.dataset.logo;
   modal.querySelector("#addon_modify_new_logo").value = trigger.dataset.logo;
   const catalogs = trigger.dataset.catalogNames.trim().split("\n\n").filter(Boolean).map((line) => {
-    const [cType, cId, cName] = line.split("\n");
-    return { type: cType, id: cId, name: cName };
+    const [cType, cId, cName, cFlags] = line.split("\n");
+    return {
+      type: cType,
+      id: cId,
+      name: cName,
+      hasBoard: cFlags.includes("|has_board|"),
+      canToggleBoard: cFlags.includes("|can_toggle_board|"),
+    };
   });
 
   const catalogsFieldset = modal.querySelector("#addon_modify_new_catalogs");
@@ -412,14 +424,24 @@ function onOpenAddonModifyModal(e, { modal, onClose, trigger }) {
       const item = itemTemplate.cloneNode(true);
       item.style.display = "block";
       item.dataset.type = "catalog_item";
-      const label = item.querySelector("label");
-      label.querySelector(`[data-type="catalog_item_type"]`).innerText = catalog.type;
-      label.querySelector(`[data-type="catalog_item_id"]`).innerText = catalog.id;
-      const input = item.querySelector("input");
-      input.type = "text";
-      input.id = `catalog_name[${i}]`;
-      input.name = `catalog_name[${i}]`;
-      input.value = catalog.name;
+
+      const nameLabel = item.querySelector(`label[data-name="catalog_name"]`);
+      nameLabel.querySelector(`[data-type="catalog_item_type"]`).innerText = catalog.type;
+      nameLabel.querySelector(`[data-type="catalog_item_id"]`).innerText = catalog.id;
+      const nameInput = nameLabel.querySelector("input");
+      nameInput.type = "text";
+      nameInput.name = `${nameLabel.dataset.name}[${i}]`;
+      nameInput.value = catalog.name;
+
+      if (catalog.canToggleBoard) {
+        const hiddenLabel = item.querySelector(`label[data-name="catalog_hidden"]`);
+        hiddenLabel.style.display = "block";
+        const hiddenInput = hiddenLabel.querySelector("input");
+        hiddenInput.type = "checkbox";
+        hiddenInput.name = `${hiddenLabel.dataset.name}[${i}]`;
+        hiddenInput.checked = !catalog.hasBoard;
+      }
+
       catalogsFieldset.appendChild(item);
     });
   }
@@ -437,8 +459,12 @@ function onOpenAddonModifyModal(e, { modal, onClose, trigger }) {
       logo: modal.querySelector("#addon_modify_new_logo").value,
     }
     modal.querySelectorAll(`[data-type="catalog_item"]`).forEach((node) => {
-      const input = node.querySelector("input");
-      data[input.id] = input.value;
+      const nameInput = node.querySelector(`[data-name="catalog_name"] input`);
+      data[nameInput.name] = nameInput.value;
+      const hiddenInput = node.querySelector(`[data-name="catalog_hidden"] input[type="checkbox"]`);
+      if (hiddenInput) {
+        data[hiddenInput.name] = hiddenInput.checked;
+      }
     });
     if (isAdmin) {
       data.configurable = modal.querySelector("#addon_modify_new_configurable").checked;

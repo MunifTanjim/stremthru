@@ -32,15 +32,16 @@ type ConfigOption struct {
 }
 
 type Config struct {
-	Key         string
-	Type        ConfigType
-	Default     string
-	Title       string
-	Description template.HTML
-	Options     []ConfigOption
-	Required    bool
-	Error       string
-	Action      ConfigAction
+	Key          string
+	Type         ConfigType
+	Default      string
+	Title        string
+	Description  template.HTML
+	Options      []ConfigOption
+	Required     bool
+	Autocomplete string
+	Error        string
+	Action       ConfigAction
 }
 
 type Base = stremio_template.BaseData

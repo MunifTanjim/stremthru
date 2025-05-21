@@ -153,6 +153,7 @@ const (
 const (
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
+	FeatureStremioList     string = "stremio_list"
 	FeatureStremioSidekick string = "stremio_sidekick"
 	FeatureStremioStore    string = "stremio_store"
 	FeatureStremioTorz     string = "stremio_torz"
@@ -162,6 +163,7 @@ const (
 var features = []string{
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
+	FeatureStremioList,
 	FeatureStremioSidekick,
 	FeatureStremioStore,
 	FeatureStremioWrap,
@@ -477,7 +479,7 @@ var config = func() Config {
 		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
 		DatabaseURI:                 databaseUri,
 		Feature:                     feature,
-		Version:                     "0.73.2", // x-release-please-version
+		Version:                     "0.75.0", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
 		ServerStartTime:             time.Now(),
 		StoreContentProxy:           storeContentProxyMap,

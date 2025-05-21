@@ -1,0 +1,159 @@
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
+{{if or .IsAuthed $hasSavedUserData}}
+
+<fieldset role="group" class="flex flex-row align-center mb-0" {{if not .IsAuthed}}disabled{{end}}>
+  <label
+    for="userdata_key"
+    class="flex flex-row secondary"
+    style="
+      font-size: 0.75rem;
+      padding: 0.25em 0.75em;
+    "
+    role="button"
+  >
+    UserData
+  </label>
+  <select
+    class="mb-0"
+    style="font-size: 0.75rem; padding: 0.25em 2.5em 0.25em 1em;"
+    hx-target="body"
+    hx-post="configure"
+    hx-include="#configuration"
+    hx-headers='{"x-addon-configure-action":"set-userdata-key"}'
+    aria-label="Select Saved UserData"
+    id="userdata_key"
+    name="userdata_key"
+  >
+    {{range .SavedUserDataOptions}}
+    <option {{if eq $.SavedUserDataKey .Value}}selected{{end}} value="{{.Value}}">{{.Label}}</option>
+    {{end}}
+  </select>
+  {{if .IsAuthed}}
+  <button
+    class="secondary"
+    style="
+      {{if $hasSavedUserData}}--pico-background-color: #ad2201;{{end}}
+      font-size: 0.75rem;
+      padding: 0.25em 0.75em;
+    "
+    type="button"
+    hx-ext="htmx-modal"
+    data-modal="#userdata_{{if $hasSavedUserData}}delete{{else}}save{{end}}_modal"
+    data-modal-on-open="onOpenUserData{{if $hasSavedUserData}}Delete{{else}}Save{{end}}Modal"
+    hx-target="body"
+    hx-post="configure"
+    hx-include="#configuration"
+    hx-headers='{"x-addon-configure-action":"{{if $hasSavedUserData}}delete{{else}}save{{end}}-userdata"}'
+    hx-trigger="confirmed"
+    data-tooltip="{{if $hasSavedUserData}}Delete{{else}}Save{{end}} UserData"
+  >
+    {{if $hasSavedUserData}}🗑️{{else}}💾{{end}}
+  </button>
+  {{if $hasSavedUserData}}
+  <button
+    class="secondary"
+    style="
+      font-size: 0.75rem;
+      padding: 0.25em 0.75em;
+    "
+    type="button"
+    hx-ext="htmx-modal"
+    data-modal="#userdata_copy_modal"
+    data-modal-on-open="onOpenUserDataCopyModal"
+    hx-target="body"
+    hx-post="configure"
+    hx-include="#configuration"
+    hx-headers='{"x-addon-configure-action":"copy-userdata"}'
+    hx-trigger="confirmed"
+    data-tooltip="Copy UserData"
+  >
+    📋
+  </button>
+  {{end}}
+  {{end}}
+</fieldset>
+
+{{if .IsAuthed}}
+<dialog id="userdata_save_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>Save UserData</span>
+      </h3>
+    </header>
+    <form>
+      <label for="userdata_save_name">Name *</label>
+      <input id="userdata_save_name" name="userdata_save_name" required />
+      <button type="submit">Save</button>
+    </form>
+  </article>
+</dialog>
+
+<dialog id="userdata_delete_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>Delete UserData</span>
+      </h3>
+    </header>
+    <form>
+      <button type="submit" style="--pico-background-color: #ad2201;">Delete</button>
+    </form>
+  </article>
+</dialog>
+
+<dialog id="userdata_copy_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>Copy UserData</span>
+      </h3>
+    </header>
+    <form>
+      <label for="userdata_copy_name">Name *</label>
+      <input id="userdata_copy_name" name="userdata_copy_name" required />
+      <button type="submit">Copy</button>
+    </form>
+  </article>
+</dialog>
+{{end}}
+
+<script>
+function onOpenUserDataCopyModal(e, { modal, onClose, trigger }) {
+  selectElem = document.querySelector(`select[name='userdata_key']`);
+  modal.querySelector("[name='userdata_copy_name']").value = selectElem.options[selectElem.selectedIndex].label + " - Copy";
+  modal.querySelector("form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    trigger.setAttribute("hx-vals", JSON.stringify({
+      userdata_name: modal.querySelector("[name='userdata_copy_name']").value,
+    }));
+    onClose();
+    htmx.trigger(trigger, "confirmed");
+  }, { once: true });
+}
+
+function onOpenUserDataSaveModal(e, { modal, onClose, trigger }) {
+  modal.querySelector("form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    trigger.setAttribute("hx-vals", JSON.stringify({
+      userdata_name: modal.querySelector("[name='userdata_save_name']").value,
+    }));
+    onClose();
+    htmx.trigger(trigger, "confirmed");
+  }, { once: true });
+}
+
+function onOpenUserDataDeleteModal(e, { modal, onClose, trigger }) {
+  modal.querySelector("form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    onClose();
+    htmx.trigger(trigger, "confirmed");
+  }, { once: true });
+}
+</script>
+
+{{end}}

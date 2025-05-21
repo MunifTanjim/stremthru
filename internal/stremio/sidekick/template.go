@@ -131,6 +131,8 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			}
 			return ""
 		},
+		"catalog_has_board":        hasCatalogBoard,
+		"catalog_can_toggle_board": canToggleCatalogBoard,
 	}, "sidekick.html", "sidekick_*.html")
 }()
 

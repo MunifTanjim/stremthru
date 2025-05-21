@@ -1,0 +1,231 @@
+{{define "head"}}
+<style>
+</style>
+{{end}}
+
+{{define "header"}}
+<h1>
+  {{.Title}}
+</h1>
+<div>
+  <p>{{.Description}}</p>
+</div>
+{{end}}
+
+{{define "main"}}
+
+{{if .CanAuthorize}}
+<div class="flex flex-row flex-wrap align-center justify-between mb-8">
+  <div>
+    {{template "saved_userdata_field.html" .}}
+  </div>
+  <div>
+    <button
+      class="secondary mb-0"
+      style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+      type="button"
+      hx-ext="htmx-modal"
+      data-modal="#auth_modal"
+      data-modal-on-open="onOpenAuthorize"
+      hx-target="body"
+      hx-post="configure"
+      hx-include="#configuration"
+      hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
+      hx-trigger="confirmed"
+      data-tooltip="Features Restricted to Admin"
+    >
+      {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
+    </button>
+  </div>
+</div>
+{{end}}
+
+<form
+  id="configuration" action="configure" method="post" hx-boost="true"
+  {{if .IsRedacted}}inert{{end}}
+>
+  <div id="lists" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+    <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
+      <span class="px-2" style="background-color: var(--pico-background-color);">
+        Lists
+      </span>
+    </header>
+
+    <div>
+      <div class="relative mb-8">
+
+        <input type="hidden" name="lists_length" value="{{ .Lists | len }}" />
+
+        {{range $idx, $list := .Lists}}
+        <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+          <label for="lists[{{$idx}}].url">URL</label>
+          <input type="url" id="lists[{{$idx}}].url" name="lists[{{$idx}}].url" value="{{$list.URL}}" {{if ne $list.Error.URL ""}}aria-invalid="true"{{end}} />
+          <small><span class="error">{{$list.Error.URL}}</span><span class="description"></span></small>
+
+          {{if $.IsAuthed}}
+          <label for="lists[{{$idx}}].name">Name</label>
+          <input type="text" id="lists[{{$idx}}].name" name="lists[{{$idx}}].name" value="{{$list.Name}}" {{if ne $list.Error.Name ""}}aria-invalid="true"{{end}} />
+          <small><span class="error">{{$list.Error.Name}}</span><span class="description"></span></small>
+          {{end}}
+        </div>
+        {{end}}
+
+        <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
+          <small>
+            <button
+              {{if not .CanRemoveList}}disabled{{end}}
+              id="configure-action-remove-list"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"remove-list"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              - Remove
+            </button>
+            <button
+              {{if not .CanAddList}}disabled{{end}}
+              id="configure-action-add-list"
+              type="button"
+              hx-target="body"
+              hx-post="configure"
+              hx-include="#configuration"
+              hx-headers='{"x-addon-configure-action":"add-list"}'
+              class="secondary mb-0"
+              style="font-size: 0.75rem; padding: 0.25em;"
+            >
+              + Add
+            </button>
+          </small>
+        </div>
+        <div class="absolute" style="bottom: -0.75rem; left: 1rem;">
+          <button
+            {{if not .CanAddList}}disabled{{end}}
+            id="configure-action-import-mdblist-mylists"
+            type="button"
+            hx-target="body"
+            hx-post="configure"
+            hx-include="#configuration"
+            hx-headers='{"x-addon-configure-action":"import-mdblist-mylists"}'
+            class="secondary mb-0"
+            style="font-size: 0.75rem; padding: 0.25em;"
+          >
+            Import MDBList Lists
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{template "configure_config.html" .MDBListAPIKey}}
+
+  {{template "configure_config.html" .RPDBAPIKey}}
+
+  {{template "configure_config.html" .Shuffle}}
+
+  {{template "configure_submit_button.html" .}}
+</form>
+
+{{if ne .ManifestURL ""}}
+<div id="manifest_url_section">
+  <label for="__manifest_url__">Manifest URL</label>
+  <fieldset role="group">
+    <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
+    <button type="button" onclick="copyManifestUrl()">Copy</button>
+  </fieldset>
+</div>
+{{end}}
+
+{{if .CanAuthorize}}
+<dialog id="auth_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>{{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}</span>
+      </h3>
+    </header>
+    <form>
+      {{if not .IsAuthed}}
+      <label for="user">User *</label>
+      <input type="text" name="user" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      <label for="user">Password *</label>
+      <input type="password" name="pass" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      {{if ne .AuthError ""}}
+      <small>{{.AuthError}}</small>
+      {{end}}
+      {{end}}
+      <button type="submit">Go</button>
+    </form>
+  </article>
+</dialog>
+{{end}}
+
+{{end}}
+
+{{define "foot"}}
+<script>
+  {{if and .CanAuthorize (ne .AuthError "")}}
+  htmx.on("htmx:load", function(evt) {
+    setTimeout(() => {
+      document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+    }, 200);
+  }, { once: true });
+  {{end}}
+
+  function onOpenAuthorize(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      {{if not .IsAuthed}}
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        user: modal.querySelector("[name='user']").value,
+        pass: modal.querySelector("[name='pass']").value,
+      }));
+      {{end}}
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function copyManifestUrl() {
+    const manifestUrl = document.querySelector("input#__manifest_url__")?.value;
+    if (!manifestUrl) {
+      return;
+    }
+    navigator.clipboard.writeText(manifestUrl);
+    return manifestUrl;
+  }
+
+  htmx.off("form#configuration", "try_install");
+  htmx.on("form#configuration", "try_install", function(evt) {
+    const manifestUrl = copyManifestUrl();
+    if (manifestUrl) {
+      window.location.href = manifestUrl.replace(/^.+:\/\//, 'stremio://');
+    }
+  });
+
+  htmx.off("form#configuration", "htmx:beforeRequest");
+  htmx.on("form#configuration", "htmx:beforeRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+    } else {
+      evt.detail.elt.ariaBusy = true;
+    }
+  });
+  htmx.off("form#configuration", "htmx:afterRequest");
+  htmx.on("form#configuration", "htmx:afterRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = false;
+    } else {
+      evt.detail.elt.ariaBusy = false;
+    }
+  });
+  htmx.on("form#configuration", "change", function(evt) {
+    document.querySelector('#manifest_url_section')?.remove();
+  }, { once: true });
+</script>
+{{end}}
+
+{{template "layout.html" .}}

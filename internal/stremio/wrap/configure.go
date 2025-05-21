@@ -12,20 +12,6 @@ import (
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 )
 
-func redirectToConfigurePage(w http.ResponseWriter, r *http.Request, ud *UserData, tryInstall bool) {
-	url := ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + ud.GetEncoded() + "/configure")
-	if tryInstall {
-		w.Header().Add("hx-trigger", "try_install")
-	}
-
-	if r.Header.Get("hx-request") == "true" {
-		w.Header().Add("hx-location", url.String())
-		w.WriteHeader(200)
-	} else {
-		http.Redirect(w, r, url.String(), http.StatusFound)
-	}
-}
-
 func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	if !IsMethod(r, http.MethodGet) && !IsMethod(r, http.MethodPost) {
 		shared.ErrorMethodNotAllowed(r).Send(w, r)
@@ -255,7 +241,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to unselect userdata", err)
 					} else {
-						redirectToConfigurePage(w, r, ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, false)
 						return
 					}
 				} else {
@@ -263,7 +249,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to load userdata", err)
 					} else {
-						redirectToConfigurePage(w, r, ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, false)
 						return
 					}
 				}
@@ -275,7 +261,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to save userdata", err)
 				} else {
-					redirectToConfigurePage(w, r, ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
 					return
 				}
 			}
@@ -287,7 +273,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to copy userdata", err)
 				} else {
-					redirectToConfigurePage(w, r, ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
 					return
 				}
 			}
@@ -297,7 +283,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to delete userdata", err)
 				} else {
-					redirectToConfigurePage(w, r, ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
 					return
 				}
 			}
@@ -393,7 +379,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		redirectToConfigurePage(w, r, ud, td.SavedUserDataKey == "")
+		stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, td.SavedUserDataKey == "")
 		return
 	}
 

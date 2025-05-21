@@ -5,6 +5,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/disabled"
+	stremio_list "github.com/MunifTanjim/stremthru/internal/stremio/list"
 	"github.com/MunifTanjim/stremthru/internal/stremio/root"
 	"github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	"github.com/MunifTanjim/stremthru/internal/stremio/store"
@@ -15,6 +16,9 @@ import (
 func AddStremioEndpoints(mux *http.ServeMux) {
 	stremio_root.AddStremioEndpoints(mux)
 
+	if config.Feature.IsEnabled(config.FeatureStremioList) {
+		stremio_list.AddEndpoints(mux)
+	}
 	if config.Feature.IsEnabled(config.FeatureStremioStore) {
 		stremio_store.AddStremioStoreEndpoints(mux)
 	}
