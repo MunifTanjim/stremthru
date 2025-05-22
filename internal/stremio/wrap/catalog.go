@@ -45,18 +45,35 @@ func (ud UserData) fetchAddonCatalog(ctx *context.StoreContext, w http.ResponseW
 	})
 }
 
-func (ud UserData) fetchCatalog(ctx *context.StoreContext, w http.ResponseWriter, r *http.Request, rType, id, extra string) {
+func (ud UserData) fetchCatalog(ctx *context.StoreContext, w http.ResponseWriter, r *http.Request, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
 	idx, catalogId, err := parseCatalogId(id, &ud)
 	if err != nil {
 		SendError(w, r, err)
-		return
+		return nil, err
 	}
-	addon.ProxyResource(w, r, &stremio_addon.ProxyResourceParams{
+
+	res, err := addon.FetchCatalog(&stremio_addon.FetchCatalogParams{
 		BaseURL:  ud.Upstreams[idx].baseUrl,
-		Resource: string(stremio.ResourceNameCatalog),
 		Type:     rType,
 		Id:       catalogId,
 		Extra:    extra,
 		ClientIP: ctx.ClientIP,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	rpdbPosterBaseUrl := ""
+	if ud.RPDBAPIKey != "" {
+		rpdbPosterBaseUrl = "https://api.ratingposterdb.com/" + ud.RPDBAPIKey + "/imdb/poster-default/"
+	}
+
+	for i := range res.Data.Metas {
+		item := &res.Data.Metas[i]
+		if rpdbPosterBaseUrl != "" && strings.HasPrefix(item.Id, "tt") {
+			item.Poster = rpdbPosterBaseUrl + item.Id + ".jpg?fallback=true"
+		}
+	}
+
+	return &res.Data, nil
 }

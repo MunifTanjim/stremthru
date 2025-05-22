@@ -75,6 +75,8 @@ type UserData struct {
 
 	Sort string `json:"sort,omitempty"`
 
+	RPDBAPIKey string `json:"rpdb_akey,omitempty"`
+
 	encoded   string             `json:"-"` // correctly configured
 	manifests []stremio.Manifest `json:"-"`
 	resolver  upstreamsResolver  `json:"-"`
@@ -410,6 +412,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 
 		data.Sort = r.Form.Get("sort")
+		data.RPDBAPIKey = r.Form.Get("rpdb_akey")
 
 		data.TemplateId = r.Form.Get("transformer.template_id")
 		data.template = stremio_transformer.StreamTemplateBlob{

@@ -42,6 +42,15 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Comma separated fields: <code>resolution</code>, <code>quality</code>, <code>size</code>. Prefix with <code>-</code> for reverse sort. Default: <code>" + stremio_transformer.StreamDefaultSortConfig + "</code>",
 		},
 
+		RPDBAPIKey: configure.Config{
+			Key:          "rpdb_akey",
+			Type:         configure.ConfigTypePassword,
+			Default:      ud.RPDBAPIKey,
+			Title:        "RPDB API Key",
+			Description:  `Rating Poster Database <a href="https://ratingposterdb.com/api-key/" target="blank">API Key</a>`,
+			Autocomplete: "off",
+		},
+
 		ExtractorIds: []string{},
 		TemplateIds:  []string{},
 	}
@@ -228,6 +237,7 @@ type TemplateData struct {
 	Template      stremio_transformer.StreamTemplateBlob
 	TemplateError stremio_transformer.StreamTemplateBlob
 	SortConfig    configure.Config
+	RPDBAPIKey    configure.Config
 
 	stremio_userdata.TemplateDataUserData
 }
@@ -299,6 +309,9 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			for i := range td.Stores {
 				s := &td.Stores[i]
 				s.Token = redacted
+			}
+			if td.RPDBAPIKey.Default != "" {
+				td.RPDBAPIKey.Default = redacted
 			}
 		}
 
