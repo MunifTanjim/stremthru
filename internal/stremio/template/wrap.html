@@ -76,7 +76,7 @@
           <small>{{if ne $up.Error ""}}<span class="error">{{$up.Error}}</span>{{end}}</small>
 
           <fieldset>
-            <legend>Modifiers:</legend>
+            <legend>Stream Modifiers:</legend>
             <span class="upstream_addons_modifier_no_content_proxy">
               <input type="checkbox" id="upstreams[{{$idx}}].no_content_proxy" name="upstreams[{{$idx}}].no_content_proxy" {{if $up.NoContentProxy}}checked{{end}}>
               <label for="upstreams[{{$idx}}].no_content_proxy" data-tooltip="Only affects direct links" style="border: 0;">
@@ -92,7 +92,7 @@
           <fieldset>
             <label class="flex flex-row justify-between align-center" for="upstreams[{{$idx}}].transformer.extractor">
               <h4 class="mb-0">
-                Extractor
+                Stream Extractor
               </h4>
               <div class="flex flex-row">
                 {{if $.IsAuthed}}
@@ -174,77 +174,79 @@
           </small>
         </div>
       </div>
-
-      <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
-        <div class="flex flex-row justify-between align-center">
-          <h4 class="mb-0">
-            Template
-          </h4>
-          <div class="flex flex-row">
-            {{if .IsAuthed}}
-            <button
-              class="outline secondary mb-0 mr-2"
-              style="font-size: 0.75rem; padding: 0.25em 0.75em;"
-              type="button"
-              hx-ext="htmx-modal"
-              data-modal="#template_save"
-              data-modal-on-open="onOpenTemplateSaveModal"
-              hx-target="body"
-              hx-post="configure"
-              hx-include="#configuration"
-              hx-headers='{"x-addon-configure-action":"save-template"}'
-              hx-trigger="confirmed"
-            >
-              💾
-            </button>
-            {{end}}
-            <select
-              hx-target="body"
-              hx-post="configure"
-              hx-include="#configuration"
-              hx-headers='{"x-addon-configure-action":"set-template"}'
-              name="transformer.template_id"
-              aria-label="Select Template"
-              class="mb-0 p-1"
-            >
-              <option {{if eq .TemplateId ""}}selected{{end}} value="">
-                Template
-              </option>
-              {{range $.TemplateIds}}
-                <option {{if eq $.TemplateId .}}selected{{end}} value={{.}}>{{.}}</option>
-              {{end}}
-            </select>
-          </div>
-        </div>
-
-        <label for="transformer.template.name">Name Template</label>
-        <textarea
-          {{if not .IsAuthed}}readonly{{end}}
-          id="transformer.template.name"
-          name="transformer.template.name"
-          {{if ne .TemplateError.Name ""}}aria-invalid="true"{{end}}
-        >{{.Template.Name}}</textarea>
-        {{if ne .TemplateError.Name ""}}
-        <small>{{.TemplateError.Name}}</small>
-        {{end}}
-
-        <label for="transformer.template.description">Description Template</label>
-        <textarea
-          {{if not .IsAuthed}}readonly{{end}}
-          id="transformer.template.description"
-          name="transformer.template.description"
-          {{if ne .TemplateError.Description ""}}aria-invalid="true"{{end}}
-        >{{.Template.Description}}</textarea>
-        {{if ne .TemplateError.Name ""}}
-        <small>{{.TemplateError.Description}}</small>
-        {{end}}
-      </div>
-
-      {{template "configure_config.html" .SortConfig}}
     </div>
   </div>
 
-  <div id="stores" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+  <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+    <div class="flex flex-row justify-between align-center">
+      <h4 class="mb-0">
+        Stream Template
+      </h4>
+      <div class="flex flex-row">
+        {{if .IsAuthed}}
+        <button
+          class="outline secondary mb-0 mr-2"
+          style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+          type="button"
+          hx-ext="htmx-modal"
+          data-modal="#template_save"
+          data-modal-on-open="onOpenTemplateSaveModal"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"save-template"}'
+          hx-trigger="confirmed"
+        >
+          💾
+        </button>
+        {{end}}
+        <select
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"set-template"}'
+          name="transformer.template_id"
+          aria-label="Select Template"
+          class="mb-0 p-1"
+        >
+          <option {{if eq .TemplateId ""}}selected{{end}} value="">
+            Template
+          </option>
+          {{range $.TemplateIds}}
+            <option {{if eq $.TemplateId .}}selected{{end}} value={{.}}>{{.}}</option>
+          {{end}}
+        </select>
+      </div>
+    </div>
+
+    <label for="transformer.template.name">Name Template</label>
+    <textarea
+      {{if not .IsAuthed}}readonly{{end}}
+      id="transformer.template.name"
+      name="transformer.template.name"
+      {{if ne .TemplateError.Name ""}}aria-invalid="true"{{end}}
+    >{{.Template.Name}}</textarea>
+    {{if ne .TemplateError.Name ""}}
+    <small>{{.TemplateError.Name}}</small>
+    {{end}}
+
+    <label for="transformer.template.description">Description Template</label>
+    <textarea
+      {{if not .IsAuthed}}readonly{{end}}
+      id="transformer.template.description"
+      name="transformer.template.description"
+      {{if ne .TemplateError.Description ""}}aria-invalid="true"{{end}}
+    >{{.Template.Description}}</textarea>
+    {{if ne .TemplateError.Name ""}}
+    <small>{{.TemplateError.Description}}</small>
+    {{end}}
+  </div>
+
+  {{template "configure_config.html" .SortConfig}}
+
+  {{template "configure_config.html" .RPDBAPIKey}}
+
+  <div id="stores" class="relative border border-dashed rounded-sm mt-8 mb-4 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
       <span class="px-2" style="background-color: var(--pico-background-color);">
         Stores
@@ -308,8 +310,6 @@
       {{template "configure_config.html" .}}
     {{end}}
   </div>
-
-  {{template "configure_config.html" .RPDBAPIKey}}
 
   {{template "configure_submit_button.html" .}}
 </form>
