@@ -131,14 +131,14 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var file *store.MagnetFile
-		if fileName != "" {
-			if file = stremio_shared.MatchFileByName(videoFiles, fileName); file != nil {
-				log.Debug("matched file using filename", "filename", file.Name)
-			}
-		}
-		if file == nil && strings.Contains(sid, ":") {
+		if strings.Contains(sid, ":") {
 			if file = stremio_shared.MatchFileByStremId(videoFiles, sid, magnetHash, storeCode); file != nil {
 				log.Debug("matched file using strem id", "sid", sid, "filename", file.Name)
+			}
+		}
+		if file == nil && fileName != "" {
+			if file = stremio_shared.MatchFileByName(videoFiles, fileName); file != nil {
+				log.Debug("matched file using filename", "filename", file.Name)
 			}
 		}
 		if file == nil {
