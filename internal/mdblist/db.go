@@ -119,11 +119,11 @@ type MDBListItem struct {
 	Mediatype      MediaType `json:"mediatype"`
 	ReleaseYear    int       `json:"release_year"`
 	SpokenLanguage string    `json:"spoken_language"`
-	Genre          genreList `json:"-"`
 
-	Rank   int    `json:"-"`
-	TmdbId string `json:"-"`
-	TvdbId string `json:"-"`
+	Genre  genreList `json:"-"`
+	Rank   int       `json:"-"`
+	TmdbId string    `json:"-"`
+	TvdbId string    `json:"-"`
 }
 
 type ItemColumnStruct struct {
@@ -301,7 +301,7 @@ func GetListByName(userName, slug string) (*MDBListList, error) {
 }
 
 var query_get_list_items = fmt.Sprintf(
-	`SELECT %s, %s(ig.%s) AS genre FROM %s li JOIN %s i ON i.%s = li.%s LEFT JOIN %s ig ON i.%s = ig.%s WHERE li.%s = ? GROUP BY i.%s ORDER BY li.%s ASC`,
+	`SELECT %s, %s(ig.%s) AS genre FROM %s li JOIN %s i ON i.%s = li.%s LEFT JOIN %s ig ON i.%s = ig.%s WHERE li.%s = ? GROUP BY i.%s ORDER BY min(li.%s) ASC`,
 	db.JoinPrefixedColumnNames("i.", ItemColumns...),
 	db.FnJSONGroupArray,
 	ItemGenreColumn.Genre,
@@ -414,11 +414,13 @@ func UpsertList(list *MDBListList) (err error) {
 
 	list.UpdatedAt = db.Timestamp{Time: time.Now()}
 
+	println("A", len(list.Items))
 	err = upsertItems(tx, list.Items)
 	if err != nil {
 		return err
 	}
 
+	println("B", len(list.Items))
 	err = setListItems(tx, list.Id, list.Items)
 	if err != nil {
 		return err
@@ -490,7 +492,7 @@ func upsertItems(tx *db.Tx, items []MDBListItem) error {
 			if err != nil {
 				return err
 			}
-			err = imdb_title.RecordMappingFromMDBList(tx, item.IMDBId, item.TmdbId, item.TvdbId)
+			err = imdb_title.RecordMappingFromMDBList(tx, item.IMDBId, item.TmdbId, item.TvdbId, "", "")
 			if err != nil {
 				return err
 			}

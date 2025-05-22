@@ -95,6 +95,7 @@ func (l *MDBListList) Fetch(apiKey string) error {
 	l.Dynamic = list.Dynamic
 	l.Private = list.Private
 	l.Likes = list.Likes
+	l.Items = nil
 
 	log.Debug("fetching list items", "id", l.Id)
 	hasMore := true

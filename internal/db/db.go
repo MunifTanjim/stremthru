@@ -56,11 +56,11 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 }()
 
 type dbExec func(query string, args ...any) (sql.Result, error)
-type dbExecutor interface {
+type Executor interface {
 	Exec(query string, args ...any) (sql.Result, error)
 }
 
-var getExec = func(db dbExecutor) dbExec {
+var getExec = func(db Executor) dbExec {
 	if Dialect == DBDialectPostgres {
 		return func(query string, args ...any) (sql.Result, error) {
 			return db.Exec(adaptQuery(query), args...)

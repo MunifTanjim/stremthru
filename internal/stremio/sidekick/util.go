@@ -59,7 +59,7 @@ func toggleCatalogBoard(catalog *stremio.Catalog, hidden bool) {
 	toggledField := ""
 	for i := range catalog.Extra {
 		extra := &catalog.Extra[i]
-		if extra.Name == "genre" {
+		if extra.Name == "search" && extra.IsRequired != hidden {
 			extra.IsRequired = hidden
 			toggledField = extra.Name
 		}
@@ -67,7 +67,7 @@ func toggleCatalogBoard(catalog *stremio.Catalog, hidden bool) {
 	if toggledField == "" {
 		for i := range catalog.Extra {
 			extra := &catalog.Extra[i]
-			if extra.Name == "search" {
+			if extra.Name == "genre" && extra.IsRequired != hidden {
 				extra.IsRequired = hidden
 				toggledField = extra.Name
 			}
