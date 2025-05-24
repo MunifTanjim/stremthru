@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.76.0](https://github.com/MunifTanjim/stremthru/compare/0.75.0...0.76.0) (2025-05-24)
+
+
+### Features
+
+* **store/easydebrid:** handle account not premium error ([72d38c2](https://github.com/MunifTanjim/stremthru/commit/72d38c2f8162a0a720f8d45ec7f0ee51db361c26))
+* **stremio/list:** fetch and use imdb title meta from mdblist ([8dd5d80](https://github.com/MunifTanjim/stremthru/commit/8dd5d805ca9d1bbd6f63954d308131038199ef6e))
+* **stremio/list:** support anilist ([d0769d0](https://github.com/MunifTanjim/stremthru/commit/d0769d0c308160ee102e2221427223a6efbf422e))
+* **stremio/torz:** priotize match using sid before filename for series ([73b43e8](https://github.com/MunifTanjim/stremthru/commit/73b43e8ef4371afe6f45bf5118fa37aabd6a2e80))
+* **stremio/wrap:** rearrange configure form fields ([4c53e90](https://github.com/MunifTanjim/stremthru/commit/4c53e90057462779f26e6af0dca23e1f66d81993))
+* **stremio/wrap:** support rpdb for catalogs ([4edcd78](https://github.com/MunifTanjim/stremthru/commit/4edcd78dd33abc7ece1711e4c941ce0b4d7b3b9a))
+
+
+### Bug Fixes
+
+* **stremio/list:** ignore mdblist items with missing id ([6c1153e](https://github.com/MunifTanjim/stremthru/commit/6c1153ea1b774389a7dd7f0e8d878e8f9032ebc4))
+* **stremio/list:** resolve various data integrity issues ([a89a86d](https://github.com/MunifTanjim/stremthru/commit/a89a86d7b218268b12b0fe30c08cbcccb364b24d))
+* **stremio/torz:** do not show non-video file in stream description ([abc2c15](https://github.com/MunifTanjim/stremthru/commit/abc2c1545fef84eb5e10f5d530179c1ba675f245))
+
 ## [0.75.0](https://github.com/MunifTanjim/stremthru/compare/0.74.1...0.75.0) (2025-05-20)
 
 
