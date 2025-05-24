@@ -53,6 +53,10 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 					Name: list.GetUserName() + "/" + list.GetName(),
 					Extra: []stremio.CatalogExtra{
 						{
+							Name:    "genre",
+							Options: anilist.Genres,
+						},
+						{
 							Name: "skip",
 						},
 					},
