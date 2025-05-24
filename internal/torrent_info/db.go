@@ -939,7 +939,7 @@ var query_list_hashes_by_stremid_from_imdb_torrent = fmt.Sprintf(
 )
 
 var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
-	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?) AND (ti.%s = '' OR ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND CONCAT(',', ti.%s, ',') LIKE ? AND (ti.%s = '' OR CONCAT(',', ti.%s, ',') LIKE ?)",
 	imdb_torrent.Column.Hash,
 	imdb_torrent.TableName,
 	TableName,
@@ -947,8 +947,6 @@ var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
 	Column.Hash,
 	imdb_torrent.Column.TId,
 	Column.Seasons,
-	Column.Seasons,
-	Column.Episodes,
 	Column.Episodes,
 	Column.Episodes,
 )
@@ -962,14 +960,14 @@ func ListHashesByStremId(stremId string) ([]string, error) {
 	var args []any
 
 	if strings.Contains(stremId, ":") {
-		args = make([]any, 0, 7)
+		args = make([]any, 0, 5)
 		query += query_list_hashes_by_stremid_from_torrent_stream
 		args = append(args, stremId)
 		if parts := strings.SplitN(stremId, ":", 3); len(parts) == 3 {
 			args = append(args, parts[0])
 
 			query += " UNION " + query_list_hashes_by_stremid_from_imdb_torrent_for_series
-			args = append(args, parts[0], parts[1], "%,"+parts[1]+",%", parts[2], "%,"+parts[2]+",%")
+			args = append(args, parts[0], "%,"+parts[1]+",%", "%,"+parts[2]+",%")
 		} else {
 			imdbId, _, _ := strings.Cut(stremId, ":")
 			args = append(args, imdbId)
@@ -1076,7 +1074,7 @@ func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, 
 	var args []any
 
 	if strings.Contains(stremId, ":") {
-		args = make([]any, 0, 7)
+		args = make([]any, 0, 5)
 		query += query_list_by_stremid_cond_hashes_for_series
 		args = append(args, stremId)
 		if parts := strings.SplitN(stremId, ":", 3); len(parts) == 3 {
