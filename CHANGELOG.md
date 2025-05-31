@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.77.0](https://github.com/MunifTanjim/stremthru/compare/0.76.0...0.77.0) (2025-05-31)
+
+
+### Features
+
+* **oauth:** add oauth http client ([e164ac5](https://github.com/MunifTanjim/stremthru/commit/e164ac5abce4d71f815c3956868e8b57a11a2224))
+* **stremio/list:** add open button for list url ([3717bc1](https://github.com/MunifTanjim/stremthru/commit/3717bc163cc5cd1d51aacd7ea3ed0dd4b9172032))
+* **stremio/list:** show supported services ([3131269](https://github.com/MunifTanjim/stremthru/commit/3131269b239d841afedb7c51efba9b9681823bda))
+* **stremio/list:** support anilist named search lists ([733d601](https://github.com/MunifTanjim/stremthru/commit/733d601f94c3643e798027e87445849c4e850680))
+* **stremio/list:** support genre filter for anilist ([4f5acac](https://github.com/MunifTanjim/stremthru/commit/4f5acac3560c80be45fe2ac1dd568082cc96b4b5))
+* **stremio/list:** support shuffle per list ([a75ccff](https://github.com/MunifTanjim/stremthru/commit/a75ccfff461e7d47ef1c2d6ace840157a29afa2f))
+* **stremio/list:** support trakt.tv ([2679d51](https://github.com/MunifTanjim/stremthru/commit/2679d51fb3d261204f0cfb9b7608f679da9db2a1))
+* **stremio/list:** support trakt.tv recommendations ([39c098b](https://github.com/MunifTanjim/stremthru/commit/39c098b51430161f60683d39ec387ae7a9916eb6))
+* **stremio/list:** support trakt.tv standard user lists ([b81fee6](https://github.com/MunifTanjim/stremthru/commit/b81fee6947280f2c155ec1d1b7186147a76a7775))
+
+
+### Bug Fixes
+
+* **anilist:** add mutex for list fetching ([d8e2fb1](https://github.com/MunifTanjim/stremthru/commit/d8e2fb18201918f7f09e6731fcf606d8dc66988e))
+* **anilist:** use fallback for missing title ([08d1d76](https://github.com/MunifTanjim/stremthru/commit/08d1d76d392c7b03935ab08f2a8565b9ce5f4449))
+* **anizip:** handle 404 response ([ebf7fa3](https://github.com/MunifTanjim/stremthru/commit/ebf7fa3ef1a9c98c136463b75e020a27d8949cfe))
+* **stremio/list:** preserve config on error ([91341fc](https://github.com/MunifTanjim/stremthru/commit/91341fc77d1b57eff295f8d42404dee6a44b9ae2))
+* **stremio/list:** use correct image for anilist poster ([bd413a6](https://github.com/MunifTanjim/stremthru/commit/bd413a6c19fe7bd7c01642abf126cd8991a6a7d6))
+* **stremio/torz:** respect cached only config ([7987d93](https://github.com/MunifTanjim/stremthru/commit/7987d93afe913102d7170c74f585648303c04de1))
+* **util:** handle empty RepeatJoin ([9c9e54f](https://github.com/MunifTanjim/stremthru/commit/9c9e54f485b8137ca35b5b0c3d49928afc617777))
+
 ## [0.76.0](https://github.com/MunifTanjim/stremthru/compare/0.75.0...0.76.0) (2025-05-24)
 
 
