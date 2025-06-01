@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.77.1](https://github.com/MunifTanjim/stremthru/compare/0.77.0...0.77.1) (2025-06-01)
+
+
+### Bug Fixes
+
+* **stremio/list:** display correct error when trakt.tv is disabled ([93f1263](https://github.com/MunifTanjim/stremthru/commit/93f1263a814d36e2aca0a588b95c78cda433a8b1))
+* **stremio/list:** render list shuffle checkbox correctly ([12230c1](https://github.com/MunifTanjim/stremthru/commit/12230c158ab13b3a33329cbaba643a3a8ccec9eb))
+
 ## [0.77.0](https://github.com/MunifTanjim/stremthru/compare/0.76.0...0.77.0) (2025-05-31)
 
 
