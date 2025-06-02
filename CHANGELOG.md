@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.77.2](https://github.com/MunifTanjim/stremthru/compare/0.77.1...0.77.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* **anilist:** update months for season detection ([344ba9b](https://github.com/MunifTanjim/stremthru/commit/344ba9b32d62b0e1c3ae867abaee1230104ba44d))
+* **stremio/list:** update type for mixed catalog ([e4930ae](https://github.com/MunifTanjim/stremthru/commit/e4930aeca91cc1052cdb6131880af077ba2ddb0f))
+
 ## [0.77.1](https://github.com/MunifTanjim/stremthru/compare/0.77.0...0.77.1) (2025-06-01)
 
 
