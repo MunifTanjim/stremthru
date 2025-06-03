@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.77.3](https://github.com/MunifTanjim/stremthru/compare/0.77.2...0.77.3) (2025-06-03)
+
+
+### Bug Fixes
+
+* **dmm_hashlist:** ignore invalid magnet hash ([0bf142e](https://github.com/MunifTanjim/stremthru/commit/0bf142e26d0f37545677b94bc9819ba315a7cdf3))
+* **oauth:** fix save token query for postgresql ([a364ee4](https://github.com/MunifTanjim/stremthru/commit/a364ee4965a4370bbde01ef48ab91c2b5803ae6f))
+* **store/premiumize:** fix 414 uri too long error for check magnet ([4672111](https://github.com/MunifTanjim/stremthru/commit/46721117858b47d3e88b04ffffe4599859fd6024))
+* **torrent_info:** ignore invalid magnet hash ([ff6b5b0](https://github.com/MunifTanjim/stremthru/commit/ff6b5b00f62f0ef06b134677cf1f29c21aad1aa3))
+
 ## [0.77.2](https://github.com/MunifTanjim/stremthru/compare/0.77.1...0.77.2) (2025-06-02)
 
 
