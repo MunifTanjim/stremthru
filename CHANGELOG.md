@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.77.4](https://github.com/MunifTanjim/stremthru/compare/0.77.3...0.77.4) (2025-06-04)
+
+
+### Bug Fixes
+
+* **anime:** fix GetIdMapsForAniList query for postgresql ([f1576dd](https://github.com/MunifTanjim/stremthru/commit/f1576ddb6cb93eb25765daa3749296652c6f707b))
+* **oauth:** handle missing oauth token ([1e21726](https://github.com/MunifTanjim/stremthru/commit/1e21726fba76d1d91a08922fde23edea83955fbf))
+* **stremio/list:** preserve trakt.tv urls when auth expired/revoked ([c3fdeac](https://github.com/MunifTanjim/stremthru/commit/c3fdeacc4434428cac6d7a4fa32b7def7362b0c1))
+* **trakt:** fix db queries for postgresql ([70bc3ce](https://github.com/MunifTanjim/stremthru/commit/70bc3ce85623467b4d83187236968ab9d9accb25))
+* **trakt:** use fallback when period is missing ([0c1809a](https://github.com/MunifTanjim/stremthru/commit/0c1809a19ce2babab60ac1c23a814aaa1abc26fb))
+
 ## [0.77.3](https://github.com/MunifTanjim/stremthru/compare/0.77.2...0.77.3) (2025-06-03)
 
 
