@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.78.1](https://github.com/MunifTanjim/stremthru/compare/0.78.0...0.78.1) (2025-06-07)
+
+
+### Bug Fixes
+
+* **torznab:** support imdbid without tt prefix ([57eb3b5](https://github.com/MunifTanjim/stremthru/commit/57eb3b5ea4e45f3e945488a7b56052864c173170))
+
 ## [0.78.0](https://github.com/MunifTanjim/stremthru/compare/0.77.4...0.78.0) (2025-06-07)
 
 
