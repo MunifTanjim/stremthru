@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.78.2](https://github.com/MunifTanjim/stremthru/compare/0.78.1...0.78.2) (2025-06-07)
+
+
+### Bug Fixes
+
+* **torznab:** parse query param names as case-insensitive ([dc91b56](https://github.com/MunifTanjim/stremthru/commit/dc91b561e5b17be0d75ea26fa0c23ed246a8bc31))
+* **torznab:** remove tt prefix from imdb attr in response ([93bbe74](https://github.com/MunifTanjim/stremthru/commit/93bbe74d114836e47c0a7d1d9b278c8a140e77ee))
+* **torznab:** respect limit and offset query ([0f2f99b](https://github.com/MunifTanjim/stremthru/commit/0f2f99bea398b1f589fd790dd8ad34255e660992))
+* **torznab:** use correct type for magnet uri enclosure ([44bfa49](https://github.com/MunifTanjim/stremthru/commit/44bfa494bf4d8c8992f3f62d0a8110ca82e57ef8))
+* **torznab:** use proper capabilities response ([1781d15](https://github.com/MunifTanjim/stremthru/commit/1781d15c1a6354f61afaec8c1901c56cb5babcff))
+
 ## [0.78.1](https://github.com/MunifTanjim/stremthru/compare/0.78.0...0.78.1) (2025-06-07)
 
 
