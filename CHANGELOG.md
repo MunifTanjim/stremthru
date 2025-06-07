@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.78.0](https://github.com/MunifTanjim/stremthru/compare/0.77.4...0.78.0) (2025-06-07)
+
+
+### Features
+
+* **animeapi:** sync mapping dataset ([24fa5fb](https://github.com/MunifTanjim/stremthru/commit/24fa5fbe3aa2892e89ba028eecd5a75ab8ef900e))
+* **kitsu:** add integration ([cb170e2](https://github.com/MunifTanjim/stremthru/commit/cb170e28b6d56c5889d206665d5a0237dea69ced))
+* **stremio/list:** add mdblist watchlist example ([d35c13b](https://github.com/MunifTanjim/stremthru/commit/d35c13ba884b4cdcd0110d597b137ae8ad5a6d8d))
+* **stremio/list:** support mdblist watchlist ([cca70c2](https://github.com/MunifTanjim/stremthru/commit/cca70c23b45bedfdb9f79042d4a7e813735d1d8a))
+* **stremio/torz:** support p2p stream ([ad721da](https://github.com/MunifTanjim/stremthru/commit/ad721daf9b466ec2250b5b7a2c06bf4a8a76b287))
+
+
+### Bug Fixes
+
+* **config:** do not panic on non-default non-responsive http proxy ([4f92e2b](https://github.com/MunifTanjim/stremthru/commit/4f92e2bc3ad6b4b926c7049d872df061d0adc7ce))
+
 ## [0.77.4](https://github.com/MunifTanjim/stremthru/compare/0.77.3...0.77.4) (2025-06-04)
 
 
