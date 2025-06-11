@@ -70,16 +70,18 @@ func SyncDataset() error {
 	Kitsu := kitsu.GetSystemKitsu()
 
 	ds := util.NewTSVDataset(&util.TSVDatasetConfig[Mapping]{
-		DownloadDir: path.Join(config.DataDir, "animeapi"),
-		URL:         "https://raw.githubusercontent.com/nattadasu/animeApi/refs/heads/v3/database/animeapi.tsv",
-		Log:         datasetLog,
-		HasHeaders:  true,
-		GetDownloadFileTime: func() time.Time {
-			return lastUpdatedAt
+		DatasetConfig: util.DatasetConfig{
+			DownloadDir: path.Join(config.DataDir, "animeapi"),
+			URL:         "https://raw.githubusercontent.com/nattadasu/animeApi/refs/heads/v3/database/animeapi.tsv",
+			Log:         datasetLog,
+			GetDownloadFileTime: func() time.Time {
+				return lastUpdatedAt
+			},
+			IsStale: func(t time.Time) bool {
+				return t.Before(lastUpdatedAt)
+			},
 		},
-		IsStale: func(t time.Time) bool {
-			return t.Before(lastUpdatedAt)
-		},
+		HasHeaders: true,
 		IsValidHeaders: func(headers []string) bool {
 			return slices.Equal(headers, []string{
 				"title",
