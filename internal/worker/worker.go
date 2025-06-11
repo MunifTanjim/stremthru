@@ -8,6 +8,7 @@ import (
 
 var mutex sync.Mutex
 var running_worker struct {
+	sync_anidb_titles bool
 	sync_dmm_hashlist bool
 	sync_imdb         bool
 	map_imdb_torrent  bool
@@ -185,6 +186,42 @@ func InitWorkers() func() {
 
 	if worker := InitMagnetCachePullerWorker(&WorkerConfig{
 		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitSyncAniDBTitlesWorker(&WorkerConfig{
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_anidb_titles = true
+		},
+		OnEnd: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_anidb_titles = false
+		},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitMapAniDBTorrentWorker(&WorkerConfig{
+		ShouldWait: func() (bool, string) {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			if running_worker.sync_anidb_titles {
+				return true, "sync_anidb_titles is running"
+			}
 			return false, ""
 		},
 		OnStart: func() {},

@@ -5,22 +5,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
-	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/madflojo/tasks"
 )
 
-func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
-	if !config.Feature.IsEnabled("imdb_title") {
+func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
+	if !config.Feature.IsEnabled("anime") {
 		return nil
 	}
 
-	log := logger.Scoped("worker/map_imdb_torrent")
+	log := logger.Scoped("worker/map_anidb_torrent")
 
 	worker := &Worker{
 		scheduler:  tasks.New(),
@@ -31,7 +30,7 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 	isRunning := false
 	id, err := worker.scheduler.Add(&tasks.Task{
-		Interval:          time.Duration(30 * time.Minute),
+		Interval:          time.Duration(1 * time.Hour),
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
@@ -60,11 +59,6 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 			isRunning = true
 
-			if !isIMDBSyncedToday() {
-				log.Info("IMDB not synced yet today, skipping")
-				return nil
-			}
-
 			batch_size := 10000
 			chunk_size := 1000
 			if db.Dialect == db.DBDialectPostgres {
@@ -74,7 +68,7 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 			totalCount := 0
 			for {
-				hashes, err := torrent_info.GetIMDBUnmappedHashes(batch_size)
+				hashes, err := torrent_info.GetAniDBUnmappedHashes(batch_size)
 				if err != nil {
 					return err
 				}
@@ -85,62 +79,49 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 					go func() {
 						defer wg.Done()
 
-						items := []imdb_torrent.IMDBTorrent{}
+						items := []anidb.AniDBTorrent{}
 						tInfoByHash, err := torrent_info.GetByHashes(cHashes)
 						if err != nil {
 							log.Error("failed to get torrent info", "error", err)
 							return
-						}
-						hashesByCategory := map[torrent_info.TorrentInfoCategory][]string{
-							torrent_info.TorrentInfoCategoryMovie:  {},
-							torrent_info.TorrentInfoCategorySeries: {},
 						}
 						for hash, tInfo := range tInfoByHash {
 							if !tInfo.IsParsed() {
 								continue
 							}
 
-							ito := imdb_torrent.IMDBTorrent{
-								Hash: hash,
-							}
-
 							if tInfo.Title == "" {
-								items = append(items, ito)
+								items = append(items, anidb.AniDBTorrent{
+									Hash: hash,
+								})
 								continue
 							}
 
-							titleType := imdb_title.SearchTitleTypeUnknown
-							if tInfo.Category == torrent_info.TorrentInfoCategoryMovie {
-								titleType = imdb_title.SearchTitleTypeMovie
-								hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
-							} else if tInfo.Category == torrent_info.TorrentInfoCategorySeries || len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0 {
-								titleType = imdb_title.SearchTitleTypeShow
-								hashesByCategory[torrent_info.TorrentInfoCategorySeries] = append(hashesByCategory[torrent_info.TorrentInfoCategorySeries], hash)
-							} else if tInfo.Category == torrent_info.TorrentInfoCategoryXXX {
-								// ¯\_(ツ)_/¯
-							} else {
-								titleType = imdb_title.SearchTitleTypeMovie
-								hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
-							}
-
-							imdbTitle, err := imdb_title.SearchOne(tInfo.Title, titleType, tInfo.Year, false)
+							anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, tInfo.Seasons, 0)
 							if err != nil {
-								log.Error("failed to search imdb title", "error", err, "title", tInfo.Title, "year", tInfo.Year)
+								log.Error("failed to search anidb title", "error", err, "title", tInfo.Title)
 								continue
 							}
-							if imdbTitle != nil {
-								ito.TId = imdbTitle.TId
+							if len(anidbTitleIds) == 0 {
+								items = append(items, anidb.AniDBTorrent{
+									Hash: hash,
+								})
+							} else {
+								for _, tid := range anidbTitleIds {
+									items = append(items, anidb.AniDBTorrent{
+										TId:  tid,
+										Hash: hash,
+									})
+								}
 							}
-							items = append(items, ito)
 						}
 
-						if err := imdb_torrent.Insert(items); err != nil {
-							log.Error("failed to map imdb torrent", "error", err)
+						if err := anidb.InsertTorrents(items); err != nil {
+							log.Error("failed to map anidb torrent", "error", err)
 							return
 						}
-						torrent_info.SetMissingCategory(hashesByCategory)
 
-						log.Info("mapped imdb torrent", "count", len(items))
+						log.Info("mapped anidb torrent", "count", len(items))
 					}()
 				}
 				wg.Wait()
@@ -173,7 +154,7 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 	if task, err := worker.scheduler.Lookup(id); err == nil && task != nil {
 		t := task.Clone()
-		t.Interval = 30 * time.Second
+		t.Interval = 60 * time.Second
 		t.RunOnce = true
 		worker.scheduler.Add(t)
 	}
