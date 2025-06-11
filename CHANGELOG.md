@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.78.3](https://github.com/MunifTanjim/stremthru/compare/0.78.2...0.78.3) (2025-06-11)
+
+
+### Bug Fixes
+
+* **stremio/list:** fix typo in trakt.tv popular list ([9c5e870](https://github.com/MunifTanjim/stremthru/commit/9c5e870037250372354d86c39825599af764063b))
+
 ## [0.78.2](https://github.com/MunifTanjim/stremthru/compare/0.78.1...0.78.2) (2025-06-07)
 
 
