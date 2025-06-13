@@ -44,10 +44,10 @@ func InitCrawlStoreWorker(conf *WorkerConfig) *Worker {
 			}
 			worker.onStart()
 
-			worker_queue.StoreCrawlerQueue.Process(func(item worker_queue.StoreCrawlerQueueItem) {
+			worker_queue.StoreCrawlerQueue.Process(func(item worker_queue.StoreCrawlerQueueItem) error {
 				s := shared.GetStoreByCode(item.StoreCode)
 				if s == nil {
-					return
+					return nil
 				}
 
 				tSource := torrent_info.TorrentInfoSource(item.StoreCode)
@@ -94,6 +94,8 @@ func InitCrawlStoreWorker(conf *WorkerConfig) *Worker {
 
 					time.Sleep(2 * time.Second)
 				}
+
+				return nil
 			})
 
 			return nil

@@ -34,13 +34,16 @@ func (q *WorkerQueue[T]) delete(item T) {
 	q.m.Delete(q.getKey(item))
 }
 
-func (q *WorkerQueue[T]) Process(f func(item T)) {
+func (q *WorkerQueue[T]) Process(f func(item T) error) {
 	q.m.Range(func(k, v any) bool {
 		_, keyOk := k.(string)
 		val, valOk := v.(WorkerQueueItem[T])
 		if keyOk && valOk && val.t.Before(time.Now()) {
-			f(val.v)
-			q.delete(val.v)
+			if err := f(val.v); err != nil {
+				log.Error("WorkerQueue process failed", "error", err, "key", q.getKey(val.v))
+			} else {
+				q.delete(val.v)
+			}
 		}
 		return true
 	})
@@ -62,7 +65,7 @@ func (q *WorkerQueue[T]) ProcessGroup(f func(groupKey string, items []T) error) 
 	})
 	for groupKey, items := range byGroupKey {
 		if err := f(groupKey, items); err != nil {
-			log.Error("WorkerQueue processGroup failed", "error", err)
+			log.Error("WorkerQueue processGroup failed", "error", err, "group_key", groupKey)
 		} else {
 			for i := range items {
 				q.delete(items[i])
