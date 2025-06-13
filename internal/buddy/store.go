@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/peer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -224,6 +225,20 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 	}
 
 	if config.HasPeer {
+		if config.LazyPeer {
+			storeCode := string(s.GetName().Code())
+			for _, hash := range staleOrMissingHashes {
+				worker_queue.MagnetCachePullerQueue.Queue(worker_queue.MagnetCachePullerQueueItem{
+					ClientIP:   clientIp,
+					Hash:       hash,
+					SId:        sid,
+					StoreCode:  storeCode,
+					StoreToken: storeToken,
+				})
+			}
+			return data, nil
+		}
+
 		if Peer.IsHaltedCheckMagnet() {
 			return data, nil
 		}

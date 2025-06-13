@@ -298,6 +298,7 @@ type Config struct {
 	PeerURL                     string
 	PeerAuthToken               string
 	HasPeer                     bool
+	LazyPeer                    bool
 	PullPeerURL                 string
 	RedisURI                    string
 	DatabaseURI                 string
@@ -480,6 +481,8 @@ var config = func() Config {
 		log.Fatalf("failed to parse store content cached stale time: %v", err)
 	}
 
+	lazyPeer := strings.ToLower(getEnv("STREMTHRU_LAZY_PEER"))
+
 	return Config{
 		LogLevel:  logLevel,
 		LogFormat: logFormat,
@@ -494,6 +497,7 @@ var config = func() Config {
 		PeerURL:                     peerUrl,
 		PeerAuthToken:               peerAuthToken,
 		HasPeer:                     len(peerUrl) > 0,
+		LazyPeer:                    lazyPeer == "1" || lazyPeer == "true",
 		PullPeerURL:                 pullPeerUrl,
 		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
 		DatabaseURI:                 databaseUri,
@@ -524,6 +528,7 @@ var HasBuddy = config.HasBuddy
 var PeerURL = config.PeerURL
 var PeerAuthToken = config.PeerAuthToken
 var HasPeer = config.HasPeer
+var LazyPeer = config.LazyPeer
 var PullPeerURL = config.PullPeerURL
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
@@ -699,7 +704,11 @@ func PrintConfig(state *AppState) {
 			l.Panicf(" Invalid Peer URI: %v\n", err)
 		}
 		u.User = url.UserPassword("", PeerAuthToken)
-		l.Println(" Peer URI:")
+		lazyPeer := ""
+		if LazyPeer {
+			lazyPeer = " (lazy)"
+		}
+		l.Println(" Peer URI" + lazyPeer + ":")
 		l.Println("   " + u.Redacted())
 		l.Println()
 	}
