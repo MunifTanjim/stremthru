@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<anime-list>
+  <anime anidbid="2908" tvdbid="72858" defaulttvdbseason="a">
+    <name>Monster Farm: Enbanseki no Himitsu</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="1" start="1" end="26" offset="0"/>
+      <mapping anidbseason="1" tvdbseason="2" start="27" end="48" offset="-26"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="4106" tvdbid="72858" defaulttvdbseason="0">
+    <name>Monster Farm 5: Circus Caravan</name>
+  </anime>
+  <anime anidbid="4695" tvdbid="72858" defaulttvdbseason="a" episodeoffset="48">
+    <name>Monster Farm: Legend e no Michi</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="3" start="1" end="25" offset="0"/>
+    </mapping-list>
+  </anime>
+
+  <anime anidbid="230" tvdbid="76703" defaulttvdbseason="a">
+    <name>Pocket Monsters</name>
+  </anime>
+  <anime anidbid="1041" tvdbid="76703" defaulttvdbseason="a" episodeoffset="276">
+    <name>Pocket Monsters Advanced Generation</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="6" start="1" end="40" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="4728" tvdbid="76703" defaulttvdbseason="a" episodeoffset="469">
+    <name>Pocket Monsters: Diamond and Pearl</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="10" start="1" end="52" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="7891" tvdbid="76703" defaulttvdbseason="a" episodeoffset="660">
+    <name>Pocket Monsters: Best Wishes!</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="14" start="1" end="84" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="9216" tvdbid="76703" defaulttvdbseason="a" episodeoffset="744">
+    <name>Pocket Monsters: Best Wishes! Season 2</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="15" start="1" end="24" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="9653" tvdbid="76703" defaulttvdbseason="a" episodeoffset="768">
+    <name>Pocket Monsters: Best Wishes! Season 2 - Episode N</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="15" start="1" end="14" offset="24"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="9764" tvdbid="76703" defaulttvdbseason="a" episodeoffset="782">
+    <name>Pocket Monsters: Best Wishes! Season 2 - Decolora Adventure</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="15" start="1" end="20" offset="38"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="9956" tvdbid="76703" defaulttvdbseason="a" episodeoffset="802">
+    <name>Pocket Monsters XY</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="16" start="1" end="93" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="11585" tvdbid="76703" defaulttvdbseason="a" episodeoffset="895">
+    <name>Pocket Monsters XY&amp;Z</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="17" start="1" end="47" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="12407" tvdbid="76703" defaulttvdbseason="a" episodeoffset="942">
+    <name>Pocket Monsters Sun &amp; Moon</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="18" start="1" end="146" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="15067" tvdbid="76703" defaulttvdbseason="a" episodeoffset="1088">
+    <name>Pocket Monsters (2019)</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="19" start="1" end="136" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="17777" tvdbid="76703" defaulttvdbseason="a" episodeoffset="1224">
+    <name>Pocket Monsters (2023)</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="20" start="1" end="103" offset="0"/>
+    </mapping-list>
+  </anime>
+
+  <anime anidbid="15449" tvdbid="74796" defaulttvdbseason="a" episodeoffset="366">
+    <name>Bleach: Sennen Kessen Hen</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="17" start="1" end="13" offset="0"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="17765" tvdbid="74796" defaulttvdbseason="a" episodeoffset="379">
+    <name>Bleach: Sennen Kessen Hen - Ketsubetsu Tan</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="17" start="1" end="13" offset="13"/>
+    </mapping-list>
+  </anime>
+  <anime anidbid="18220" tvdbid="74796" defaulttvdbseason="a" episodeoffset="392">
+    <name>Bleach: Sennen Kessen Hen - Soukoku Tan</name>
+    <mapping-list>
+      <mapping anidbseason="1" tvdbseason="17" start="1" end="14" offset="26"/>
+    </mapping-list>
+  </anime>
+</anime-list>
