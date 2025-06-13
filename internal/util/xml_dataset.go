@@ -12,6 +12,7 @@ type XMLDataset[T any, I any] struct {
 	*Dataset
 	list_tag_name string
 	item_tag_name string
+	no_diff       bool
 	prepare       func(item *T) *I
 	get_item_key  func(item *I) string
 	is_item_equal func(a *I, b *I) bool
@@ -22,6 +23,7 @@ type XMLDatasetConfig[T any, I any] struct {
 	DatasetConfig
 	ListTagName string
 	ItemTagName string
+	NoDiff      bool
 	Prepare     func(item *T) *I
 	GetItemKey  func(item *I) string
 	IsItemEqual func(a *I, b *I) bool
@@ -38,6 +40,7 @@ func NewXMLDataset[T any, I any](conf *XMLDatasetConfig[T, I]) *XMLDataset[T, I]
 		Dataset:       NewDataset((*DatasetConfig)(&conf.DatasetConfig)),
 		list_tag_name: conf.ListTagName,
 		item_tag_name: conf.ItemTagName,
+		no_diff:       conf.NoDiff,
 		get_item_key:  conf.GetItemKey,
 		is_item_equal: conf.IsItemEqual,
 		prepare:       conf.Prepare,
@@ -231,7 +234,7 @@ func (ds XMLDataset[T, I]) Process() error {
 	if err := ds.Init(); err != nil {
 		return err
 	}
-	if ds.prev_filename == "" || ds.prev_filename == ds.curr_filename {
+	if ds.no_diff || ds.prev_filename == "" || ds.prev_filename == ds.curr_filename {
 		return ds.processAll()
 	}
 	return ds.processDiff()
