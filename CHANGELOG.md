@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.78.4](https://github.com/MunifTanjim/stremthru/compare/0.78.3...0.78.4) (2025-06-13)
+
+
+### Bug Fixes
+
+* **store/premiumize:** fix add magnet for cached contents ([526dc59](https://github.com/MunifTanjim/stremthru/commit/526dc598a59fe4cf7eb9448b0e1498b270b0f7c5))
+
 ## [0.78.3](https://github.com/MunifTanjim/stremthru/compare/0.78.2...0.78.3) (2025-06-11)
 
 
