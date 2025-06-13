@@ -99,8 +99,10 @@ func (c *StoreClient) assertValidSubscription(apiKey string) error {
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
-	if err := c.assertValidSubscription(params.GetAPIKey(c.client.apiKey)); err != nil {
-		return nil, err
+	if !params.IsTrustedRequest {
+		if err := c.assertValidSubscription(params.GetAPIKey(c.client.apiKey)); err != nil {
+			return nil, err
+		}
 	}
 
 	hashes := []string{}

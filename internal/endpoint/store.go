@@ -47,6 +47,7 @@ func checkMagnet(ctx *context.StoreContext, magnets []string, sid string, localO
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
 	}
+	params.IsTrustedRequest, _ = peer_token.IsValid(ctx.PeerToken)
 	data, err := ctx.Store.CheckMagnet(params)
 	if err == nil && data.Items == nil {
 		data.Items = []store.CheckMagnetDataItem{}
