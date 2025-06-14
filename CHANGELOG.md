@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.79.0](https://github.com/MunifTanjim/stremthru/compare/0.78.4...0.79.0) (2025-06-14)
+
+
+### Features
+
+* **buddy:** support lazy pull for check magnet ([cdca861](https://github.com/MunifTanjim/stremthru/commit/cdca86122dd08ac54e1585cd677ce44a9df6401a))
+* **store:** skip valid subs check for request from trusted peer ([c145c1c](https://github.com/MunifTanjim/stremthru/commit/c145c1c58ecaaf733fc2f324e0776e1846ceb973))
+* **worker:** keep item in queue if processor returns error ([5044130](https://github.com/MunifTanjim/stremthru/commit/50441304392a7dcd00f4e4fdbaea93c240a572dc))
+
+
+### Bug Fixes
+
+* **imdb_title:** fix typo in sqlite search ids func ([c5be5d1](https://github.com/MunifTanjim/stremthru/commit/c5be5d1ee2b1520d37f0806c3e924b2f78975222))
+
 ## [0.78.4](https://github.com/MunifTanjim/stremthru/compare/0.78.3...0.78.4) (2025-06-13)
 
 
