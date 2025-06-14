@@ -1,5 +1,7 @@
 github.com/MunifTanjim/go-ptt v0.8.0 h1:MrPq1dvzp6txeqhQXkcT2y3dJWtDiQ0Y6PkPOaMJF8Y=
 github.com/MunifTanjim/go-ptt v0.8.0/go.mod h1:AF8lQWUaOCzZdpZQvifbELTJebzw4uAghWLiceYGOns=
+github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
+github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alitto/pond/v2 v2.3.4 h1:hR0bqAwJiI2chu3cLN4gVyNC7rc5mj/l5wg0710nxsY=
 github.com/alitto/pond/v2 v2.3.4/go.mod h1:xkjYEgQ05RSpWdfSd1nM3OVv7TBhLdy7rMp3+2Nq+yE=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=

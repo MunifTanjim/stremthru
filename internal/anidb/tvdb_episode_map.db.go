@@ -230,3 +230,64 @@ func UpsertTVDBEpisodeMaps(items []AniDBTVDBEpisodeMap) error {
 	}
 	return nil
 }
+
+type AniDBTVDBEpisodeMaps []AniDBTVDBEpisodeMap
+
+func (ms AniDBTVDBEpisodeMaps) GetTVDBId() string {
+	return ms[0].TVDBId
+}
+
+func (ms AniDBTVDBEpisodeMaps) GetAniDBTitles() ([]AniDBTitle, error) {
+	anidbIds := []string{}
+	for i := range ms {
+		anidbIds = append(anidbIds, ms[i].AniDBId)
+	}
+	return GetTitlesByIds(anidbIds)
+}
+
+func (ms AniDBTVDBEpisodeMaps) HasAbsoluteOrder() bool {
+	for i := range ms {
+		if ms[i].HasAbsoluteOrder() {
+			return true
+		}
+	}
+	return false
+}
+
+var query_get_tvdb_episode_maps_by_anidbid = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = (SELECT %s FROM %s WHERE %s = ?)`,
+	strings.Join(TVDBEpisodeMapColumns, ","),
+	TVDBEpisodeMapTableName,
+	TVDBEpisodeMapColumn.TVDBId,
+	TVDBEpisodeMapColumn.TVDBId,
+	TVDBEpisodeMapTableName,
+	TVDBEpisodeMapColumn.AniDBId,
+)
+
+func GetTVDBEpisodeMaps(anidbId string) (AniDBTVDBEpisodeMaps, error) {
+	rows, err := db.Query(query_get_tvdb_episode_maps_by_anidbid, anidbId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	maps := []AniDBTVDBEpisodeMap{}
+	for rows.Next() {
+		var m AniDBTVDBEpisodeMap
+		if err := rows.Scan(
+			&m.AniDBId,
+			&m.TVDBId,
+			&m.AniDBSeason,
+			&m.TVDBSeason,
+			&m.Start,
+			&m.End,
+			&m.Offset,
+			&m.Before,
+			&m.Map,
+		); err != nil {
+			return nil, err
+		}
+		maps = append(maps, m)
+	}
+	return maps, nil
+}

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessAnimeListItemsForTVDBId(t *testing.T) {
+func TestPrepareAniDBTVDBEpisodeMaps(t *testing.T) {
 	toAnimeListItems := func(xmlContent string) []AnimeListItem {
 		parsed := struct {
 			Items []AnimeListItem `xml:"anime"`
@@ -362,7 +362,7 @@ func TestProcessAnimeListItemsForTVDBId(t *testing.T) {
 		},
 	} {
 		t.Run(tc.tvdbId, func(t *testing.T) {
-			result := processAnimeListItemsForTVDBId(tc.tvdbId, tc.items)
+			result := PrepareAniDBTVDBEpisodeMaps(tc.tvdbId, tc.items)
 			assert.Len(t, result, len(tc.result))
 			for i := range tc.result {
 				r := tc.result[i]

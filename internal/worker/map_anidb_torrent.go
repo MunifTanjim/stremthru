@@ -2,6 +2,7 @@ package worker
 
 import (
 	"slices"
+	"strconv"
 	"sync"
 	"time"
 
@@ -11,8 +12,79 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/agnivade/levenshtein"
 	"github.com/madflojo/tasks"
 )
+
+func matchAniDBIdsInTVDBEpisodeMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles []anidb.AniDBTitle, tInfo torrent_info.TorrentInfo) ([]string, error) {
+	tSeasonCount, tEpisodeCount := len(tInfo.Seasons), len(tInfo.Episodes)
+
+	anidbIds := []string{}
+
+	year := ""
+	if tInfo.Year != 0 {
+		year = strconv.Itoa(tInfo.Year)
+	}
+
+	slices.SortStableFunc(titles, func(a, b anidb.AniDBTitle) int {
+		if year != "" {
+			if a.Year == b.Year {
+				return levenshtein.ComputeDistance(tInfo.Title, a.Value) - levenshtein.ComputeDistance(tInfo.Title, b.Value)
+			}
+			if a.Year == year {
+				return -1
+			}
+			if b.Year == year {
+				return 1
+			}
+		}
+		return levenshtein.ComputeDistance(tInfo.Title, a.Value) - levenshtein.ComputeDistance(tInfo.Title, b.Value)
+	})
+
+	if tSeasonCount == 0 && tEpisodeCount == 0 {
+		anidbId := titles[0].TId
+		for i := range tvdbMaps {
+			tvdbMap := &tvdbMaps[i]
+			if tvdbMap.TVDBSeason == 0 && tvdbMap.AniDBId == anidbId {
+				anidbIds = append(anidbIds, tvdbMap.AniDBId)
+				break
+			}
+		}
+		return anidbIds, nil
+	}
+
+	if tSeasonCount != 0 {
+		// detect if anidb season or tvdb season
+
+		idSeen := map[string]struct{}{}
+		for _, season := range tInfo.Seasons {
+			for i := range tvdbMaps {
+				tvdbMap := &tvdbMaps[i]
+				if tvdbMap.TVDBSeason == season {
+					if _, seen := idSeen[tvdbMap.AniDBId]; !seen {
+						anidbIds = append(anidbIds, tvdbMap.AniDBId)
+						idSeen[tvdbMap.AniDBId] = struct{}{}
+					}
+				}
+			}
+		}
+		return anidbIds, nil
+	}
+
+	if tEpisodeCount != 0 && tvdbMaps.HasAbsoluteOrder() {
+		return anidbIds, nil
+	}
+
+	for i := range tvdbMaps {
+		tvdbMap := &tvdbMaps[i]
+		if tvdbMap.TVDBSeason == 1 && tvdbMap.AniDBSeason == 1 {
+			anidbIds = append(anidbIds, tvdbMap.AniDBId)
+			break
+		}
+	}
+
+	return anidbIds, nil
+}
 
 func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 	if !config.Feature.IsEnabled("anime") {
@@ -97,17 +169,39 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 								continue
 							}
 
-							anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, tInfo.Seasons, 0)
-							if err != nil {
-								log.Error("failed to search anidb title", "error", err, "title", tInfo.Title)
-								continue
-							}
+							anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, nil, 0, 1)
 							if len(anidbTitleIds) == 0 {
 								items = append(items, anidb.AniDBTorrent{
 									Hash: hash,
 								})
+								continue
+							}
+							anidbId := anidbTitleIds[0]
+
+							tvdbMaps, err := anidb.GetTVDBEpisodeMaps(anidbId)
+							if err != nil {
+								log.Error("failed to get tvdb episode maps", "error", err, "anidb_id", anidbId)
+								continue
+							}
+
+							anidbTitles, err := tvdbMaps.GetAniDBTitles()
+							if err != nil {
+								log.Error("failed to get anidb titles from tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
+								continue
+							}
+
+							anidbIds, err := matchAniDBIdsInTVDBEpisodeMaps(tvdbMaps, anidbTitles, tInfo)
+							if err != nil {
+								log.Error("failed to match anidb ids in tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
+								continue
+							}
+
+							if len(anidbIds) == 0 {
+								items = append(items, anidb.AniDBTorrent{
+									Hash: hash,
+								})
 							} else {
-								for _, tid := range anidbTitleIds {
+								for _, tid := range anidbIds {
 									items = append(items, anidb.AniDBTorrent{
 										TId:  tid,
 										Hash: hash,

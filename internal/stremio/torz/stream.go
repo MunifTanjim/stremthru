@@ -65,8 +65,14 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	id := stremio_shared.GetPathValue(r, "id")
 
 	isImdbId := strings.HasPrefix(id, "tt")
+	isKitsuId := strings.HasPrefix(id, "kitsu:")
 	if isImdbId {
 		if contentType != string(stremio.ContentTypeMovie) && contentType != string(stremio.ContentTypeSeries) {
+			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
+			return
+		}
+	} else if isKitsuId {
+		if contentType != "anime" && contentType != string(stremio.ContentTypeSeries) {
 			shared.ErrorBadRequest(r, "unsupported type: "+contentType).Send(w, r)
 			return
 		}
@@ -77,7 +83,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	eud := ud.GetEncoded()
 
-	buddy.PullTorrentsByStremId(id, "")
+	if isImdbId {
+		buddy.PullTorrentsByStremId(id, "")
+	}
 
 	hashes, err := torrent_info.ListHashesByStremId(id)
 	if err != nil {

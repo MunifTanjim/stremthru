@@ -13,6 +13,7 @@ import (
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
+	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -943,7 +944,6 @@ var query_list_hashes_by_stremid_from_imdb_torrent = fmt.Sprintf(
 	imdb_torrent.TableName,
 	imdb_torrent.Column.TId,
 )
-
 var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
 	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND CONCAT(',', ti.%s, ',') LIKE ? AND (ti.%s = '' OR CONCAT(',', ti.%s, ',') LIKE ?)",
 	imdb_torrent.Column.Hash,
@@ -956,9 +956,69 @@ var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
 	Column.Episodes,
 	Column.Episodes,
 )
+var query_list_hashes_by_stremid_from_anidb_torrent = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s = ?",
+	anidb.TorrentColumn.Hash,
+	anidb.TorrentTableName,
+	anidb.TorrentColumn.TId,
+)
+var query_list_hashes_by_stremid_from_anidb_torrent_with_episode = fmt.Sprintf(
+	"SELECT ato.%s FROM %s ato JOIN %s ti ON ato.%s = ti.%s WHERE ato.%s = ? AND (ti.%s = '' OR CONCAT(',', ti.%s, ',') LIKE ?)",
+	anidb.TorrentColumn.Hash,
+	anidb.TorrentTableName,
+	TableName,
+	anidb.TorrentColumn.Hash,
+	Column.Hash,
+	anidb.TorrentColumn.TId,
+	Column.Episodes,
+	Column.Episodes,
+)
 
+func listHashesByAniDBId(anidbId, episode string) ([]string, error) {
+	query := ""
+	var args []any
+
+	if episode == "" {
+		query = query_list_hashes_by_stremid_from_anidb_torrent
+		args = []any{anidbId}
+	} else {
+		query = query_list_hashes_by_stremid_from_anidb_torrent_with_episode
+		args = []any{anidbId, "%," + episode + ",%"}
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Error("failed to list hashes by anidb id", "error", err, "anidb_id", anidbId, "episode", episode)
+		return nil, err
+	}
+	defer rows.Close()
+
+	hashes := []string{}
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return hashes, nil
+}
 func ListHashesByStremId(stremId string) ([]string, error) {
 	if !strings.HasPrefix(stremId, "tt") {
+		if strings.HasPrefix(stremId, "kitsu:") {
+			kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(stremId, "kitsu:"), ":")
+			anidbId, _, err := anime.GetAniDBIdByKitsuId(kitsuId)
+			if err != nil {
+				return nil, err
+			}
+			if anidbId == "" {
+				return nil, nil
+			}
+			return listHashesByAniDBId(anidbId, episode)
+		}
 		return nil, fmt.Errorf("unsupported strem id: %s", stremId)
 	}
 

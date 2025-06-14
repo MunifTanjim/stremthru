@@ -67,30 +67,9 @@ func (a *AnimeListItem) Equal(b *AnimeListItem) bool {
 		}
 	}
 	return true
-
 }
 
-func parseIntId(input string) int {
-	if input == "" {
-		return 0
-	}
-	output, err := strconv.Atoi(input)
-	if err != nil {
-		return 0
-	}
-	return output
-}
-
-func parseStringId(input string) string {
-	switch input {
-	case "unknown", "movie", "hentai", "web":
-		return ""
-	default:
-		return input
-	}
-}
-
-func processAnimeListItemsForTVDBId(tvdbId string, items []AnimeListItem) []anidb.AniDBTVDBEpisodeMap {
+func PrepareAniDBTVDBEpisodeMaps(tvdbId string, items []AnimeListItem) []anidb.AniDBTVDBEpisodeMap {
 	tvdbMaps := []anidb.AniDBTVDBEpisodeMap{}
 
 	for _, item := range items {
@@ -116,11 +95,7 @@ func processAnimeListItemsForTVDBId(tvdbId string, items []AnimeListItem) []anid
 			}
 
 			tvdbMaps = append(tvdbMaps, tvdbMap)
-			seenMap["1:a"] = len(tvdbMaps) - 1
-
-			// hasSeasonOneMapping := slices.IndexFunc(item.Mappings, func(m AnimeListItemMapping) bool {
-			// 	return m.TVDBSeason == "1"
-			// }) != -1
+			seenMap["1:-1"] = len(tvdbMaps) - 1
 		} else {
 			defaultTVDBSeason, err := strconv.Atoi(item.DefaultTVDBSeason)
 			if err != nil {
@@ -265,7 +240,7 @@ func SyncDataset() error {
 	}
 
 	for tvdbId, items := range byTVDBId {
-		tvdbMaps := processAnimeListItemsForTVDBId(tvdbId, items)
+		tvdbMaps := PrepareAniDBTVDBEpisodeMaps(tvdbId, items)
 		if err := anidb.UpsertTVDBEpisodeMaps(tvdbMaps); err != nil {
 			return err
 		}
