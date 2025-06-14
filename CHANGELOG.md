@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.79.1](https://github.com/MunifTanjim/stremthru/compare/0.79.0...0.79.1) (2025-06-14)
+
+
+### Bug Fixes
+
+* **torznab:** add missing imdb id for search by query ([92a2b43](https://github.com/MunifTanjim/stremthru/commit/92a2b4365a9d8ea78b9002edbef30fe6a9dcdadd))
+
 ## [0.79.0](https://github.com/MunifTanjim/stremthru/compare/0.78.4...0.79.0) (2025-06-14)
 
 
