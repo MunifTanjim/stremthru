@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.79.2](https://github.com/MunifTanjim/stremthru/compare/0.79.1...0.79.2) (2025-06-16)
+
+
+### Bug Fixes
+
+* **stremio/list:** unmarshal trakt.tv popular list response properly ([86c6e47](https://github.com/MunifTanjim/stremthru/commit/86c6e47ed2b213bed234c7e1920636c1a55258dc))
+
 ## [0.79.1](https://github.com/MunifTanjim/stremthru/compare/0.79.0...0.79.1) (2025-06-14)
 
 
