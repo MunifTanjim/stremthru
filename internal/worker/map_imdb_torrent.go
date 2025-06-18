@@ -74,7 +74,7 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 			totalCount := 0
 			for {
-				hashes, err := torrent_info.GetUnmappedHashes(batch_size)
+				hashes, err := torrent_info.GetIMDBUnmappedHashes(batch_size)
 				if err != nil {
 					return err
 				}

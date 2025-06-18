@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -133,6 +134,32 @@ func (css *CommaSeperatedString) Scan(value any) error {
 		return nil
 	}
 	*css = strings.Split(strings.Trim(str, ","), ",")
+	return nil
+}
+
+type CommaSeperatedInt []int
+
+func (csi CommaSeperatedInt) Value() (driver.Value, error) {
+	css := make(CommaSeperatedString, len(csi))
+	for i := range csi {
+		css[i] = strconv.Itoa(csi[i])
+	}
+	return css.Value()
+}
+
+func (csi *CommaSeperatedInt) Scan(value any) error {
+	css := CommaSeperatedString{}
+	if err := css.Scan(value); err != nil {
+		return err
+	}
+	*csi = make([]int, len(css))
+	for i := range css {
+		v, err := strconv.Atoi(css[i])
+		if err != nil {
+			return err
+		}
+		(*csi)[i] = v
+	}
 	return nil
 }
 

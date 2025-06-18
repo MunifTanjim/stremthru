@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/go-ptt"
+	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -1281,7 +1282,7 @@ func ExistsByHash(hashes []string) (map[string]bool, error) {
 	return exists, nil
 }
 
-var query_get_unmapped_hashes = fmt.Sprintf(
+var query_get_imdb_unmapped_hashes = fmt.Sprintf(
 	"SELECT ti.%s FROM %s ti LEFT JOIN %s ito ON ti.%s = ito.%s WHERE ti.%s = ti.%s AND ito.%s IS NULL LIMIT ?",
 	Column.Hash,
 	TableName,
@@ -1293,11 +1294,47 @@ var query_get_unmapped_hashes = fmt.Sprintf(
 	imdb_torrent.Column.TId,
 )
 
-func GetUnmappedHashes(limit int) ([]string, error) {
+func GetIMDBUnmappedHashes(limit int) ([]string, error) {
 	hashes := []string{}
 	limit = max(1, min(limit, 20000))
 
-	rows, err := db.Query(query_get_unmapped_hashes, limit)
+	rows, err := db.Query(query_get_imdb_unmapped_hashes, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return hashes, nil
+}
+
+var query_get_anidb_unmapped_hashes = fmt.Sprintf(
+	"SELECT ti.%s FROM %s ti LEFT JOIN %s ato ON ti.%s = ato.%s WHERE ti.%s = ti.%s AND ato.%s IS NULL LIMIT ?",
+	Column.Hash,
+	TableName,
+	anidb.TorrentTableName,
+	Column.Hash,
+	anidb.TorrentColumn.Hash,
+	Column.TorrentTitle,
+	Column.ParserInput,
+	anidb.TorrentColumn.TId,
+)
+
+func GetAniDBUnmappedHashes(limit int) ([]string, error) {
+	hashes := []string{}
+	limit = max(1, min(limit, 20000))
+
+	rows, err := db.Query(query_get_anidb_unmapped_hashes, limit)
 	if err != nil {
 		return nil, err
 	}

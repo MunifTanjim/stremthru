@@ -22,6 +22,46 @@ type AniDBTitle struct {
 	Type   string
 }
 
+type AniDBTitles []AniDBTitle
+
+// -1 for invalid
+func (titles AniDBTitles) GetSeason(anidbId string) int {
+	for _, t := range titles {
+		if t.TId == anidbId {
+			if s, err := strconv.Atoi(t.Season); err == nil {
+				return s
+			}
+		}
+	}
+	return -1
+}
+
+// 0 for missing
+func (titles AniDBTitles) GetYear(anidbId string) int {
+	for _, t := range titles {
+		if t.TId == anidbId {
+			if year, err := strconv.Atoi(t.Year); err == nil {
+				return year
+			}
+		}
+	}
+	return 0
+}
+
+func (titles AniDBTitles) SeasonBoundary() (int, int) {
+	start, end := 1, 1
+	for _, t := range titles {
+		if t.Season != "1" {
+			if s, err := strconv.Atoi(t.Season); err == nil {
+				if s > end {
+					end = s
+				}
+			}
+		}
+	}
+	return start, end
+}
+
 var TitleColumn = struct {
 	Id     string
 	TId    string
@@ -320,7 +360,7 @@ var query_get_titles_by_ids = fmt.Sprintf(
 	TitleColumn.TId,
 )
 
-func GetTitlesByIds(anidbIds []string) ([]AniDBTitle, error) {
+func GetTitlesByIds(anidbIds []string) (AniDBTitles, error) {
 	if len(anidbIds) == 0 {
 		return []AniDBTitle{}, nil
 	}
