@@ -114,10 +114,14 @@ var nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)
 var whitespacesRegex = regexp.MustCompile(`\s{2,}`)
 var fts5SymbolRegex = regexp.MustCompile(`[-+*:^]`)
 
-func PrepareFTS5Query(query string) string {
+func PrepareFTS5Query(query string, lenient bool) string {
 	query = whitespacesRegex.ReplaceAllLiteralString(fts5SymbolRegex.ReplaceAllLiteralString(strings.ReplaceAll(query, `"`, `""`), " "), " ")
 	if strings.TrimSpace(query) == "" {
 		return ""
 	}
-	return `"` + strings.Join(strings.Split(query, " "), `" "`) + `"`
+	sep := `" "`
+	if lenient {
+		sep = `" OR "`
+	}
+	return `"` + strings.Join(strings.Split(query, " "), sep) + `"`
 }

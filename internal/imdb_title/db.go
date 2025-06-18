@@ -320,7 +320,7 @@ func sqliteSearchIds(title string, titleType SearchTitleType, year int, extendYe
 	if year != 0 && extendYear {
 		fts_query += " " + strconv.Itoa(year)
 	}
-	fts_query = db.PrepareFTS5Query(fts_query)
+	fts_query = db.PrepareFTS5Query(fts_query, false)
 	if fts_query == "" {
 		return []string{}, nil
 	}

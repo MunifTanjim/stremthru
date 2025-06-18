@@ -123,6 +123,8 @@ func (ds TSVDataset[T]) diffRows(oldR, newR *csv.Reader) iter.Seq[[]string] {
 }
 
 func (ds *TSVDataset[T]) processAll() error {
+	ds.log.Info("processing whole dataset...")
+
 	filePath := ds.filePath(ds.curr_filename)
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -150,6 +152,8 @@ func (ds *TSVDataset[T]) processAll() error {
 }
 
 func (ds *TSVDataset[T]) processDiff() error {
+	ds.log.Info("processing diff dataset...")
+
 	lastFilePath := ds.filePath(ds.prev_filename)
 	lastFile, err := os.Open(lastFilePath)
 	if err != nil {
