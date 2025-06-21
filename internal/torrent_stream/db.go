@@ -113,7 +113,7 @@ func GetFile(hash string, sid string) (*File, error) {
 	row := db.QueryRow(query_get_file, hash, sid)
 	var file File
 	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
-		if err != sql.ErrNoRows {
+		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
