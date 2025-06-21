@@ -20,6 +20,7 @@ var db = &DB{}
 var Dialect DBDialect
 
 var BooleanFalse string
+var BooleanTrue string
 var CurrentTimestamp string
 var FnJSONGroupArray string
 var FnJSONObject string
@@ -36,6 +37,7 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 	switch Dialect {
 	case DBDialectSQLite:
 		BooleanFalse = "0"
+		BooleanTrue = "1"
 		CurrentTimestamp = "unixepoch()"
 		FnJSONGroupArray = "json_group_array"
 		FnJSONObject = "json_object"
@@ -45,6 +47,7 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 		})
 	case DBDialectPostgres:
 		BooleanFalse = "false"
+		BooleanTrue = "true"
 		CurrentTimestamp = "current_timestamp"
 		FnJSONGroupArray = "json_agg"
 		FnJSONObject = "json_build_object"

@@ -194,7 +194,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 			return data, nil
 		} else {
 			buddyLog.Info("check magnet", "store", s.GetName(), "hash_count", len(staleOrMissingHashes), "duration", duration)
-			filesByHash := map[string]magnet_cache.Files{}
+			filesByHash := map[string]torrent_stream.Files{}
 			for _, item := range res.Data.Items {
 				res_item := store.CheckMagnetDataItem{
 					Hash:   item.Hash,
@@ -202,7 +202,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 					Status: item.Status,
 				}
 				res_files := []store.MagnetFile{}
-				files := magnet_cache.Files{}
+				files := torrent_stream.Files{}
 				if item.Status == store.MagnetStatusCached {
 					seenByName := map[string]bool{}
 					for _, f := range item.Files {
@@ -212,7 +212,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 						}
 						seenByName[f.Name] = true
 						res_files = append(res_files, store.MagnetFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
-						files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size, SId: f.SId})
+						files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size, SId: f.SId})
 					}
 				}
 				res_item.Files = res_files
@@ -245,7 +245,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 
 		var mu sync.Mutex
 		var wg sync.WaitGroup
-		filesByHash := map[string]magnet_cache.Files{}
+		filesByHash := map[string]torrent_stream.Files{}
 		for cHashes := range slices.Chunk(staleOrMissingHashes, 500) {
 			wg.Add(1)
 			go func() {
@@ -272,7 +272,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 
 					peerLog.Info("check magnet", "store", s.GetName(), "hash_count", len(cHashes), "duration", duration)
 					for _, item := range res.Data.Items {
-						files := magnet_cache.Files{}
+						files := torrent_stream.Files{}
 						if item.Status == store.MagnetStatusCached {
 							seenByName := map[string]bool{}
 							for _, f := range item.Files {
@@ -281,7 +281,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 									continue
 								}
 								seenByName[f.Name] = true
-								files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+								files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
 							}
 						}
 						filesByHash[item.Hash] = files

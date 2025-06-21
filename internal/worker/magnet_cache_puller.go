@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/peer"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
@@ -85,7 +86,7 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 						time.Sleep(15 * time.Second)
 					}
 
-					filesByHash := map[string]magnet_cache.Files{}
+					filesByHash := map[string]torrent_stream.Files{}
 
 					storeToken := storeTokens[i%len(storeTokens)]
 					clientIp := clientIps[i%len(clientIps)]
@@ -108,7 +109,7 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 					} else {
 						log.Info("check magnet", "store", s.GetName(), "hash_count", len(cHashes), "duration", duration)
 						for _, item := range res.Data.Items {
-							files := magnet_cache.Files{}
+							files := torrent_stream.Files{}
 							if item.Status == store.MagnetStatusCached {
 								seenByName := map[string]bool{}
 								for _, f := range item.Files {
@@ -117,7 +118,7 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 										continue
 									}
 									seenByName[f.Name] = true
-									files = append(files, magnet_cache.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+									files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
 								}
 							}
 							filesByHash[item.Hash] = files

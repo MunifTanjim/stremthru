@@ -3,6 +3,7 @@ package magnet_cache
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
@@ -17,15 +18,12 @@ const TableName = "magnet_cache"
 
 var mcLog = logger.Scoped(TableName)
 
-type File = torrent_stream.File
-type Files = torrent_stream.Files
-
 type MagnetCache struct {
 	Store      store.StoreCode
 	Hash       string
 	IsCached   bool
 	ModifiedAt db.Timestamp
-	Files      Files
+	Files      torrent_stream.Files
 }
 
 func (mc MagnetCache) IsStale() bool {
@@ -54,7 +52,7 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	arg_idx := 0
 	args := make([]any, args_len)
 
-	query := "SELECT store, hash, is_cached, modified_at, files FROM " + TableName
+	query := "SELECT store, hash, is_cached, modified_at FROM " + TableName
 	if sid != "" {
 		query += " LEFT JOIN " + torrent_stream.TableName + " ON " + TableName + ".hash = " + torrent_stream.TableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + torrent_stream.TableName + ".sid IN (?, '*')) AND"
 		args[arg_idx] = sid
@@ -82,11 +80,11 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	mcs := []MagnetCache{}
 	for rows.Next() {
 		smc := MagnetCache{}
-		if err := rows.Scan(&smc.Store, &smc.Hash, &smc.IsCached, &smc.ModifiedAt, &smc.Files); err != nil {
+		if err := rows.Scan(&smc.Store, &smc.Hash, &smc.IsCached, &smc.ModifiedAt); err != nil {
 			return nil, err
 		}
 		if files, ok := filesByHash[smc.Hash]; ok && len(files) > 0 {
-			smc.Files = Files(files)
+			smc.Files = files
 		}
 		mcs = append(mcs, smc)
 	}
@@ -97,17 +95,16 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	return mcs, nil
 }
 
-func Touch(storeCode store.StoreCode, hash string, files Files, isCached bool, skipFileTracking bool) {
+func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, isCached bool, skipFileTracking bool) {
 	buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
 	var result sql.Result
 	var err error
-	if !isCached {
-		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, false) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
-		result, err = db.Exec(buf.String(), storeCode, hash)
-	} else {
-		buf.WriteString(" (store, hash, is_cached, files) VALUES (?, ?, true, ?) ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
-		result, err = db.Exec(buf.String(), storeCode, hash, files)
+	is_cached := db.BooleanFalse
+	if isCached {
+		is_cached = db.BooleanTrue
 	}
+	buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, " + is_cached + ") ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = " + db.CurrentTimestamp)
+	result, err = db.Exec(buf.String(), storeCode, hash)
 	if err == nil {
 		_, err = result.RowsAffected()
 	}
@@ -116,18 +113,27 @@ func Touch(storeCode store.StoreCode, hash string, files Files, isCached bool, s
 		return
 	}
 	if !skipFileTracking {
-		torrent_stream.TrackFiles(map[string]Files{hash: files}, storeCode != store.StoreCodeRealDebrid)
+		torrent_stream.TrackFiles(map[string]torrent_stream.Files{hash: files}, storeCode != store.StoreCodeRealDebrid)
 	}
 }
 
-func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, skipFileTracking bool) {
+var query_bulk_touch_before_values = fmt.Sprintf(
+	"INSERT INTO %s (store,hash,is_cached) VALUES ",
+	TableName,
+)
+var query_bulk_touch_on_conflict = fmt.Sprintf(
+	` ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = %s`,
+	db.CurrentTimestamp,
+)
+
+func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.Files, skipFileTracking bool) {
 	var hit_query strings.Builder
-	hit_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached,files) VALUES ")
-	hit_placeholder := "(?,?,true,?)"
+	hit_query.WriteString(query_bulk_touch_before_values)
+	hit_placeholder := "(?,?,true)"
 	hit_count := 0
 
 	var miss_query strings.Builder
-	miss_query.WriteString("INSERT INTO " + TableName + " (store,hash,is_cached) VALUES ")
+	miss_query.WriteString(query_bulk_touch_before_values)
 	miss_placeholder := "(?,?,false)"
 	miss_count := 0
 
@@ -147,13 +153,13 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, skipFile
 				hit_query.WriteString(",")
 			}
 			hit_query.WriteString(hit_placeholder)
-			hit_args = append(hit_args, storeCode, hash, files)
+			hit_args = append(hit_args, storeCode, hash)
 			hit_count++
 		}
 	}
 
 	if hit_count > 0 {
-		hit_query.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, files = excluded.files, modified_at = " + db.CurrentTimestamp)
+		hit_query.WriteString(query_bulk_touch_on_conflict)
 		_, err := db.Exec(hit_query.String(), hit_args...)
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
@@ -164,7 +170,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]Files, skipFile
 	}
 
 	if miss_count > 0 {
-		miss_query.WriteString(" ON CONFLICT (store, hash) DO UPDATE SET is_cached = excluded.is_cached, modified_at = " + db.CurrentTimestamp)
+		miss_query.WriteString(query_bulk_touch_on_conflict)
 		_, err := db.Exec(miss_query.String(), miss_args...)
 		if err != nil {
 			mcLog.Error("failed to touch misses", "error", err)
