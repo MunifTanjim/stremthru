@@ -502,7 +502,7 @@ var config = func() Config {
 		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
 		DatabaseURI:                 databaseUri,
 		Feature:                     feature,
-		Version:                     "0.79.2", // x-release-please-version
+		Version:                     "0.79.3", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
 		ServerStartTime:             time.Now(),
 		StoreContentProxy:           storeContentProxyMap,

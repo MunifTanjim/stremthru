@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.79.3](https://github.com/MunifTanjim/stremthru/compare/0.79.2...0.79.3) (2025-06-21)
+
+
+### Bug Fixes
+
+* **anime:** return early for emtpy bulk record id maps ([c00341d](https://github.com/MunifTanjim/stremthru/commit/c00341da4347f7008e0d28a79a68932b652f7a45))
+* **stremio:** show file size in default template ([848d9bb](https://github.com/MunifTanjim/stremthru/commit/848d9bb4939425395266b75a5bdc9051ff043557))
+
 ## [0.79.2](https://github.com/MunifTanjim/stremthru/compare/0.79.1...0.79.2) (2025-06-16)
 
 
