@@ -105,7 +105,7 @@ var RebuildTitleFTS = func() func() error {
 }()
 
 var query_upsert_titles_before_values = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES `,
+	`INSERT INTO %s AS at (%s) VALUES `,
 	TitleTableName,
 	strings.Join([]string{
 		TitleColumn.TId,
@@ -118,7 +118,7 @@ var query_upsert_titles_before_values = fmt.Sprintf(
 )
 var query_upsert_titles_values_placeholder = "(" + util.RepeatJoin("?", 6, ",") + ")"
 var query_upsert_titles_after_values = fmt.Sprintf(
-	` ON CONFLICT (%s,%s,%s) DO UPDATE SET %s = EXCLUDED.%s, %s = EXCLUDED.%s, %s = EXCLUDED.%s`,
+	` ON CONFLICT (%s,%s,%s) DO UPDATE SET %s = EXCLUDED.%s, %s = EXCLUDED.%s, %s = CASE WHEN EXCLUDED.%s = '' THEN at.%s ELSE EXCLUDED.%s END`,
 	TitleColumn.TId,
 	TitleColumn.TType,
 	TitleColumn.TLang,
@@ -126,6 +126,8 @@ var query_upsert_titles_after_values = fmt.Sprintf(
 	TitleColumn.Value,
 	TitleColumn.Season,
 	TitleColumn.Season,
+	TitleColumn.Year,
+	TitleColumn.Year,
 	TitleColumn.Year,
 	TitleColumn.Year,
 )
@@ -156,6 +158,19 @@ var query_set_title_type = fmt.Sprintf(
 
 func SetTitleType(anidbId string, Type string) error {
 	_, err := db.Exec(query_set_title_type, Type, anidbId)
+	return err
+}
+
+var query_set_title_year = fmt.Sprintf(
+	`UPDATE %s SET %s = ? WHERE %s = ? AND %s = ''`,
+	TitleTableName,
+	TitleColumn.Year,
+	TitleColumn.TId,
+	TitleColumn.Year,
+)
+
+func SetTitleYear(anidbId string, year int) error {
+	_, err := db.Exec(query_set_title_year, strconv.Itoa(year), anidbId)
 	return err
 }
 

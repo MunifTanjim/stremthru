@@ -25,6 +25,7 @@ const (
 	AnimeIdMapTypeManga   AnimeIdMapType = "MANGA"
 	AnimeIdMapTypeNovel   AnimeIdMapType = "NOVEL"
 	AnimeIdMapTypeOneShot AnimeIdMapType = "ONE_SHOT"
+	AnimeIdMapTypeUnknown AnimeIdMapType = ""
 )
 
 type AnimeIdMap struct {

@@ -230,6 +230,22 @@ func InitWorkers() func() {
 		workers = append(workers, worker)
 	}
 
+	if worker := InitSyncManamiAnimeDatabaseWorker(&WorkerConfig{
+		ShouldWait: func() (bool, string) {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			if running_worker.sync_anidb_titles {
+				return true, "sync_anidb_titles is running"
+			}
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
 	if worker := InitSyncAniDBTVDBEpisodeMapWorker(&WorkerConfig{
 		ShouldWait: func() (bool, string) {
 			return false, ""
