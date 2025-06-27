@@ -512,7 +512,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 	isRunning := false
 	id, err := worker.scheduler.Add(&tasks.Task{
-		Interval:          time.Duration(1 * time.Hour),
+		Interval:          time.Duration(30 * time.Minute),
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
 			defer func() {
@@ -540,6 +540,26 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 			}
 
 			isRunning = true
+
+			if !isAnidbTitlesSynced() {
+				log.Info("AniDB titles not synced yet today, skipping")
+				return nil
+			}
+
+			if !isAniDBTVDBEpisodeMapSynced() {
+				log.Info("AniDB TVDB episode maps not synced yet today, skipping")
+				return nil
+			}
+
+			if !isAnimeAPISynced() {
+				log.Info("AnimeAPI not synced yet today, skipping")
+				return nil
+			}
+
+			if !isManamiAnimeDatabaseSynced() {
+				log.Info("Manami anime database not synced yet today, skipping")
+				return nil
+			}
 
 			batch_size := 10000
 			chunk_size := 1000
@@ -694,7 +714,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 	if task, err := worker.scheduler.Lookup(id); err == nil && task != nil {
 		t := task.Clone()
-		t.Interval = 60 * time.Second
+		t.Interval = 90 * time.Second
 		t.RunOnce = true
 		worker.scheduler.Add(t)
 	}

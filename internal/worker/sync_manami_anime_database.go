@@ -10,6 +10,20 @@ import (
 	"github.com/madflojo/tasks"
 )
 
+var syncManamiAnimeDatabaseJobTracker *JobTracker[struct{}]
+
+func isManamiAnimeDatabaseSynced() bool {
+	if syncManamiAnimeDatabaseJobTracker == nil {
+		return false
+	}
+	jobId := getTodayDateOnly()
+	job, err := syncManamiAnimeDatabaseJobTracker.Get(jobId)
+	if err != nil {
+		return false
+	}
+	return job != nil && job.Status == "done"
+}
+
 func InitSyncManamiAnimeDatabaseWorker(conf *WorkerConfig) *Worker {
 	if !config.Feature.IsEnabled("anime") {
 		return nil
@@ -22,8 +36,10 @@ func InitSyncManamiAnimeDatabaseWorker(conf *WorkerConfig) *Worker {
 		if err != nil {
 			return true
 		}
-		return date.Before(time.Now().Add(-8 * 24 * time.Hour))
+		return date.Before(time.Now().Add(-7 * 6 * 24 * time.Hour))
 	})
+
+	syncManamiAnimeDatabaseJobTracker = &jobTracker
 
 	worker := &Worker{
 		scheduler:  tasks.New(),

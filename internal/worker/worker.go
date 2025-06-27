@@ -8,10 +8,13 @@ import (
 
 var mutex sync.Mutex
 var running_worker struct {
-	sync_anidb_titles bool
-	sync_dmm_hashlist bool
-	sync_imdb         bool
-	map_imdb_torrent  bool
+	sync_anidb_titles           bool
+	sync_dmm_hashlist           bool
+	sync_imdb                   bool
+	map_imdb_torrent            bool
+	sync_animeapi               bool
+	sync_anidb_tvdb_episode_map bool
+	sync_manami_anime_database  bool
 }
 
 type Worker struct {
@@ -158,6 +161,16 @@ func InitWorkers() func() {
 		workers = append(workers, worker)
 	}
 
+	if worker := InitMagnetCachePullerWorker(&WorkerConfig{
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
 	if worker := InitMapAnimeIdWorker(&WorkerConfig{
 		ShouldWait: func() (bool, string) {
 			return false, ""
@@ -176,20 +189,21 @@ func InitWorkers() func() {
 			if running_worker.sync_imdb {
 				return true, "sync_imdb is running"
 			}
-			return false, ""
-		},
-		OnStart: func() {},
-		OnEnd:   func() {},
-	}); worker != nil {
-		workers = append(workers, worker)
-	}
 
-	if worker := InitMagnetCachePullerWorker(&WorkerConfig{
-		ShouldWait: func() (bool, string) {
 			return false, ""
 		},
-		OnStart: func() {},
-		OnEnd:   func() {},
+		OnStart: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_animeapi = true
+		},
+		OnEnd: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_animeapi = false
+		},
 	}); worker != nil {
 		workers = append(workers, worker)
 	}
@@ -214,7 +228,7 @@ func InitWorkers() func() {
 		workers = append(workers, worker)
 	}
 
-	if worker := InitMapAniDBTorrentWorker(&WorkerConfig{
+	if worker := InitSyncAniDBTVDBEpisodeMapWorker(&WorkerConfig{
 		ShouldWait: func() (bool, string) {
 			mutex.Lock()
 			defer mutex.Unlock()
@@ -222,10 +236,21 @@ func InitWorkers() func() {
 			if running_worker.sync_anidb_titles {
 				return true, "sync_anidb_titles is running"
 			}
+
 			return false, ""
 		},
-		OnStart: func() {},
-		OnEnd:   func() {},
+		OnStart: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_anidb_tvdb_episode_map = true
+		},
+		OnEnd: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_anidb_tvdb_episode_map = false
+		},
 	}); worker != nil {
 		workers = append(workers, worker)
 	}
@@ -238,16 +263,50 @@ func InitWorkers() func() {
 			if running_worker.sync_anidb_titles {
 				return true, "sync_anidb_titles is running"
 			}
+
+			if running_worker.sync_animeapi {
+				return true, "sync_animeapi is running"
+			}
+
 			return false, ""
 		},
-		OnStart: func() {},
-		OnEnd:   func() {},
+		OnStart: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_manami_anime_database = true
+		},
+		OnEnd: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_manami_anime_database = false
+		},
 	}); worker != nil {
 		workers = append(workers, worker)
 	}
 
-	if worker := InitSyncAniDBTVDBEpisodeMapWorker(&WorkerConfig{
+	if worker := InitMapAniDBTorrentWorker(&WorkerConfig{
 		ShouldWait: func() (bool, string) {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			if running_worker.sync_anidb_titles {
+				return true, "sync_anidb_titles is running"
+			}
+
+			if running_worker.sync_anidb_tvdb_episode_map {
+				return true, "sync_anidb_tvdb_episode_map is running"
+			}
+
+			if running_worker.sync_animeapi {
+				return true, "sync_animeapi is running"
+			}
+
+			if running_worker.sync_manami_anime_database {
+				return true, "sync_manami_anime_database is running"
+			}
+
 			return false, ""
 		},
 		OnStart: func() {},

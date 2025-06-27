@@ -10,6 +10,20 @@ import (
 	"github.com/madflojo/tasks"
 )
 
+var syncAniDBTVDBEpisodeMapJobTracker *JobTracker[struct{}]
+
+func isAniDBTVDBEpisodeMapSynced() bool {
+	if syncAniDBTVDBEpisodeMapJobTracker == nil {
+		return false
+	}
+	jobId := getTodayDateOnly()
+	job, err := syncAniDBTVDBEpisodeMapJobTracker.Get(jobId)
+	if err != nil {
+		return false
+	}
+	return job != nil && job.Status == "done"
+}
+
 func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
 	if !config.Feature.IsEnabled("anime") {
 		return nil
@@ -24,6 +38,8 @@ func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
 		}
 		return date.Before(time.Now().Add(-7 * 24 * time.Hour))
 	})
+
+	syncAniDBTVDBEpisodeMapJobTracker = &jobTracker
 
 	worker := &Worker{
 		scheduler:  tasks.New(),
@@ -113,7 +129,7 @@ func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
 
 	if task, err := worker.scheduler.Lookup(id); err == nil && task != nil {
 		t := task.Clone()
-		t.Interval = 30 * time.Second
+		t.Interval = 45 * time.Second
 		t.RunOnce = true
 		worker.scheduler.Add(t)
 	}

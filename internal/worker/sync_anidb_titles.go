@@ -10,6 +10,20 @@ import (
 	"github.com/madflojo/tasks"
 )
 
+var syncAniDBTitlesJobTracker *JobTracker[struct{}]
+
+func isAnidbTitlesSynced() bool {
+	if syncAniDBTitlesJobTracker == nil {
+		return false
+	}
+	jobId := getTodayDateOnly()
+	job, err := syncAniDBTitlesJobTracker.Get(jobId)
+	if err != nil {
+		return false
+	}
+	return job != nil && job.Status == "done"
+}
+
 func InitSyncAniDBTitlesWorker(conf *WorkerConfig) *Worker {
 	if !config.Feature.IsEnabled("anime") {
 		return nil
@@ -24,6 +38,8 @@ func InitSyncAniDBTitlesWorker(conf *WorkerConfig) *Worker {
 		}
 		return date.Before(time.Now().Add(-7 * 24 * time.Hour))
 	})
+
+	syncAniDBTitlesJobTracker = &jobTracker
 
 	worker := &Worker{
 		scheduler:  tasks.New(),

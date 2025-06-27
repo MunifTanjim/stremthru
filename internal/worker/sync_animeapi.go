@@ -10,6 +10,20 @@ import (
 	"github.com/madflojo/tasks"
 )
 
+var syncAnimeAPIJobTracker *JobTracker[struct{}]
+
+func isAnimeAPISynced() bool {
+	if syncAnimeAPIJobTracker == nil {
+		return false
+	}
+	jobId := getTodayDateOnly()
+	job, err := syncAnimeAPIJobTracker.Get(jobId)
+	if err != nil {
+		return false
+	}
+	return job != nil && job.Status == "done"
+}
+
 func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {
 	if !config.Feature.IsEnabled("anime") {
 		return nil
@@ -22,8 +36,10 @@ func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {
 		if err != nil {
 			return true
 		}
-		return date.Before(time.Now().Add(-14 * 24 * time.Hour))
+		return date.Before(time.Now().Add(-7 * 24 * time.Hour))
 	})
+
+	syncAnimeAPIJobTracker = &jobTracker
 
 	worker := &Worker{
 		scheduler:  tasks.New(),
@@ -113,7 +129,7 @@ func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {
 
 	if task, err := worker.scheduler.Lookup(id); err == nil && task != nil {
 		t := task.Clone()
-		t.Interval = 90 * time.Second
+		t.Interval = 45 * time.Second
 		t.RunOnce = true
 		worker.scheduler.Add(t)
 	}
