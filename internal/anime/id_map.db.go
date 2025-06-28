@@ -1,11 +1,13 @@
 package anime
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -270,6 +272,29 @@ func GetTypeByKitsuIds(ids []int) (map[int]AnimeIdMapType, error) {
 		return nil, err
 	}
 	return typeById, nil
+}
+
+var query_get_anidb_id_by_kitsu_id = fmt.Sprintf(
+	`SELECT im.%s, at.%s FROM %s im LEFT JOIN %s at ON at.%s = im.%s WHERE im.%s = ? LIMIT 1`,
+	IdMapColumn.AniDB,
+	anidb.TitleColumn.Season,
+	IdMapTableName,
+	anidb.TitleTableName,
+	anidb.TitleColumn.TId,
+	IdMapColumn.AniDB,
+	IdMapColumn.Kitsu,
+)
+
+func GetAniDBIdByKitsuId(kitsuId string) (anidbId, season string, err error) {
+	query := query_get_anidb_id_by_kitsu_id
+	row := db.QueryRow(query, kitsuId)
+	if err = row.Scan(&anidbId, &season); err != nil {
+		if err == sql.ErrNoRows {
+			return "", "", nil
+		}
+		return "", "", err
+	}
+	return anidbId, season, nil
 }
 
 var query_bulk_record_id_maps_before_values = fmt.Sprintf(

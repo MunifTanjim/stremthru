@@ -1,5 +1,5 @@
-github.com/MunifTanjim/go-ptt v0.8.1-0.20250627234001-6dd029eaea87 h1:eVaRRB4jqBXSYaSd1jEoR2eFDszfo+1wxUp5GtbvMWM=
-github.com/MunifTanjim/go-ptt v0.8.1-0.20250627234001-6dd029eaea87/go.mod h1:AF8lQWUaOCzZdpZQvifbELTJebzw4uAghWLiceYGOns=
+github.com/MunifTanjim/go-ptt v0.8.1-0.20250628161737-22924df7fcfc h1:2WPBEj/JTCk9oVudZLIkc9hMTz4EFAxk65z/ei13PGQ=
+github.com/MunifTanjim/go-ptt v0.8.1-0.20250628161737-22924df7fcfc/go.mod h1:AF8lQWUaOCzZdpZQvifbELTJebzw4uAghWLiceYGOns=
 github.com/agnivade/levenshtein v1.2.1 h1:EHBY3UOn1gwdy/VbFwgo4cxecRznFk7fKWN1KOX7eoM=
 github.com/agnivade/levenshtein v1.2.1/go.mod h1:QVVI16kDrtSuwcpd0p1+xMC6Z/VfhtCyDIjcwga4/DU=
 github.com/alitto/pond/v2 v2.3.4 h1:hR0bqAwJiI2chu3cLN4gVyNC7rc5mj/l5wg0710nxsY=

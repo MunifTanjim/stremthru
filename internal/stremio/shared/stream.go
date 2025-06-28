@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/go-ptt"
+	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -59,14 +61,14 @@ func MatchFileByPattern(files []store.MagnetFile, pattern *regexp.Regexp) *store
 	return nil
 }
 
-var parse_season_episode = ptt.GetPartialParser([]string{"seasons", "episodes"})
+var parse_season_episode = ptt.GetPartialParser([]string{"releaseType", "seasons", "episodes"})
 
-func getSeasonEpisode(title string) (season, episode int) {
+func getSeasonEpisode(title string) (season, episode int, releaseType ptt.ResultReleaseType) {
 	season, episode = -1, -1
 	r := parse_season_episode(title)
 	if err := r.Error(); err != nil {
 		log.Error("failed to parse season episode", "title", title, "error", err)
-		return season, episode
+		return season, episode, ""
 	}
 	if len(r.Seasons) > 0 {
 		season = r.Seasons[0]
@@ -74,7 +76,7 @@ func getSeasonEpisode(title string) (season, episode int) {
 	if len(r.Episodes) > 0 {
 		episode = r.Episodes[0]
 	}
-	return season, episode
+	return season, episode, r.ReleaseType
 }
 
 func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string, storeCode store.StoreCode) *store.MagnetFile {
@@ -90,6 +92,23 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 			return file
 		}
 	}
+	if strings.HasPrefix(sid, "kitsu:") {
+		kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(sid, "kitsu:"), ":")
+		_, season, err := anime.GetAniDBIdByKitsuId(kitsuId)
+		if err != nil {
+			log.Error("failed to get anidb id by kitsu id", "error", err, "kitsu_id", kitsuId)
+			return nil
+		}
+		expectedEpisode := util.SafeParseInt(episode, -1)
+		expectedSeason := util.SafeParseInt(season, -1)
+		for i := range files {
+			f := &files[i]
+			if season, episode, releaseType := getSeasonEpisode(f.Name); releaseType == "" && (episode != -1 && episode == expectedEpisode) && (season == -1 || season == expectedSeason) {
+				return f
+			}
+		}
+		return nil
+	}
 	if parts := strings.SplitN(sid, ":", 3); len(parts) == 3 {
 		expectedSeason, err := strconv.Atoi(parts[1])
 		if err != nil {
@@ -103,7 +122,7 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 		}
 		for i := range files {
 			f := &files[i]
-			if season, episode := getSeasonEpisode(f.Name); season == expectedSeason && episode == expectedEpisode {
+			if season, episode, _ := getSeasonEpisode(f.Name); season == expectedSeason && episode == expectedEpisode {
 				return f
 			}
 		}

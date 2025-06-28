@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
@@ -21,6 +22,7 @@ type File struct {
 	Idx    int    `json:"i"`
 	Size   int64  `json:"s"`
 	SId    string `json:"sid,omitempty"`
+	ASId   string `json:"asid,omitempty"`
 	Source string `json:"src,omitempty"`
 }
 
@@ -63,28 +65,29 @@ type TorrentStream struct {
 	Idx    int          `json:"i"`
 	Size   int64        `json:"s"`
 	SId    string       `json:"sid"`
+	ASId   string       `json:"asid"`
 	Source string       `json:"src"`
 	CAt    db.Timestamp `json:"cat"`
 	UAt    db.Timestamp `json:"uat"`
 }
 
-type ColumnStruct struct {
+var Column = struct {
 	Hash   string
 	Name   string
 	Idx    string
 	Size   string
 	SId    string
+	ASId   string
 	Source string
 	CAt    string
 	UAt    string
-}
-
-var Column = ColumnStruct{
+}{
 	Hash:   "h",
 	Name:   "n",
 	Idx:    "i",
 	Size:   "s",
 	SId:    "sid",
+	ASId:   "asid",
 	Source: "src",
 	CAt:    "cat",
 	UAt:    "uat",
@@ -92,13 +95,38 @@ var Column = ColumnStruct{
 
 var Columns = []string{
 	Column.Hash,
-	Column.SId,
 	Column.Name,
 	Column.Idx,
 	Column.Size,
+	Column.SId,
+	Column.ASId,
 	Column.Source,
 	Column.CAt,
 	Column.UAt,
+}
+
+var query_get_anime_file_for_kitsu = fmt.Sprintf(
+	`SELECT %s, %s, %s FROM %s WHERE %s = ? AND %s = CONCAT((SELECT %s FROM %s WHERE %s = ?), ':', ?)`,
+	Column.Name, Column.Idx, Column.Size,
+	TableName,
+	Column.Hash,
+	Column.ASId,
+	anime.IdMapColumn.AniDB,
+	anime.IdMapTableName,
+	anime.IdMapColumn.Kitsu,
+)
+
+func getAnimeFileForKitsu(hash string, asid string) (*File, error) {
+	kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(asid, "kitsu:"), ":")
+	row := db.QueryRow(query_get_anime_file_for_kitsu, hash, kitsuId, episode)
+	var file File
+	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &file, nil
 }
 
 var query_get_file = fmt.Sprintf(
@@ -110,6 +138,9 @@ var query_get_file = fmt.Sprintf(
 )
 
 func GetFile(hash string, sid string) (*File, error) {
+	if strings.HasPrefix(sid, "kitsu:") {
+		return getAnimeFileForKitsu(hash, sid)
+	}
 	row := db.QueryRow(query_get_file, hash, sid)
 	var file File
 	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
@@ -135,7 +166,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		hashPlaceholders[i] = "?"
 	}
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s, 'sid', sid, 'src', src)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s, 'sid', sid, 'asid', asid, 'src', src)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -252,11 +283,44 @@ var tag_strem_id_query = fmt.Sprintf(
 )
 
 func TagStremId(hash string, filename string, sid string) {
+	if !strings.HasPrefix(sid, "tt") {
+		return
+	}
 	_, err := db.Exec(tag_strem_id_query, sid, db.Timestamp{Time: time.Now()}, hash, filename)
 	if err != nil {
 		log.Error("failed to tag strem id", "error", err, "hash", hash, "fname", filename, "sid", sid)
 	} else {
 		log.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
+	}
+}
+
+var query_tag_anime_strem_id = fmt.Sprintf(
+	`UPDATE %s SET %s = ?, %s = %s WHERE %s = ? AND %s = ? AND %s = ''`,
+	TableName,
+	Column.ASId,
+	Column.UAt,
+	db.CurrentTimestamp,
+	Column.Hash,
+	Column.Name,
+	Column.ASId,
+)
+
+func TagAnimeStremId(hash string, filename string, sid string) {
+	if !strings.HasPrefix(sid, "kitsu:") {
+		return
+	}
+	kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(sid, "kitsu:"), ":")
+	anidbId, _, err := anime.GetAniDBIdByKitsuId(kitsuId)
+	if err != nil {
+		log.Error("failed to get anidb id by kitsu id", "error", err, "sid", sid)
+		return
+	}
+	asid := anidbId + ":" + episode
+	_, err = db.Exec(query_tag_anime_strem_id, asid, hash, filename)
+	if err != nil {
+		log.Error("failed to tag anime strem id", "error", err, "hash", hash, "fname", filename, "asid", asid, "strem_id", sid)
+	} else {
+		log.Debug("tagged anime strem id", "hash", hash, "fname", filename, "asid", asid, "strem_id", sid)
 	}
 }
 

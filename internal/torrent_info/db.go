@@ -13,6 +13,7 @@ import (
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
+	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -930,6 +931,78 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 	return nil
 }
 
+var query_list_hashes_for_anime_by_anidb_id_from_torrent_stream = fmt.Sprintf(
+	`SELECT DISTINCT %s FROM %s WHERE %s LIKE ?`,
+	ts.Column.Hash,
+	ts.TableName,
+	ts.Column.ASId,
+)
+var query_list_hashes_for_anime_by_anidb_id_from_anidb_torrent = fmt.Sprintf(
+	"SELECT ato.%s FROM %s ato WHERE ato.%s = ? AND ato.%s = '%s' AND ato.%s = ?",
+	anidb.TorrentColumn.Hash,
+	anidb.TorrentTableName,
+	anidb.TorrentColumn.TId,
+	anidb.TorrentColumn.SeasonType,
+	anidb.TorrentSeasonTypeTypeAnime,
+	anidb.TorrentColumn.Season,
+)
+var query_list_hashes_for_anime_by_anidb_id_from_anidb_torrent_with_episode = fmt.Sprintf(
+	"SELECT ato.%s FROM %s ato WHERE ato.%s = ? AND ato.%s = '%s' AND ato.%s = ? AND (ato.%s == 0 OR ato.%s <= ?) AND (ato.%s == 0 OR ato.%s >= ?)",
+	anidb.TorrentColumn.Hash,
+	anidb.TorrentTableName,
+	anidb.TorrentColumn.TId,
+	anidb.TorrentColumn.SeasonType,
+	anidb.TorrentSeasonTypeTypeAnime,
+	anidb.TorrentColumn.Season,
+	anidb.TorrentColumn.EpisodeStart,
+	anidb.TorrentColumn.EpisodeStart,
+	anidb.TorrentColumn.EpisodeEnd,
+	anidb.TorrentColumn.EpisodeEnd,
+)
+
+func listHashesForAnimeByAniDBId(anidbId, season, episode string) ([]string, error) {
+	var query strings.Builder
+	var args []any
+
+	s := util.SafeParseInt(season, -1)
+	if episode == "" {
+		query.WriteString(query_list_hashes_for_anime_by_anidb_id_from_torrent_stream)
+		args = []any{anidbId + ":%"}
+
+		query.WriteString(" UNION ")
+		query.WriteString(query_list_hashes_for_anime_by_anidb_id_from_anidb_torrent)
+		args = append(args, anidbId, s)
+	} else {
+		query.WriteString(query_list_hashes_for_anime_by_anidb_id_from_torrent_stream)
+		args = []any{anidbId + ":" + episode}
+
+		ep := util.SafeParseInt(episode, -1)
+		query.WriteString(" UNION ")
+		query.WriteString(query_list_hashes_for_anime_by_anidb_id_from_anidb_torrent_with_episode)
+		args = append(args, anidbId, s, ep, ep)
+	}
+	rows, err := db.Query(query.String(), args...)
+	if err != nil {
+		log.Error("failed to list hashes by anidb id", "error", err, "anidb_id", anidbId, "episode", episode)
+		return nil, err
+	}
+	defer rows.Close()
+
+	hashes := []string{}
+	for rows.Next() {
+		var hash string
+		if err := rows.Scan(&hash); err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return hashes, nil
+}
+
 var query_list_hashes_by_stremid_from_torrent_stream = fmt.Sprintf(
 	"SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ?",
 	ts.Column.Hash,
@@ -943,7 +1016,6 @@ var query_list_hashes_by_stremid_from_imdb_torrent = fmt.Sprintf(
 	imdb_torrent.TableName,
 	imdb_torrent.Column.TId,
 )
-
 var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
 	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND CONCAT(',', ti.%s, ',') LIKE ? AND (ti.%s = '' OR CONCAT(',', ti.%s, ',') LIKE ?)",
 	imdb_torrent.Column.Hash,
@@ -959,6 +1031,14 @@ var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
 
 func ListHashesByStremId(stremId string) ([]string, error) {
 	if !strings.HasPrefix(stremId, "tt") {
+		if strings.HasPrefix(stremId, "kitsu:") {
+			kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(stremId, "kitsu:"), ":")
+			anidbId, season, err := anime.GetAniDBIdByKitsuId(kitsuId)
+			if err != nil || anidbId == "" {
+				return nil, err
+			}
+			return listHashesForAnimeByAniDBId(anidbId, season, episode)
+		}
 		return nil, fmt.Errorf("unsupported strem id: %s", stremId)
 	}
 

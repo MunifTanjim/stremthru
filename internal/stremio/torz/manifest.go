@@ -35,20 +35,27 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 		description += " — " + storeHint
 	}
 
+	streamResource := stremio.Resource{
+		Name: stremio.ResourceNameStream,
+		Types: []stremio.ContentType{
+			stremio.ContentTypeMovie,
+			stremio.ContentTypeSeries,
+		},
+		IDPrefixes: []string{"tt"},
+	}
+
+	if config.Feature.IsEnabled(config.FeatureAnime) {
+		streamResource.Types = append(streamResource.Types, "anime")
+		streamResource.IDPrefixes = append(streamResource.IDPrefixes, "kitsu:")
+	}
+
 	manifest := &stremio.Manifest{
 		ID:          id,
 		Name:        name,
 		Description: description,
 		Version:     config.Version,
 		Resources: []stremio.Resource{
-			{
-				Name: stremio.ResourceNameStream,
-				Types: []stremio.ContentType{
-					stremio.ContentTypeMovie,
-					stremio.ContentTypeSeries,
-				},
-				IDPrefixes: []string{"tt"},
-			},
+			streamResource,
 		},
 		Types:    []stremio.ContentType{},
 		Catalogs: []stremio.Catalog{},

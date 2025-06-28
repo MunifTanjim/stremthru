@@ -104,7 +104,9 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			AddedAt: amRes.AddedAt,
 		}
 
-		shouldTagStream := strings.HasPrefix(sid, "tt")
+		isIMDBId := strings.HasPrefix(sid, "tt")
+		isKitsuId := strings.HasPrefix(sid, "kitsu:")
+		shouldTagStream := isIMDBId || isKitsuId
 
 		magnet, err = stremio_shared.WaitForMagnetStatus(ctx, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {
@@ -149,7 +151,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		if file == nil {
 			if file = stremio_shared.MatchFileByLargestSize(videoFiles); file != nil {
 				log.Debug("matched file using largest size", "filename", file.Name)
-				shouldTagStream = false
+				shouldTagStream = len(videoFiles) == 1
 			}
 		}
 
@@ -165,7 +167,11 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if shouldTagStream {
-			torrent_stream.TagStremId(magnet.Hash, file.Name, sid)
+			if isIMDBId {
+				torrent_stream.TagStremId(magnet.Hash, file.Name, sid)
+			} else if isKitsuId {
+				go torrent_stream.TagAnimeStremId(magnet.Hash, file.Name, sid)
+			}
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, ctx, link)
