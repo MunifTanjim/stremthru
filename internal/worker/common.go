@@ -5,10 +5,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/kv"
-	"github.com/MunifTanjim/stremthru/internal/logger"
 )
-
-var log = logger.Scoped("worker")
 
 type IdQueue struct {
 	m            sync.Map
@@ -83,7 +80,7 @@ func (t JobTracker[T]) IsRunning(id string) (bool, error) {
 	return j.Status == "started", err
 }
 
-func NewJobTracker[T any](name string, shouldClean func(id string, j *Job[T]) bool) JobTracker[T] {
+func NewJobTracker[T any](name string, shouldClean func(id string, j *Job[T]) bool) *JobTracker[T] {
 	tracker := JobTracker[T]{
 		kv: kv.NewKVStore[Job[T]](&kv.KVStoreConfig{
 			Type: "job:" + name,
@@ -93,5 +90,5 @@ func NewJobTracker[T any](name string, shouldClean func(id string, j *Job[T]) bo
 	if err != nil {
 		panic(err)
 	}
-	return tracker
+	return &tracker
 }
