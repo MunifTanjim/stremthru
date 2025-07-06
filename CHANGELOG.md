@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.80.1](https://github.com/MunifTanjim/stremthru/compare/0.80.0...0.80.1) (2025-07-06)
+
+
+### Bug Fixes
+
+* **animeapi:** keep going when bulk record id maps fail ([73e1d8d](https://github.com/MunifTanjim/stremthru/commit/73e1d8dfd17b31b0cd2872da78ee645d0dde217c))
+* **stremio/store:** fix pagination when webdl meta is included ([fd4d812](https://github.com/MunifTanjim/stremthru/commit/fd4d812058703367fc3586f201b4284e2dda714a))
+* **stremio/store:** fix stream detection for premiumize cached contents ([83b9dc1](https://github.com/MunifTanjim/stremthru/commit/83b9dc1c81b8b694033ecde8f7a8d6805efeab81))
+
 ## [0.80.0](https://github.com/MunifTanjim/stremthru/compare/0.79.3...0.80.0) (2025-07-05)
 
 
