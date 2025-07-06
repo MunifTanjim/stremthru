@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.80.2](https://github.com/MunifTanjim/stremthru/compare/0.80.1...0.80.2) (2025-07-06)
+
+
+### Bug Fixes
+
+* **torznab:** fix sql query for select torrent_info ([7367e38](https://github.com/MunifTanjim/stremthru/commit/7367e38ed491d190bba0070c98f3b54946666126))
+* **worker:** handle and recover panics in map_anidb_torrent ([bd6202c](https://github.com/MunifTanjim/stremthru/commit/bd6202ccc5b043d5d91c9cff7bac94ea0c4ddf81))
+
 ## [0.80.1](https://github.com/MunifTanjim/stremthru/compare/0.80.0...0.80.1) (2025-07-06)
 
 
