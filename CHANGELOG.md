@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.80.3](https://github.com/MunifTanjim/stremthru/compare/0.80.2...0.80.3) (2025-07-07)
+
+
+### Bug Fixes
+
+* **animelists:** resolve panic for map_anidb_torrent ([d0a641a](https://github.com/MunifTanjim/stremthru/commit/d0a641a08b6a4229dd7855d3024341beecb3fc45))
+* **store/alldebrid:** deal with inconsistent type for link size ([0ecab7f](https://github.com/MunifTanjim/stremthru/commit/0ecab7f4cd0639c626ab523b75b1e3dd107cc964))
+* **torrent_info:** fix typo in column name struct field ([a0ba0a0](https://github.com/MunifTanjim/stremthru/commit/a0ba0a0e2bdd0d4e00c285be29123218086cebbf))
+* **worker:** improve panic hints for map_anidb_torrent ([b139aa1](https://github.com/MunifTanjim/stremthru/commit/b139aa1734ee9842513852353a38b790d89921cd))
+
 ## [0.80.2](https://github.com/MunifTanjim/stremthru/compare/0.80.1...0.80.2) (2025-07-06)
 
 
