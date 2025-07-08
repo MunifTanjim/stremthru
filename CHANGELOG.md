@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.80.4](https://github.com/MunifTanjim/stremthru/compare/0.80.3...0.80.4) (2025-07-08)
+
+
+### Bug Fixes
+
+* **stremio/torz:** decouple config for lazy pull from lazypeer ([1e34261](https://github.com/MunifTanjim/stremthru/commit/1e342615573fbb90498abcd857fdd06650e42f02))
+
 ## [0.80.3](https://github.com/MunifTanjim/stremthru/compare/0.80.2...0.80.3) (2025-07-07)
 
 
