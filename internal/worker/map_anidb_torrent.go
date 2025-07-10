@@ -560,23 +560,23 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 	conf.Executor = func(w *Worker) error {
 		log := w.Log
 
-		if !isAnidbTitlesSynced() {
+		if !isAnidbTitlesSyncedToday() {
 			log.Info("AniDB titles not synced yet today, skipping")
 			return nil
 		}
 
-		if !isAniDBTVDBEpisodeMapSynced() {
+		if !isAniDBTVDBEpisodeMapSyncedToday() {
 			log.Info("AniDB TVDB episode maps not synced yet today, skipping")
 			return nil
 		}
 
-		if !isAnimeAPISynced() {
+		if !isAnimeAPISyncedToday() {
 			log.Info("AnimeAPI not synced yet today, skipping")
 			return nil
 		}
 
-		if !isManamiAnimeDatabaseSynced() {
-			log.Info("Manami anime database not synced yet today, skipping")
+		if !isManamiAnimeDatabaseSyncedThisWeek() {
+			log.Info("Manami anime database not synced yet this week, skipping")
 			return nil
 		}
 

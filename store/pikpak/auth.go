@@ -89,7 +89,7 @@ type AuthState struct {
 }
 
 func (as *AuthState) load(deviceId string) error {
-	return pikpakAuthState.Get(deviceId, as)
+	return pikpakAuthState.GetValue(deviceId, as)
 }
 
 func (as AuthState) save(deviceId string) error {

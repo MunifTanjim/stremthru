@@ -124,7 +124,7 @@ func getExtractor(extractorId string) (stremio_transformer.StreamExtractorBlob, 
 	}
 
 	var extractor stremio_transformer.StreamExtractorBlob
-	if err := extractorStore.Get(extractorId, &extractor); err != nil {
+	if err := extractorStore.GetValue(extractorId, &extractor); err != nil {
 		return "", err
 	}
 	return extractor, nil
@@ -175,7 +175,7 @@ func getTemplate(templateId string) (stremio_transformer.StreamTemplateBlob, err
 	}
 
 	var template stremio_transformer.StreamTemplateBlob
-	if err := templateStore.Get(templateId, &template); err != nil {
+	if err := templateStore.GetValue(templateId, &template); err != nil {
 		return stremio_transformer.StreamTemplateBlob{}, err
 	}
 	return template, nil
