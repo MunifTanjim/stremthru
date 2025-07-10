@@ -2,25 +2,23 @@ package worker
 
 import (
 	"github.com/MunifTanjim/stremthru/internal/animeapi"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var syncAnimeAPIJobTracker *JobTracker[struct{}]
 
-func isAnimeAPISynced() bool {
+func isAnimeAPISyncedToday() bool {
 	if syncAnimeAPIJobTracker == nil {
 		return false
 	}
-	jobId := getTodayDateOnly()
-	job, err := syncAnimeAPIJobTracker.Get(jobId)
+	job, err := syncAnimeAPIJobTracker.GetLast()
 	if err != nil {
 		return false
 	}
-	return job != nil && job.Status == "done"
+	return job != nil && util.IsToday(job.CreatedAt) && job.Value.Status == "done"
 }
 
 func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {
-	syncAnimeAPIJobTracker = conf.JobTracker
-
 	conf.Executor = func(w *Worker) error {
 		err := animeapi.SyncDataset()
 		if err != nil {
@@ -30,6 +28,10 @@ func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {
 	}
 
 	worker := NewWorker(conf)
+
+	if worker != nil {
+		syncAnimeAPIJobTracker = worker.jobTracker
+	}
 
 	return worker
 }

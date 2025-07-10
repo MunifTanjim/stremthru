@@ -2,25 +2,23 @@ package worker
 
 import (
 	"github.com/MunifTanjim/stremthru/internal/animelists"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var syncAniDBTVDBEpisodeMapJobTracker *JobTracker[struct{}]
 
-func isAniDBTVDBEpisodeMapSynced() bool {
+func isAniDBTVDBEpisodeMapSyncedToday() bool {
 	if syncAniDBTVDBEpisodeMapJobTracker == nil {
 		return false
 	}
-	jobId := getTodayDateOnly()
-	job, err := syncAniDBTVDBEpisodeMapJobTracker.Get(jobId)
+	job, err := syncAniDBTVDBEpisodeMapJobTracker.GetLast()
 	if err != nil {
 		return false
 	}
-	return job != nil && job.Status == "done"
+	return job != nil && util.IsToday(job.CreatedAt) && job.Value.Status == "done"
 }
 
 func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
-	syncAniDBTVDBEpisodeMapJobTracker = conf.JobTracker
-
 	conf.Executor = func(w *Worker) error {
 		err := animelists.SyncDataset()
 		if err != nil {
@@ -30,6 +28,10 @@ func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
 	}
 
 	worker := NewWorker(conf)
+
+	if worker != nil {
+		syncAniDBTVDBEpisodeMapJobTracker = worker.jobTracker
+	}
 
 	return worker
 }
