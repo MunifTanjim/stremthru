@@ -29,6 +29,13 @@ func RunSchemaMigration(uri db.ConnectionURI, database *db.DB) {
 		dir = "migrations/postgres"
 	}
 
+	lock := db.NewAdvisoryLock("goose", "migration")
+
+	if !lock.Acquire() {
+		panic("failed to acquire lock for migration")
+	}
+	defer lock.Release()
+
 	l.Println("=== Database Schema ====")
 
 	l.Println()
