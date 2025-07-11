@@ -57,11 +57,39 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			td.IsAuthed = false
 		case "add-list":
 			if td.IsAuthed || len(td.Lists) < MaxPublicInstanceListCount {
-				td.Lists = append(td.Lists, newTemplateDataList(len(td.Lists)))
+				id := r.Header.Get("x-addon-configure-action-data")
+				idx := slices.IndexFunc(td.Lists, func(tdl TemplateDataList) bool {
+					return tdl.Id == id
+				})
+				if idx < 0 || idx >= len(td.Lists) {
+					td.Lists = append(td.Lists, newTemplateDataList(len(td.Lists)))
+				} else {
+					td.Lists = slices.Insert(td.Lists, idx+1, newTemplateDataList(idx+1))
+				}
 			}
 		case "remove-list":
-			if end := len(td.Lists); end > 1 {
-				td.Lists = slices.Clone(td.Lists[0 : end-1])
+			id := r.Header.Get("x-addon-configure-action-data")
+			idx := slices.IndexFunc(td.Lists, func(tdl TemplateDataList) bool {
+				return tdl.Id == id
+			})
+			if idx < len(td.Lists) {
+				td.Lists = slices.Delete(td.Lists, idx, idx+1)
+			}
+		case "move-list-up":
+			id := r.Header.Get("x-addon-configure-action-data")
+			idx := slices.IndexFunc(td.Lists, func(tdl TemplateDataList) bool {
+				return tdl.Id == id
+			})
+			if idx > 0 && idx < len(td.Lists) {
+				td.Lists[idx], td.Lists[idx-1] = td.Lists[idx-1], td.Lists[idx]
+			}
+		case "move-list-down":
+			id := r.Header.Get("x-addon-configure-action-data")
+			idx := slices.IndexFunc(td.Lists, func(tdl TemplateDataList) bool {
+				return tdl.Id == id
+			})
+			if idx >= 0 && idx < len(td.Lists)-1 {
+				td.Lists[idx], td.Lists[idx+1] = td.Lists[idx+1], td.Lists[idx]
 			}
 		case "import-mdblist-mylists":
 			if ud.MDBListAPIkey != "" {

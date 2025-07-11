@@ -100,6 +100,22 @@
     </header>
 
     {{template "configure_config.html" .MDBListAPIKey}}
+
+    <div class="absolute" style="bottom: -0.5rem; right: 1rem;">
+      <button
+        {{if not .CanAddList}}disabled{{end}}
+        id="configure-action-import-mdblist-mylists"
+        type="button"
+        hx-target="body"
+        hx-post="configure"
+        hx-include="#configuration"
+        hx-headers='{"x-addon-configure-action":"import-mdblist-mylists"}'
+        class="secondary mb-0"
+        style="font-size: 0.75rem; padding: 0.25em;"
+      >
+        Import MDBList Lists
+      </button>
+    </div>
   </div>
 
   {{if .TraktEnabled}}
@@ -121,7 +137,7 @@
       </span>
     </header>
 
-    <div>
+    <div class="relative">
       <div class="relative mb-8">
 
         <input type="hidden" name="lists_length" value="{{ .Lists | len }}" />
@@ -149,54 +165,76 @@
           {{end}}
 
           {{template "configure_config.html" $list.Shuffle}}
+
+          <div class="absolute" style="top: 2.125rem; left: -0.5rem;">
+            <small>
+              {{if ne $list.Id ""}}
+              <button
+                {{if eq $idx 0}}disabled{{end}}
+                aria-label="Move Up: {{$list.URL}}"
+                data-tooltip="Move Up"
+                type="button"
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"move-list-up","x-addon-configure-action-data":"{{$list.Id}}"}'
+                class="secondary mb-6"
+                style="font-size: 0.75rem; padding: 0 0.25em;"
+              >
+                ↑
+              </button>
+              <br />
+              <button
+                {{if eq $idx $.LastListIndex}}disabled{{end}}
+                aria-label="Move Down: {{$list.URL}}"
+                data-tooltip="Move Down"
+                type="button"
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"move-list-down","x-addon-configure-action-data":"{{$list.Id}}"}'
+                class="secondary mb-0"
+                style="font-size: 0.75rem; padding: 0 0.25em;"
+              >
+                ↓
+              </button>
+              {{end}}
+            </small>
+          </div>
+          <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
+            <small>
+              {{if ne $list.Id ""}}
+              <button
+                {{if not $.CanRemoveList}}disabled{{end}}
+                id="configure-action-remove-list"
+                type="button"
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"remove-list","x-addon-configure-action-data":"{{$list.Id}}"}'
+                class="secondary mb-0"
+                style="font-size: 0.75rem; padding: 0 0.25em;"
+              >
+                - Remove
+              </button>
+              <button
+                {{if not $.CanAddList}}disabled{{end}}
+                id="configure-action-add-list"
+                type="button"
+                hx-target="body"
+                hx-post="configure"
+                hx-include="#configuration"
+                hx-headers='{"x-addon-configure-action":"add-list","x-addon-configure-action-data":"{{$list.Id}}"}'
+                class="secondary mb-0"
+                style="font-size: 0.75rem; padding: 0 0.25em;"
+              >
+                + Add
+              </button>
+              {{end}}
+            </small>
+          </div>
         </div>
         {{end}}
-
-        <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
-          <small>
-            <button
-              {{if not .CanRemoveList}}disabled{{end}}
-              id="configure-action-remove-list"
-              type="button"
-              hx-target="body"
-              hx-post="configure"
-              hx-include="#configuration"
-              hx-headers='{"x-addon-configure-action":"remove-list"}'
-              class="secondary mb-0"
-              style="font-size: 0.75rem; padding: 0.25em;"
-            >
-              - Remove
-            </button>
-            <button
-              {{if not .CanAddList}}disabled{{end}}
-              id="configure-action-add-list"
-              type="button"
-              hx-target="body"
-              hx-post="configure"
-              hx-include="#configuration"
-              hx-headers='{"x-addon-configure-action":"add-list"}'
-              class="secondary mb-0"
-              style="font-size: 0.75rem; padding: 0.25em;"
-            >
-              + Add
-            </button>
-          </small>
-        </div>
-        <div class="absolute" style="bottom: -0.75rem; left: 1rem;">
-          <button
-            {{if not .CanAddList}}disabled{{end}}
-            id="configure-action-import-mdblist-mylists"
-            type="button"
-            hx-target="body"
-            hx-post="configure"
-            hx-include="#configuration"
-            hx-headers='{"x-addon-configure-action":"import-mdblist-mylists"}'
-            class="secondary mb-0"
-            style="font-size: 0.75rem; padding: 0.25em;"
-          >
-            Import MDBList Lists
-          </button>
-        </div>
       </div>
     </div>
   </div>
