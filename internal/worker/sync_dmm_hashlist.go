@@ -34,7 +34,11 @@ type wrappedDMMHashlistItems struct {
 }
 
 func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
-	HASHLISTS_REPO := "https://github.com/debridmediamanager/hashlists.git"
+	REPO_URL := util.MustParseURL("https://github.com/debridmediamanager/hashlists.git")
+	if config.Integration.GitHub.User != "" && config.Integration.GitHub.Token != "" {
+		REPO_URL.User = url.UserPassword(config.Integration.GitHub.User, config.Integration.GitHub.Token)
+	}
+
 	REPO_DIR := path.Join(config.DataDir, "hashlists")
 	hashlistFilenameRegex := regexp.MustCompile(`\S{8}-\S{4}-\S{4}-\S{4}-\S{12}\.html`)
 
@@ -45,34 +49,45 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 		}
 		if repoDirExists {
 			w.Log.Info("updating repository")
-			cmd := exec.Command("git", "-C", REPO_DIR, "fetch", "--depth=1")
-			err = cmd.Start()
+			cmd := util.NewCommand("git", "-C", REPO_DIR, "remote", "get-url", "origin")
+			err = cmd.Run()
 			if err != nil {
+				w.Log.Error("failed to get remote url", "error", err, "cmd_error", cmd.Error())
 				return err
 			}
-			err = cmd.Wait()
+			if remote_url := strings.TrimSpace(cmd.Output()); remote_url != REPO_URL.String() {
+				cmd = util.NewCommand("git", "-C", REPO_DIR, "config", "credential.helper", "")
+				err = cmd.Run()
+				if err != nil {
+					w.Log.Error("failed to set credential helper", "error", err, "cmd_error", cmd.Error())
+					return err
+				}
+				cmd = util.NewCommand("git", "-C", REPO_DIR, "remote", "set-url", "origin", REPO_URL.String())
+				err = cmd.Run()
+				if err != nil {
+					w.Log.Error("failed to set remote url", "error", err, "cmd_error", cmd.Error())
+					return err
+				}
+			}
+			cmd = util.NewCommand("git", "-C", REPO_DIR, "fetch", "--depth=1")
+			err = cmd.Run()
 			if err != nil {
+				w.Log.Error("failed to fetch repository", "error", err, "cmd_error", cmd.Error())
 				return err
 			}
-			cmd = exec.Command("git", "-C", REPO_DIR, "reset", "--hard", "origin/main")
-			err = cmd.Start()
+			cmd = util.NewCommand("git", "-C", REPO_DIR, "reset", "--hard", "origin/main")
+			err = cmd.Run()
 			if err != nil {
-				return err
-			}
-			err = cmd.Wait()
-			if err != nil {
+				w.Log.Error("failed to reset repository", "error", err, "cmd_error", cmd.Error())
 				return err
 			}
 			w.Log.Info("repository updated")
 		} else {
 			w.Log.Info("cloning repository")
-			cmd := exec.Command("git", "clone", "--depth=1", "--single-branch", "--branch=main", HASHLISTS_REPO, REPO_DIR)
-			err = cmd.Start()
+			cmd := exec.Command("git", "clone", "--config=credential.helper=", "--depth=1", "--single-branch", "--branch=main", REPO_URL.String(), REPO_DIR)
+			err = cmd.Run()
 			if err != nil {
-				return err
-			}
-			err = cmd.Wait()
-			if err != nil {
+				w.Log.Error("failed to clone repository", "error", err, "cmd_error", cmd.Stderr)
 				return err
 			}
 			w.Log.Info("repository cloned")

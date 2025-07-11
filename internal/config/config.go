@@ -785,7 +785,7 @@ func PrintConfig(state *AppState) {
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "kitsu.app", "mdblist.com", "trakt.tv"} {
+	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "trakt.tv"} {
 		switch integration {
 		case "anilist.co":
 			disabled := ""
@@ -796,6 +796,16 @@ func PrintConfig(state *AppState) {
 			if disabled == "" {
 				l.Println("       list stale time: " + Integration.AniList.ListStaleTime.String())
 			}
+		case "github.com":
+			disabled := ""
+			if !Integration.GitHub.HasDefaultCredentials() {
+				disabled = " (disabled)"
+			}
+			l.Println("   - " + integration + disabled)
+			if disabled == "" {
+				l.Println("                  user: " + Integration.GitHub.User)
+				l.Println("                 token: " + Integration.GitHub.Token[0:13] + "..." + Integration.GitHub.Token[len(Integration.GitHub.Token)-3:])
+			}
 		case "kitsu.app":
 			disabled := ""
 			if !Feature.IsEnabled(FeatureAnime) || !Integration.Kitsu.HasDefaultCredentials() {
@@ -804,10 +814,10 @@ func PrintConfig(state *AppState) {
 			l.Println("   - " + integration + disabled)
 			if disabled == "" {
 				if Integration.Kitsu.ClientId != "" {
-					l.Println("             client_id: " + Integration.Kitsu.ClientId[0:3] + "..." + Integration.Kitsu.ClientId[len(Integration.Trakt.ClientId)-3:])
+					l.Println("             client_id: " + Integration.Kitsu.ClientId[0:3] + "..." + Integration.Kitsu.ClientId[len(Integration.Kitsu.ClientId)-3:])
 				}
 				if Integration.Kitsu.ClientSecret != "" {
-					l.Println("         client_secret: " + Integration.Kitsu.ClientSecret[0:3] + "..." + Integration.Kitsu.ClientSecret[len(Integration.Trakt.ClientSecret)-3:])
+					l.Println("         client_secret: " + Integration.Kitsu.ClientSecret[0:3] + "..." + Integration.Kitsu.ClientSecret[len(Integration.Kitsu.ClientSecret)-3:])
 				}
 				l.Println("                 email: " + Integration.Kitsu.Email)
 				l.Println("              password: " + "*******")

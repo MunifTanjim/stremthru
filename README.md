@@ -234,6 +234,16 @@ so on first query it'll return less results, but it'll be faster.
 
 Stale time for list. e.g. `12h`.
 
+#### GitHub Integration
+
+##### `STREMTHRU_INTEGRATION_GITHUB_USER`
+
+GitHub username.
+
+##### `STREMTHRU_INTEGRATION_GITHUB_TOKEN`
+
+GitHub Personal Access Token.
+
 #### MDBList Integration
 
 ##### `STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME`
