@@ -65,6 +65,7 @@ type TemplateData struct {
 	Base
 
 	Lists         []TemplateDataList
+	LastListIndex int
 	CanAddList    bool
 	CanRemoveList bool
 
@@ -394,6 +395,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		if len(td.Lists) == 0 {
 			td.Lists = append(td.Lists, newTemplateDataList(0))
 		}
+		td.LastListIndex = len(td.Lists) - 1
 
 		td.IsRedacted = !td.IsAuthed && td.SavedUserDataKey != ""
 		if td.IsRedacted {
