@@ -44,8 +44,18 @@ func (c integrationConfigKitsu) HasDefaultCredentials() bool {
 	return c.Email != "" && c.Password != ""
 }
 
+type integrationConfigGitHub struct {
+	User  string
+	Token string
+}
+
+func (c integrationConfigGitHub) HasDefaultCredentials() bool {
+	return c.User != "" && c.Token != ""
+}
+
 type IntegrationConfig struct {
 	AniList integrationConfigAniList
+	GitHub  integrationConfigGitHub
 	MDBList integrationConfigMDBList
 	Trakt   integrationConfigTrakt
 	Kitsu   integrationConfigKitsu
@@ -55,6 +65,10 @@ func parseIntegration() IntegrationConfig {
 	integration := IntegrationConfig{
 		AniList: integrationConfigAniList{
 			ListStaleTime: mustParseDuration("anilist list stale time", getEnv("STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME"), 15*time.Minute),
+		},
+		GitHub: integrationConfigGitHub{
+			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),
+			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
 		},
 		MDBList: integrationConfigMDBList{
 			ListStaleTime: mustParseDuration("mdblist list stale time", getEnv("STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME"), 15*time.Minute),
