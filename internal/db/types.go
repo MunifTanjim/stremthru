@@ -35,7 +35,7 @@ func (t *Timestamp) Scan(value any) error {
 	case time.Time:
 		t.Time = v
 	case nil:
-		t.Time = time.Unix(0, 0)
+		t.Time = time.Time{}
 	default:
 		return errors.New("failed to convert value to db.Timestamp")
 	}

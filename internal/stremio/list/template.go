@@ -22,6 +22,7 @@ var IsPublicInstance = config.IsPublicInstance
 var MaxPublicInstanceListCount = 10
 var TraktEnabled = config.Integration.Trakt.IsEnabled()
 var AniListEnabled = config.Feature.IsEnabled("anime")
+var TMDBEnabled = config.Integration.TMDB.IsEnabled()
 
 type Base = stremio_template.BaseData
 
@@ -72,6 +73,9 @@ type TemplateData struct {
 	MDBListAPIKey configure.Config
 
 	RPDBAPIKey configure.Config
+
+	TMDBEnabled bool
+	TMDBTokenId configure.Config
 
 	TraktEnabled bool
 	TraktTokenId configure.Config
@@ -136,6 +140,20 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 			Title:        "API Key",
 			Description:  `Rating Poster Database <a href="https://ratingposterdb.com/api-key/" target="blank">API Key</a>`,
 			Autocomplete: "off",
+		},
+		TMDBEnabled: TMDBEnabled,
+		TMDBTokenId: configure.Config{
+			Key:          "tmdb_token_id",
+			Title:        "Auth Code",
+			Type:         configure.ConfigTypePassword,
+			Default:      ud.TMDBTokenId,
+			Error:        udError.tmdb_token_id,
+			Autocomplete: "off",
+			Action: configure.ConfigAction{
+				Visible: ud.TMDBTokenId == "" || udError.tmdb_token_id != "",
+				Label:   "Authorize",
+				OnClick: template.JS(`window.open("` + oauth.TMDBOAuthConfig.AuthCodeURL(uuid.NewString()) + `", "_blank")`),
+			},
 		},
 		TraktEnabled: TraktEnabled,
 		TraktTokenId: configure.Config{

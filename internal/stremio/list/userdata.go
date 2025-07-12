@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
+	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 )
 
@@ -22,6 +23,9 @@ type UserData struct {
 	MDBListLists []int    `json:"mdblist_lists,omitempty"` // deprecated
 
 	MDBListAPIkey string `json:"mdblist_api_key,omitempty"`
+
+	TMDBTokenId string            `json:"tmdb_token_id,omitempty"`
+	tmdbToken   *oauth.OAuthToken `json:"-"`
 
 	TraktTokenId string            `json:"trakt_token_id,omitempty"`
 	traktToken   *oauth.OAuthToken `json:"-"`
@@ -62,6 +66,7 @@ type userDataError struct {
 		api_key string
 	}
 	list_urls      []string
+	tmdb_token_id  string
 	trakt_token_id string
 }
 
@@ -124,6 +129,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		udErr := userDataError{}
 
 		ud.MDBListAPIkey = r.Form.Get("mdblist_api_key")
+		ud.TMDBTokenId = r.Form.Get("tmdb_token_id")
 		ud.TraktTokenId = r.Form.Get("trakt_token_id")
 
 		ud.RPDBAPIKey = r.Form.Get("rpdb_api_key")
@@ -143,6 +149,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		}
 
 		isMDBListEnabled := ud.MDBListAPIkey != ""
+		isTMDBTvConfigured := TMDBEnabled && ud.TMDBTokenId != ""
 		isTraktTvConfigured := TraktEnabled && ud.TraktTokenId != ""
 
 		if isMDBListEnabled {
@@ -151,6 +158,14 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 			if _, userErr := mdblistClient.GetMyLimits(&userParams); userErr != nil {
 				udErr.mdblist.api_key = "Invalid API Key: " + userErr.Error()
 			}
+		}
+
+		if isTMDBTvConfigured {
+			ud.tmdbToken, err = ud.getTMDBToken()
+			if err != nil {
+				udErr.tmdb_token_id = err.Error()
+			}
+			isTMDBTvConfigured = ud.TMDBTokenId != ""
 		}
 
 		if isTraktTvConfigured {
@@ -382,6 +397,41 @@ func (ud *UserData) getTraktToken() (*oauth.OAuthToken, error) {
 
 	ud.traktToken = otok
 	return ud.traktToken, nil
+}
+
+func (ud *UserData) getTMDBToken() (*oauth.OAuthToken, error) {
+	if ud.TMDBTokenId == "" {
+		return nil, nil
+	}
+
+	if ud.tmdbToken != nil {
+		return ud.tmdbToken, nil
+	}
+
+	otok, err := oauth.GetOAuthTokenById(ud.TMDBTokenId)
+	if err != nil {
+		ud.TMDBTokenId = ""
+		return nil, errors.New("failed to retrieve token: " + err.Error())
+	} else if otok != nil && otok.IsExpired() {
+		tmdbClient := tmdb.GetAPIClient(otok.Id)
+		details, err := tmdbClient.GetAccountDetails(&tmdb.GetAccountDetailsParams{})
+		if err != nil || strconv.FormatInt(details.Data.Id, 10) != otok.UserId {
+			otok.AccessToken = ""
+			otok.RefreshToken = ""
+			err = oauth.SaveOAuthToken(otok)
+			if err != nil {
+				log.Error("failed to delete tmdb token", "error", err, "id", otok.Id)
+			}
+			otok = nil
+		}
+	}
+	if otok == nil {
+		ud.TMDBTokenId = ""
+		return nil, errors.New("Invalid or Revoked")
+	}
+
+	ud.tmdbToken = otok
+	return ud.tmdbToken, nil
 }
 
 func (ud *UserData) FetchMDBListList(list *mdblist.MDBListList) error {
