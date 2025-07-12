@@ -35,7 +35,7 @@ func (t *Timestamp) Scan(value any) error {
 	case time.Time:
 		t.Time = v
 	case nil:
-		t.Time = time.Unix(0, 0)
+		t.Time = time.Time{}
 	default:
 		return errors.New("failed to convert value to db.Timestamp")
 	}
@@ -170,6 +170,25 @@ func (list JSONStringList) Value() (driver.Value, error) {
 }
 
 func (list *JSONStringList) Scan(value any) error {
+	var bytes []byte
+	switch v := value.(type) {
+	case string:
+		bytes = []byte(v)
+	case []byte:
+		bytes = v
+	default:
+		return errors.New("failed to convert value to []byte")
+	}
+	return json.Unmarshal(bytes, list)
+}
+
+type JSONIntList []int
+
+func (list JSONIntList) Value() (driver.Value, error) {
+	return json.Marshal(list)
+}
+
+func (list *JSONIntList) Scan(value any) error {
 	var bytes []byte
 	switch v := value.(type) {
 	case string:

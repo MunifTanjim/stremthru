@@ -102,7 +102,8 @@ var traktOAuthConfig = oauth2.Config{
 }
 
 var TraktOAuthConfig = OAuthConfig{
-	Config: traktOAuthConfig,
+	Config:      traktOAuthConfig,
+	AuthCodeURL: traktOAuthConfig.AuthCodeURL,
 	Exchange: func(code, state string) (*oauth2.Token, error) {
 		tok, err := traktOAuthConfig.Exchange(context.Background(), code, oauth2.SetAuthURLParam("state", state))
 		if err != nil {

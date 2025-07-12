@@ -1,6 +1,7 @@
 package util
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -18,4 +19,10 @@ func MustParseInt(s string) int {
 		panic(err)
 	}
 	return i
+}
+
+var numericRegex = regexp.MustCompile(`^[0-9]+$`)
+
+func IsNumericString(s string) bool {
+	return numericRegex.MatchString(s)
 }
