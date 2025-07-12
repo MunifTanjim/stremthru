@@ -67,8 +67,59 @@ func handleTraktAuthCallback(w http.ResponseWriter, r *http.Request) {
 	SendHTML(w, 200, buf)
 }
 
+func handleTMDBAuthInit(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) {
+		shared.ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	state := r.URL.Query().Get("state")
+
+	authCodeUrl, err := oauth.TMDBOAuthConfig.TryAuthCodeURL(state)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, authCodeUrl, http.StatusFound)
+}
+
+func handleTMDBAuthCallback(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) {
+		shared.ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	code := r.URL.Query().Get("code")
+	state := r.URL.Query().Get("state")
+
+	td := &AuthCallbackTemplateData{
+		Title:    "StremThru",
+		Version:  config.Version,
+		Provider: "TMDB",
+	}
+
+	tok, err := oauth.TMDBOAuthConfig.Exchange(code, state)
+	if err != nil {
+		td.Error = err.Error()
+	} else {
+		td.Code = tok.Extra("id").(string)
+	}
+
+	buf, err := ExecuteAuthCallbackTemplate(td)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, buf)
+}
+
 func AddAuthEndpoints(mux *http.ServeMux) {
 	if config.Integration.Trakt.IsEnabled() {
 		mux.HandleFunc("/auth/trakt.tv/callback", handleTraktAuthCallback)
+	}
+	if config.Integration.TMDB.IsEnabled() {
+		mux.HandleFunc("/auth/themoviedb.org/init", handleTMDBAuthInit)
+		mux.HandleFunc("/auth/themoviedb.org/callback", handleTMDBAuthCallback)
 	}
 }

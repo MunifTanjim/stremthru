@@ -135,6 +135,104 @@ func GetIMDBIdByTraktId(traktMovieIds, traktShowIds []string) (map[string]string
 	return movieImdbIdByTraktId, showImdbIdByTraktId, nil
 }
 
+var query_get_imdb_id_by_tmdb_id = fmt.Sprintf(
+	`SELECT it.%s, it.%s, itm.%s FROM %s itm JOIN %s it ON it.%s = itm.%s WHERE `,
+	Column.TId,
+	Column.Type,
+	MapColumn.TMDBId,
+	MapTableName,
+	TableName,
+	Column.TId,
+	MapColumn.IMDBId,
+)
+var query_get_imdb_id_by_tmdb_id_cond_movie = fmt.Sprintf(
+	` it.%s IN (%s) AND itm.%s IN `,
+	Column.Type,
+	fmt.Sprintf(
+		util.RepeatJoin("'%s'", len(movieTypes), ","),
+		movieTypes[0],
+		movieTypes[1],
+	),
+	MapColumn.TMDBId,
+)
+var query_get_imdb_id_by_tmdb_id_cond_show = fmt.Sprintf(
+	` it.%s IN (%s) AND itm.%s IN `,
+	Column.Type,
+	fmt.Sprintf(
+		util.RepeatJoin("'%s'", len(showTypes), ","),
+		showTypes[0],
+		showTypes[1],
+		showTypes[2],
+		showTypes[3],
+		showTypes[4],
+	),
+	MapColumn.TMDBId,
+)
+
+func GetIMDBIdByTMDBId(tmdbMovieIds, tmdbShowIds []string) (map[string]string, map[string]string, error) {
+	movieCount := len(tmdbMovieIds)
+	showCount := len(tmdbShowIds)
+	if movieCount+showCount == 0 {
+		return nil, nil, nil
+	}
+
+	args := make([]any, movieCount+showCount)
+	var query strings.Builder
+	query.WriteString(query_get_imdb_id_by_tmdb_id)
+	if movieCount > 0 {
+		query.WriteString("(")
+		query.WriteString(query_get_imdb_id_by_tmdb_id_cond_movie)
+		query.WriteString("(")
+		query.WriteString(util.RepeatJoin("?", movieCount, ","))
+		query.WriteString("))")
+		for i := range tmdbMovieIds {
+			args[i] = tmdbMovieIds[i]
+		}
+		if showCount > 0 {
+			query.WriteString(" OR ")
+		}
+	}
+	if showCount > 0 {
+		query.WriteString("(")
+		query.WriteString(query_get_imdb_id_by_tmdb_id_cond_show)
+		query.WriteString("(")
+		query.WriteString(util.RepeatJoin("?", showCount, ","))
+		query.WriteString("))")
+		for i := range tmdbShowIds {
+			args[movieCount+i] = tmdbShowIds[i]
+		}
+	}
+
+	rows, err := db.Query(query.String(), args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	movieImdbIdByTMDBId := make(map[string]string, movieCount)
+	showImdbIdByTMDBId := make(map[string]string, showCount)
+	for rows.Next() {
+		var imdbId string
+		var imdbType IMDBTitleType
+		var tmdbId string
+		if err := rows.Scan(&imdbId, &imdbType, &tmdbId); err != nil {
+			return nil, nil, err
+		}
+		switch imdbType {
+		case movieTypes[0], movieTypes[1]:
+			movieImdbIdByTMDBId[tmdbId] = imdbId
+		case showTypes[0], showTypes[1], showTypes[2], showTypes[3], showTypes[4]:
+			showImdbIdByTMDBId[tmdbId] = imdbId
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return movieImdbIdByTMDBId, showImdbIdByTMDBId, nil
+}
+
 func RecordMappingFromMDBList(tx *db.Tx, imdbId, tmdbId, tvdbId, traktId, malId string) error {
 	query := fmt.Sprintf(
 		`INSERT INTO %s AS itm (%s) VALUES (?,?,?,?,?) ON CONFLICT (%s) DO UPDATE SET %s, %s = %s`,
@@ -175,9 +273,7 @@ var query_bulk_record_mapping_before_values = fmt.Sprintf(
 	MapColumn.TraktId,
 	MapColumn.MALId,
 )
-var query_bulk_record_mapping_placeholder = fmt.Sprintf(
-	`(?,?,?,?,?)`,
-)
+var query_bulk_record_mapping_placeholder = `(?,?,?,?,?)`
 var query_bulk_record_mapping_after_values = fmt.Sprintf(
 	` ON CONFLICT (%s) DO UPDATE SET %s, %s = %s`,
 	MapColumn.IMDBId,

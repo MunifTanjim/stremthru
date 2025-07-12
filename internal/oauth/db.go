@@ -16,8 +16,9 @@ const TableName = "oauth_token"
 type Provider string
 
 const (
-	ProviderTraktTv Provider = "trakt.tv"
 	ProviderKitsu   Provider = "kitsu.app"
+	ProviderTMDB    Provider = "themoviedb.org"
+	ProviderTraktTv Provider = "trakt.tv"
 )
 
 type OAuthToken struct {
@@ -74,7 +75,7 @@ func (otok *OAuthToken) ToToken() *oauth2.Token {
 		AccessToken:  otok.AccessToken,
 		RefreshToken: otok.RefreshToken,
 		Expiry:       otok.ExpiresAt.Time,
-		ExpiresIn:    int64(otok.ExpiresAt.Time.Sub(time.Now()).Seconds()),
+		ExpiresIn:    int64(time.Until(otok.ExpiresAt.Time).Seconds()),
 	}
 	return tok.WithExtra(map[string]any{
 		"id":         otok.Id,

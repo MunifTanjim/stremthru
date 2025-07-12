@@ -67,6 +67,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STORE_CLIENT_USER_AGENT":             "stremthru",
 		"STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME": "12h",
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME": "12h",
+		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":   "12h",
 	},
 }
@@ -785,7 +786,7 @@ func PrintConfig(state *AppState) {
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "trakt.tv"} {
+	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "themoviedb.org", "trakt.tv"} {
 		switch integration {
 		case "anilist.co":
 			disabled := ""
@@ -825,6 +826,16 @@ func PrintConfig(state *AppState) {
 		case "mdblist.com":
 			l.Println("   - " + integration)
 			l.Println("       list stale time: " + Integration.MDBList.ListStaleTime.String())
+		case "themoviedb.org":
+			disabled := ""
+			if !Integration.TMDB.IsEnabled() {
+				disabled = " (disabled)"
+			}
+			l.Println("   - " + integration + disabled)
+			if disabled == "" {
+				l.Println("          access_token: " + Integration.TMDB.AccessToken[0:3] + "..." + Integration.TMDB.AccessToken[len(Integration.TMDB.AccessToken)-3:])
+				l.Println("       list stale time: " + Integration.TMDB.ListStaleTime.String())
+			}
 		case "trakt.tv":
 			disabled := ""
 			if !Integration.Trakt.IsEnabled() {

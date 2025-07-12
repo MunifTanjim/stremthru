@@ -250,6 +250,18 @@ GitHub Personal Access Token.
 
 Stale time for list. e.g. `12h`.
 
+#### TMDB Integration
+
+TMDB integration needs an [Access Token](https://www.themoviedb.org/settings/api).
+
+##### `STREMTHRU_INTEGRATION_TMDB_ACCESS_TOKEN`
+
+API Read Access Token for TMDB.
+
+##### `STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME`
+
+Stale time for list. e.g. `12h`.
+
 #### Trakt.tv Integration
 
 Trakt.tv integration needs an [OAuth App](https://trakt.tv/oauth/applications).

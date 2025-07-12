@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -86,6 +87,52 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 							Name: "skip",
 						},
 					},
+				}
+				if hasListNames {
+					if name := ud.ListNames[idx]; name != "" {
+						catalog.Name = name
+					}
+				}
+				catalogs = append(catalogs, catalog)
+
+			case "tmdb":
+				list := tmdb.TMDBList{Id: idStr}
+				if err := list.Fetch(ud.TMDBTokenId); err != nil {
+					return nil, err
+				}
+				catalog := stremio.Catalog{
+					Type: "TMDB",
+					Id:   "st.list.tmdb." + idStr,
+					Name: list.Name,
+					Extra: []stremio.CatalogExtra{
+						{
+							Name: "skip",
+						},
+					},
+				}
+
+				if list.IsDynamic() {
+					meta := tmdb.GetDynamicListMeta(idStr)
+
+					switch meta.MediaType {
+					case tmdb.MediaTypeMovie:
+						catalog.Type = string(stremio.ContentTypeMovie)
+						catalog.Extra = append(catalog.Extra, stremio.CatalogExtra{
+							Name:    "genre",
+							Options: tmdb.MovieGenres,
+						})
+					case tmdb.MediaTypeTVShow:
+						catalog.Type = string(stremio.ContentTypeSeries)
+						catalog.Extra = append(catalog.Extra, stremio.CatalogExtra{
+							Name:    "genre",
+							Options: tmdb.TVGenres,
+						})
+					}
+				} else {
+					catalog.Extra = append(catalog.Extra, stremio.CatalogExtra{
+						Name:    "genre",
+						Options: tmdb.Genres,
+					})
 				}
 				if hasListNames {
 					if name := ud.ListNames[idx]; name != "" {

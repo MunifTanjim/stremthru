@@ -11,7 +11,9 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
+	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type UserData struct {
@@ -22,6 +24,9 @@ type UserData struct {
 	MDBListLists []int    `json:"mdblist_lists,omitempty"` // deprecated
 
 	MDBListAPIkey string `json:"mdblist_api_key,omitempty"`
+
+	TMDBTokenId string            `json:"tmdb_token_id,omitempty"`
+	tmdbToken   *oauth.OAuthToken `json:"-"`
 
 	TraktTokenId string            `json:"trakt_token_id,omitempty"`
 	traktToken   *oauth.OAuthToken `json:"-"`
@@ -35,6 +40,7 @@ type UserData struct {
 	mdblistById map[string]mdblist.MDBListList `json:"-"`
 	anilistById map[string]anilist.AniListList `json:"-"`
 	traktById   map[string]trakt.TraktList     `json:"-"`
+	tmdbById    map[string]tmdb.TMDBList       `json:"-"`
 }
 
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
@@ -62,6 +68,7 @@ type userDataError struct {
 		api_key string
 	}
 	list_urls      []string
+	tmdb_token_id  string
 	trakt_token_id string
 }
 
@@ -124,6 +131,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		udErr := userDataError{}
 
 		ud.MDBListAPIkey = r.Form.Get("mdblist_api_key")
+		ud.TMDBTokenId = r.Form.Get("tmdb_token_id")
 		ud.TraktTokenId = r.Form.Get("trakt_token_id")
 
 		ud.RPDBAPIKey = r.Form.Get("rpdb_api_key")
@@ -143,6 +151,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		}
 
 		isMDBListEnabled := ud.MDBListAPIkey != ""
+		isTMDBTvConfigured := TMDBEnabled && ud.TMDBTokenId != ""
 		isTraktTvConfigured := TraktEnabled && ud.TraktTokenId != ""
 
 		if isMDBListEnabled {
@@ -151,6 +160,14 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 			if _, userErr := mdblistClient.GetMyLimits(&userParams); userErr != nil {
 				udErr.mdblist.api_key = "Invalid API Key: " + userErr.Error()
 			}
+		}
+
+		if isTMDBTvConfigured {
+			ud.tmdbToken, err = ud.getTMDBToken()
+			if err != nil {
+				udErr.tmdb_token_id = err.Error()
+			}
+			isTMDBTvConfigured = ud.TMDBTokenId != ""
 		}
 
 		if isTraktTvConfigured {
@@ -277,6 +294,64 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				}
 				ud.Lists[idx] = "mdblist:" + list.Id
 
+			case "www.themoviedb.org":
+				if !isTMDBTvConfigured {
+					if TMDBEnabled {
+						udErr.list_urls[idx] = "TMDB Auth Code is required"
+					} else {
+						udErr.list_urls[idx] = "Unsupported List URL"
+					}
+					continue
+				}
+
+				list := tmdb.TMDBList{}
+				switch {
+				case strings.HasPrefix(listUrl.Path, "/list/"):
+					parts := strings.SplitN(strings.TrimPrefix(listUrl.Path, "/list/"), "-", 2)
+					if !util.IsNumericString(parts[0]) {
+						udErr.list_urls[idx] = "Invalid TMDB URL"
+						continue
+					}
+					list.Id = parts[0]
+				case strings.HasPrefix(listUrl.Path, "/movie") || strings.HasPrefix(listUrl.Path, "/tv"):
+					meta := tmdb.GetDynamicListMeta(listUrl.Path)
+					if meta == nil {
+						udErr.list_urls[idx] = "Unsupported Trakt.tv URL"
+						continue
+					}
+
+					list.Id = "~:" + strings.TrimPrefix(listUrl.Path, "/")
+				case strings.HasPrefix(listUrl.Path, "/u/"):
+					parts := strings.SplitN(strings.TrimPrefix(listUrl.Path, "/u/"), "/", 3)
+					username := parts[0]
+					if strings.ToLower(username) != strings.ToLower(ud.tmdbToken.UserName) {
+						udErr.list_urls[idx] = "Invalid URL: not own list"
+						continue
+					}
+					switch parts[1] {
+					case "favorites", "recommendations", "ratings", "watchlist":
+						listType := "movie"
+						if len(parts) == 3 {
+							listType = parts[2]
+						}
+						list.Id = "~:u:" + parts[1] + "/" + listType
+						list.Username = username
+					default:
+						udErr.list_urls[idx] = "Unsupported TMDB URL"
+						continue
+					}
+				default:
+					udErr.list_urls[idx] = "Unsupported TMDB URL"
+					continue
+				}
+
+				err := ud.FetchTMDBList(&list)
+				if err != nil {
+					udErr.list_urls[idx] = "Failed to fetch List: " + err.Error()
+					continue
+				}
+				ud.Lists[idx] = "tmdb:" + list.Id
+
 			case "trakt.tv":
 				if !isTraktTvConfigured {
 					if TraktEnabled {
@@ -326,6 +401,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					if list.Id == "" {
 						list.Id = "~:" + strings.TrimPrefix(listUrl.Path, "/")
 					}
+					list.Slug = strings.TrimPrefix(listUrl.Path, "/")
 				}
 
 				err := ud.FetchTraktList(&list)
@@ -384,6 +460,41 @@ func (ud *UserData) getTraktToken() (*oauth.OAuthToken, error) {
 	return ud.traktToken, nil
 }
 
+func (ud *UserData) getTMDBToken() (*oauth.OAuthToken, error) {
+	if ud.TMDBTokenId == "" {
+		return nil, nil
+	}
+
+	if ud.tmdbToken != nil {
+		return ud.tmdbToken, nil
+	}
+
+	otok, err := oauth.GetOAuthTokenById(ud.TMDBTokenId)
+	if err != nil {
+		ud.TMDBTokenId = ""
+		return nil, errors.New("failed to retrieve token: " + err.Error())
+	} else if otok != nil && otok.IsExpired() {
+		tmdbClient := tmdb.GetAPIClient(otok.Id)
+		details, err := tmdbClient.GetAccountDetails(&tmdb.GetAccountDetailsParams{})
+		if err != nil || strconv.FormatInt(details.Data.Id, 10) != otok.UserId {
+			otok.AccessToken = ""
+			otok.RefreshToken = ""
+			err = oauth.SaveOAuthToken(otok)
+			if err != nil {
+				log.Error("failed to delete tmdb token", "error", err, "id", otok.Id)
+			}
+			otok = nil
+		}
+	}
+	if otok == nil {
+		ud.TMDBTokenId = ""
+		return nil, errors.New("Invalid or Revoked")
+	}
+
+	ud.tmdbToken = otok
+	return ud.tmdbToken, nil
+}
+
 func (ud *UserData) FetchMDBListList(list *mdblist.MDBListList) error {
 	if ud.mdblistById == nil {
 		ud.mdblistById = map[string]mdblist.MDBListList{}
@@ -420,6 +531,31 @@ func (ud *UserData) FetchAniListList(list *anilist.AniListList, scheduleIdMapSyn
 	}
 
 	ud.anilistById[list.Id] = *list
+	return nil
+}
+
+func (ud *UserData) FetchTMDBList(list *tmdb.TMDBList) error {
+	if ud.tmdbById == nil {
+		ud.tmdbById = map[string]tmdb.TMDBList{}
+	}
+	if list.Id != "" {
+		if l, ok := ud.tmdbById[list.Id]; ok {
+			*list = l
+			return nil
+		}
+		if list.IsUserSpecific() && list.Username == "" {
+			tok, err := ud.getTMDBToken()
+			if err != nil {
+				return err
+			}
+			list.Username = tok.UserName
+		}
+	}
+	if err := list.Fetch(ud.TMDBTokenId); err != nil {
+		return err
+	}
+
+	ud.tmdbById[list.Id] = *list
 	return nil
 }
 

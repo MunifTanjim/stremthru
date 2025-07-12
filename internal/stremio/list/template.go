@@ -14,6 +14,7 @@ import (
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
+	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/google/uuid"
 )
@@ -22,6 +23,7 @@ var IsPublicInstance = config.IsPublicInstance
 var MaxPublicInstanceListCount = 10
 var TraktEnabled = config.Integration.Trakt.IsEnabled()
 var AniListEnabled = config.Feature.IsEnabled("anime")
+var TMDBEnabled = config.Integration.TMDB.IsEnabled()
 
 type Base = stremio_template.BaseData
 
@@ -72,6 +74,9 @@ type TemplateData struct {
 	MDBListAPIKey configure.Config
 
 	RPDBAPIKey configure.Config
+
+	TMDBEnabled bool
+	TMDBTokenId configure.Config
 
 	TraktEnabled bool
 	TraktTokenId configure.Config
@@ -136,6 +141,20 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 			Title:        "API Key",
 			Description:  `Rating Poster Database <a href="https://ratingposterdb.com/api-key/" target="blank">API Key</a>`,
 			Autocomplete: "off",
+		},
+		TMDBEnabled: TMDBEnabled,
+		TMDBTokenId: configure.Config{
+			Key:          "tmdb_token_id",
+			Title:        "Auth Code",
+			Type:         configure.ConfigTypePassword,
+			Default:      ud.TMDBTokenId,
+			Error:        udError.tmdb_token_id,
+			Autocomplete: "off",
+			Action: configure.ConfigAction{
+				Visible: ud.TMDBTokenId == "" || udError.tmdb_token_id != "",
+				Label:   "Authorize",
+				OnClick: template.JS(`window.open("` + oauth.TMDBOAuthConfig.AuthCodeURL(uuid.NewString()) + `", "_blank")`),
+			},
 		},
 		TraktEnabled: TraktEnabled,
 		TraktTokenId: configure.Config{
@@ -209,6 +228,7 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 					} else {
 						list.URL = l.GetURL()
 					}
+
 				case "mdblist":
 					l := mdblist.MDBListList{Id: id}
 					if err := ud.FetchMDBListList(&l); err != nil {
@@ -216,6 +236,20 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 						list.Error.URL = "Failed to Fetch List: " + err.Error()
 					} else {
 						list.URL = l.GetURL()
+					}
+
+				case "tmdb":
+					if td.TMDBTokenId.Error == "" {
+						l := tmdb.TMDBList{Id: id}
+						if err := ud.FetchTMDBList(&l); err != nil {
+							log.Error("failed to fetch list", "error", err, "id", listId)
+							list.Error.URL = "Failed to Fetch List: " + err.Error()
+						} else {
+							list.URL = l.GetURL()
+						}
+					} else {
+						list.Disabled.URL = true
+						list.Error.URL = "TMDB authorization needed"
 					}
 
 				case "trakt":
@@ -314,6 +348,72 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 				},
 			},
 		})
+		if TMDBEnabled {
+			td.SupportedServices = append(td.SupportedServices, supportedService{
+				Name:     "The Movie Database",
+				Hostname: "themoviedb.org",
+				Icon:     "https://www.themoviedb.org/assets/2/favicon-32x32-543a21832c8931d3494a68881f6afcafc58e96c5d324345377f3197a37b367b5.png",
+				URLs: []supportedServiceUrl{
+					{
+						Pattern: "/movie",
+					},
+					{
+						Pattern: "/movie/{now-playing,upcoming,top-rated}",
+						Examples: []string{
+							"/movie/now-playing",
+							"/movie/upcoming",
+							"/movie/top-rated",
+						},
+					},
+					{
+						Pattern: "/tv",
+					},
+					{
+						Pattern: "/tv/{airing-today,on-the-air,top-rated}",
+						Examples: []string{
+							"/tv/airing-today",
+							"/tv/on-the-air",
+							"/tv/top-rated",
+						},
+					},
+					{
+						Pattern: "/u/{own_username}/favorites/{movie,tv}",
+						Examples: []string{
+							"/u/Yuliya1974/favorites/movie",
+							"/u/Yuliya1974/favorites/tv",
+						},
+					},
+					{
+						Pattern: "/u/{own_username}/recommendations/{movie,tv}",
+						Examples: []string{
+							"/u/MunifTanjim/recommendations/movie",
+							"/u/MunifTanjim/recommendations/tv",
+						},
+					},
+					{
+						Pattern: "/u/{own_username}/ratings/{movie,tv}",
+						Examples: []string{
+							"/u/janar72/ratings/movie",
+							"/u/janar72/ratings/tv",
+						},
+					},
+					{
+						Pattern: "/u/{own_username}/watchlist/{movie,tv}",
+						Examples: []string{
+							"/u/Sheigutn/watchlist/movie",
+							"/u/Sheigutn/watchlist/tv",
+						},
+					},
+					{
+						Pattern: "/list/{list_id}",
+						Examples: []string{
+							"/list/28-best-picture-winners-the-academy-awards",
+						},
+					},
+				},
+			})
+
+		}
 		if TraktEnabled {
 			td.SupportedServices = append(td.SupportedServices, supportedService{
 				Name:     "Trakt.tv",
@@ -405,6 +505,12 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			}
 			if td.RPDBAPIKey.Default != "" {
 				td.RPDBAPIKey.Default = redacted
+			}
+			if td.TMDBTokenId.Default != "" {
+				td.TMDBTokenId.Default = redacted
+			}
+			if td.TraktTokenId.Default != "" {
+				td.TraktTokenId.Default = redacted
 			}
 		}
 

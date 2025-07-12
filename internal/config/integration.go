@@ -53,12 +53,22 @@ func (c integrationConfigGitHub) HasDefaultCredentials() bool {
 	return c.User != "" && c.Token != ""
 }
 
+type integrationConfigTMDB struct {
+	AccessToken   string
+	ListStaleTime time.Duration
+}
+
+func (c integrationConfigTMDB) IsEnabled() bool {
+	return c.AccessToken != ""
+}
+
 type IntegrationConfig struct {
 	AniList integrationConfigAniList
 	GitHub  integrationConfigGitHub
 	MDBList integrationConfigMDBList
 	Trakt   integrationConfigTrakt
 	Kitsu   integrationConfigKitsu
+	TMDB    integrationConfigTMDB
 }
 
 func parseIntegration() IntegrationConfig {
@@ -83,6 +93,10 @@ func parseIntegration() IntegrationConfig {
 			ClientSecret: getEnv("STREMTHRU_INTEGRATION_KITSU_CLIENT_SECRET"),
 			Email:        getEnv("STREMTHRU_INTEGRATION_KITSU_EMAIL"),
 			Password:     getEnv("STREMTHRU_INTEGRATION_KITSU_PASSWORD"),
+		},
+		TMDB: integrationConfigTMDB{
+			AccessToken:   getEnv("STREMTHRU_INTEGRATION_TMDB_ACCESS_TOKEN"),
+			ListStaleTime: mustParseDuration("tmdb list stale time", getEnv("STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME"), 15*time.Minute),
 		},
 	}
 	if integration.Kitsu.Email != "" && !strings.Contains(integration.Kitsu.Email, "@") {
