@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.80.5](https://github.com/MunifTanjim/stremthru/compare/0.80.4...0.80.5) (2025-07-14)
+
+
+### Bug Fixes
+
+* **stremio/list:** correctly resolve imdb ids for trakt lists ([c27d5f6](https://github.com/MunifTanjim/stremthru/commit/c27d5f6cbaa7b5801e47ca7f653803ed4ca870aa))
+
 ## [0.80.4](https://github.com/MunifTanjim/stremthru/compare/0.80.3...0.80.4) (2025-07-08)
 
 
