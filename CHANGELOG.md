@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.80.6](https://github.com/MunifTanjim/stremthru/compare/0.80.5...0.80.6) (2025-07-15)
+
+
+### Bug Fixes
+
+* **stremio/list:** avoid rate-limits when refreshing stale lists ([ea97919](https://github.com/MunifTanjim/stremthru/commit/ea97919f8f6851b1509642798efefa5f3802e163))
+
 ## [0.80.5](https://github.com/MunifTanjim/stremthru/compare/0.80.4...0.80.5) (2025-07-14)
 
 
