@@ -98,7 +98,6 @@ func syncList(l *TraktList, tokenId string) error {
 	}
 	l.UserId = list.User.Ids.Slug
 	l.UserName = list.User.Name
-	l.Slug = list.User.Name
 	l.Name = list.Name
 	l.Slug = list.Ids.Slug
 	l.Description = list.Description
@@ -226,6 +225,8 @@ func (l *TraktList) Fetch(tokenId string) error {
 					log.Debug("found list by id", "id", l.Id, "is_stale", l.IsStale())
 					listCache.Add(listCacheKey, *l)
 				}
+			} else {
+				isMissing = true
 			}
 		} else {
 			*l = cachedL
