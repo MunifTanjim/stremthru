@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.80.7](https://github.com/MunifTanjim/stremthru/compare/0.80.6...0.80.7) (2025-07-18)
+
+
+### Bug Fixes
+
+* **stremio/torz:** ignore store if check magnet fails ([f7fbe9c](https://github.com/MunifTanjim/stremthru/commit/f7fbe9c0d2b61f6c001a8403c5110a31832a0f1f))
+* **stremio/wrap:** ignore store if check magnet fails ([d726cd3](https://github.com/MunifTanjim/stremthru/commit/d726cd3bf8a5ec4e0e3ba167798f51112736e614))
+
 ## [0.80.6](https://github.com/MunifTanjim/stremthru/compare/0.80.5...0.80.6) (2025-07-15)
 
 
