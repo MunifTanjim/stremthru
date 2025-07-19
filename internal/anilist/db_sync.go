@@ -21,7 +21,7 @@ var listCache = cache.NewCache[AniListList](&cache.CacheConfig{
 
 var anizipClient = anizip.NewAPIClient(&anizip.APIClientConfig{})
 
-func EnsureIdMap(medias []AniListMedia) error {
+func EnsureIdMap(medias []AniListMedia, listId string) error {
 	idMapGroup := anizip.GetMappingsPool().NewGroup()
 
 	missingIdMapAnilistIds := []int{}
@@ -94,7 +94,7 @@ func EnsureIdMap(medias []AniListMedia) error {
 			idMapItems = append(idMapItems, idMap)
 		}
 		if err := anime.BulkRecordIdMaps(idMapItems, anime.IdMapColumn.AniList); err != nil {
-			return err
+			log.Error("failed to record idMaps", "error", err)
 		}
 	}
 
@@ -102,6 +102,9 @@ func EnsureIdMap(medias []AniListMedia) error {
 		media := &medias[i]
 		if idMap, ok := idMapByAniListId[strconv.Itoa(media.Id)]; ok {
 			media.IdMap = idMap
+		}
+		if len(idMapByAniListId) > 0 {
+			listCache.Remove(getListCacheKey(&AniListList{Id: listId}))
 		}
 	}
 
