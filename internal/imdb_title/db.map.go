@@ -233,6 +233,47 @@ func GetIMDBIdByTMDBId(tmdbMovieIds, tmdbShowIds []string) (map[string]string, m
 	return movieImdbIdByTMDBId, showImdbIdByTMDBId, nil
 }
 
+var query_get_tmdb_id_by_imdb_id = fmt.Sprintf(
+	`SELECT %s, %s FROM %s WHERE %s IN `,
+	MapColumn.IMDBId,
+	MapColumn.TMDBId,
+	MapTableName,
+	MapColumn.IMDBId,
+)
+
+func GetTMDBIdByIMDBId(imdbIds []string) (map[string]string, error) {
+	count := len(imdbIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	query := query_get_tmdb_id_by_imdb_id + "(" + util.RepeatJoin("?", count, ",") + ")"
+	args := make([]any, count)
+	for i, id := range imdbIds {
+		args[i] = id
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tmdbIdByImdbId := make(map[string]string, count)
+	for rows.Next() {
+		var imdbId, tmdbId string
+		if err := rows.Scan(&imdbId, &tmdbId); err != nil {
+			return nil, err
+		}
+		tmdbIdByImdbId[imdbId] = tmdbId
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tmdbIdByImdbId, nil
+}
+
 func RecordMappingFromMDBList(tx *db.Tx, imdbId, tmdbId, tvdbId, traktId, malId string) error {
 	query := fmt.Sprintf(
 		`INSERT INTO %s AS itm (%s) VALUES (?,?,?,?,?) ON CONFLICT (%s) DO UPDATE SET %s, %s = %s`,
@@ -299,6 +340,10 @@ func normalizeOptionalId(id string) string {
 
 func BulkRecordMapping(items []BulkRecordMappingInputItem) {
 	count := len(items)
+	if count == 0 {
+		return
+	}
+
 	query := query_bulk_record_mapping_before_values +
 		util.RepeatJoin(query_bulk_record_mapping_placeholder, count, ",") +
 		query_bulk_record_mapping_after_values

@@ -6,6 +6,9 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type PaginatedResult[T any] struct {
@@ -36,12 +39,20 @@ type ListItemMovie struct {
 	Video         bool   `json:"video"`
 }
 
+func (li *ListItemMovie) GetReleaseDate() time.Time {
+	return util.MustParseTime(time.DateOnly, li.ReleaseDate)
+}
+
 type ListItemShow struct {
 	listItemCommon
 	OriginCountry []string `json:"origin_country"`
 	OriginalName  string   `json:"original_name"`
 	FirstAirDate  string   `json:"first_air_date"`
 	Name          string   `json:"name"`
+}
+
+func (li *ListItemShow) GetFirstAirDate() time.Time {
+	return util.MustParseTime(time.DateOnly, li.FirstAirDate)
 }
 
 type AccountRating struct {
