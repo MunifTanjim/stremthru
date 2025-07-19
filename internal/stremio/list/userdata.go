@@ -33,6 +33,9 @@ type UserData struct {
 
 	RPDBAPIKey string `json:"rpdb_api_key,omitempty"`
 
+	MetaIdMovie  string `json:"meta_id_movie,omitempty"`
+	MetaIdSeries string `json:"meta_id_series,omitempty"`
+
 	Shuffle bool `json:"shuffle,omitempty"`
 
 	encoded string `json:"-"` // correctly configured
@@ -70,6 +73,8 @@ type userDataError struct {
 	list_urls      []string
 	tmdb_token_id  string
 	trakt_token_id string
+	meta_id_movie  string
+	meta_id_series string
 }
 
 func (uderr userDataError) HasError() bool {
@@ -135,6 +140,10 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		ud.TraktTokenId = r.Form.Get("trakt_token_id")
 
 		ud.RPDBAPIKey = r.Form.Get("rpdb_api_key")
+
+		ud.MetaIdMovie = r.Form.Get("meta_id_movie")
+		ud.MetaIdSeries = r.Form.Get("meta_id_series")
+
 		ud.Shuffle = r.Form.Get("shuffle") == "on"
 
 		lists_length := 0

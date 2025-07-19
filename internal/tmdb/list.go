@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -40,12 +41,26 @@ type ListItemMovie struct {
 	Video         bool   `json:"video"`
 }
 
+func (li *ListItemMovie) GetReleaseDate() time.Time {
+	if li.ReleaseDate == "" {
+		return time.Time{}
+	}
+	return util.MustParseTime(time.DateOnly, li.ReleaseDate)
+}
+
 type ListItemShow struct {
 	listItemCommon
 	OriginCountry []string `json:"origin_country"`
 	OriginalName  string   `json:"original_name"`
 	FirstAirDate  string   `json:"first_air_date"`
 	Name          string   `json:"name"`
+}
+
+func (li *ListItemShow) GetFirstAirDate() time.Time {
+	if li.FirstAirDate == "" {
+		return time.Time{}
+	}
+	return util.MustParseTime(time.DateOnly, li.FirstAirDate)
 }
 
 type AccountRating struct {

@@ -372,7 +372,7 @@ func UpsertList(list *TMDBList) (err error) {
 
 	list.UpdatedAt = db.Timestamp{Time: time.Now()}
 
-	err = upsertItems(tx, list.Items)
+	err = UpsertItems(tx, list.Items)
 	if err != nil {
 		return err
 	}
@@ -416,7 +416,7 @@ var query_upsert_items_after_values = fmt.Sprintf(
 	}, ", "),
 )
 
-func upsertItems(tx db.Executor, items []TMDBItem) error {
+func UpsertItems(tx db.Executor, items []TMDBItem) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -455,7 +455,6 @@ func upsertItems(tx db.Executor, items []TMDBItem) error {
 			if err := setItemGenre(tx, item.Id, item.Type, item.Genres); err != nil {
 				return err
 			}
-
 		}
 	}
 

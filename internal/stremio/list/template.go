@@ -25,6 +25,24 @@ var TraktEnabled = config.Integration.Trakt.IsEnabled()
 var AniListEnabled = config.Feature.IsEnabled("anime")
 var TMDBEnabled = config.Integration.TMDB.IsEnabled()
 
+func GetMetaIdMovieOptions(ud *UserData) []configure.ConfigOption {
+	metaIdMovieOptions := []configure.ConfigOption{
+		{Value: "", Label: "IMDB"},
+	}
+	if TMDBEnabled {
+		metaIdMovieOptions = append(metaIdMovieOptions, configure.ConfigOption{
+			Value:    "tmdb",
+			Label:    "TMDB",
+			Disabled: ud.TMDBTokenId == "",
+		})
+	}
+	return metaIdMovieOptions
+}
+
+func GetMetaIdSeriesOptions(ud *UserData) []configure.ConfigOption {
+	return GetMetaIdMovieOptions(ud)
+}
+
 type Base = stremio_template.BaseData
 
 type TemplateDataList struct {
@@ -80,6 +98,9 @@ type TemplateData struct {
 
 	TraktEnabled bool
 	TraktTokenId configure.Config
+
+	MetaIdMovie  configure.Config
+	MetaIdSeries configure.Config
 
 	Shuffle configure.Config
 
@@ -169,6 +190,22 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 				Label:   "Authorize",
 				OnClick: template.JS(`window.open("` + oauth.TraktOAuthConfig.AuthCodeURL(uuid.NewString()) + `", "_blank")`),
 			},
+		},
+		MetaIdMovie: configure.Config{
+			Key:     "meta_id_movie",
+			Title:   "Preferred Meta Provider (Movie)",
+			Type:    configure.ConfigTypeSelect,
+			Default: ud.MetaIdMovie,
+			Error:   udError.meta_id_movie,
+			Options: GetMetaIdMovieOptions(ud),
+		},
+		MetaIdSeries: configure.Config{
+			Key:     "meta_id_series",
+			Title:   "Preferred Meta Provider (Series)",
+			Type:    configure.ConfigTypeSelect,
+			Default: ud.MetaIdSeries,
+			Error:   udError.meta_id_series,
+			Options: GetMetaIdSeriesOptions(ud),
 		},
 		Shuffle: configure.Config{
 			Key:   "shuffle",

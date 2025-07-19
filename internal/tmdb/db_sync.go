@@ -7,7 +7,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var listCache = cache.NewCache[TMDBList](&cache.CacheConfig{
@@ -101,7 +100,7 @@ func syncList(l *TMDBList, tokenId string) error {
 			d.Title = data.Title
 			d.OriginalTitle = data.OriginalTitle
 			d.Overview = data.Overview
-			d.ReleaseDate = db.DateOnly{Time: util.MustParseTime(time.DateOnly, data.ReleaseDate)}
+			d.ReleaseDate = db.DateOnly{Time: data.GetReleaseDate()}
 			d.IsAdult = data.Adult
 			d.Backdrop = data.BackdropPath
 			d.Poster = data.PosterPath
@@ -115,7 +114,7 @@ func syncList(l *TMDBList, tokenId string) error {
 			d.Title = data.Name
 			d.OriginalTitle = data.OriginalName
 			d.Overview = data.Overview
-			d.ReleaseDate = db.DateOnly{Time: util.MustParseTime(time.DateOnly, data.FirstAirDate)}
+			d.ReleaseDate = db.DateOnly{Time: data.GetFirstAirDate()}
 			d.IsAdult = data.Adult
 			d.Backdrop = data.BackdropPath
 			d.Poster = data.PosterPath

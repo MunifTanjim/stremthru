@@ -62,6 +62,8 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 }()
 
 type dbExec func(query string, args ...any) (sql.Result, error)
+type dbQuery func(query string, args ...any) (*sql.Rows, error)
+type dbQueryRow func(query string, args ...any) *sql.Row
 type Executor interface {
 	Exec(query string, args ...any) (sql.Result, error)
 	Query(query string, args ...any) (*sql.Rows, error)
@@ -99,6 +101,26 @@ func Query(query string, args ...any) (*sql.Rows, error) {
 
 func QueryRow(query string, args ...any) *sql.Row {
 	return db.QueryRow(adaptQuery(query), args...)
+}
+
+type dbExecutor struct{}
+
+func (e dbExecutor) Exec(query string, args ...any) (sql.Result, error) {
+	return Exec(query, args...)
+}
+
+func (e dbExecutor) Query(query string, args ...any) (*sql.Rows, error) {
+	return Query(query, args...)
+}
+
+func (e dbExecutor) QueryRow(query string, args ...any) *sql.Row {
+	return QueryRow(query, args...)
+}
+
+var execturor = dbExecutor{}
+
+func GetDB() *dbExecutor {
+	return &execturor
 }
 
 type Tx struct {
