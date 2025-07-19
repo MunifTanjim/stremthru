@@ -263,7 +263,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			item := &catalogItems[i]
 			medias[i] = item.item.(anilist.AniListMedia)
 		}
-		if err := anilist.EnsureIdMap(medias); err != nil {
+		if err := anilist.EnsureIdMap(medias, id); err != nil {
 			SendError(w, r, err)
 			return
 		}

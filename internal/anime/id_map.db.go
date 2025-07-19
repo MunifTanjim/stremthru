@@ -3,6 +3,7 @@ package anime
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -33,8 +34,8 @@ const (
 type AnimeIdMap struct {
 	Id          int            `json:"id"`
 	Type        AnimeIdMapType `json:"type"`
-	AniList     string         `json:"anilist"`
 	AniDB       string         `json:"anidb"`
+	AniList     string         `json:"anilist"`
 	AniSearch   string         `json:"anisearch"`
 	AnimePlanet string         `json:"animeplanet"`
 	IMDB        string         `json:"imdb"`
@@ -357,7 +358,7 @@ func getAnchorColumnValue(item AnimeIdMap, anchorColumnName string) string {
 	}
 }
 
-func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
+func tryBulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 	count := len(items)
 	if count == 0 {
 		return nil
@@ -409,4 +410,226 @@ func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 
 	_, err := db.Exec(query.String(), args...)
 	return err
+}
+
+var query_get_id_by_anchor_id_before_cond = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE `,
+	IdMapColumn.Id,
+	IdMapTableName,
+)
+var query_get_id_by_anchor_id_cond = map[string]string{
+	IdMapColumn.AniDB:       fmt.Sprintf(" %s = ? ", IdMapColumn.AniDB),
+	IdMapColumn.AniList:     fmt.Sprintf(" %s = ? ", IdMapColumn.AniList),
+	IdMapColumn.AniSearch:   fmt.Sprintf(" %s = ? ", IdMapColumn.AniSearch),
+	IdMapColumn.AnimePlanet: fmt.Sprintf(" %s = ? ", IdMapColumn.AnimePlanet),
+	IdMapColumn.Kitsu:       fmt.Sprintf(" %s = ? ", IdMapColumn.Kitsu),
+	IdMapColumn.LiveChart:   fmt.Sprintf(" %s = ? ", IdMapColumn.LiveChart),
+	IdMapColumn.MAL:         fmt.Sprintf(" %s = ? ", IdMapColumn.MAL),
+	IdMapColumn.NotifyMoe:   fmt.Sprintf(" %s = ? ", IdMapColumn.NotifyMoe),
+}
+var query_get_id_by_anchor_id_after_cond = " LIMIT 1"
+
+var query_insert_id_map = fmt.Sprintf(
+	`INSERT INTO %s AS aim (%s) VALUES (%s)`,
+	IdMapTableName,
+	strings.Join(IdMapColumns[1:len(IdMapColumns)-1], ","),
+	query_bulk_record_id_maps_placeholder,
+)
+
+var query_update_id_map_by_id = fmt.Sprintf(
+	`UPDATE %s SET %s WHERE %s = ?`,
+	IdMapTableName,
+	strings.Join([]string{
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.AniDB, IdMapColumn.AniDB),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.AniList, IdMapColumn.AniList),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.AniSearch, IdMapColumn.AniSearch),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.IMDB, IdMapColumn.IMDB),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.Kitsu, IdMapColumn.Kitsu),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.LiveChart, IdMapColumn.LiveChart),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.MAL, IdMapColumn.MAL),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.TMDB, IdMapColumn.TMDB),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.TVDB, IdMapColumn.TVDB),
+	}, ", "),
+	IdMapColumn.Id,
+)
+
+func isUniqueConstraintError(err error) bool {
+	err_msg := err.Error()
+	switch db.Dialect {
+	case db.DBDialectSQLite:
+		return strings.HasPrefix(err_msg, "UNIQUE constraint failed")
+	case db.DBDialectPostgres:
+		return strings.HasPrefix(err_msg, "ERROR: duplicate key value violates unique constraint")
+	default:
+		panic(fmt.Sprintf("unsupported database dialect: %s", db.Dialect))
+	}
+}
+
+var postgresIdMapUniqueConstraintColumnRegex = regexp.MustCompile(`ERROR: duplicate key value violates unique constraint "anime_id_map_uidx_(.+)"`)
+
+func getIdMapUniqueConstraintErrorColumn(err error) string {
+	err_msg := err.Error()
+	switch db.Dialect {
+	case db.DBDialectSQLite:
+		column, ok := strings.CutPrefix(err_msg, "UNIQUE constraint failed: anime_id_map.")
+		if !ok {
+			return ""
+		}
+		return column
+	case db.DBDialectPostgres:
+		matches := postgresIdMapUniqueConstraintColumnRegex.FindStringSubmatch(err_msg)
+		if len(matches) == 0 {
+			return ""
+		}
+		return matches[1]
+	default:
+		panic(fmt.Sprintf("unsupported database dialect: %s", db.Dialect))
+	}
+}
+
+func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
+	err := tryBulkRecordIdMaps(items, anchorColumnName)
+	if err != nil {
+		log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
+		if !isUniqueConstraintError(err) {
+			return err
+		}
+		anchorColumnName = getIdMapUniqueConstraintErrorColumn(err)
+		log.Info("retrying bulk record idMaps", "anchor_column", anchorColumnName)
+		err = tryBulkRecordIdMaps(items, anchorColumnName)
+	}
+	if err == nil {
+		return nil
+
+	}
+
+	log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
+	if !isUniqueConstraintError(err) {
+		return err
+	}
+	log.Info("retrying bulk record idMaps individually")
+	for i := range items {
+		item := &items[i]
+		args := []any{}
+		var query strings.Builder
+		query.WriteString(query_get_id_by_anchor_id_before_cond)
+		cond_count := 0
+		if item.AniList != "" {
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.AniList])
+			args = append(args, item.AniList)
+			cond_count++
+		}
+		if item.MAL != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.MAL])
+			args = append(args, item.MAL)
+			cond_count++
+		}
+		if item.Kitsu != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.Kitsu])
+			args = append(args, item.Kitsu)
+			cond_count++
+		}
+		if item.AniDB != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.AniDB])
+			args = append(args, item.AniDB)
+			cond_count++
+		}
+		if item.AniSearch != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.AniSearch])
+			args = append(args, item.AniSearch)
+			cond_count++
+		}
+		if item.AnimePlanet != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.AnimePlanet])
+			args = append(args, item.AnimePlanet)
+			cond_count++
+		}
+		if item.LiveChart != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.LiveChart])
+			args = append(args, item.LiveChart)
+			cond_count++
+		}
+		if item.NotifyMoe != "" {
+			if cond_count > 0 {
+				query.WriteString(" OR ")
+			}
+			query.WriteString(query_get_id_by_anchor_id_cond[IdMapColumn.NotifyMoe])
+			args = append(args, item.NotifyMoe)
+			cond_count++
+		}
+		if cond_count == 0 {
+			log.Warn("no anchor column found for idMap", "item", item)
+			continue
+		}
+		query.WriteString(query_get_id_by_anchor_id_after_cond)
+		row := db.QueryRow(query.String(), args...)
+		var id int
+		if err := row.Scan(&id); err != nil {
+			if err != sql.ErrNoRows {
+				log.Error("failed to get idMap by anchor id", "error", err, "item", item)
+				continue
+			}
+			log.Warn("no id found for idMap", "item", item)
+		}
+		if id == 0 {
+			args = []any{
+				item.Type,
+				db.NullString{String: normalizeOptionalId(item.AniDB)},
+				db.NullString{String: normalizeOptionalId(item.AniList)},
+				db.NullString{String: normalizeOptionalId(item.AniSearch)},
+				db.NullString{String: normalizeOptionalId(item.AnimePlanet)},
+				db.NullString{String: normalizeOptionalId(item.IMDB)},
+				db.NullString{String: normalizeOptionalId(item.Kitsu)},
+				db.NullString{String: normalizeOptionalId(item.LiveChart)},
+				db.NullString{String: normalizeOptionalId(item.MAL)},
+				db.NullString{String: normalizeOptionalId(item.NotifyMoe)},
+				db.NullString{String: normalizeOptionalId(item.TMDB)},
+				db.NullString{String: normalizeOptionalId(item.TVDB)},
+			}
+			if _, err = db.Exec(query_insert_id_map, args...); err != nil {
+				log.Error("failed to insert idMap", "error", err, "item", item)
+				continue
+			}
+		} else {
+			args = []any{
+				db.NullString{String: normalizeOptionalId(item.AniDB)},
+				db.NullString{String: normalizeOptionalId(item.AniList)},
+				db.NullString{String: normalizeOptionalId(item.AniSearch)},
+				db.NullString{String: normalizeOptionalId(item.AnimePlanet)},
+				db.NullString{String: normalizeOptionalId(item.IMDB)},
+				db.NullString{String: normalizeOptionalId(item.Kitsu)},
+				db.NullString{String: normalizeOptionalId(item.LiveChart)},
+				db.NullString{String: normalizeOptionalId(item.MAL)},
+				db.NullString{String: normalizeOptionalId(item.NotifyMoe)},
+				db.NullString{String: normalizeOptionalId(item.TMDB)},
+				db.NullString{String: normalizeOptionalId(item.TVDB)},
+				id,
+			}
+			if _, err = db.Exec(query_update_id_map_by_id, args...); err != nil {
+				log.Error("failed to update idMap", "error", err, "item", item)
+				continue
+			}
+		}
+	}
+	return nil
 }
