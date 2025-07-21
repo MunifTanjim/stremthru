@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.81.0](https://github.com/MunifTanjim/stremthru/compare/0.80.7...0.81.0) (2025-07-21)
+
+
+### Features
+
+* **db:** use advisory lock during schema migration ([91b78f8](https://github.com/MunifTanjim/stremthru/commit/91b78f8eb45465c9f1a6cb961aee4f3df4665792))
+* **magnet_cache:** drop files column ([7ffb6c6](https://github.com/MunifTanjim/stremthru/commit/7ffb6c601e3702be07108fafdafe2c3ccc516e89))
+* **store/torbox:** update types for api responses ([da47ca3](https://github.com/MunifTanjim/stremthru/commit/da47ca3248e0e88b23ec540b7a177cd86dbbdfa1))
+* **stremio/list:** support move up/down, improve add/remove ux ([6f3a66b](https://github.com/MunifTanjim/stremthru/commit/6f3a66b29482544d17b3ae45acfaf9a49b851281))
+* **stremio/list:** support tmdb as metadata provider ([72f5026](https://github.com/MunifTanjim/stremthru/commit/72f50260fae88f0e773d6a23e845132fb9cdbad9))
+* **stremio/list:** support tmdb lists ([6deacde](https://github.com/MunifTanjim/stremthru/commit/6deacdef29da8e0388488b2df833d9ddea6bbe99))
+* **stremio/store:** add behaviorHints.videoHash when available ([56e9d5c](https://github.com/MunifTanjim/stremthru/commit/56e9d5c54f32057d0d6bc44b928a15ce47c5fa95))
+* **worker:** auth with github for sync-dmm-hashlist job ([b371a34](https://github.com/MunifTanjim/stremthru/commit/b371a3403fe4199002e84f65f17e4d9cd5f2cc14))
+* **worker:** revamp worker implementation ([69872f5](https://github.com/MunifTanjim/stremthru/commit/69872f5d6949a2626b579a475361b99800341dc1))
+
+
+### Bug Fixes
+
+* **anime:** handle bulk record id maps unique constraint failure ([fd16b25](https://github.com/MunifTanjim/stremthru/commit/fd16b25b1ff075a91585102ef1eee49beeefb928))
+* **stremio/list:** fix missing detection for trakt lists ([f8e9cfb](https://github.com/MunifTanjim/stremthru/commit/f8e9cfb13672007c2498b3c5fc058b749b6908dd))
+* **stremio:** update stream extractor for debridio ([a35c86d](https://github.com/MunifTanjim/stremthru/commit/a35c86d02123b154efabef37e636748c3bb00beb))
+
 ## [0.80.7](https://github.com/MunifTanjim/stremthru/compare/0.80.6...0.80.7) (2025-07-18)
 
 
