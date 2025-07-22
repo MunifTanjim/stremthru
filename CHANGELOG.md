@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.81.2](https://github.com/MunifTanjim/stremthru/compare/0.81.1...0.81.2) (2025-07-22)
+
+
+### Bug Fixes
+
+* **anime:** fix query for id map insert ([4f7ef0c](https://github.com/MunifTanjim/stremthru/commit/4f7ef0c3a5531beabacd914d6ece1b10b7395b4a))
+* **anime:** ignore invalid id maps in upsert ([fe784de](https://github.com/MunifTanjim/stremthru/commit/fe784de8b0c68ad678987cfb936b8d557f1c5442))
+* **stremio/list:** handle edge cases for add/remove and move ([dcea434](https://github.com/MunifTanjim/stremthru/commit/dcea4346cfdbbe3b0ebaa0bd53bd375c5e9b8f89))
+
 ## [0.81.1](https://github.com/MunifTanjim/stremthru/compare/0.81.0...0.81.1) (2025-07-22)
 
 
