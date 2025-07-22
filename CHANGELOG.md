@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.81.1](https://github.com/MunifTanjim/stremthru/compare/0.81.0...0.81.1) (2025-07-22)
+
+
+### Bug Fixes
+
+* **tmdb:** handle oauth flow for multi instance deployment ([712bb30](https://github.com/MunifTanjim/stremthru/commit/712bb3073644376c7aa6892dbd57554017dad847))
+
 ## [0.81.0](https://github.com/MunifTanjim/stremthru/compare/0.80.7...0.81.0) (2025-07-21)
 
 
