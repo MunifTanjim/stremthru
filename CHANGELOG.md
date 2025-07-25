@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.81.3](https://github.com/MunifTanjim/stremthru/compare/0.81.2...0.81.3) (2025-07-25)
+
+
+### Bug Fixes
+
+* **store/torbox:** add missing info in add magnet result ([536d370](https://github.com/MunifTanjim/stremthru/commit/536d370eadaa9955a75102938f0e627bfa65be8c))
+* **stremio/list:** handle more edge cases for add/remove ([f0e4ade](https://github.com/MunifTanjim/stremthru/commit/f0e4ade0ad953eb2f25018bc668f6d7769440eea))
+* **stremio/store:** improve fuzzy matching behavior ([cddb1a0](https://github.com/MunifTanjim/stremthru/commit/cddb1a06092dba941da739405a6af5a5a70c0783))
+
 ## [0.81.2](https://github.com/MunifTanjim/stremthru/compare/0.81.1...0.81.2) (2025-07-22)
 
 
