@@ -5,8 +5,8 @@
 
 ### Features
 
-* **sdk/js:** add video_hash for files ([176d4af](https://github.com/MunifTanjim/stremthru/commit/176d4af01294ae5bf729a573fb54a1a06031c105))
-* **sdk/js:** replace deprecated authorization header ([0e3e2f2](https://github.com/MunifTanjim/stremthru/commit/0e3e2f29a971612944c1a9357430a81a4b71a480))
+* **sdk/js:** add video_hash for files ([a08908a](https://github.com/MunifTanjim/stremthru/commit/a08908a54ba6f2aa89dbb4e3a1e0cda3a6998889))
+* **sdk/js:** replace deprecated authorization header ([ae488a2](https://github.com/MunifTanjim/stremthru/commit/ae488a26b8482a9f0183dd79e25466eb81392ac0))
 
 ## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.6.0...sdk-js-0.7.0) (2024-12-31)
 
