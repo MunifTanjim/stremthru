@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.3.0...sdk-py-0.4.0) (2025-07-25)
+
+
+### Features
+
+* **sdk/py:** add video_hash for files ([c52c520](https://github.com/MunifTanjim/stremthru/commit/c52c5201e2460aa899b9fa92ade89b95814ae914))
+* **sdk/py:** replace deprecated authorization header ([ef34cb2](https://github.com/MunifTanjim/stremthru/commit/ef34cb2ef884d462c2999e5d60c7a11e56ae552d))
+
 ## [0.3.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.2.0...sdk-py-0.3.0) (2024-12-31)
 
 
