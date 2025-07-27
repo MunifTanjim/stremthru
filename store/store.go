@@ -13,6 +13,7 @@ type StoreName string
 
 const (
 	StoreNameAlldebrid  StoreName = "alldebrid"
+	StoreNameDebrider   StoreName = "debrider"
 	StoreNameDebridLink StoreName = "debridlink"
 	StoreNameEasyDebrid StoreName = "easydebrid"
 	StoreNameOffcloud   StoreName = "offcloud"
@@ -26,6 +27,7 @@ type StoreCode string
 
 const (
 	StoreCodeAllDebrid  StoreCode = "ad"
+	StoreCodeDebrider   StoreCode = "dr"
 	StoreCodeDebridLink StoreCode = "dl"
 	StoreCodeEasyDebrid StoreCode = "ed"
 	StoreCodeOffcloud   StoreCode = "oc"
@@ -37,6 +39,7 @@ const (
 
 var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameAlldebrid:  StoreCodeAllDebrid,
+	StoreNameDebrider:   StoreCodeDebrider,
 	StoreNameDebridLink: StoreCodeDebridLink,
 	StoreNameEasyDebrid: StoreCodeEasyDebrid,
 	StoreNameOffcloud:   StoreCodeOffcloud,
@@ -48,6 +51,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 
 var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodeAllDebrid:  StoreNameAlldebrid,
+	StoreCodeDebrider:   StoreNameDebrider,
 	StoreCodeDebridLink: StoreNameDebridLink,
 	StoreCodeEasyDebrid: StoreNameEasyDebrid,
 	StoreCodeOffcloud:   StoreNameOffcloud,

@@ -14,6 +14,7 @@ Companion for Stremio.
 ### Store Integration
 
 - [AllDebrid](https://alldebrid.com)
+- [Debrider](https://debrider.app)
 - [Debrid-Link](https://debrid-link.com)
 - [EasyDebrid](https://easydebrid.com)
 - [Offcloud](https://offcloud.com)
@@ -146,6 +147,7 @@ If `username` is `*`, it is used as fallback for users without explicit store cr
 | Store       | `store_name` | `store_token`        |
 | ----------- | ------------ | -------------------- |
 | AllDebrid   | `alldebrid`  | `<api-key>`          |
+| Debrider    | `debrider`   | `<api-key>`          |
 | Debrid-Link | `debridlink` | `<api-key>`          |
 | EasyDebrid  | `easydebrid` | `<api-key>`          |
 | Offcloud    | `offcloud`   | `<email>:<password>` |

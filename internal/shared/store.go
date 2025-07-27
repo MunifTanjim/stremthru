@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
+	"github.com/MunifTanjim/stremthru/store/debrider"
 	"github.com/MunifTanjim/stremthru/store/debridlink"
 	"github.com/MunifTanjim/stremthru/store/easydebrid"
 	"github.com/MunifTanjim/stremthru/store/offcloud"
@@ -26,6 +27,10 @@ import (
 
 var adStore = alldebrid.NewStoreClient(&alldebrid.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("alldebrid")),
+	UserAgent:  config.StoreClientUserAgent,
+})
+var drStore = debrider.NewStoreClient(&debrider.StoreClientConfig{
+	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("debrider")),
 	UserAgent:  config.StoreClientUserAgent,
 })
 var dlStore = debridlink.NewStoreClient(&debridlink.StoreClientConfig{
@@ -61,6 +66,8 @@ func GetStore(name string) store.Store {
 	switch store.StoreName(name) {
 	case store.StoreNameAlldebrid:
 		return adStore
+	case store.StoreNameDebrider:
+		return drStore
 	case store.StoreNameDebridLink:
 		return dlStore
 	case store.StoreNameEasyDebrid:
@@ -84,6 +91,8 @@ func GetStoreByCode(code string) store.Store {
 	switch store.StoreCode(code) {
 	case store.StoreCodeAllDebrid:
 		return adStore
+	case store.StoreCodeDebrider:
+		return drStore
 	case store.StoreCodeDebridLink:
 		return dlStore
 	case store.StoreCodeEasyDebrid:

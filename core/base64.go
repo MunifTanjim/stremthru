@@ -6,6 +6,10 @@ func Base64Encode(value string) string {
 	return base64.StdEncoding.EncodeToString([]byte(value))
 }
 
+func Base64EncodeToByte(value string) (encoded []byte) {
+	return base64.StdEncoding.AppendEncode(encoded, []byte(value))
+}
+
 func Base64EncodeByte(value []byte) string {
 	return base64.StdEncoding.EncodeToString(value)
 }
