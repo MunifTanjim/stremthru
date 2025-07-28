@@ -15,6 +15,10 @@ import (
 
 func getMagnetStatusFromTaskStatus(status TaskStatus) store.MagnetStatus {
 	switch status {
+	case TaskStatusError:
+		return store.MagnetStatusFailed
+	case TaskStatusParsing:
+		return store.MagnetStatusQueued
 	case TaskStatusDownloading:
 		return store.MagnetStatusDownloading
 	case TaskStatusCompleted:

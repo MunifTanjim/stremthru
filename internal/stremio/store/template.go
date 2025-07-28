@@ -12,6 +12,7 @@ func getStoreNameConfig(defaultValue string) configure.Config {
 	options := []configure.ConfigOption{
 		{Value: "", Label: "StremThru"},
 		{Value: "alldebrid", Label: "AllDebrid"},
+		{Value: "debrider", Label: "Debrider 🧪"},
 		{Value: "debridlink", Label: "DebridLink"},
 		{Value: "easydebrid", Label: "EasyDebrid"},
 		{Value: "offcloud", Label: "Offcloud"},

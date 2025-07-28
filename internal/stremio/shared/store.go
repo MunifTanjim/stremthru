@@ -16,6 +16,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 	options := []configure.ConfigOption{
 		{Value: "", Label: "StremThru"},
 		{Value: "ad", Label: "AllDebrid"},
+		{Value: "dr", Label: "Debrider 🧪"},
 		{Value: "dl", Label: "DebridLink"},
 		{Value: "ed", Label: "EasyDebrid"},
 		{Value: "oc", Label: "Offcloud"},

@@ -21,6 +21,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
 			"*": "API Key",
 			"": "StremThru Basic Auth Token (base64 encoded) from <a href='https://github.com/MunifTanjim/stremthru?tab=readme-ov-file#configuration' target='_blank'><code>STREMTHRU_PROXY_AUTH</code></a>",
 			ad: "AllDebrid <a href='https://alldebrid.com/apikeys' target='_blank'>API Key</a>",
+			dr: "Debrider <a href='https://debrider.app/dashboard/account#:~:text=Use%20EasyDebrid-,API%20Key,-Generate%20a%20secret' target='_blank'>API Key</a>",
 			dl: "DebridLink <a href='https://debrid-link.com/webapp/apikey' target='_blank'>API Key</a>",
 			ed: "EasyDebrid <a href='https://paradise-cloud.com/guides/easydebrid-api-key' target='_blank'>API Key</a>",
 			oc: "Offcloud <a href='https://offcloud.com/#/account' target='_blank'>credential</a> in <code>email:password</code> format, e.g. <code>john.doe@example.com:secret-password</code>",
@@ -32,6 +33,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
 		};
 		const storeFallback = {
 			alldebrid: "ad",
+			debrider: "dr",
 			debridlink: "dl",
 			easydebrid: "ed",
 			offcloud: "oc",

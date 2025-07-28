@@ -81,6 +81,8 @@ func (f *TaskFile) GetName() string {
 type TaskStatus string
 
 const (
+	TaskStatusError       TaskStatus = "error"
+	TaskStatusParsing     TaskStatus = "parsing"
 	TaskStatusDownloading TaskStatus = "downloading"
 	TaskStatusCompleted   TaskStatus = "completed"
 )
