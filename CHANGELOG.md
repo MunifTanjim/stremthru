@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.82.0](https://github.com/MunifTanjim/stremthru/compare/0.81.3...0.82.0) (2025-07-29)
+
+
+### Features
+
+* **store/debrider:** add initial implementation ([87bddea](https://github.com/MunifTanjim/stremthru/commit/87bddeaac9271d7bd6643b1d56e3e5d052139c3a))
+* **stremio/list:** support mal/anilist/anidb as anime metadata provider ([695acb9](https://github.com/MunifTanjim/stremthru/commit/695acb9bc9a4c88a6c79fa87515fd9107141f1dc))
+* **stremio:** add support for debrider ([07ae8e7](https://github.com/MunifTanjim/stremthru/commit/07ae8e729fee090170d4a7b62ba730867eeb5663))
+
+
+### Bug Fixes
+
+* **stremio/list:** fix sort order for profile lists ([1352ee1](https://github.com/MunifTanjim/stremthru/commit/1352ee128401b67c1bca4159fa222f49ca41e41e))
+* **stremio/list:** fix tmdb recommendations lists ([ce54c36](https://github.com/MunifTanjim/stremthru/commit/ce54c36538a786a96f57b429b04ccfa7cd8e9129))
+* **stremio/list:** handle edge case for oauth ([0763d99](https://github.com/MunifTanjim/stremthru/commit/0763d996e2089cd0058eec643c870a5eef37fc9f))
+
 ## [0.81.3](https://github.com/MunifTanjim/stremthru/compare/0.81.2...0.81.3) (2025-07-25)
 
 
