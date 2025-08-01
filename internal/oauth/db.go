@@ -19,6 +19,7 @@ const (
 	ProviderKitsu   Provider = "kitsu.app"
 	ProviderTMDB    Provider = "themoviedb.org"
 	ProviderTraktTv Provider = "trakt.tv"
+	ProviderTVDB    Provider = "thetvdb.com"
 )
 
 type OAuthToken struct {

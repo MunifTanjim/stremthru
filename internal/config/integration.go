@@ -62,6 +62,15 @@ func (c integrationConfigTMDB) IsEnabled() bool {
 	return c.AccessToken != ""
 }
 
+type integrationConfigTVDB struct {
+	APIKey             string
+	SystemOAuthTokenId string
+}
+
+func (c integrationConfigTVDB) IsEnabled() bool {
+	return c.APIKey != ""
+}
+
 type IntegrationConfig struct {
 	AniList integrationConfigAniList
 	GitHub  integrationConfigGitHub
@@ -69,6 +78,7 @@ type IntegrationConfig struct {
 	Trakt   integrationConfigTrakt
 	Kitsu   integrationConfigKitsu
 	TMDB    integrationConfigTMDB
+	TVDB    integrationConfigTVDB
 }
 
 func parseIntegration() IntegrationConfig {
@@ -97,6 +107,10 @@ func parseIntegration() IntegrationConfig {
 		TMDB: integrationConfigTMDB{
 			AccessToken:   getEnv("STREMTHRU_INTEGRATION_TMDB_ACCESS_TOKEN"),
 			ListStaleTime: mustParseDuration("tmdb list stale time", getEnv("STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME"), 15*time.Minute),
+		},
+		TVDB: integrationConfigTVDB{
+			APIKey:             getEnv("STREMTHRU_INTEGRATION_TVDB_API_KEY"),
+			SystemOAuthTokenId: "system:tvdb",
 		},
 	}
 	if integration.Kitsu.Email != "" && !strings.Contains(integration.Kitsu.Email, "@") {
