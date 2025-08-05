@@ -1,9 +1,10 @@
 package stremio
 
 import (
-	"encoding/json"
 	"strconv"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type MetaPosterShape string
@@ -47,20 +48,7 @@ type MetaLink struct {
 	URL      string           `json:"url"`
 }
 
-type Number json.Number
-
-func (rn *Number) UnmarshalJSON(data []byte) error {
-	if string(data) == `""` || string(data) == `null` {
-		*rn = "0"
-		return nil
-	}
-	var n json.Number
-	if err := json.Unmarshal(data, &n); err != nil {
-		return err
-	}
-	*rn = Number(n)
-	return nil
-}
+type Number = util.JSONNumber
 
 type ZeroIndexedInt int
 
