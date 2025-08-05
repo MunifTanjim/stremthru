@@ -69,6 +69,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME": "12h",
 		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":   "12h",
+		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":    "12h",
 	},
 }
 
@@ -855,6 +856,7 @@ func PrintConfig(state *AppState) {
 			l.Println("   - " + integration + disabled)
 			if disabled == "" {
 				l.Println("               api_key: " + Integration.TVDB.APIKey[0:3] + "..." + Integration.TVDB.APIKey[len(Integration.TVDB.APIKey)-3:])
+				l.Println("       list stale time: " + Integration.TVDB.ListStaleTime.String())
 			}
 		}
 	}

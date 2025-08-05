@@ -64,6 +64,7 @@ func (c integrationConfigTMDB) IsEnabled() bool {
 
 type integrationConfigTVDB struct {
 	APIKey             string
+	ListStaleTime      time.Duration
 	SystemOAuthTokenId string
 }
 
@@ -110,6 +111,7 @@ func parseIntegration() IntegrationConfig {
 		},
 		TVDB: integrationConfigTVDB{
 			APIKey:             getEnv("STREMTHRU_INTEGRATION_TVDB_API_KEY"),
+			ListStaleTime:      mustParseDuration("tvdb list stale time", getEnv("STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME"), 15*time.Minute),
 			SystemOAuthTokenId: "system:tvdb",
 		},
 	}

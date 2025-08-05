@@ -14,6 +14,7 @@ import (
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
+	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -46,6 +47,7 @@ type UserData struct {
 	anilistById map[string]anilist.AniListList `json:"-"`
 	traktById   map[string]trakt.TraktList     `json:"-"`
 	tmdbById    map[string]tmdb.TMDBList       `json:"-"`
+	tvdbById    map[string]tvdb.TVDBList       `json:"-"`
 }
 
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
@@ -168,6 +170,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		isMDBListEnabled := ud.MDBListAPIkey != ""
 		isTMDBConfigured := TMDBEnabled && ud.TMDBTokenId != ""
 		isTraktTvConfigured := TraktEnabled && ud.TraktTokenId != ""
+		isTVDBConfigured := TVDBEnabled
 
 		if isMDBListEnabled {
 			userParams := mdblist.GetMyLimitsParams{}
@@ -425,6 +428,33 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					continue
 				}
 				ud.Lists[idx] = "trakt:" + list.Id
+
+			case "www.thetvdb.com", "thetvdb.com":
+				if !isTVDBConfigured {
+					udErr.list_urls[idx] = "Unsupported List URL"
+					continue
+				}
+
+				list := tvdb.TVDBList{}
+				switch {
+				case strings.HasPrefix(listUrl.Path, "/lists/"):
+					idOrSlug := strings.TrimPrefix(listUrl.Path, "/lists/")
+					if util.IsNumericString(idOrSlug) {
+						list.Id = idOrSlug
+					} else {
+						list.Slug = idOrSlug
+					}
+				default:
+					udErr.list_urls[idx] = "Unsupported TVDB URL"
+					continue
+				}
+
+				err := ud.FetchTVDBList(&list)
+				if err != nil {
+					udErr.list_urls[idx] = "Failed to fetch List: " + err.Error()
+					continue
+				}
+				ud.Lists[idx] = "tvdb:" + list.Id
 			}
 		}
 
@@ -595,5 +625,23 @@ func (ud *UserData) FetchTraktList(list *trakt.TraktList) error {
 	}
 
 	ud.traktById[list.Id] = *list
+	return nil
+}
+
+func (ud *UserData) FetchTVDBList(list *tvdb.TVDBList) error {
+	if ud.tvdbById == nil {
+		ud.tvdbById = map[string]tvdb.TVDBList{}
+	}
+	if list.Id != "" {
+		if l, ok := ud.tvdbById[list.Id]; ok {
+			*list = l
+			return nil
+		}
+	}
+	if err := list.Fetch(); err != nil {
+		return err
+	}
+
+	ud.tvdbById[list.Id] = *list
 	return nil
 }

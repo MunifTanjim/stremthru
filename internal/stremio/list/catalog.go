@@ -17,6 +17,7 @@ import (
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
+	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/alitto/pond/v2"
 )
@@ -468,6 +469,50 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			catalogItems = append(catalogItems, catalogItem{meta, item})
 		}
 
+	case "tvdb":
+		list := tvdb.TVDBList{Id: id}
+		if err := ud.FetchTVDBList(&list); err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range list.Items {
+			item := &list.Items[i]
+			meta := stremio.MetaPreview{
+				Name:        item.Name,
+				Description: item.Overview,
+				Poster:      item.Poster,
+				PosterShape: stremio.MetaPosterShapePoster,
+				Background:  item.Background,
+				Genres:      item.GenreNames(),
+				ReleaseInfo: strconv.Itoa(item.Year),
+			}
+			switch item.Type {
+			case tvdb.TVDBItemTypeMovie:
+				meta.Type = stremio.ContentTypeMovie
+				if ud.MetaIdMovie == "tvdb" {
+					meta.Id = "tvdb:" + strconv.Itoa(item.Id)
+				}
+			case tvdb.TVDBItemTypeSeries:
+				meta.Type = stremio.ContentTypeSeries
+				if ud.MetaIdSeries == "tvdb" {
+					meta.Id = "tvdb:" + strconv.Itoa(item.Id)
+				}
+				if item.Trailer != "" {
+					if trailer, err := url.Parse(item.Trailer); err == nil && strings.HasSuffix(trailer.Host, "youtube.com") {
+						meta.Trailers = append(meta.Trailers, stremio.MetaTrailer{
+							Source: trailer.Query().Get("v"),
+							Type:   "Trailer",
+						})
+					}
+				}
+
+			default:
+				continue
+			}
+			catalogItems = append(catalogItems, catalogItem{meta, item})
+		}
+
 	default:
 		shared.ErrorBadRequest(r, "invalid id").Send(w, r)
 		return
@@ -661,20 +706,74 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 
 			items = append(items, item.MetaPreview)
 		}
+
+	case "tvdb":
+		tvdbMovieIds := make([]string, 0, len(catalogItems))
+		tvdbShowIds := make([]string, 0, len(catalogItems))
+		for i := range catalogItems {
+			item := catalogItems[i].item.(*tvdb.TVDBItem)
+			switch item.Type {
+			case tvdb.TVDBItemTypeMovie:
+				tvdbMovieIds = append(tvdbMovieIds, strconv.Itoa(item.Id))
+			case tvdb.TVDBItemTypeSeries:
+				tvdbShowIds = append(tvdbShowIds, strconv.Itoa(item.Id))
+			}
+		}
+
+		movieImdbIdByTvdbId, showImdbIdByTvdbId, err := getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbShowIds)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range catalogItems {
+			item := &catalogItems[i]
+			titem := item.item.(*tvdb.TVDBItem)
+			imdbId := ""
+			switch titem.Type {
+			case tvdb.TVDBItemTypeMovie:
+				if id, ok := movieImdbIdByTvdbId[strconv.Itoa(titem.Id)]; ok {
+					imdbId = id
+				}
+			case tvdb.TVDBItemTypeSeries:
+				if id, ok := showImdbIdByTvdbId[strconv.Itoa(titem.Id)]; ok {
+					imdbId = id
+				}
+			}
+			if imdbId == "" && item.MetaPreview.Id == "" {
+				continue
+			}
+
+			if item.MetaPreview.Id == "" {
+				item.MetaPreview.Id = imdbId
+			}
+			if rpdbPosterBaseUrl != "" {
+				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			}
+
+			items = append(items, item.MetaPreview)
+		}
 	}
 
 	imdbIdsToFindTmdbIds := []string{}
+	imdbIdsToFindTvdbIds := []string{}
 	if ud.MetaIdMovie != "" || ud.MetaIdSeries != "" {
 		for _, item := range items {
 			if strings.HasPrefix(item.Id, "tt") {
 				switch item.Type {
 				case stremio.ContentTypeMovie:
-					if ud.MetaIdMovie == "tmdb" {
+					switch ud.MetaIdMovie {
+					case "tmdb":
 						imdbIdsToFindTmdbIds = append(imdbIdsToFindTmdbIds, item.Id)
+					case "tvdb":
+						imdbIdsToFindTvdbIds = append(imdbIdsToFindTvdbIds, item.Id)
 					}
 				case stremio.ContentTypeSeries:
-					if ud.MetaIdSeries == "tmdb" {
+					switch ud.MetaIdSeries {
+					case "tmdb":
 						imdbIdsToFindTmdbIds = append(imdbIdsToFindTmdbIds, item.Id)
+					case "tvdb":
+						imdbIdsToFindTvdbIds = append(imdbIdsToFindTvdbIds, item.Id)
 					}
 				}
 			}
@@ -689,6 +788,19 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 				item := &items[i]
 				if tmdbId, ok := tmdbIdByImdbId[item.Id]; ok && tmdbId != "" {
 					item.Id = "tmdb:" + tmdbId
+				}
+			}
+		}
+	}
+	if len(imdbIdsToFindTvdbIds) > 0 {
+		tvdbIdByImdbId, err := getTVDBIdsForIMDBIds(imdbIdsToFindTvdbIds)
+		if err != nil {
+			log.Error("failed to fetch tvdb ids for imdb ids", "error", err, "count", len(imdbIdsToFindTvdbIds))
+		} else {
+			for i := range items {
+				item := &items[i]
+				if tvdbId, ok := tvdbIdByImdbId[item.Id]; ok && tvdbId != "" {
+					item.Id = "tvdb:" + tvdbId
 				}
 			}
 		}

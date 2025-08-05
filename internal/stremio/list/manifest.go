@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
+	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -176,6 +177,33 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 						catalog.Type = string(stremio.ContentTypeSeries)
 					}
 				}
+				if hasListNames {
+					if name := ud.ListNames[idx]; name != "" {
+						catalog.Name = name
+					}
+				}
+				catalogs = append(catalogs, catalog)
+
+			case "tvdb":
+				list := tvdb.TVDBList{Id: idStr}
+				if err := list.Fetch(); err != nil {
+					return nil, err
+				}
+				catalog := stremio.Catalog{
+					Type: "TVDB",
+					Id:   "st.list.tvdb." + idStr,
+					Name: list.Name,
+					Extra: []stremio.CatalogExtra{
+						{
+							Name: "skip",
+						},
+					},
+				}
+
+				catalog.Extra = append(catalog.Extra, stremio.CatalogExtra{
+					Name:    "genre",
+					Options: tvdb.GenreNames,
+				})
 				if hasListNames {
 					if name := ud.ListNames[idx]; name != "" {
 						catalog.Name = name

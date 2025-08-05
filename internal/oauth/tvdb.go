@@ -52,7 +52,7 @@ var TVDBTokenSourceConfig = TokenSourceConfig{
 		if err != nil {
 			return "", "", err
 		}
-		req.Header.Set("Acccept", "application/json")
+		req.Header.Set("Accept", "application/json")
 		res, err := client.Do(req)
 		var response struct {
 			tvdbResponseError
