@@ -26,6 +26,37 @@ const (
 	IMDBTitleTypeVideoGame    IMDBTitleType = "videoGame"
 )
 
+var movieTypes = []IMDBTitleType{
+	IMDBTitleTypeMovie,
+	IMDBTitleTypeTvMovie,
+}
+var showTypes = []IMDBTitleType{
+	IMDBTitleTypeShort,
+	IMDBTitleTypeTvMiniSeries,
+	IMDBTitleTypeTvSeries,
+	IMDBTitleTypeTvShort,
+	IMDBTitleTypeTvSpecial,
+}
+
+type IMDBTitleSimpleType string
+
+const (
+	IMDBTitleSimpleTypeMovie   IMDBTitleSimpleType = "movie"
+	IMDBTitleSimpleTypeShow    IMDBTitleSimpleType = "show"
+	IMDBTitleSimpleTypeUnknown IMDBTitleSimpleType = ""
+)
+
+func (itt IMDBTitleType) ToSimple() IMDBTitleSimpleType {
+	switch itt {
+	case movieTypes[0], movieTypes[1], "":
+		return IMDBTitleSimpleTypeMovie
+	case showTypes[0], showTypes[1], showTypes[2], showTypes[3], showTypes[4]:
+		return IMDBTitleSimpleTypeShow
+	default:
+		return IMDBTitleSimpleTypeUnknown
+	}
+}
+
 type IMDBTitle struct {
 	Id        int    `json:"-"`
 	TId       string `json:"tid"`
@@ -264,18 +295,6 @@ var RebuildFTS = func() func() error {
 	}
 	return postgresRebuildFTS
 }()
-
-var movieTypes = []IMDBTitleType{
-	IMDBTitleTypeMovie,
-	IMDBTitleTypeTvMovie,
-}
-var showTypes = []IMDBTitleType{
-	IMDBTitleTypeShort,
-	IMDBTitleTypeTvMiniSeries,
-	IMDBTitleTypeTvSeries,
-	IMDBTitleTypeTvShort,
-	IMDBTitleTypeTvSpecial,
-}
 
 var __sl_query_search_type_movie = fmt.Sprintf(
 	`itf.%s IN ('%s', '%s')`,

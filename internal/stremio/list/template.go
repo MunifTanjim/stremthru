@@ -16,6 +16,7 @@ import (
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
+	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/google/uuid"
 )
 
@@ -24,6 +25,7 @@ var MaxPublicInstanceListCount = 10
 var TraktEnabled = config.Integration.Trakt.IsEnabled()
 var AnimeEnabled = config.Feature.IsEnabled("anime")
 var TMDBEnabled = config.Integration.TMDB.IsEnabled()
+var TVDBEnabled = config.Integration.TVDB.IsEnabled()
 
 func GetMetaIdMovieOptions(ud *UserData) []configure.ConfigOption {
 	metaIdMovieOptions := []configure.ConfigOption{
@@ -34,6 +36,12 @@ func GetMetaIdMovieOptions(ud *UserData) []configure.ConfigOption {
 			Value:    "tmdb",
 			Label:    "TMDB",
 			Disabled: ud.TMDBTokenId == "",
+		})
+	}
+	if TVDBEnabled {
+		metaIdMovieOptions = append(metaIdMovieOptions, configure.ConfigOption{
+			Value: "tvdb",
+			Label: "TVDB",
 		})
 	}
 	return metaIdMovieOptions
@@ -319,6 +327,15 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 						list.Disabled.URL = true
 						list.Error.URL = "Trakt.tv authorization needed"
 					}
+
+				case "tvdb":
+					l := tvdb.TVDBList{Id: id}
+					if err := ud.FetchTVDBList(&l); err != nil {
+						log.Error("failed to fetch list", "error", err, "id", listId)
+						list.Error.URL = "Failed to Fetch List: " + err.Error()
+					} else {
+						list.URL = l.GetURL()
+					}
 				}
 			}
 		}
@@ -466,7 +483,6 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 					},
 				},
 			})
-
 		}
 		if TraktEnabled {
 			td.SupportedServices = append(td.SupportedServices, supportedService{
@@ -540,6 +556,29 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 						Examples: []string{
 							"/movies/watched/monthly",
 							"/shows/watched/all",
+						},
+					},
+				},
+			})
+		}
+		if TVDBEnabled {
+			td.SupportedServices = append(td.SupportedServices, supportedService{
+				Name:     "TVDB",
+				Hostname: "thetvdb.com",
+				Icon:     "https://www.thetvdb.com/images/icon.png",
+				URLs: []supportedServiceUrl{
+					{
+						Pattern: "/lists/{slug}",
+						Examples: []string{
+							"/lists/marvel-cinematic-universe",
+							"/lists/deadpool",
+						},
+					},
+					{
+						Pattern: "/lists/{id}",
+						Examples: []string{
+							"/lists/1001",
+							"/lists/8026",
 						},
 					},
 				},

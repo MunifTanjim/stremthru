@@ -1,6 +1,7 @@
 package imdb_title
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -17,6 +18,8 @@ type IMDBTitleMap struct {
 	TraktId   string       `json:"trakt"`
 	MALId     string       `json:"mal"`
 	UpdatedAt db.Timestamp `json:"uat"`
+
+	Type IMDBTitleType `json:"-"`
 }
 
 type MapColumnStruct struct {
@@ -233,6 +236,102 @@ func GetIMDBIdByTMDBId(tmdbMovieIds, tmdbShowIds []string) (map[string]string, m
 	return movieImdbIdByTMDBId, showImdbIdByTMDBId, nil
 }
 
+var query_get_imdb_id_by_tvdb_id = fmt.Sprintf(
+	`SELECT itm.%s, coalesce(it.%s, '') as item_type, itm.%s FROM %s itm LEFT JOIN %s it ON it.%s = itm.%s WHERE `,
+	MapColumn.IMDBId,
+	Column.Type,
+	MapColumn.TVDBId,
+	MapTableName,
+	TableName,
+	Column.TId,
+	MapColumn.IMDBId,
+)
+var query_get_imdb_id_by_tvdb_id_cond_movie = fmt.Sprintf(
+	` item_type IN (%s,'') AND itm.%s IN `,
+	fmt.Sprintf(
+		util.RepeatJoin("'%s'", len(movieTypes), ","),
+		movieTypes[0],
+		movieTypes[1],
+	),
+	MapColumn.TVDBId,
+)
+var query_get_imdb_id_by_tvdb_id_cond_show = fmt.Sprintf(
+	` item_type IN (%s) AND itm.%s IN `,
+	fmt.Sprintf(
+		util.RepeatJoin("'%s'", len(showTypes), ","),
+		showTypes[0],
+		showTypes[1],
+		showTypes[2],
+		showTypes[3],
+		showTypes[4],
+	),
+	MapColumn.TVDBId,
+)
+
+func GetIMDBIdByTVDBId(tvdbMovieIds, tvdbShowIds []string) (map[string]string, map[string]string, error) {
+	movieCount := len(tvdbMovieIds)
+	showCount := len(tvdbShowIds)
+	if movieCount+showCount == 0 {
+		return nil, nil, nil
+	}
+
+	args := make([]any, movieCount+showCount)
+	var query strings.Builder
+	query.WriteString(query_get_imdb_id_by_tvdb_id)
+	if movieCount > 0 {
+		query.WriteString("(")
+		query.WriteString(query_get_imdb_id_by_tvdb_id_cond_movie)
+		query.WriteString("(")
+		query.WriteString(util.RepeatJoin("?", movieCount, ","))
+		query.WriteString("))")
+		for i := range tvdbMovieIds {
+			args[i] = tvdbMovieIds[i]
+		}
+		if showCount > 0 {
+			query.WriteString(" OR ")
+		}
+	}
+	if showCount > 0 {
+		query.WriteString("(")
+		query.WriteString(query_get_imdb_id_by_tvdb_id_cond_show)
+		query.WriteString("(")
+		query.WriteString(util.RepeatJoin("?", showCount, ","))
+		query.WriteString("))")
+		for i := range tvdbShowIds {
+			args[movieCount+i] = tvdbShowIds[i]
+		}
+	}
+
+	rows, err := db.Query(query.String(), args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer rows.Close()
+
+	movieImdbIdByTVDBId := make(map[string]string, movieCount)
+	showImdbIdByTVDBId := make(map[string]string, showCount)
+	for rows.Next() {
+		var imdbId string
+		var imdbType IMDBTitleType
+		var tvdbId string
+		if err := rows.Scan(&imdbId, &imdbType, &tvdbId); err != nil {
+			return nil, nil, err
+		}
+		switch imdbType {
+		case movieTypes[0], movieTypes[1], "":
+			movieImdbIdByTVDBId[tvdbId] = imdbId
+		case showTypes[0], showTypes[1], showTypes[2], showTypes[3], showTypes[4]:
+			showImdbIdByTVDBId[tvdbId] = imdbId
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	return movieImdbIdByTVDBId, showImdbIdByTVDBId, nil
+}
+
 var query_get_tmdb_id_by_imdb_id = fmt.Sprintf(
 	`SELECT %s, %s FROM %s WHERE %s IN `,
 	MapColumn.IMDBId,
@@ -272,6 +371,47 @@ func GetTMDBIdByIMDBId(imdbIds []string) (map[string]string, error) {
 	}
 
 	return tmdbIdByImdbId, nil
+}
+
+var query_get_tvdb_id_by_imdb_id = fmt.Sprintf(
+	`SELECT %s, %s FROM %s WHERE %s IN `,
+	MapColumn.IMDBId,
+	MapColumn.TVDBId,
+	MapTableName,
+	MapColumn.IMDBId,
+)
+
+func GetTVDBIdByIMDBId(imdbIds []string) (map[string]string, error) {
+	count := len(imdbIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	query := query_get_tvdb_id_by_imdb_id + "(" + util.RepeatJoin("?", count, ",") + ")"
+	args := make([]any, count)
+	for i, id := range imdbIds {
+		args[i] = id
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tvdbIdByImdbId := make(map[string]string, count)
+	for rows.Next() {
+		var imdbId, tvdbId string
+		if err := rows.Scan(&imdbId, &tvdbId); err != nil {
+			return nil, err
+		}
+		tvdbIdByImdbId[imdbId] = tvdbId
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tvdbIdByImdbId, nil
 }
 
 func RecordMappingFromMDBList(tx *db.Tx, imdbId, tmdbId, tvdbId, traktId, malId string) error {
@@ -338,10 +478,10 @@ func normalizeOptionalId(id string) string {
 	return id
 }
 
-func BulkRecordMapping(items []BulkRecordMappingInputItem) {
+func BulkRecordMapping(items []BulkRecordMappingInputItem) error {
 	count := len(items)
 	if count == 0 {
-		return
+		return nil
 	}
 
 	query := query_bulk_record_mapping_before_values +
@@ -358,7 +498,45 @@ func BulkRecordMapping(items []BulkRecordMappingInputItem) {
 	}
 
 	_, err := db.Exec(query, args...)
+	// if err != nil {
+	// 	log.Error("failed to bulk record mapping", "error", err)
+	// }
+	return err
+}
+
+var query_get_id_map_by_imdb_id = fmt.Sprintf(
+	`SELECT %s, it.%s FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s = ?`,
+	db.JoinPrefixedColumnNames(
+		"itm.",
+		MapColumn.IMDBId,
+		MapColumn.TMDBId,
+		MapColumn.TVDBId,
+		MapColumn.TraktId,
+		MapColumn.MALId,
+	),
+	Column.Type,
+	MapTableName,
+	TableName,
+	MapColumn.IMDBId,
+	Column.TId,
+	MapColumn.IMDBId,
+)
+
+func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
+	var idMap IMDBTitleMap
+	err := db.QueryRow(query_get_id_map_by_imdb_id, imdbId).Scan(
+		&idMap.IMDBId,
+		&idMap.TMDBId,
+		&idMap.TVDBId,
+		&idMap.TraktId,
+		&idMap.MALId,
+		&idMap.Type,
+	)
 	if err != nil {
-		log.Error("failed to bulk record mapping", "error", err)
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
+	return &idMap, nil
 }

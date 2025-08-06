@@ -282,6 +282,18 @@ Client Secret for Trakt.tv OAuth App.
 
 Stale time for list. e.g. `12h`.
 
+#### TVDB Integration
+
+TVDB integration needs an [API Key](https://www.thetvdb.com/dashboard/account/apikey).
+
+##### `STREMTHRU_INTEGRATION_TVDB_API_KEY`
+
+API Key for TVDB.
+
+##### `STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME`
+
+Stale time for list. e.g. `12h`.
+
 ## Endpoints
 
 ### Authentication

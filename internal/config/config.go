@@ -69,6 +69,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME": "12h",
 		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":   "12h",
+		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":    "12h",
 	},
 }
 
@@ -786,7 +787,7 @@ func PrintConfig(state *AppState) {
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "themoviedb.org", "trakt.tv"} {
+	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
 		switch integration {
 		case "anilist.co":
 			disabled := ""
@@ -846,6 +847,16 @@ func PrintConfig(state *AppState) {
 				l.Println("             client_id: " + Integration.Trakt.ClientId[0:3] + "..." + Integration.Trakt.ClientId[len(Integration.Trakt.ClientId)-3:])
 				l.Println("         client_secret: " + Integration.Trakt.ClientSecret[0:3] + "..." + Integration.Trakt.ClientSecret[len(Integration.Trakt.ClientSecret)-3:])
 				l.Println("       list stale time: " + Integration.Trakt.ListStaleTime.String())
+			}
+		case "thetvdb.com":
+			disabled := ""
+			if !Integration.TVDB.IsEnabled() {
+				disabled = " (disabled)"
+			}
+			l.Println("   - " + integration + disabled)
+			if disabled == "" {
+				l.Println("               api_key: " + Integration.TVDB.APIKey[0:3] + "..." + Integration.TVDB.APIKey[len(Integration.TVDB.APIKey)-3:])
+				l.Println("       list stale time: " + Integration.TVDB.ListStaleTime.String())
 			}
 		}
 	}
