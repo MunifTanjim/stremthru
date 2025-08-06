@@ -1,6 +1,7 @@
 package imdb_title
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -17,6 +18,8 @@ type IMDBTitleMap struct {
 	TraktId   string       `json:"trakt"`
 	MALId     string       `json:"mal"`
 	UpdatedAt db.Timestamp `json:"uat"`
+
+	Type IMDBTitleType `json:"-"`
 }
 
 type MapColumnStruct struct {
@@ -475,10 +478,10 @@ func normalizeOptionalId(id string) string {
 	return id
 }
 
-func BulkRecordMapping(items []BulkRecordMappingInputItem) {
+func BulkRecordMapping(items []BulkRecordMappingInputItem) error {
 	count := len(items)
 	if count == 0 {
-		return
+		return nil
 	}
 
 	query := query_bulk_record_mapping_before_values +
@@ -495,7 +498,45 @@ func BulkRecordMapping(items []BulkRecordMappingInputItem) {
 	}
 
 	_, err := db.Exec(query, args...)
+	// if err != nil {
+	// 	log.Error("failed to bulk record mapping", "error", err)
+	// }
+	return err
+}
+
+var query_get_id_map_by_imdb_id = fmt.Sprintf(
+	`SELECT %s, it.%s FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s = ?`,
+	db.JoinPrefixedColumnNames(
+		"itm.",
+		MapColumn.IMDBId,
+		MapColumn.TMDBId,
+		MapColumn.TVDBId,
+		MapColumn.TraktId,
+		MapColumn.MALId,
+	),
+	Column.Type,
+	MapTableName,
+	TableName,
+	MapColumn.IMDBId,
+	Column.TId,
+	MapColumn.IMDBId,
+)
+
+func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
+	var idMap IMDBTitleMap
+	err := db.QueryRow(query_get_id_map_by_imdb_id, imdbId).Scan(
+		&idMap.IMDBId,
+		&idMap.TMDBId,
+		&idMap.TVDBId,
+		&idMap.TraktId,
+		&idMap.MALId,
+		&idMap.Type,
+	)
 	if err != nil {
-		log.Error("failed to bulk record mapping", "error", err)
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
 	}
+	return &idMap, nil
 }

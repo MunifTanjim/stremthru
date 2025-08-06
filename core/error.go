@@ -123,6 +123,11 @@ func (e *Error) GetError() *Error {
 	return e
 }
 
+func (e *Error) WithCause(cause error) *Error {
+	e.Cause = cause
+	return e
+}
+
 func (e *Error) Send(w http.ResponseWriter, r *http.Request) {
 	e.Pack(r)
 
