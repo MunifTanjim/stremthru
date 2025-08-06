@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.83.0](https://github.com/MunifTanjim/stremthru/compare/0.82.0...0.83.0) (2025-08-06)
+
+
+### Features
+
+* **stremio/list:** rename config file for clarification ([5316871](https://github.com/MunifTanjim/stremthru/commit/53168711e4a94b1e1f45f072eeea5ad0a9d56cee))
+* **stremio/store:** support stream for kitsu and mal ids ([53c89aa](https://github.com/MunifTanjim/stremthru/commit/53c89aac77a25aa0c3f31a19da05b42ce83b0d54))
+* **stremio/torz:** support stream for mal ids ([6d43d56](https://github.com/MunifTanjim/stremthru/commit/6d43d56ff14f726206b6ac1671bbabb80f180cfc))
+* **stremio/wrap:** support sort by hdr ([31faa73](https://github.com/MunifTanjim/stremthru/commit/31faa7320e96357ffb1ced429dc02d40c6bc5f16))
+* **stremio:** add background in meta preview ([9bd1d65](https://github.com/MunifTanjim/stremthru/commit/9bd1d654558755faeac6bb44a049eb85ea8c5c37))
+
+
+### Bug Fixes
+
+* **stremio/list:** hide anime config when feature is disabled ([96fd721](https://github.com/MunifTanjim/stremthru/commit/96fd721bc24f190f9a45529981f99f9321196032))
+* **stremio/store:** fix missing poster for cached catalog items ([d8e832d](https://github.com/MunifTanjim/stremthru/commit/d8e832d3ff2b93a3191b8ee1acf83eafd5917475))
+* **tmdb:** fix typos ([8db65e5](https://github.com/MunifTanjim/stremthru/commit/8db65e53ffbda9e4038a66fc180dde3de9253e31))
+
+
+### Performance Improvements
+
+* **stremio/store:** add debug logs for fetch meta time ([8982d2a](https://github.com/MunifTanjim/stremthru/commit/8982d2a7e5aa755ef6d109a40168774e1ccefdb0))
+
 ## [0.82.0](https://github.com/MunifTanjim/stremthru/compare/0.81.3...0.82.0) (2025-07-29)
 
 
