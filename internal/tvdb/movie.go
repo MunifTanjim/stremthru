@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -158,19 +158,19 @@ func (m *ExtendedMovie) GetTrailer() string {
 	return trailer
 }
 
-func (m *ExtendedMovie) GetIds() *imdb_title.BulkRecordMappingInputItem {
-	ids := imdb_title.BulkRecordMappingInputItem{}
-	ids.TVDBId = strconv.Itoa(m.Id)
+func (m *ExtendedMovie) GetIdMap() *meta.IdMap {
+	idMap := meta.IdMap{Type: meta.IdTypeMovie}
+	idMap.TVDB = strconv.Itoa(m.Id)
 	for i := range m.RemoteIds {
 		rid := &m.RemoteIds[i]
 		switch rid.Type {
 		case SourceTypeIMDB:
-			ids.IMDBId = rid.Id
+			idMap.IMDB = rid.Id
 		case SourceTypeTMDB:
-			ids.TMDBId = rid.Id
+			idMap.TMDB = rid.Id
 		}
 	}
-	return &ids
+	return &idMap
 }
 
 type FetchMovieParams struct {

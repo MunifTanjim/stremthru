@@ -3,6 +3,7 @@ package imdb_title
 import (
 	"database/sql"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,6 +26,44 @@ const (
 	IMDBTitleTypeVideo        IMDBTitleType = "video"
 	IMDBTitleTypeVideoGame    IMDBTitleType = "videoGame"
 )
+
+var movieTypes = []IMDBTitleType{
+	IMDBTitleTypeMovie,
+	IMDBTitleTypeTvMovie,
+}
+var showTypes = []IMDBTitleType{
+	IMDBTitleTypeShort,
+	IMDBTitleTypeTvMiniSeries,
+	IMDBTitleTypeTvSeries,
+	IMDBTitleTypeTvShort,
+	IMDBTitleTypeTvSpecial,
+}
+
+func (itt IMDBTitleType) IsMovie() bool {
+	return slices.Contains(movieTypes, itt)
+}
+
+func (itt IMDBTitleType) IsShow() bool {
+	return slices.Contains(showTypes, itt)
+}
+
+type IMDBTitleSimpleType string
+
+const (
+	IMDBTitleSimpleTypeMovie   IMDBTitleSimpleType = "movie"
+	IMDBTitleSimpleTypeShow    IMDBTitleSimpleType = "show"
+	IMDBTitleSimpleTypeUnknown IMDBTitleSimpleType = ""
+)
+
+func (itt IMDBTitleType) ToSimple() IMDBTitleSimpleType {
+	if itt == "" || itt.IsMovie() {
+		return IMDBTitleSimpleTypeMovie
+	}
+	if itt.IsShow() {
+		return IMDBTitleSimpleTypeShow
+	}
+	return IMDBTitleSimpleTypeUnknown
+}
 
 type IMDBTitle struct {
 	Id        int    `json:"-"`
@@ -264,18 +303,6 @@ var RebuildFTS = func() func() error {
 	}
 	return postgresRebuildFTS
 }()
-
-var movieTypes = []IMDBTitleType{
-	IMDBTitleTypeMovie,
-	IMDBTitleTypeTvMovie,
-}
-var showTypes = []IMDBTitleType{
-	IMDBTitleTypeShort,
-	IMDBTitleTypeTvMiniSeries,
-	IMDBTitleTypeTvSeries,
-	IMDBTitleTypeTvShort,
-	IMDBTitleTypeTvSpecial,
-}
 
 var __sl_query_search_type_movie = fmt.Sprintf(
 	`itf.%s IN ('%s', '%s')`,

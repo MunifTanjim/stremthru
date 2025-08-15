@@ -60,7 +60,7 @@ func syncItem(client *APIClient, li *TVDBItem, saveToDB bool) error {
 			for i := range res.Data.Genres {
 				li.Genres = append(li.Genres, res.Data.Genres[i].Id)
 			}
-			li.Ids = res.Data.GetIds()
+			li.IdMap = res.Data.GetIdMap()
 		case TVDBItemTypeSeries:
 			log.Debug("fetching series by id", "id", li.Id)
 			res, err := client.FetchSeries(&FetchSeriesParams{
@@ -79,7 +79,7 @@ func syncItem(client *APIClient, li *TVDBItem, saveToDB bool) error {
 			for i := range res.Data.Genres {
 				li.Genres = append(li.Genres, res.Data.Genres[i].Id)
 			}
-			li.Ids = res.Data.GetIds()
+			li.IdMap = res.Data.GetIdMap()
 		}
 
 		li.UpdatedAt = db.Timestamp{Time: time.Now()}

@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"log/slog"
 	"runtime"
 )
 
@@ -25,4 +26,10 @@ func HandlePanic(e any, captureStack bool) (err error, stack string) {
 	buf = buf[:n]
 	stack = string(buf)
 	return err, stack
+}
+
+func LogError(log *slog.Logger, err error, message string) {
+	if err != nil {
+		log.Error(message, "error", err)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/alitto/pond/v2"
@@ -66,22 +67,22 @@ func getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 			log.Error("failed to fetch movie remote ids from tvdb", "error", err)
 		}
 		for i, item := range movieItems {
-			if item == nil || item.Ids == nil || item.Ids.IMDBId == "" {
+			if item == nil || item.IdMap == nil || item.IdMap.IMDB == "" {
 				continue
 			}
 			tvdbId := missingTVDBMovieIds[i]
-			movieImdbIdByTvdbId[tvdbId] = item.Ids.IMDBId
+			movieImdbIdByTvdbId[tvdbId] = item.IdMap.IMDB
 		}
 		seriesItems, err := seriesGroup.Wait()
 		if err != nil {
 			log.Error("failed to fetch series remote ids from tvdb", "error", err)
 		}
 		for i, item := range seriesItems {
-			if item == nil || item.Ids == nil || item.Ids.IMDBId == "" {
+			if item == nil || item.IdMap == nil || item.IdMap.IMDB == "" {
 				continue
 			}
 			tvdbId := missingTVDBSeriesIds[i]
-			seriesImdbIdByTvdbId[tvdbId] = item.Ids.IMDBId
+			seriesImdbIdByTvdbId[tvdbId] = item.IdMap.IMDB
 		}
 	}
 
@@ -125,7 +126,7 @@ func getTVDBIdsForIMDBIds(imdbIds []string) (map[string]string, error) {
 	if err != nil {
 		log.Error("failed to fetch tvdb ids for imdb ids", "error", err)
 	}
-	newMappings := make([]imdb_title.BulkRecordMappingInputItem, 0, len(missingImdbIds))
+	newIdMaps := make([]meta.IdMap, 0, len(missingImdbIds))
 	for i, result := range results {
 		if result == nil {
 			continue
@@ -134,21 +135,23 @@ func getTVDBIdsForIMDBIds(imdbIds []string) (map[string]string, error) {
 		if movie := result.Movie; movie != nil {
 			tvdbId := strconv.Itoa(movie.Id)
 			tvdbIdByImdbId[imdbId] = tvdbId
-			newMappings = append(newMappings, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: imdbId,
-				TVDBId: tvdbId,
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeMovie,
+				IMDB: imdbId,
+				TVDB: tvdbId,
 			})
 		} else if series := result.Series; series != nil {
 			tvdbId := strconv.Itoa(series.Id)
 			tvdbIdByImdbId[imdbId] = tvdbId
-			newMappings = append(newMappings, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: imdbId,
-				TVDBId: tvdbId,
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeShow,
+				IMDB: imdbId,
+				TVDB: tvdbId,
 			})
 		}
 	}
 
-	go imdb_title.BulkRecordMapping(newMappings)
+	go util.LogError(log, meta.SetIdMaps(newIdMaps, meta.IdProviderIMDB), "failed to set id maps")
 
 	return tvdbIdByImdbId, nil
 }

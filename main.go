@@ -39,6 +39,7 @@ func main() {
 	endpoint.AddRootEndpoint(mux)
 	endpoint.AddAuthEndpoints(mux)
 	endpoint.AddHealthEndpoints(mux)
+	endpoint.AddMetaEndpoints(mux)
 	endpoint.AddProxyEndpoints(mux)
 	endpoint.AddStoreEndpoints(mux)
 	endpoint.AddStremioEndpoints(mux)

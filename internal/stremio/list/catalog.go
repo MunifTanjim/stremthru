@@ -13,11 +13,13 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/MunifTanjim/stremthru/internal/tvdb"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/alitto/pond/v2"
 )
@@ -76,7 +78,7 @@ func getIMDBMetaFromMDBList(imdbIds []string, mdblistAPIKey string) (map[string]
 	}
 	params.APIKey = mdblistAPIKey
 	newMetas := make([]imdb_title.IMDBTitleMeta, 0, staleOrMissingCount)
-	newMappings := make([]imdb_title.BulkRecordMappingInputItem, 0, staleOrMissingCount)
+	newIdMaps := make([]meta.IdMap, 0, staleOrMissingCount)
 	res, err := mdblistClient.GetMediaInfoBatch(params)
 	if err != nil {
 		return nil, err
@@ -84,7 +86,7 @@ func getIMDBMetaFromMDBList(imdbIds []string, mdblistAPIKey string) (map[string]
 	now := time.Now()
 	for i := range res.Data {
 		mInfo := &res.Data[i]
-		meta := imdb_title.IMDBTitleMeta{
+		m := imdb_title.IMDBTitleMeta{
 			TId:         mInfo.Ids.IMDB,
 			Description: mInfo.Description,
 			Runtime:     mInfo.Runtime,
@@ -97,20 +99,22 @@ func getIMDBMetaFromMDBList(imdbIds []string, mdblistAPIKey string) (map[string]
 			Genres:      make([]string, len(mInfo.Genres)),
 		}
 		for i := range mInfo.Genres {
-			meta.Genres[i] = mInfo.Genres[i].Title
+			m.Genres[i] = mInfo.Genres[i].Title
 		}
-		newMetas = append(newMetas, meta)
-		newMappings = append(newMappings, imdb_title.BulkRecordMappingInputItem{
-			IMDBId:  mInfo.Ids.IMDB,
-			TMDBId:  strconv.Itoa(mInfo.Ids.TMDB),
-			TVDBId:  strconv.Itoa(mInfo.Ids.TVDB),
-			TraktId: strconv.Itoa(mInfo.Ids.Trakt),
-			MALId:   strconv.Itoa(mInfo.Ids.MAL),
+		newMetas = append(newMetas, m)
+		newIdMaps = append(newIdMaps, meta.IdMap{
+			IMDB:  mInfo.Ids.IMDB,
+			TMDB:  strconv.Itoa(mInfo.Ids.TMDB),
+			TVDB:  strconv.Itoa(mInfo.Ids.TVDB),
+			Trakt: strconv.Itoa(mInfo.Ids.Trakt),
+			Anime: &meta.IdMapAnime{
+				MAL: strconv.Itoa(mInfo.Ids.MAL),
+			},
 		})
-		byId[meta.TId] = meta
+		byId[m.TId] = m
 	}
 
-	go imdb_title.BulkRecordMapping(newMappings)
+	go util.LogError(log, meta.SetIdMaps(newIdMaps, meta.IdProviderIMDB), "failed to set id maps")
 	if err = imdb_title.UpsertMetas(newMetas); err != nil {
 		return nil, err
 	}
@@ -166,7 +170,7 @@ func getIMDBIdsForTMDBIds(tokenId string, tmdbMovieIds, tmdbShowIds []string) (m
 			})
 		}
 
-		bulkRecordMappingItems := make([]imdb_title.BulkRecordMappingInputItem, 0, len(missingTMDBMovieIds)+len(missingTMDBShowIds))
+		newIdMaps := make([]meta.IdMap, 0, len(missingTMDBMovieIds)+len(missingTMDBShowIds))
 
 		movieExternalIds, err := movieGroup.Wait()
 		if err != nil {
@@ -178,9 +182,10 @@ func getIMDBIdsForTMDBIds(tokenId string, tmdbMovieIds, tmdbShowIds []string) (m
 			}
 			tmdbId := missingTMDBMovieIds[i]
 			movieImdbIdByTmdbId[tmdbId] = movieExternalId.IMDBId
-			bulkRecordMappingItems = append(bulkRecordMappingItems, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: movieExternalId.IMDBId,
-				TMDBId: tmdbId,
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeMovie,
+				IMDB: movieExternalId.IMDBId,
+				TMDB: tmdbId,
 			})
 		}
 		showExternalIds, err := showGroup.Wait()
@@ -193,14 +198,15 @@ func getIMDBIdsForTMDBIds(tokenId string, tmdbMovieIds, tmdbShowIds []string) (m
 			}
 			tmdbId := missingTMDBShowIds[i]
 			showImdbIdByTmdbId[tmdbId] = showExternalId.IMDBId
-			bulkRecordMappingItems = append(bulkRecordMappingItems, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: showExternalId.IMDBId,
-				TMDBId: tmdbId,
-				TVDBId: strconv.Itoa(showExternalId.TVDBId),
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeShow,
+				IMDB: showExternalId.IMDBId,
+				TMDB: tmdbId,
+				TVDB: strconv.Itoa(showExternalId.TVDBId),
 			})
 		}
 
-		go imdb_title.BulkRecordMapping(bulkRecordMappingItems)
+		go util.LogError(log, meta.SetIdMaps(newIdMaps, meta.IdProviderIMDB), "failed to set id maps")
 	}
 
 	return movieImdbIdByTmdbId, showImdbIdByTmdbId, nil
@@ -244,7 +250,7 @@ func getTMDBIdsForIMDBIds(tokenId string, imdbIds []string) (map[string]string, 
 	if err != nil {
 		log.Error("failed to fetch tmdb ids for imdb ids", "error", err)
 	}
-	newMappings := make([]imdb_title.BulkRecordMappingInputItem, 0, len(missingImdbIds))
+	newIdMaps := make([]meta.IdMap, 0, len(missingImdbIds))
 	tmdbItems := make([]tmdb.TMDBItem, 0, len(missingImdbIds))
 	for i, result := range results {
 		if result == nil {
@@ -254,9 +260,10 @@ func getTMDBIdsForIMDBIds(tokenId string, imdbIds []string) (map[string]string, 
 		if movie := result.Movie(); movie != nil {
 			tmdbId := strconv.Itoa(movie.Id)
 			tmdbIdByImdbId[imdbId] = tmdbId
-			newMappings = append(newMappings, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: imdbId,
-				TMDBId: tmdbId,
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeMovie,
+				IMDB: imdbId,
+				TMDB: tmdbId,
 			})
 			tmdbItems = append(tmdbItems, tmdb.TMDBItem{
 				Id:            movie.Id,
@@ -277,9 +284,10 @@ func getTMDBIdsForIMDBIds(tokenId string, imdbIds []string) (map[string]string, 
 		} else if show := result.Show(); show != nil {
 			tmdbId := strconv.Itoa(show.Id)
 			tmdbIdByImdbId[imdbId] = tmdbId
-			newMappings = append(newMappings, imdb_title.BulkRecordMappingInputItem{
-				IMDBId: imdbId,
-				TMDBId: tmdbId,
+			newIdMaps = append(newIdMaps, meta.IdMap{
+				Type: meta.IdTypeShow,
+				IMDB: imdbId,
+				TMDB: tmdbId,
 			})
 			tmdbItems = append(tmdbItems, tmdb.TMDBItem{
 				Id:            show.Id,
@@ -300,7 +308,7 @@ func getTMDBIdsForIMDBIds(tokenId string, imdbIds []string) (map[string]string, 
 		}
 	}
 
-	go imdb_title.BulkRecordMapping(newMappings)
+	go util.LogError(log, meta.SetIdMaps(newIdMaps, meta.IdProviderIMDB), "failed to set id maps")
 	go func() {
 		err := tmdb.UpsertItems(db.GetDB(), tmdbItems)
 		if err != nil {

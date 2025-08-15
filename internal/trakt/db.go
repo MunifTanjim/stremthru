@@ -11,7 +11,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -474,22 +474,31 @@ func upsertItems(tx db.Executor, items []TraktItem) error {
 			return err
 		}
 
-		mappings := make([]imdb_title.BulkRecordMappingInputItem, 0, count)
+		idMaps := make([]meta.IdMap, 0, count)
 		for _, item := range cItems {
 			if err := setItemGenre(tx, item.Id, item.Type, item.Genres); err != nil {
 				return err
 			}
 
 			if item.Ids.IMDB != "" {
-				mappings = append(mappings, imdb_title.BulkRecordMappingInputItem{
-					IMDBId:  item.Ids.IMDB,
-					TMDBId:  strconv.Itoa(item.Ids.TMDB),
-					TVDBId:  strconv.Itoa(item.Ids.TVDB),
-					TraktId: strconv.Itoa(item.Ids.Trakt),
+				idMapType := meta.IdTypeUnknown
+				switch item.Type {
+				case ItemTypeMovie:
+					idMapType = meta.IdTypeMovie
+				case ItemTypeShow:
+					idMapType = meta.IdTypeShow
+				}
+
+				idMaps = append(idMaps, meta.IdMap{
+					Type:  idMapType,
+					IMDB:  item.Ids.IMDB,
+					TMDB:  strconv.Itoa(item.Ids.TMDB),
+					TVDB:  strconv.Itoa(item.Ids.TVDB),
+					Trakt: strconv.Itoa(item.Ids.Trakt),
 				})
 			}
 		}
-		go imdb_title.BulkRecordMapping(mappings)
+		go util.LogError(log, meta.SetIdMaps(idMaps, meta.IdProviderIMDB), "failed to set id maps")
 	}
 
 	return nil

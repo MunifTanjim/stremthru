@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/request"
 )
 
@@ -170,19 +170,19 @@ func (s *ExtendedSeries) GetTrailer() string {
 	return trailer
 }
 
-func (s *ExtendedSeries) GetIds() *imdb_title.BulkRecordMappingInputItem {
-	ids := imdb_title.BulkRecordMappingInputItem{}
-	ids.TVDBId = strconv.Itoa(s.Id)
+func (s *ExtendedSeries) GetIdMap() *meta.IdMap {
+	idMap := meta.IdMap{Type: meta.IdTypeShow}
+	idMap.TVDB = strconv.Itoa(s.Id)
 	for i := range s.RemoteIds {
 		rid := &s.RemoteIds[i]
 		switch rid.Type {
 		case SourceTypeIMDB:
-			ids.IMDBId = rid.Id
+			idMap.IMDB = rid.Id
 		case SourceTypeTMDBTV:
-			ids.TMDBId = rid.Id
+			idMap.TMDB = rid.Id
 		}
 	}
-	return &ids
+	return &idMap
 }
 
 type FetchSeriesParams struct {

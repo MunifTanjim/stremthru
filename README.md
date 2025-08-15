@@ -575,6 +575,31 @@ Generate direct link for a file link.
 > [!NOTE]
 > The generated direct link should be valid for 12 hours.
 
+### Meta
+
+#### Get ID Map
+
+**`GET /v0/meta/id-map/{idType}/{id}`**
+
+Get ID mapping for a given ID.
+
+**Path Parameters**:
+
+- `idType`: `movie` or `show`
+- `id`: IMDB ID, e.g. `tt0110912`
+
+**Response**:
+
+```json
+{
+  "type": "string",
+  "imdb": "string",
+  "tmdb": "string",
+  "tvdb": "string",
+  "trakt": "string",
+}
+```
+
 ### Stremio Addon
 
 #### Store

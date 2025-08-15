@@ -10,7 +10,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -81,9 +81,9 @@ type TVDBItem struct {
 	Trailer    string
 	UpdatedAt  db.Timestamp
 
-	Order  int                                    `json:"-"`
-	Genres db.JSONIntList                         `json:"-"`
-	Ids    *imdb_title.BulkRecordMappingInputItem `json:"-"`
+	Order  int            `json:"-"`
+	Genres db.JSONIntList `json:"-"`
+	IdMap  *meta.IdMap    `json:"-"`
 }
 
 func (item *TVDBItem) GenreNames() []string {
@@ -399,17 +399,17 @@ func UpsertItems(tx db.Executor, items []TVDBItem) error {
 			return err
 		}
 
-		mappings := make([]imdb_title.BulkRecordMappingInputItem, 0, count)
+		mappings := make([]meta.IdMap, 0, count)
 		for _, item := range cItems {
 			if err := setItemGenre(tx, item.Id, item.Type, item.Genres); err != nil {
 				return err
 			}
 
-			if item.Ids != nil && item.Ids.IMDBId != "" {
-				mappings = append(mappings, *item.Ids)
+			if item.IdMap != nil && item.IdMap.IMDB != "" {
+				mappings = append(mappings, *item.IdMap)
 			}
 		}
-		go imdb_title.BulkRecordMapping(mappings)
+		go util.LogError(log, meta.SetIdMaps(mappings, meta.IdProviderIMDB), "failed to set id maps")
 	}
 
 	return nil
