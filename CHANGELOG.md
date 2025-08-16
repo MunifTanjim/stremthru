@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.83.1](https://github.com/MunifTanjim/stremthru/compare/0.83.0...0.83.1) (2025-08-16)
+
+
+### Bug Fixes
+
+* **stremio/list:** fix anilist sort order ([52a8d65](https://github.com/MunifTanjim/stremthru/commit/52a8d65868dc8000803901642c3a3e21188b1b86))
+* **stremio/sidekick:** deal w/ addons with bad types in manifest ([5a43701](https://github.com/MunifTanjim/stremthru/commit/5a43701934de59010d76137c04eb66bbc8770a01))
+
 ## [0.83.0](https://github.com/MunifTanjim/stremthru/compare/0.82.0...0.83.0) (2025-08-06)
 
 
