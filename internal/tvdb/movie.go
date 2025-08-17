@@ -55,29 +55,6 @@ type Release struct {
 	Detail  any    `json:"detail"`
 }
 
-type Character struct {
-	Id                   int        `json:"id"`
-	Name                 string     `json:"name"`
-	PeopleId             int        `json:"peopleId"`
-	SeriesId             int        `json:"seriesId"`
-	Series               any        `json:"series"`
-	Movie                any        `json:"movie"`
-	MovieId              int        `json:"movieId"`
-	EpisodeId            int        `json:"episodeId"`
-	Type                 int        `json:"type"`
-	Image                string     `json:"image"`
-	Sort                 int        `json:"sort"`
-	IsFeatured           bool       `json:"isFeatured"`
-	URL                  string     `json:"url"` // slug
-	NameTranslations     []string   `json:"nameTranslations"`
-	OverviewTranslations []string   `json:"overviewTranslations"`
-	Aliases              []Alias    `json:"aliases"`
-	PeopleType           PeopleType `json:"peopleType"`
-	PersonName           string     `json:"personName"`
-	TagOptions           any        `json:"tagOptions"`
-	PersonImgURL         string     `json:"personImgUrl"`
-}
-
 type Studio struct {
 	Id           int    `json:"id"`
 	Name         string `json:"name"`
@@ -105,16 +82,16 @@ type ExtendedMovie struct {
 	Releases            []Release           `json:"releases"`
 	Artworks            []Artwork           `json:"artworks"`
 	RemoteIds           []RemoteId          `json:"remoteIds"`
-	Characters          []Character         `json:"characters"`
+	Characters          Characters          `json:"characters"`
 	Budget              util.JSONNumber     `json:"budget,omitempty"`
 	BoxOffice           util.JSONNumber     `json:"boxOffice,omitempty"`
 	BoxOfficeUS         util.JSONNumber     `json:"boxOfficeUS,omitempty"`
-	OriginalCountry     string              `json:"originalCountry"`
+	OriginalCountry     CountryId           `json:"originalCountry"`
 	OriginalLanguage    string              `json:"originalLanguage"`
 	AudioLanguages      []string            `json:"audioLanguages"`
 	SubtitleLanguages   []string            `json:"subtitleLanguages"`
 	Studios             []Studio            `json:"studios"`
-	Awards              []any               `json:"awards"`
+	Awards              Awards              `json:"awards"`
 	TagOptions          []TagOption         `json:"tagOptions"`
 	Lists               []List              `json:"lists"`
 	Translations        Translations        `json:"translations"`
@@ -139,6 +116,16 @@ func (m *ExtendedMovie) GetBackground() string {
 	for i := range m.Artworks {
 		artwork := &m.Artworks[i]
 		if artwork.Type == ArtworkTypeMovieBackground {
+			return artwork.Image
+		}
+	}
+	return ""
+}
+
+func (m *ExtendedMovie) GetClearLogo() string {
+	for i := range m.Artworks {
+		artwork := &m.Artworks[i]
+		if artwork.Type == ArtworkTypeMovieClearLogo {
 			return artwork.Image
 		}
 	}

@@ -35,11 +35,12 @@ const (
 	MetaLinkCategoryWriter   MetaLinkCategory = "writer"
 
 	// undocumented
-	MetaLinkCategoryIMDB    MetaLinkCategory = "imdb"
-	MetaLinkCategoryShare   MetaLinkCategory = "share"
-	MetaLinkCategoryGenres  MetaLinkCategory = "Genres"
-	MetaLinkCategoryCast    MetaLinkCategory = "Cast"
-	MetaLinkCategoryWriters MetaLinkCategory = "Writers"
+	MetaLinkCategoryIMDB      MetaLinkCategory = "imdb"
+	MetaLinkCategoryShare     MetaLinkCategory = "share"
+	MetaLinkCategoryGenres    MetaLinkCategory = "Genres"
+	MetaLinkCategoryCast      MetaLinkCategory = "Cast"
+	MetaLinkCategoryDirectors MetaLinkCategory = "Directors"
+	MetaLinkCategoryWriters   MetaLinkCategory = "Writers"
 )
 
 type MetaLink struct {
@@ -123,8 +124,8 @@ type Meta struct {
 	Type          ContentType        `json:"type"`
 	Name          string             `json:"name"`
 	Genres        []string           `json:"genres,omitempty"` // warning: this will soon be deprecated in favor of `links`
-	Poster        MetaPosterShape    `json:"poster,omitempty"`
-	PosterShape   string             `json:"posterShape,omitempty"`
+	Poster        string             `json:"poster,omitempty"`
+	PosterShape   MetaPosterShape    `json:"posterShape,omitempty"`
 	Background    string             `json:"background,omitempty"`
 	Logo          string             `json:"logo,omitempty"`
 	Description   string             `json:"description,omitempty"`
@@ -133,7 +134,7 @@ type Meta struct {
 	Cast          []string           `json:"cast,omitempty"`     // warning: this will soon be deprecated in favor of `links`
 	IMDBRating    string             `json:"imdbRating,omitempty"`
 	Released      *time.Time         `json:"released,omitempty"`
-	Trailers      []MetaTrailer      `json:"trailers,omitempty"` // warning: this will soon be deprecated in favor of `trailers`
+	Trailers      []MetaTrailer      `json:"trailers,omitempty"` // warning: this will soon be deprecated in favor of `meta.trailers` being an array of `Stream`
 	Links         []MetaLink         `json:"links,omitempty"`
 	Videos        []MetaVideo        `json:"videos,omitempty"`
 	Runtime       string             `json:"runtime,omitempty"`
@@ -146,6 +147,7 @@ type Meta struct {
 	// deprecated / undocumented
 	CreditsCast    []MetaCreditsCastItem `json:"credits_cast,omitempty"`
 	CreditsCrew    []MetaCreditsCrewItem `json:"credits_crew,omitempty"`
+	DVDRelease     string                `json:"dvdRelease,omitempty"`
 	Genre          []string              `json:"genre,omitempty"`
 	IMDBId         string                `json:"imdb_id,omitempty"`
 	MovieDBId      int                   `json:"moviedb_id,omitempty"`
@@ -173,7 +175,7 @@ type MetaPreview struct {
 	Cast        []string      `json:"cast,omitempty"`     // warning: this will soon be deprecated in favor of `links`
 	Links       []MetaLink    `json:"links,omitempty"`
 	Description string        `json:"description,omitempty"`
-	Trailers    []MetaTrailer `json:"trailers,omitempty"`
+	Trailers    []MetaTrailer `json:"trailers,omitempty"` // warning: this will soon be deprecated in favor of `meta.trailers` being an array of `Stream`
 
 	Background string `json:"background,omitempty"` // undocumented
 }

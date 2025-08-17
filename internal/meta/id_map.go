@@ -75,6 +75,8 @@ func getCacheKey(idProvider IdProvider, idType IdType, id string) string {
 	switch idProvider {
 	case IdProviderIMDB:
 		return id
+	case IdProviderTVDB:
+		return string(idProvider) + ":" + string(idType) + ":" + id
 	default:
 		panic("unsupported id provider: " + string(idProvider))
 	}
@@ -84,9 +86,12 @@ func (ip IdProvider) GetCacheKey(idMap IdMap) string {
 	return getCacheKey(ip, idMap.Type, idMap.IMDB)
 }
 
-func parseId(idStr string) (provider IdProvider, id string) {
+func ParseId(idStr string) (provider IdProvider, id string) {
 	if strings.HasPrefix(idStr, "tt") {
 		return IdProviderIMDB, idStr
+	}
+	if tvdbId, ok := strings.CutPrefix(idStr, "tvdb:"); ok {
+		return IdProviderTVDB, tvdbId
 	}
 	return "", ""
 }
@@ -101,7 +106,7 @@ var idMapCache = cache.NewCache[IdMap](&cache.CacheConfig{
 })
 
 func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
-	idProvider, id := parseId(idStr)
+	idProvider, id := ParseId(idStr)
 
 	idMap := IdMap{IMDB: id}
 
@@ -118,6 +123,16 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			idMap.IMDB = id
 			idMap.TMDB = idm.TMDBId
 			idMap.TVDB = idm.TVDBId
+			idMap.Trakt = idm.TraktId
+		case IdProviderTVDB:
+			idm, err := imdb_title.GetIdMapByTVDBId(id)
+			if err != nil || idm == nil {
+				return &idMap, err
+			}
+			idMap.Type = IdType(idm.Type.ToSimple())
+			idMap.IMDB = idm.IMDBId
+			idMap.TMDB = idm.TMDBId
+			idMap.TVDB = id
 			idMap.Trakt = idm.TraktId
 		default:
 			return nil, ErrorUnsupportedId

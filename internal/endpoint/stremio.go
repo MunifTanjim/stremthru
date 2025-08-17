@@ -6,6 +6,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/disabled"
 	stremio_list "github.com/MunifTanjim/stremthru/internal/stremio/list"
+	stremio_meta "github.com/MunifTanjim/stremthru/internal/stremio/meta"
 	"github.com/MunifTanjim/stremthru/internal/stremio/root"
 	"github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	"github.com/MunifTanjim/stremthru/internal/stremio/store"
@@ -31,5 +32,8 @@ func AddStremioEndpoints(mux *http.ServeMux) {
 	}
 	if config.Feature.IsEnabled(config.FeatureStremioTorz) {
 		stremio_torz.AddStremioTorzEndpoints(mux)
+	}
+	if config.Feature.IsEnabled(config.FeatureStremioMeta) {
+		stremio_meta.AddEndpoints(mux)
 	}
 }

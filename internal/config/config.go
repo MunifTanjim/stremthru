@@ -191,6 +191,7 @@ const (
 	FeatureStremioStore    string = "stremio_store"
 	FeatureStremioTorz     string = "stremio_torz"
 	FeatureStremioWrap     string = "stremio_wrap"
+	FeatureStremioMeta     string = "stremio_meta"
 )
 
 var features = []string{
@@ -203,6 +204,7 @@ var features = []string{
 	FeatureStremioStore,
 	FeatureStremioTorz,
 	FeatureStremioWrap,
+	FeatureStremioMeta,
 }
 
 type FeatureConfig struct {

@@ -537,3 +537,40 @@ func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
 	}
 	return &idMap, nil
 }
+
+var query_get_id_map_by_tvdb_id = fmt.Sprintf(
+	`SELECT %s, it.%s FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s = ?`,
+	db.JoinPrefixedColumnNames(
+		"itm.",
+		MapColumn.IMDBId,
+		MapColumn.TMDBId,
+		MapColumn.TVDBId,
+		MapColumn.TraktId,
+		MapColumn.MALId,
+	),
+	Column.Type,
+	MapTableName,
+	TableName,
+	MapColumn.IMDBId,
+	Column.TId,
+	MapColumn.TVDBId,
+)
+
+func GetIdMapByTVDBId(tvdbId string) (*IMDBTitleMap, error) {
+	var idMap IMDBTitleMap
+	err := db.QueryRow(query_get_id_map_by_tvdb_id, tvdbId).Scan(
+		&idMap.IMDBId,
+		&idMap.TMDBId,
+		&idMap.TVDBId,
+		&idMap.TraktId,
+		&idMap.MALId,
+		&idMap.Type,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &idMap, nil
+}

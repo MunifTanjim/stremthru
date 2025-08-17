@@ -157,6 +157,16 @@ func (s *ExtendedSeries) GetBackground() string {
 	return ""
 }
 
+func (s *ExtendedSeries) GetClearLogo() string {
+	for i := range s.Artworks {
+		artwork := &s.Artworks[i]
+		if artwork.Type == ArtworkTypeSeriesClearLogo {
+			return artwork.Image
+		}
+	}
+	return ""
+}
+
 func (s *ExtendedSeries) GetTrailer() string {
 	trailer := ""
 	for i := range s.Trailers {

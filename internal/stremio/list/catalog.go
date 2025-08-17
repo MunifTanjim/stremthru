@@ -728,7 +728,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		movieImdbIdByTvdbId, showImdbIdByTvdbId, err := getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbShowIds)
+		movieImdbIdByTvdbId, showImdbIdByTvdbId, err := tvdb.GetIMDBIdsForTVDBIds(tvdbMovieIds, tvdbShowIds)
 		if err != nil {
 			SendError(w, r, err)
 			return
@@ -801,7 +801,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(imdbIdsToFindTvdbIds) > 0 {
-		tvdbIdByImdbId, err := getTVDBIdsForIMDBIds(imdbIdsToFindTvdbIds)
+		tvdbIdByImdbId, err := tvdb.GetTVDBIdsForIMDBIds(imdbIdsToFindTvdbIds)
 		if err != nil {
 			log.Error("failed to fetch tvdb ids for imdb ids", "error", err, "count", len(imdbIdsToFindTvdbIds))
 		} else {

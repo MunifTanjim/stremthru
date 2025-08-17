@@ -1,18 +1,43 @@
-package stremio_list
+package tvdb
 
 import (
 	"strconv"
 
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/meta"
-	"github.com/MunifTanjim/stremthru/internal/tvdb"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/alitto/pond/v2"
 )
 
-var tvdbItemPool = pond.NewResultPool[*tvdb.TVDBItem](10)
+var tvdbItemPool = pond.NewResultPool[*TVDBItem](10)
 
-func getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]string, map[string]string, error) {
+func GetIMDBIdForTVDBId(idType meta.IdType, id string) (string, error) {
+	movieIds := []string{}
+	seriesIds := []string{}
+	switch idType {
+	case meta.IdTypeMovie:
+		movieIds = append(movieIds, id)
+	case meta.IdTypeShow:
+		seriesIds = append(seriesIds, id)
+	}
+	movieImdbId, seriesImdbId, err := GetIMDBIdsForTVDBIds(movieIds, seriesIds)
+	if err != nil {
+		return "", err
+	}
+	switch idType {
+	case meta.IdTypeMovie:
+		if imdbId, ok := movieImdbId[id]; ok && imdbId != "" {
+			return imdbId, nil
+		}
+	case meta.IdTypeShow:
+		if imdbId, ok := seriesImdbId[id]; ok && imdbId != "" {
+			return imdbId, nil
+		}
+	}
+	return "", nil
+}
+
+func GetIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]string, map[string]string, error) {
 	movieImdbIdByTvdbId, seriesImdbIdByTvdbId, err := imdb_title.GetIMDBIdByTVDBId(tvdbMovieIds, tvdbSeriesIds)
 	if err != nil {
 		return nil, nil, err
@@ -37,24 +62,27 @@ func getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 	}
 
 	if len(missingTVDBMovieIds) > 0 || len(missingTVDBSeriesIds) > 0 {
+		tvdbClient := GetAPIClient()
+
 		log.Debug("fetching remote ids for tvdb", "movie_count", len(missingTVDBMovieIds), "series_count", len(missingTVDBSeriesIds))
-		tvdbClient := tvdb.GetAPIClient()
+
 		movieGroup := tvdbItemPool.NewGroup()
 		for _, movieId := range missingTVDBMovieIds {
-			movieGroup.SubmitErr(func() (*tvdb.TVDBItem, error) {
-				li := tvdb.TVDBItem{
-					Type: tvdb.TVDBItemTypeMovie,
+			movieGroup.SubmitErr(func() (*TVDBItem, error) {
+				li := TVDBItem{
+					Type: TVDBItemTypeMovie,
 					Id:   util.SafeParseInt(movieId, -1),
 				}
 				err := li.Fetch(tvdbClient)
 				return &li, err
 			})
 		}
+
 		seriesGroup := tvdbItemPool.NewGroup()
 		for _, seriesId := range missingTVDBSeriesIds {
-			seriesGroup.SubmitErr(func() (*tvdb.TVDBItem, error) {
-				li := tvdb.TVDBItem{
-					Type: tvdb.TVDBItemTypeSeries,
+			seriesGroup.SubmitErr(func() (*TVDBItem, error) {
+				li := TVDBItem{
+					Type: TVDBItemTypeSeries,
 					Id:   util.SafeParseInt(seriesId, -1),
 				}
 				err := li.Fetch(tvdbClient)
@@ -73,6 +101,7 @@ func getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 			tvdbId := missingTVDBMovieIds[i]
 			movieImdbIdByTvdbId[tvdbId] = item.IdMap.IMDB
 		}
+
 		seriesItems, err := seriesGroup.Wait()
 		if err != nil {
 			log.Error("failed to fetch series remote ids from tvdb", "error", err)
@@ -89,9 +118,9 @@ func getIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 	return movieImdbIdByTvdbId, seriesImdbIdByTvdbId, nil
 }
 
-var tvdbSearchByRemoteIdPool = pond.NewResultPool[*tvdb.SearchByRemoteIdData](10)
+var tvdbSearchByRemoteIdPool = pond.NewResultPool[*SearchByRemoteIdData](10)
 
-func getTVDBIdsForIMDBIds(imdbIds []string) (map[string]string, error) {
+func GetTVDBIdsForIMDBIds(imdbIds []string) (map[string]string, error) {
 	tvdbIdByImdbId, err := imdb_title.GetTVDBIdByIMDBId(imdbIds)
 	if err != nil {
 		return nil, err
@@ -108,14 +137,14 @@ func getTVDBIdsForIMDBIds(imdbIds []string) (map[string]string, error) {
 		return tvdbIdByImdbId, nil
 	}
 
-	tvdbClient := tvdb.GetAPIClient()
+	tvdbClient := GetAPIClient()
 
 	log.Debug("fetching tvdb ids for imdb ids", "count", len(missingImdbIds))
 
 	wg := tvdbSearchByRemoteIdPool.NewGroup()
 	for _, imdbId := range missingImdbIds {
-		wg.SubmitErr(func() (*tvdb.SearchByRemoteIdData, error) {
-			res, err := tvdbClient.SearchByRemoteId(&tvdb.SearchByRemoteIdParams{
+		wg.SubmitErr(func() (*SearchByRemoteIdData, error) {
+			res, err := tvdbClient.SearchByRemoteId(&SearchByRemoteIdParams{
 				RemoteId: imdbId,
 			})
 			return &res.Data, err
