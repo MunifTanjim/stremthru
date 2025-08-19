@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.83.3](https://github.com/MunifTanjim/stremthru/compare/0.83.2...0.83.3) (2025-08-19)
+
+
+### Bug Fixes
+
+* **store/debrider:** do not save archive file as torrent stream ([6a74486](https://github.com/MunifTanjim/stremthru/commit/6a74486353686bdce7315534e8401acbc46f714b))
+
 ## [0.83.2](https://github.com/MunifTanjim/stremthru/compare/0.83.1...0.83.2) (2025-08-19)
 
 
