@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.83.4](https://github.com/MunifTanjim/stremthru/compare/0.83.3...0.83.4) (2025-08-19)
+
+
+### Bug Fixes
+
+* **anilist:** correctly store anilist_item.type value ([ca8ea3c](https://github.com/MunifTanjim/stremthru/commit/ca8ea3c48dbb40b60464f9685a92d1cfa7f3420e))
+* **stremio/list:** fix meta preview type for anime lists ([218c4cf](https://github.com/MunifTanjim/stremthru/commit/218c4cf95c115499ee6db1ed681647c67790811e))
+
 ## [0.83.3](https://github.com/MunifTanjim/stremthru/compare/0.83.2...0.83.3) (2025-08-19)
 
 
