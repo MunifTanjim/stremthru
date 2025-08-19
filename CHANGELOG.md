@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.83.2](https://github.com/MunifTanjim/stremthru/compare/0.83.1...0.83.2) (2025-08-19)
+
+
+### Bug Fixes
+
+* **store/debrider:** fix CheckMagnet ([d00e03f](https://github.com/MunifTanjim/stremthru/commit/d00e03f7f5694b567e678438402f8d84d7d1ea1b))
+
 ## [0.83.1](https://github.com/MunifTanjim/stremthru/compare/0.83.0...0.83.1) (2025-08-16)
 
 
