@@ -454,7 +454,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			default:
 				continue
 			}
-			if meta.Poster != "" {
+			if meta.Poster != "" && !strings.HasPrefix(meta.Poster, "http") {
 				meta.Poster = "https://" + meta.Poster
 			}
 			if meta.Background != "" {

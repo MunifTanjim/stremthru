@@ -396,6 +396,13 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 						case "collection", "favorites", "watchlist":
 							list.Id = "~:" + parts[1] + ":" + parts[0]
 							list.UserId = parts[0]
+						case "progress":
+							list.Id = trakt.ID_PREFIX_DYNAMIC_USER_SPECIFIC + "users/" + parts[0] + "/" + parts[1]
+							list.UserId = parts[0]
+							if list.UserId != ud.traktToken.UserId {
+								udErr.list_urls[idx] = "Invalid URL: not own list"
+								continue
+							}
 						default:
 							udErr.list_urls[idx] = "Unsupported Trakt.tv URL"
 							continue

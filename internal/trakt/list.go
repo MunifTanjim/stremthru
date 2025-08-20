@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type ListPrivacy = string
@@ -207,7 +208,9 @@ func (c APIClient) FetchListItems(params *FetchListItemsParams) (APIResponse[Fet
 }
 
 type dynamicListMeta struct {
-	Endpoint string
+	Endpoint      string
+	BeforeRequest func(req *http.Request)
+
 	Id       string
 	ItemType ItemType
 	Name     string
@@ -324,6 +327,57 @@ var dynamicListMetaById = map[string]dynamicListMeta{
 		Name:      "Watchlist",
 		HasUserId: true,
 	},
+	"progress": {
+		Endpoint: "/sync/progress/up_next_nitro",
+		BeforeRequest: func(req *http.Request) {
+			req.URL.Host = util.MustDecodeBase64("aGQudHJha3QudHY=")
+			req.Host = req.URL.Host
+			req.Header.Set("Origin", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHY="))
+			req.Header.Set("Referer", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHYv"))
+			req.Header.Set("User-Agent", util.MustDecodeBase64("TW96aWxsYS81LjAgKE1hY2ludG9zaDsgSW50ZWwgTWFjIE9TIFggMTBfMTVfNykgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzOS4wLjAuMCBTYWZhcmkvNTM3LjM2"))
+		},
+		Name:     "Up Next",
+		ItemType: ItemTypeShow,
+	},
+}
+
+type SyncProgressUpNextNitroItemEpisode struct {
+	AvailableTranslations []string    `json:"available_translations"`
+	CommentCount          int         `json:"comment_count"`
+	EpisodeType           string      `json:"episode_type"` // standard
+	FirstAired            string      `json:"first_aired"`
+	Ids                   ListItemIds `json:"ids"`
+	Images                struct {
+		Screenshot []string `json:"screenshot"`
+	} `json:"images"`
+	Number    int     `json:"number"`
+	NumberAbs int     `json:"number_abs"`
+	Overview  string  `json:"overview"`
+	Rating    float32 `json:"rating"`
+	Runtime   int     `json:"runtime"`
+	Season    int     `json:"season"`
+	Title     string  `json:"title"`
+	UpdatedAt string  `json:"updated_at"`
+	Votes     int     `json:"votes"`
+}
+type SyncProgressUpNextNitroItem struct {
+	Progress struct {
+		Aired         int                                `json:"aired"`
+		Completed     int                                `json:"completed"`
+		Hidden        int                                `json:"hidden"`
+		LastEpisode   SyncProgressUpNextNitroItemEpisode `json:"last_episode"`
+		LastWatchedAt string                             `json:"last_watched_at"`
+		NextEpisode   SyncProgressUpNextNitroItemEpisode `json:"next_episode"`
+		ResetAt       any                                `json:"reset_at"`
+		Stats         struct {
+			MinutesLeft    int `json:"minutes_left"`
+			MinutesWatched int `json:"minutes_watched"`
+			PlayCount      int `json:"play_count"`
+		} `json:"stats"`
+	} `json:"progress"`
+	Show       ListItemShow `json:"show"`
+	ShowId     int          `json:"show_id"`
+	TotalCount int          `json:"total_count"`
 }
 
 type FetchMovieRecommendationData []ListItemMovie
@@ -353,7 +407,12 @@ func GetDynamicListMeta(id string) *dynamicListMeta {
 	if len(parts) < 2 || len(parts) > 3 {
 		return nil
 	}
-	meta, ok := dynamicListMetaById[parts[0]+"/"+parts[1]]
+	metaId := parts[0] + "/" + parts[1]
+	if parts[0] == "users" && len(parts) == 3 {
+		metaId = parts[2]
+	}
+
+	meta, ok := dynamicListMetaById[metaId]
 	if !ok {
 		return nil
 	}
@@ -395,6 +454,28 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 		path = strings.Replace(path, "{user_id}", meta.UserId, 1)
 	}
 
+	hiddenItemIdsMap := map[int]struct{}{}
+	var marker string
+	if meta.Endpoint == dynamicListMetaById["progress"].Endpoint {
+		marker = strconv.FormatInt(time.Now().UnixMilli(), 10)
+
+		res, err := c.FetchHiddenItems(&FetchHiddenItemsParams{
+			Section: "progress_watched",
+			Type:    ItemTypeShow,
+		})
+		if err != nil {
+			response := newAPIResponse(nil, items)
+			response.Header = res.Header
+			response.StatusCode = res.StatusCode
+			return response, err
+		}
+		for _, item := range res.Data {
+			if item.Type == ItemTypeShow && item.Show != nil {
+				hiddenItemIdsMap[item.Show.Ids.Trakt] = struct{}{}
+			}
+		}
+	}
+
 	hasMore := true
 	limit := 100
 	page := 1
@@ -413,6 +494,8 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 		if !meta.NoLimit {
 			p.Query.Set("limit", strconv.Itoa(limit))
 		}
+
+		p.BeforeDo = meta.BeforeRequest
 
 		switch meta.Endpoint {
 		case dynamicListMetaById["movies/popular"].Endpoint, dynamicListMetaById["movies/recommendations"].Endpoint:
@@ -440,6 +523,25 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 				item := ListItem{}
 				item.Type = meta.ItemType
 				item.Show = &response.data[i]
+				items = append(items, item)
+			}
+
+		case dynamicListMetaById["progress"].Endpoint:
+			p.Query.Del("extended")
+			p.Query.Set("marker", marker)
+
+			response := listResponseData[SyncProgressUpNextNitroItem]{}
+			res, err = c.Request("GET", path, p, &response)
+			if err != nil {
+				break
+			}
+			for i := range response.data {
+				if _, hidden := hiddenItemIdsMap[response.data[i].ShowId]; hidden {
+					continue
+				}
+				item := ListItem{}
+				item.Type = ItemTypeShow
+				item.Show = &response.data[i].Show
 				items = append(items, item)
 			}
 

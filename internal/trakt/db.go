@@ -40,7 +40,7 @@ const USER_MOVIES_RECOMMENDATIONS_ID = ID_PREFIX_DYNAMIC_USER_SPECIFIC + "movies
 const USER_SHOWS_RECOMMENDATIONS_ID = ID_PREFIX_DYNAMIC_USER_SPECIFIC + "shows/recommendations"
 
 func (l *TraktList) GetURL() string {
-	if !strings.HasPrefix(l.Id, ID_PREFIX_DYNAMIC) {
+	if !l.IsDynamic() {
 		return "https://trakt.tv/users/" + l.UserId + "/lists/" + l.Slug
 	}
 
@@ -61,9 +61,8 @@ func (l *TraktList) IsStandard() bool {
 		strings.HasPrefix(l.Id, ID_PREFIX_USER_WATCHLIST)
 }
 
-func (l *TraktList) IsUserRecommendations() bool {
-	return l.Id == USER_MOVIES_RECOMMENDATIONS_ID ||
-		l.Id == USER_SHOWS_RECOMMENDATIONS_ID
+func (l *TraktList) IsUserSpecific() bool {
+	return strings.HasPrefix(l.Id, ID_PREFIX_DYNAMIC_USER_SPECIFIC)
 }
 
 func (l *TraktList) IsStale() bool {
@@ -74,7 +73,7 @@ func (l *TraktList) ShouldPersist() bool {
 	if !l.IsDynamic() {
 		return true
 	}
-	if l.IsUserRecommendations() {
+	if l.IsUserSpecific() {
 		return false
 	}
 	if l.IsStandard() {

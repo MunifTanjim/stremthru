@@ -144,7 +144,7 @@ func (c APIClient) Request(method, path string, params request.Context, v Respon
 		error.Cause = err
 		return nil, error
 	}
-	res, err := c.httpClient.Do(req)
+	res, err := params.DoRequest(c.httpClient, req)
 	err = processResponseBody(res, err, v)
 	if err != nil {
 		error := core.NewUpstreamError("")

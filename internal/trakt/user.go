@@ -1,6 +1,9 @@
 package trakt
 
-import "time"
+import (
+	"net/url"
+	"time"
+)
 
 type RetrieveSettingsData struct {
 	ResponseError
@@ -111,4 +114,35 @@ func (c APIClient) FetchPersonalList(params *FetchPersonalListParams) (APIRespon
 	response := FetchPersonalListData{}
 	res, err := c.Request("GET", "/users/"+params.UserId+"/lists/"+params.ListId, params, &response)
 	return newAPIResponse(res, response.List), err
+}
+
+type FetchHiddenItemsDataItem struct {
+	HiddenAt string   `json:"hidden_at"`
+	Type     ItemType `json:"type"`
+	Show     *struct {
+		AiredEpisodes int         `json:"aired_episodes"`
+		Title         string      `json:"title"`
+		Year          int         `json:"year"`
+		Ids           ListItemIds `json:"ids"`
+	} `json:"show,omitempty"`
+}
+
+type FetchHiddenItemsData = listResponseData[FetchHiddenItemsDataItem]
+
+type FetchHiddenItemsParams struct {
+	Ctx
+	Section string // calendar / progress_watched / progress_watched_reset / progress_collected / recommendations / comments / dropped
+	Type    ItemType
+}
+
+func (c APIClient) FetchHiddenItems(params *FetchHiddenItemsParams) (APIResponse[[]FetchHiddenItemsDataItem], error) {
+	query := url.Values{
+		"page":  []string{"1"},
+		"limit": []string{"1000"},
+		"type":  []string{params.Type},
+	}
+	params.Query = &query
+	response := FetchHiddenItemsData{}
+	res, err := c.Request("GET", "/users/hidden/"+params.Section, params, &response)
+	return newAPIResponse(res, response.data), err
 }

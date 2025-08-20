@@ -23,7 +23,7 @@ var listIdBySlugCache = cache.NewCache[string](&cache.CacheConfig{
 })
 
 func getListCacheKey(l *TraktList, tokenId string) string {
-	if l.IsUserRecommendations() {
+	if l.IsUserSpecific() {
 		return tokenId + ":" + l.Id
 	}
 	return l.Id
@@ -35,7 +35,7 @@ func syncList(l *TraktList, tokenId string) error {
 	syncListMutex.Lock()
 	defer syncListMutex.Unlock()
 
-	isDynamic, isStandard, isUserRecommendations := l.IsDynamic(), l.IsStandard(), l.IsUserRecommendations()
+	isDynamic, isStandard, isUserSpecific := l.IsDynamic(), l.IsStandard(), l.IsUserSpecific()
 
 	client := GetAPIClient(tokenId)
 
@@ -51,7 +51,7 @@ func syncList(l *TraktList, tokenId string) error {
 		privacy := ListPrivacyPublic
 		if isStandard {
 			slug, _, _ = strings.Cut(slug, ":")
-		} else if isUserRecommendations {
+		} else if isUserSpecific {
 			slug = strings.TrimPrefix(slug, "u:")
 			privacy = ListPrivacyPrivate
 		}
@@ -209,13 +209,13 @@ func (l *TraktList) Fetch(tokenId string) error {
 		}
 	}
 
-	isUserRecommendations := l.IsUserRecommendations()
+	isUserSpecific := l.IsUserSpecific()
 
 	listCacheKey := getListCacheKey(l, tokenId)
 	if !isMissing {
 		var cachedL TraktList
 		if !listCache.Get(listCacheKey, &cachedL) {
-			if !isUserRecommendations {
+			if !isUserSpecific {
 				if list, err := GetListById(l.Id); err != nil {
 					return err
 				} else if list == nil {

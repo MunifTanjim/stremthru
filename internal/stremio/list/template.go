@@ -542,6 +542,12 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 							"/shows/watched/all",
 						},
 					},
+					{
+						Pattern: "https://trakt.tv/users/{own_user_slug}/progress",
+						Examples: []string{
+							"/users/garycrawfordgc/progress",
+						},
+					},
 				},
 			})
 		}
