@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.84.0](https://github.com/MunifTanjim/stremthru/compare/0.83.4...0.84.0) (2025-08-20)
+
+
+### Features
+
+* **meta:** add get id map endpoint ([3882e14](https://github.com/MunifTanjim/stremthru/commit/3882e149b86ca2739be93b9adb7b4b1fe6a65578))
+* **stremio/list:** add tvdb integration ([8a080c2](https://github.com/MunifTanjim/stremthru/commit/8a080c2878dba4b11b4554d89b70dbefce232b22))
+* **stremio/list:** support trakt.tv progress list ([894a7ab](https://github.com/MunifTanjim/stremthru/commit/894a7ab4231bc77050ebe88b06d01b63faf53965))
+* **tvdb:** add client ([e12d3b3](https://github.com/MunifTanjim/stremthru/commit/e12d3b30035db2587cbc6d435e7eb4d8743337e0))
+
 ## [0.83.4](https://github.com/MunifTanjim/stremthru/compare/0.83.3...0.83.4) (2025-08-19)
 
 
