@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.84.1](https://github.com/MunifTanjim/stremthru/compare/0.84.0...0.84.1) (2025-08-21)
+
+
+### Bug Fixes
+
+* **stremio/list:** fix mdblist sort order ([6456aec](https://github.com/MunifTanjim/stremthru/commit/6456aecd3c108057e4f6405b5a5294cdb2d47641))
+
 ## [0.84.0](https://github.com/MunifTanjim/stremthru/compare/0.83.4...0.84.0) (2025-08-20)
 
 
