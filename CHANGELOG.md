@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.85.0](https://github.com/MunifTanjim/stremthru/compare/0.84.1...0.85.0) (2025-08-22)
+
+
+### Features
+
+* **meta:** support tvdb for GetIdMap ([3063553](https://github.com/MunifTanjim/stremthru/commit/3063553544e0722e2567403851f99dde0d41e27e))
+* **stremio/list:** make public instance limit configurable ([37ebccc](https://github.com/MunifTanjim/stremthru/commit/37ebccc41a87049cf6ec3a29a50f615db872cd54))
+* **stremio/list:** support overriding list type ([559a256](https://github.com/MunifTanjim/stremthru/commit/559a25648371c11e0f1be3760b7a0b9d246c219e))
+* **stremio/list:** update ui for preferred meta id ([c6767cd](https://github.com/MunifTanjim/stremthru/commit/c6767cdc617dec98b489e424a27396b4c76de85b))
+* **stremio/torz:** make public instance limit configurable ([fe1a258](https://github.com/MunifTanjim/stremthru/commit/fe1a258c7e430f2c487edac1ac644a8ead206f45))
+* **stremio/wrap:** make public instance limit configurable ([6ad7fdf](https://github.com/MunifTanjim/stremthru/commit/6ad7fdfa36c0e342af4e4d54b23410fac9b401ce))
+* **stremio:** add signup links for stores ([fcfc56f](https://github.com/MunifTanjim/stremthru/commit/fcfc56f33072bdb982c0b77bea5800c50684a11f))
+* **stremio:** update types ([1d4e4d1](https://github.com/MunifTanjim/stremthru/commit/1d4e4d1b7333b4c339dd08a5419894b2d74befe9))
+* **tvdb:** update types ([ef4024f](https://github.com/MunifTanjim/stremthru/commit/ef4024f16cc9bc9a704b473cfcc99d88054a5241))
+
+
+### Bug Fixes
+
+* **stremio/store:** fix torbox usenet stream matching ([3b64469](https://github.com/MunifTanjim/stremthru/commit/3b64469d2697d9c364576c269dd13fedbf8772d2))
+* **trakt:** set id maps synchronously ([dde8422](https://github.com/MunifTanjim/stremthru/commit/dde8422b34cf97365215bf257db8332d32574134))
+* **tvdb:** include .IdMap for GetItemById ([417f117](https://github.com/MunifTanjim/stremthru/commit/417f1177ed0923a07d18ce8a8c66dcca95e41d64))
+* **tvdb:** set id maps synchronously ([b6fd657](https://github.com/MunifTanjim/stremthru/commit/b6fd65735ac038e023e93fa87ac37d4bb6e83c57))
+
 ## [0.84.1](https://github.com/MunifTanjim/stremthru/compare/0.84.0...0.84.1) (2025-08-21)
 
 
