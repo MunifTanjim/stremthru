@@ -11,6 +11,32 @@ import (
 
 var tvdbItemPool = pond.NewResultPool[*TVDBItem](10)
 
+func GetIMDBIdForTVDBId(idType meta.IdType, id string) (string, error) {
+	movieIds := []string{}
+	seriesIds := []string{}
+	switch idType {
+	case meta.IdTypeMovie:
+		movieIds = append(movieIds, id)
+	case meta.IdTypeShow:
+		seriesIds = append(seriesIds, id)
+	}
+	movieImdbId, seriesImdbId, err := GetIMDBIdsForTVDBIds(movieIds, seriesIds)
+	if err != nil {
+		return "", err
+	}
+	switch idType {
+	case meta.IdTypeMovie:
+		if imdbId, ok := movieImdbId[id]; ok && imdbId != "" {
+			return imdbId, nil
+		}
+	case meta.IdTypeShow:
+		if imdbId, ok := seriesImdbId[id]; ok && imdbId != "" {
+			return imdbId, nil
+		}
+	}
+	return "", nil
+}
+
 func GetIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]string, map[string]string, error) {
 	movieImdbIdByTvdbId, seriesImdbIdByTvdbId, err := imdb_title.GetIMDBIdByTVDBId(tvdbMovieIds, tvdbSeriesIds)
 	if err != nil {

@@ -36,6 +36,12 @@ func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 			URL:  "/stremio/torz",
 		})
 	}
+	if config.Feature.IsEnabled(config.FeatureStremioMeta) {
+		addons = append(addons, stremio_template.BaseDataStremThruAddon{
+			Name: "Meta",
+			URL:  "/stremio/meta",
+		})
+	}
 	if config.Feature.IsEnabled(config.FeatureStremioSidekick) {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "Sidekick",
