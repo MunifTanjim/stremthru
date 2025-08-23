@@ -478,7 +478,7 @@ func normalizeOptionalId(id string) string {
 	return id
 }
 
-func BulkRecordMapping(items []BulkRecordMappingInputItem) error {
+func BulkRecordMapping(tx db.Executor, items []BulkRecordMappingInputItem) error {
 	count := len(items)
 	if count == 0 {
 		return nil
@@ -497,7 +497,7 @@ func BulkRecordMapping(items []BulkRecordMappingInputItem) error {
 		args[i*5+4] = normalizeOptionalId(item.MALId)
 	}
 
-	_, err := db.Exec(query, args...)
+	_, err := tx.Exec(query, args...)
 	return err
 }
 

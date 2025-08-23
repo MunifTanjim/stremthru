@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 )
 
@@ -146,7 +147,7 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 	return &idMap, nil
 }
 
-func SetIdMaps(idMaps []IdMap, anchor IdProvider) error {
+func SetIdMapsInTrx(tx db.Executor, idMaps []IdMap, anchor IdProvider) error {
 	if anchor != IdProviderIMDB {
 		return ErrorUnsupportedIdAnchor
 	}
@@ -174,5 +175,9 @@ func SetIdMaps(idMaps []IdMap, anchor IdProvider) error {
 		idMapCache.Remove(cacheKey)
 	}
 
-	return imdb_title.BulkRecordMapping(imdbMapItems)
+	return imdb_title.BulkRecordMapping(tx, imdbMapItems)
+}
+
+func SetIdMaps(idMaps []IdMap, anchor IdProvider) error {
+	return SetIdMapsInTrx(db.GetDB(), idMaps, anchor)
 }
