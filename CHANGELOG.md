@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.85.1](https://github.com/MunifTanjim/stremthru/compare/0.85.0...0.85.1) (2025-08-23)
+
+
+### Bug Fixes
+
+* **store/debrider:** fix type for task ([8d46886](https://github.com/MunifTanjim/stremthru/commit/8d46886970e51c5c2b35db1e96ce6a1950432541))
+* **stremio/list:** auto open next episode for trakt progress ([217d149](https://github.com/MunifTanjim/stremthru/commit/217d149dd95609352c162a9e7fc3c92be5298741))
+* **stremio/sidekick:** prefer required genre for hide from board ([605f5eb](https://github.com/MunifTanjim/stremthru/commit/605f5eb33c117ab4a55f64ebba1798858ad647f9))
+
 ## [0.85.0](https://github.com/MunifTanjim/stremthru/compare/0.84.1...0.85.0) (2025-08-22)
 
 
