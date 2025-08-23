@@ -410,7 +410,7 @@ func UpsertItems(tx db.Executor, items []TVDBItem) error {
 				idMaps = append(idMaps, *item.IdMap)
 			}
 		}
-		util.LogError(log, meta.SetIdMaps(idMaps, meta.IdProviderIMDB), "failed to set id maps")
+		util.LogError(log, meta.SetIdMapsInTrx(tx, idMaps, meta.IdProviderIMDB), "failed to set id maps")
 	}
 
 	return nil
