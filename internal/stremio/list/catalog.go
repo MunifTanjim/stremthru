@@ -395,7 +395,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 				Poster:      poster,
 				PosterShape: stremio.MetaPosterShapePoster,
 				Background:  stremio_shared.GetCinemetaBackgroundURL(item.IMDBId),
-				Genres:      item.Genre,
+				Genres:      item.GenreNames(),
 				ReleaseInfo: strconv.Itoa(item.ReleaseYear),
 			}
 			catalogItems = append(catalogItems, catalogItem{meta, item})

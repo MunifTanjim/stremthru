@@ -136,6 +136,14 @@ type MDBListItem struct {
 	TvdbId string    `json:"-"`
 }
 
+func (li MDBListItem) GenreNames() []string {
+	genres := make([]string, len(li.Genre))
+	for i, genreId := range li.Genre {
+		genres[i] = string(genreNameById[genreId])
+	}
+	return genres
+}
+
 type ItemColumnStruct struct {
 	IMDBId         string
 	Adult          string

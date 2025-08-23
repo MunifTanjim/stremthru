@@ -88,7 +88,7 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 					Extra: []stremio.CatalogExtra{
 						{
 							Name:    "genre",
-							Options: mdblist.Genres,
+							Options: mdblist.GenreNames,
 						},
 						{
 							Name: "skip",
