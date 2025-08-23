@@ -170,7 +170,7 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 					Extra: []stremio.CatalogExtra{
 						{
 							Name:    "genre",
-							Options: trakt.Genres,
+							Options: trakt.GenreNames,
 						},
 						{
 							Name: "skip",
@@ -189,8 +189,10 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 					switch meta.ItemType {
 					case trakt.ItemTypeMovie:
 						catalog.Type = string(stremio.ContentTypeMovie)
+						catalog.Genres = trakt.MovieGenreNames
 					case trakt.ItemTypeShow:
 						catalog.Type = string(stremio.ContentTypeSeries)
+						catalog.Genres = trakt.ShowGenreNames
 					}
 				}
 				if hasListNames {

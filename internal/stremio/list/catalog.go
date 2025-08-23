@@ -451,7 +451,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 				Poster:      item.Poster,
 				PosterShape: stremio.MetaPosterShapePoster,
 				Background:  item.Fanart,
-				Genres:      item.Genres,
+				Genres:      item.GenreNames(),
 				ReleaseInfo: strconv.Itoa(item.Year),
 				IMDBRating:  strconv.FormatFloat(float64(item.Rating)/10, 'f', 1, 32),
 			}

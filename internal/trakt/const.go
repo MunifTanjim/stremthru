@@ -42,7 +42,47 @@ const (
 	GenreWestern         Genre = "western"
 )
 
-var Genres = []Genre{
+var genreNameById = map[Genre]string{
+	GenreAction:          "Action",
+	GenreAdventure:       "Adventure",
+	GenreAnimation:       "Animation",
+	GenreAnime:           "Anime",
+	GenreBiography:       "Biography",
+	GenreChildren:        "Children",
+	GenreComedy:          "Comedy",
+	GenreCrime:           "Crime",
+	GenreDocumentary:     "Documentary",
+	GenreDonghua:         "Donghua",
+	GenreDrama:           "Drama",
+	GenreFamily:          "Family",
+	GenreFantasy:         "Fantasy",
+	GenreGameShow:        "Game Show",
+	GenreHistory:         "History",
+	GenreHoliday:         "Holiday",
+	GenreHomeAndGarden:   "Home & Garden",
+	GenreHorror:          "Horror",
+	GenreMiniSeries:      "Mini Series",
+	GenreMusic:           "Music",
+	GenreMusical:         "Musical",
+	GenreMystery:         "Mystery",
+	GenreNews:            "News",
+	GenreNone:            "None",
+	GenreReality:         "Reality",
+	GenreRomance:         "Romance",
+	GenreScienceFiction:  "Science Fiction",
+	GenreShort:           "Short",
+	GenreSoap:            "Soap",
+	GenreSpecialInterest: "Special Interest",
+	GenreSportingEvent:   "Sporting Event",
+	GenreSuperhero:       "Superhero",
+	GenreSuspense:        "Suspense",
+	GenreTalkShow:        "Talk Show",
+	GenreThriller:        "Thriller",
+	GenreWar:             "War",
+	GenreWestern:         "Western",
+}
+
+var genreIds = []Genre{
 	GenreAction,
 	GenreAdventure,
 	GenreAnimation,
@@ -81,3 +121,95 @@ var Genres = []Genre{
 	GenreWar,
 	GenreWestern,
 }
+
+var movieGenreIds = []Genre{
+	GenreAction,
+	GenreAdventure,
+	GenreAnimation,
+	GenreAnime,
+	GenreComedy,
+	GenreCrime,
+	GenreDocumentary,
+	GenreDonghua,
+	GenreDrama,
+	GenreFamily,
+	GenreFantasy,
+	GenreHistory,
+	GenreHoliday,
+	GenreHorror,
+	GenreMusic,
+	GenreMusical,
+	GenreMystery,
+	GenreNone,
+	GenreRomance,
+	GenreScienceFiction,
+	GenreShort,
+	GenreSportingEvent,
+	GenreSuperhero,
+	GenreSuspense,
+	GenreThriller,
+	GenreWar,
+	GenreWestern,
+}
+
+var showGenreIds = []Genre{
+	GenreAction,
+	GenreAdventure,
+	GenreAnimation,
+	GenreAnime,
+	GenreBiography,
+	GenreChildren,
+	GenreComedy,
+	GenreCrime,
+	GenreDocumentary,
+	GenreDonghua,
+	GenreDrama,
+	GenreFamily,
+	GenreFantasy,
+	GenreGameShow,
+	GenreHistory,
+	GenreHoliday,
+	GenreHomeAndGarden,
+	GenreHorror,
+	GenreMiniSeries,
+	GenreMusic,
+	GenreMusical,
+	GenreMystery,
+	GenreNews,
+	GenreNone,
+	GenreReality,
+	GenreRomance,
+	GenreScienceFiction,
+	GenreShort,
+	GenreSoap,
+	GenreSpecialInterest,
+	GenreSportingEvent,
+	GenreSuperhero,
+	GenreSuspense,
+	GenreTalkShow,
+	GenreThriller,
+	GenreWar,
+	GenreWestern,
+}
+
+var GenreNames, MovieGenreNames, ShowGenreNames, genreIdByName = func() ([]string, []string, []string, map[string]Genre) {
+	idByName := make(map[string]Genre, len(genreNameById))
+
+	names := make([]string, len(genreIds))
+	for i, genre := range genreIds {
+		names[i] = genreNameById[genre]
+		idByName[names[i]] = genre
+	}
+
+	movieNames := make([]string, len(movieGenreIds))
+	for i, genre := range movieGenreIds {
+		movieNames[i] = genreNameById[genre]
+	}
+
+	showNames := make([]string, len(showGenreIds))
+	for i, genre := range showGenreIds {
+		showNames[i] = genreNameById[genre]
+	}
+
+	return names, movieNames, showNames, idByName
+}()

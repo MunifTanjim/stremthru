@@ -138,6 +138,14 @@ type TraktItem struct {
 	NextEpisode *listItemNextEpisode `json:"-"`
 }
 
+func (item *TraktItem) GenreNames() []string {
+	genres := make([]string, len(item.Genres))
+	for i, genreId := range item.Genres {
+		genres[i] = string(genreNameById[genreId])
+	}
+	return genres
+}
+
 var ItemColumn = struct {
 	Id        string
 	Type      string
