@@ -76,3 +76,10 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 func GetPage(td *TemplateData) (bytes.Buffer, error) {
 	return executeTemplate(td, "configure.html")
 }
+
+func ToCheckboxDefault(value bool) string {
+	if value {
+		return "checked"
+	}
+	return ""
+}

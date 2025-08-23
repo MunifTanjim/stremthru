@@ -19,6 +19,10 @@ func (blob StreamTemplateBlob) IsEmpty() bool {
 	return blob.Name == "" && blob.Description == ""
 }
 
+func (blob StreamTemplateBlob) Equal(o StreamTemplateBlob) bool {
+	return blob.Name == o.Name && blob.Description == o.Description
+}
+
 type StreamTemplate struct {
 	Blob        StreamTemplateBlob
 	Name        *template.Template
@@ -27,6 +31,10 @@ type StreamTemplate struct {
 
 func (t StreamTemplate) IsEmpty() bool {
 	return t.Name == nil && t.Description == nil
+}
+
+func (t StreamTemplate) IsRaw() bool {
+	return t.Blob.Equal(StreamTemplateRaw.Blob)
 }
 
 func (blob StreamTemplateBlob) Parse() (*StreamTemplate, error) {

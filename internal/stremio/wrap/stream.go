@@ -15,12 +15,15 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_torz "github.com/MunifTanjim/stremthru/internal/stremio/torz"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
+
+var lazyPullTorz = config.Stremio.Torz.LazyPull
 
 func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType, id string) (*stremio.StreamHandlerResponse, error) {
 	log := ctx.Log
@@ -36,8 +39,12 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	upstreamsCount := len(upstreams)
 	log.Debug("found addons for stream", "count", upstreamsCount)
 
-	chunks := make([][]WrappedStream, upstreamsCount)
-	errs := make([]error, upstreamsCount)
+	chunksCount := upstreamsCount
+	if ud.IncludeTorz {
+		chunksCount += 1
+	}
+	chunks := make([][]WrappedStream, chunksCount)
+	errs := make([]error, chunksCount)
 
 	template, err := ud.template.Parse()
 	if err != nil {
@@ -48,11 +55,56 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	torrentInfoCategory := torrent_info.GetCategoryFromStremId(stremId)
 
 	if isImdbStremId {
-		go buddy.PullTorrentsByStremId(stremId, "")
+		if !ud.IncludeTorz || lazyPullTorz {
+			go buddy.PullTorrentsByStremId(stremId, "")
+		} else {
+			buddy.PullTorrentsByStremId(stremId, "")
+		}
 	}
 
+	chunkIdxOffset := 0
 	var wg sync.WaitGroup
+	if ud.IncludeTorz {
+		chunkIdxOffset = 1
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			hashes, err := torrent_info.ListHashesByStremId(stremId)
+			if err != nil {
+				errs[0] = err
+				return
+			}
+
+			streams, err := stremio_torz.GetStreamsForHashes(rType, stremId, hashes)
+			if err != nil {
+				errs[0] = err
+				return
+			}
+
+			wstreams := make([]WrappedStream, len(streams))
+			for i := range streams {
+				wstream := &streams[i]
+				stream := wstream.Stream
+				tmpl := template
+				if tmpl == nil || tmpl.IsEmpty() || tmpl.IsRaw() {
+					tmpl = stremio_transformer.StreamTemplateDefault
+				}
+				s, err := tmpl.Execute(stream, wstream.R)
+				if err != nil {
+					errs[0] = err
+					return
+				}
+				wstreams[i] = WrappedStream{
+					Stream: s,
+					r:      wstream.R,
+				}
+			}
+			chunks[0] = wstreams
+		}()
+	}
 	for i := range upstreams {
+		idx := i + chunkIdxOffset
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -65,12 +117,12 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 			})
 			streams := res.Data.Streams
 			wstreams := make([]WrappedStream, len(streams))
-			errs[i] = err
+			errs[idx] = err
 			tInfos := []torrent_info.TorrentInfoInsertData{}
 			if err == nil {
 				extractor, err := up.extractor.Parse()
 				if err != nil {
-					errs[i] = err
+					errs[idx] = err
 				} else {
 					addonHostname := up.baseUrl.Hostname()
 					transformer := StreamTransformer{
@@ -101,27 +153,42 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 				go torrent_info.Upsert(tInfos, torrentInfoCategory, false)
 			}
-			chunks[i] = wstreams
+			chunks[idx] = wstreams
 		}()
 	}
 	wg.Wait()
 
 	allStreams := []WrappedStream{}
-	for i := range chunks {
-		if errs[i] != nil {
-			hostname := upstreams[i].baseUrl.Hostname()
-			log.Error("failed to fetch streams", "error", errs[i], "hostname", hostname)
+	if ud.IncludeTorz {
+		if errs[0] != nil {
+			log.Error("failed to fetch torz streams", "error", errs[0])
 		} else {
-			allStreams = append(allStreams, chunks[i]...)
+			allStreams = append(allStreams, chunks[0]...)
 		}
+	}
+	for i := range chunks[chunkIdxOffset:] {
+		idx := i + chunkIdxOffset
+		hostname := upstreams[i].baseUrl.Hostname()
+		if errs[idx] != nil {
+			log.Error("failed to fetch streams", "error", errs[idx], "hostname", hostname)
+		} else {
+			allStreams = append(allStreams, chunks[idx]...)
+		}
+	}
+
+	if ud.IncludeTorz {
+		allStreams = dedupeStreams(allStreams)
 	}
 
 	if template != nil {
 		stremio_transformer.SortStreams(allStreams, ud.Sort)
 	}
 
+	if !ud.IncludeTorz {
+		allStreams = dedupeStreams(allStreams)
+	}
+
 	totalStreams := len(allStreams)
-	allStreams = dedupeStreams(allStreams)
 	log.Debug("found streams", "total_count", totalStreams, "deduped_count", len(allStreams))
 
 	hashes := []string{}

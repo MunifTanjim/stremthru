@@ -196,5 +196,5 @@ func SortStreams[T StreamSortable](items []T, config string) {
 		return
 	}
 	sorter := streamSorter[T]{items: items, config: sortConfigs}
-	sort.Sort(sorter)
+	sort.Stable(sorter)
 }

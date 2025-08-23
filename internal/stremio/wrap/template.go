@@ -21,15 +21,22 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Stremio Addon to Wrap other Addons with StremThru",
 			NavTitle:    "Wrap",
 		},
+
+		IncludeTorz: configure.Config{
+			Key:     "torz",
+			Type:    configure.ConfigTypeCheckbox,
+			Default: configure.ToCheckboxDefault(ud.IncludeTorz),
+			Title:   "Include Torz",
+		},
+
 		Upstreams:        []UpstreamAddon{},
 		Stores:           []StoreConfig{},
 		StoreCodeOptions: stremio_shared.GetStoreCodeOptions(false),
 		Configs: []configure.Config{
 			{
-				Key:     "cached",
-				Type:    configure.ConfigTypeCheckbox,
-				Title:   "Only Show Cached Content",
-				Options: []configure.ConfigOption{},
+				Key:   "cached",
+				Type:  configure.ConfigTypeCheckbox,
+				Title: "Only Show Cached Content",
 			},
 		},
 		Script: configure.GetScriptStoreTokenDescription("", ""),
@@ -211,6 +218,8 @@ type StoreConfig struct {
 
 type TemplateData struct {
 	Base
+
+	IncludeTorz configure.Config
 
 	Upstreams []UpstreamAddon
 

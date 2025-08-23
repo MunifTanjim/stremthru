@@ -64,6 +64,8 @@ type UserData struct {
 	Upstreams   []UserDataUpstream `json:"upstreams"`
 	ManifestURL string             `json:"manifest_url,omitempty"`
 
+	IncludeTorz bool `json:"torz,omitempty"`
+
 	stremio_userdata.UserDataStores
 	StoreName  string `json:"store,omitempty"`
 	StoreToken string `json:"token,omitempty"`
@@ -411,6 +413,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 			}
 		}
 
+		data.IncludeTorz = r.Form.Get("torz") == "on"
 		data.Sort = r.Form.Get("sort")
 		data.RPDBAPIKey = r.Form.Get("rpdb_akey")
 
