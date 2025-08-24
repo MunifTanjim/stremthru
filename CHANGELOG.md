@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.85.2](https://github.com/MunifTanjim/stremthru/compare/0.85.1...0.85.2) (2025-08-24)
+
+
+### Bug Fixes
+
+* **store/debrider:** fix type for account.subscription.plan.price ([5ca269f](https://github.com/MunifTanjim/stremthru/commit/5ca269fd723b9715863cf05dcbb24f96d20301b2))
+* **trakt:** db locked error for set id maps ([4ed12ad](https://github.com/MunifTanjim/stremthru/commit/4ed12adb36c877a07e5ba6ed41bc030a02250e07))
+* **tvdb:** db locked error for set id maps ([ad32d9c](https://github.com/MunifTanjim/stremthru/commit/ad32d9c453113352b836e2c215b6a55ce65c4e42))
+
+
+### Performance Improvements
+
+* **stremio/torz:** improve performance ([4a6e04c](https://github.com/MunifTanjim/stremthru/commit/4a6e04c336c279edfb28e4971729214588bc4548))
+
 ## [0.85.1](https://github.com/MunifTanjim/stremthru/compare/0.85.0...0.85.1) (2025-08-23)
 
 
