@@ -12,32 +12,76 @@ import (
 const MapTableName = "imdb_title_map"
 
 type IMDBTitleMap struct {
-	IMDBId    string       `json:"imdb"`
-	TMDBId    string       `json:"tmdb"`
-	TVDBId    string       `json:"tvdb"`
-	TraktId   string       `json:"trakt"`
-	MALId     string       `json:"mal"`
-	UpdatedAt db.Timestamp `json:"uat"`
+	IMDBId       string       `json:"imdb"`
+	TMDBId       string       `json:"tmdb"`
+	TVDBId       string       `json:"tvdb"`
+	TraktId      string       `json:"trakt"`
+	LetterboxdId string       `json:"lboxd"`
+	MALId        string       `json:"mal"`
+	UpdatedAt    db.Timestamp `json:"uat"`
 
 	Type IMDBTitleType `json:"-"`
 }
 
 type MapColumnStruct struct {
-	IMDBId    string
-	TMDBId    string
-	TVDBId    string
-	TraktId   string
-	MALId     string
-	UpdatedAt string
+	IMDBId       string
+	TMDBId       string
+	TVDBId       string
+	TraktId      string
+	LetterboxdId string
+	MALId        string
+	UpdatedAt    string
 }
 
 var MapColumn = MapColumnStruct{
-	IMDBId:    "imdb",
-	TMDBId:    "tmdb",
-	TVDBId:    "tvdb",
-	TraktId:   "trakt",
-	MALId:     "mal",
-	UpdatedAt: "uat",
+	IMDBId:       "imdb",
+	TMDBId:       "tmdb",
+	TVDBId:       "tvdb",
+	TraktId:      "trakt",
+	LetterboxdId: "lboxd",
+	MALId:        "mal",
+	UpdatedAt:    "uat",
+}
+
+var query_get_imdb_id_by_letterboxd_id = fmt.Sprintf(
+	`SELECT %s, %s FROM %s WHERE %s IN `,
+	MapColumn.IMDBId,
+	MapColumn.LetterboxdId,
+	MapTableName,
+	MapColumn.LetterboxdId,
+)
+
+func GetIMDBIdByLetterboxdId(letterboxdIds []string) (map[string]string, error) {
+	count := len(letterboxdIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	query := query_get_imdb_id_by_letterboxd_id + "(" + util.RepeatJoin("?", count, ",") + ")"
+	args := make([]any, count)
+	for i, id := range letterboxdIds {
+		args[i] = id
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	imdbIdByLetterboxdId := make(map[string]string, count)
+	for rows.Next() {
+		var imdbId, letterboxdId string
+		if err := rows.Scan(&imdbId, &letterboxdId); err != nil {
+			return nil, err
+		}
+		imdbIdByLetterboxdId[letterboxdId] = imdbId
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return imdbIdByLetterboxdId, nil
 }
 
 var query_get_imdb_id_by_trakt_id = fmt.Sprintf(
@@ -438,23 +482,25 @@ func RecordMappingFromMDBList(tx *db.Tx, imdbId, tmdbId, tvdbId, traktId, malId 
 }
 
 type BulkRecordMappingInputItem struct {
-	IMDBId  string
-	TMDBId  string
-	TVDBId  string
-	TraktId string
-	MALId   string
+	IMDBId       string
+	TMDBId       string
+	TVDBId       string
+	TraktId      string
+	LetterboxdId string
+	MALId        string
 }
 
 var query_bulk_record_mapping_before_values = fmt.Sprintf(
-	`INSERT INTO %s AS itm (%s,%s,%s,%s,%s) VALUES `,
+	`INSERT INTO %s AS itm (%s,%s,%s,%s,%s,%s) VALUES `,
 	MapTableName,
 	MapColumn.IMDBId,
 	MapColumn.TMDBId,
 	MapColumn.TVDBId,
 	MapColumn.TraktId,
+	MapColumn.LetterboxdId,
 	MapColumn.MALId,
 )
-var query_bulk_record_mapping_placeholder = `(?,?,?,?,?)`
+var query_bulk_record_mapping_placeholder = `(?,?,?,?,?,?)`
 var query_bulk_record_mapping_after_values = fmt.Sprintf(
 	` ON CONFLICT (%s) DO UPDATE SET %s, %s = %s`,
 	MapColumn.IMDBId,
@@ -463,6 +509,7 @@ var query_bulk_record_mapping_after_values = fmt.Sprintf(
 			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId),
 			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId),
 			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId),
 			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.MALId, MapColumn.MALId, MapColumn.MALId, MapColumn.MALId),
 		},
 		", ",
@@ -488,13 +535,14 @@ func BulkRecordMapping(tx db.Executor, items []BulkRecordMappingInputItem) error
 		util.RepeatJoin(query_bulk_record_mapping_placeholder, count, ",") +
 		query_bulk_record_mapping_after_values
 
-	args := make([]any, count*5)
+	args := make([]any, count*6)
 	for i, item := range items {
-		args[i*5+0] = item.IMDBId
-		args[i*5+1] = normalizeOptionalId(item.TMDBId)
-		args[i*5+2] = normalizeOptionalId(item.TVDBId)
-		args[i*5+3] = normalizeOptionalId(item.TraktId)
-		args[i*5+4] = normalizeOptionalId(item.MALId)
+		args[i*6+0] = item.IMDBId
+		args[i*6+1] = normalizeOptionalId(item.TMDBId)
+		args[i*6+2] = normalizeOptionalId(item.TVDBId)
+		args[i*6+3] = normalizeOptionalId(item.TraktId)
+		args[i*6+4] = normalizeOptionalId(item.LetterboxdId)
+		args[i*6+5] = normalizeOptionalId(item.MALId)
 	}
 
 	_, err := tx.Exec(query, args...)
@@ -509,6 +557,7 @@ var query_get_id_map_by_imdb_id = fmt.Sprintf(
 		MapColumn.TMDBId,
 		MapColumn.TVDBId,
 		MapColumn.TraktId,
+		MapColumn.LetterboxdId,
 		MapColumn.MALId,
 	),
 	Column.Type,
@@ -526,6 +575,7 @@ func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
 		&idMap.TMDBId,
 		&idMap.TVDBId,
 		&idMap.TraktId,
+		&idMap.LetterboxdId,
 		&idMap.MALId,
 		&idMap.Type,
 	)
@@ -546,6 +596,7 @@ var query_get_id_map_by_tvdb_id = fmt.Sprintf(
 		MapColumn.TMDBId,
 		MapColumn.TVDBId,
 		MapColumn.TraktId,
+		MapColumn.LetterboxdId,
 		MapColumn.MALId,
 	),
 	Column.Type,
@@ -563,6 +614,7 @@ func GetIdMapByTVDBId(tvdbId string) (*IMDBTitleMap, error) {
 		&idMap.TMDBId,
 		&idMap.TVDBId,
 		&idMap.TraktId,
+		&idMap.LetterboxdId,
 		&idMap.MALId,
 		&idMap.Type,
 	)

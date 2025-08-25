@@ -7,6 +7,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/anilist"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
@@ -58,6 +59,37 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 						{
 							Name:    "genre",
 							Options: anilist.Genres,
+						},
+						{
+							Name: "skip",
+						},
+					},
+				}
+				if hasListNames {
+					if name := ud.ListNames[idx]; name != "" {
+						catalog.Name = name
+					}
+				}
+				if hasListTypes {
+					if listType := ud.ListTypes[idx]; listType != "" {
+						catalog.Type = listType
+					}
+				}
+				catalogs = append(catalogs, catalog)
+
+			case "letterboxd":
+				list := &letterboxd.LetterboxdList{Id: idStr}
+				if err := ud.FetchLetterboxdList(list); err != nil {
+					return nil, err
+				}
+				catalog := stremio.Catalog{
+					Type: "movie",
+					Id:   "st.list.letterboxd." + idStr,
+					Name: list.Name,
+					Extra: []stremio.CatalogExtra{
+						{
+							Name:    "genre",
+							Options: letterboxd.GenreNames,
 						},
 						{
 							Name: "skip",

@@ -22,7 +22,7 @@ type GetMovieExternalIdsParams struct {
 
 func (c APIClient) GetMovieExternalIds(params *GetMovieExternalIdsParams) (APIResponse[GetMovieExternalIdsData], error) {
 	var response GetMovieExternalIdsData
-	res, err := c.Request("GET", "/3/movie/"+params.MovieId+"/external_ids", params.Ctx, &response)
+	res, err := c.Request("GET", "/3/movie/"+params.MovieId+"/external_ids", &params.Ctx, &response)
 	return newAPIResponse(res, response), err
 }
 
@@ -47,7 +47,7 @@ type GetTVExternalIdsParams struct {
 
 func (c APIClient) GetTVExternalIds(params *GetTVExternalIdsParams) (APIResponse[GetTVExternalIdsData], error) {
 	var response GetTVExternalIdsData
-	res, err := c.Request("GET", "/3/tv/"+params.SeriesId+"/external_ids", params.Ctx, &response)
+	res, err := c.Request("GET", "/3/tv/"+params.SeriesId+"/external_ids", &params.Ctx, &response)
 	return newAPIResponse(res, response), err
 }
 

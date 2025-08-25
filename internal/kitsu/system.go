@@ -48,7 +48,7 @@ func (c APIClient) GetAnimeTypeByIds(params *GetAnimeTypeByIdsParams) (APIRespon
 	var res *http.Response
 	var err error
 	for cIds := range slices.Chunk(util.SliceMapIntToString(params.Ids), 20) {
-		rParams := Ctx{}
+		rParams := &Ctx{}
 		query := url.Values{}
 		query.Set("page[limit]", "20")
 		query.Set("filter[id]", strings.Join(cIds, ","))

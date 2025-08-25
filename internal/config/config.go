@@ -66,6 +66,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STORE_TUNNEL":                           "*:true",
 		"STREMTHRU_STORE_CLIENT_USER_AGENT":                "stremthru",
 		"STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME":    "12h",
+		"STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME": "12h",
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
@@ -791,7 +792,7 @@ func PrintConfig(state *AppState) {
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "mdblist.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
+	for _, integration := range []string{"anilist.co", "github.com", "kitsu.app", "letterboxd.com", "mdblist.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
 		switch integration {
 		case "anilist.co":
 			disabled := ""
@@ -827,6 +828,17 @@ func PrintConfig(state *AppState) {
 				}
 				l.Println("                 email: " + Integration.Kitsu.Email)
 				l.Println("              password: " + "*******")
+			}
+		case "letterboxd.com":
+			disabled := ""
+			if !Integration.Letterboxd.IsEnabled() {
+				disabled = " (disabled)"
+			}
+			l.Println("   - " + integration + disabled)
+			if disabled == "" {
+				l.Println("               api_key: " + Integration.Letterboxd.APIKey[0:3] + "..." + Integration.Letterboxd.APIKey[len(Integration.Letterboxd.APIKey)-3:])
+				l.Println("                secret: " + Integration.Letterboxd.Secret[0:3] + "..." + Integration.Letterboxd.Secret[len(Integration.Letterboxd.Secret)-3:])
+				l.Println("       list stale time: " + Integration.Letterboxd.ListStaleTime.String())
 			}
 		case "mdblist.com":
 			l.Println("   - " + integration)

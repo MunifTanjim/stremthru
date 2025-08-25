@@ -340,7 +340,7 @@ type dynamicListMeta struct {
 
 func (m dynamicListMeta) fetchPage(client *APIClient, page int, pageSize int) (items []ListItem, totalPages, totalResults int, err error) {
 	log.Debug("fetching dynamic list page", "name", m.Name, "page", page)
-	params := Ctx{}
+	params := &Ctx{}
 	params.Query = &url.Values{
 		"page": []string{strconv.Itoa(page)},
 	}

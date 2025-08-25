@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/anilist"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
@@ -26,6 +27,7 @@ var TraktEnabled = config.Integration.Trakt.IsEnabled()
 var AnimeEnabled = config.Feature.IsEnabled("anime")
 var TMDBEnabled = config.Integration.TMDB.IsEnabled()
 var TVDBEnabled = config.Integration.TVDB.IsEnabled()
+var LetterboxdEnabled = config.Integration.Letterboxd.IsEnabled()
 
 func GetMetaIdMovieOptions(ud *UserData) []configure.ConfigOption {
 	metaIdMovieOptions := []configure.ConfigOption{
@@ -297,6 +299,15 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 						list.URL = l.GetURL()
 					}
 
+				case "letterboxd":
+					l := letterboxd.LetterboxdList{Id: id}
+					if err := ud.FetchLetterboxdList(&l); err != nil {
+						log.Error("failed to fetch list", "error", err, "id", listId)
+						list.Error.URL = "Failed to Fetch List: " + err.Error()
+					} else {
+						list.URL = l.GetURL()
+					}
+
 				case "mdblist":
 					l := mdblist.MDBListList{Id: id}
 					if err := ud.FetchMDBListList(&l); err != nil {
@@ -397,6 +408,21 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 					{Pattern: "/search/anime/next-season"},
 					{Pattern: "/search/anime/popular"},
 					{Pattern: "/search/anime/top-100"},
+				},
+			})
+		}
+		if LetterboxdEnabled {
+			td.SupportedServices = append(td.SupportedServices, supportedService{
+				Name:     "Letterboxd",
+				Hostname: "letterboxd.com",
+				Icon:     "https://s.ltrbxd.com/static/img/touch-icon-48x48-8UhExKgZ.png",
+				URLs: []supportedServiceUrl{
+					{
+						Pattern: "/{username}/list/{slug}/",
+						Examples: []string{
+							"/dave/list/official-top-250-narrative-feature-films/",
+						},
+					},
 				},
 			})
 		}

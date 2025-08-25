@@ -202,7 +202,7 @@ func (c APIClient) FetchUserListItems(params *FetchUserListItemsParams) (APIResp
 
 type dynamicListMeta struct {
 	Endpoint      string
-	BeforeRequest func(req *http.Request)
+	BeforeRequest func(req *http.Request) error
 
 	Id       string
 	ItemType ItemType
@@ -322,12 +322,13 @@ var dynamicListMetaById = map[string]dynamicListMeta{
 	},
 	"progress": {
 		Endpoint: "/sync/progress/up_next_nitro",
-		BeforeRequest: func(req *http.Request) {
+		BeforeRequest: func(req *http.Request) error {
 			req.URL.Host = util.MustDecodeBase64("aGQudHJha3QudHY=")
 			req.Host = req.URL.Host
 			req.Header.Set("Origin", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHY="))
 			req.Header.Set("Referer", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHYv"))
 			req.Header.Set("User-Agent", util.MustDecodeBase64("TW96aWxsYS81LjAgKE1hY2ludG9zaDsgSW50ZWwgTWFjIE9TIFggMTBfMTVfNykgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzOS4wLjAuMCBTYWZhcmkvNTM3LjM2"))
+			return nil
 		},
 		Name:     "Up Next",
 		ItemType: ItemTypeShow,
@@ -496,7 +497,7 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 	for hasMore {
 		log.Debug("fetching dynamic list page", "id", params.id, "page", page)
 
-		p := Ctx{}
+		p := &Ctx{}
 		p.Query = &url.Values{}
 		p.Query.Set("extended", "full,images")
 		if !meta.NoPage {
@@ -506,7 +507,7 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 			p.Query.Set("limit", strconv.Itoa(limit))
 		}
 
-		p.BeforeDo = meta.BeforeRequest
+		p.BeforeDo(meta.BeforeRequest)
 
 		switch meta.Endpoint {
 		case dynamicListMetaById["movies/popular"].Endpoint, dynamicListMetaById["movies/recommendations"].Endpoint:

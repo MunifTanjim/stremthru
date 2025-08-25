@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/anilist"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/shared"
@@ -374,6 +375,26 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			catalogItems = append(catalogItems, catalogItem{meta, *media})
 		}
 
+	case "letterboxd":
+		list := letterboxd.LetterboxdList{Id: id}
+		if err := ud.FetchLetterboxdList(&list); err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range list.Items {
+			item := &list.Items[i]
+			meta := stremio.MetaPreview{
+				Type:        stremio.ContentTypeMovie,
+				Name:        item.Name,
+				Poster:      item.Poster,
+				PosterShape: stremio.MetaPosterShapePoster,
+				Genres:      item.GenreNames(),
+				ReleaseInfo: strconv.Itoa(item.ReleaseYear),
+			}
+			catalogItems = append(catalogItems, catalogItem{meta, item})
+		}
+
 	case "mdblist":
 		list := mdblist.MDBListList{Id: id}
 		if err := ud.FetchMDBListList(&list); err != nil {
@@ -603,6 +624,41 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			if rpdbPosterBaseUrl != "" && media.IdMap.IMDB != "" {
 				item.Poster = rpdbPosterBaseUrl + media.IdMap.IMDB + ".jpg?fallback=true"
 			}
+
+			items = append(items, item.MetaPreview)
+		}
+
+	case "letterboxd":
+		letterboxdIds := []string{}
+		for i := range catalogItems {
+			item := catalogItems[i].item.(*letterboxd.LetterboxdItem)
+			letterboxdIds = append(letterboxdIds, item.Id)
+		}
+
+		imdbIdByLetterboxdId, err := imdb_title.GetIMDBIdByLetterboxdId(letterboxdIds)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range catalogItems {
+			item := &catalogItems[i]
+			titem := item.item.(*letterboxd.LetterboxdItem)
+			imdbId := ""
+			if id, ok := imdbIdByLetterboxdId[titem.Id]; ok {
+				imdbId = id
+			}
+			if imdbId == "" && item.MetaPreview.Id == "" {
+				continue
+			}
+
+			if item.MetaPreview.Id == "" {
+				item.MetaPreview.Id = imdbId
+			}
+			if rpdbPosterBaseUrl != "" {
+				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			}
+			item.MetaPreview.Background = stremio_shared.GetCinemetaBackgroundURL(imdbId)
 
 			items = append(items, item.MetaPreview)
 		}

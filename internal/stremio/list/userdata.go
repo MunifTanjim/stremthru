@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/anilist"
+	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
@@ -44,11 +45,12 @@ type UserData struct {
 
 	encoded string `json:"-"` // correctly configured
 
-	mdblistById map[string]mdblist.MDBListList `json:"-"`
-	anilistById map[string]anilist.AniListList `json:"-"`
-	traktById   map[string]trakt.TraktList     `json:"-"`
-	tmdbById    map[string]tmdb.TMDBList       `json:"-"`
-	tvdbById    map[string]tvdb.TVDBList       `json:"-"`
+	mdblistById    map[string]mdblist.MDBListList       `json:"-"`
+	anilistById    map[string]anilist.AniListList       `json:"-"`
+	traktById      map[string]trakt.TraktList           `json:"-"`
+	tmdbById       map[string]tmdb.TMDBList             `json:"-"`
+	tvdbById       map[string]tvdb.TVDBList             `json:"-"`
+	letterboxdById map[string]letterboxd.LetterboxdList `json:"-"`
 }
 
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
@@ -168,6 +170,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 			return ud, err
 		}
 
+		isLetterboxdEnabled := LetterboxdEnabled
 		isMDBListEnabled := ud.MDBListAPIkey != ""
 		isTMDBConfigured := TMDBEnabled && ud.TMDBTokenId != ""
 		isTraktTvConfigured := TraktEnabled && ud.TraktTokenId != ""
@@ -279,6 +282,36 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					continue
 				}
 				ud.Lists[idx] = "anilist:" + list.Id
+
+			case "letterboxd.com":
+				if !isLetterboxdEnabled {
+					udErr.list_urls[idx] = "Unsupported List URL"
+					continue
+				}
+
+				list := letterboxd.LetterboxdList{}
+				parts := strings.Split(strings.Trim(listUrl.Path, "/"), "/")
+				switch {
+				case len(parts) == 3 && parts[1] == "list":
+					username, slug := parts[0], parts[2]
+					if username == "" || slug == "" {
+						udErr.list_urls[idx] = "Invalid List URL"
+						continue
+					}
+					list.UserName = username
+					list.Slug = slug
+				default:
+					udErr.list_urls[idx] = "Invalid List URL"
+					continue
+				}
+
+				err := ud.FetchLetterboxdList(&list)
+				if err != nil {
+					udErr.list_urls[idx] = "Failed to fetch List: " + err.Error()
+					continue
+				}
+				ud.Lists[idx] = "letterboxd:" + list.Id
+
 			case "mdblist.com":
 				if !isMDBListEnabled {
 					udErr.list_urls[idx] = "MDBList API Key is required"
@@ -552,6 +585,24 @@ func (ud *UserData) getTMDBToken() (*oauth.OAuthToken, error) {
 
 	ud.tmdbToken = otok
 	return ud.tmdbToken, nil
+}
+
+func (ud *UserData) FetchLetterboxdList(list *letterboxd.LetterboxdList) error {
+	if ud.letterboxdById == nil {
+		ud.letterboxdById = map[string]letterboxd.LetterboxdList{}
+	}
+	if list.Id != "" {
+		if l, ok := ud.letterboxdById[list.Id]; ok {
+			*list = l
+			return nil
+		}
+	}
+	if err := list.Fetch(); err != nil {
+		return err
+	}
+
+	ud.letterboxdById[list.Id] = *list
+	return nil
 }
 
 func (ud *UserData) FetchMDBListList(list *mdblist.MDBListList) error {

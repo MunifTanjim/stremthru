@@ -33,6 +33,10 @@ func ProcessResponseBody(res *http.Response, err error, v ResponseContainer) err
 		return err
 	}
 
+	if res.Request.Method == http.MethodHead {
+		return nil
+	}
+
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 

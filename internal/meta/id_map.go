@@ -34,13 +34,14 @@ type IdMapAnime struct {
 }
 
 type IdMap struct {
-	Type   IdType      `json:"type"`
-	IMDB   string      `json:"imdb,omitempty"`
-	TMDB   string      `json:"tmdb,omitempty"`
-	TVDB   string      `json:"tvdb,omitempty"`
-	TVMaze string      `json:"tvmaze,omitempty"`
-	Trakt  string      `json:"trakt,omitempty"`
-	Anime  *IdMapAnime `json:"anime,omitempty"`
+	Type       IdType      `json:"type"`
+	IMDB       string      `json:"imdb,omitempty"`
+	TMDB       string      `json:"tmdb,omitempty"`
+	TVDB       string      `json:"tvdb,omitempty"`
+	TVMaze     string      `json:"tvmaze,omitempty"`
+	Trakt      string      `json:"trakt,omitempty"`
+	Letterboxd string      `json:"lboxd,omitempty"`
+	Anime      *IdMapAnime `json:"anime,omitempty"`
 }
 
 type IdProvider string
@@ -51,6 +52,7 @@ const (
 	IdProviderTVDB        IdProvider = ProviderTVDB
 	IdProviderTVMaze      IdProvider = "tvmaze"
 	IdProviderTrakt       IdProvider = "trakt"
+	IdProviderLetterboxd  IdProvider = "lboxd"
 	IdProviderAniDB       IdProvider = "anidb"
 	IdProviderAniList     IdProvider = "anilist"
 	IdProviderAniSearch   IdProvider = "anisearch"
@@ -125,6 +127,7 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			idMap.TMDB = idm.TMDBId
 			idMap.TVDB = idm.TVDBId
 			idMap.Trakt = idm.TraktId
+			idMap.Letterboxd = idm.LetterboxdId
 		case IdProviderTVDB:
 			idm, err := imdb_title.GetIdMapByTVDBId(id)
 			if err != nil || idm == nil {
@@ -135,6 +138,7 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			idMap.TMDB = idm.TMDBId
 			idMap.TVDB = id
 			idMap.Trakt = idm.TraktId
+			idMap.Letterboxd = idm.LetterboxdId
 		default:
 			return nil, ErrorUnsupportedId
 		}
@@ -160,10 +164,11 @@ func SetIdMapsInTrx(tx db.Executor, idMaps []IdMap, anchor IdProvider) error {
 		}
 		cacheKeys = append(cacheKeys, anchor.GetCacheKey(idMap))
 		imdbMap := imdb_title.BulkRecordMappingInputItem{
-			IMDBId:  idMap.IMDB,
-			TMDBId:  idMap.TMDB,
-			TVDBId:  idMap.TVDB,
-			TraktId: idMap.Trakt,
+			IMDBId:       idMap.IMDB,
+			TMDBId:       idMap.TMDB,
+			TVDBId:       idMap.TVDB,
+			TraktId:      idMap.Trakt,
+			LetterboxdId: idMap.Letterboxd,
 		}
 		if idMap.Anime != nil && idMap.Anime.MAL != "" {
 			imdbMap.MALId = idMap.Anime.MAL

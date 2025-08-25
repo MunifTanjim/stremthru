@@ -19,6 +19,16 @@ type integrationConfigAniList struct {
 	ListStaleTime time.Duration
 }
 
+type integrationConfigLettterboxd struct {
+	APIKey        string
+	Secret        string
+	ListStaleTime time.Duration
+}
+
+func (c integrationConfigLettterboxd) IsEnabled() bool {
+	return c.APIKey != "" && c.Secret != ""
+}
+
 type integrationConfigMDBList struct {
 	ListStaleTime time.Duration
 }
@@ -73,13 +83,14 @@ func (c integrationConfigTVDB) IsEnabled() bool {
 }
 
 type IntegrationConfig struct {
-	AniList integrationConfigAniList
-	GitHub  integrationConfigGitHub
-	MDBList integrationConfigMDBList
-	Trakt   integrationConfigTrakt
-	Kitsu   integrationConfigKitsu
-	TMDB    integrationConfigTMDB
-	TVDB    integrationConfigTVDB
+	AniList    integrationConfigAniList
+	GitHub     integrationConfigGitHub
+	Letterboxd integrationConfigLettterboxd
+	MDBList    integrationConfigMDBList
+	Trakt      integrationConfigTrakt
+	Kitsu      integrationConfigKitsu
+	TMDB       integrationConfigTMDB
+	TVDB       integrationConfigTVDB
 }
 
 func parseIntegration() IntegrationConfig {
@@ -90,6 +101,11 @@ func parseIntegration() IntegrationConfig {
 		GitHub: integrationConfigGitHub{
 			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
+		},
+		Letterboxd: integrationConfigLettterboxd{
+			APIKey:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_API_KEY"),
+			Secret:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_SECRET"),
+			ListStaleTime: mustParseDuration("letterboxd list stale time", getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME"), 15*time.Minute),
 		},
 		MDBList: integrationConfigMDBList{
 			ListStaleTime: mustParseDuration("mdblist list stale time", getEnv("STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME"), 15*time.Minute),
