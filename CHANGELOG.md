@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.85.3](https://github.com/MunifTanjim/stremthru/compare/0.85.2...0.85.3) (2025-08-25)
+
+
+### Bug Fixes
+
+* **store:** submit raw magnet link to store for add magnet ([fea434a](https://github.com/MunifTanjim/stremthru/commit/fea434adea0c2ee5c4188fab3ce84738f71a04fa))
+
 ## [0.85.2](https://github.com/MunifTanjim/stremthru/compare/0.85.1...0.85.2) (2025-08-24)
 
 
