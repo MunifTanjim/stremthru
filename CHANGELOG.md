@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.86.0](https://github.com/MunifTanjim/stremthru/compare/0.85.4...0.86.0) (2025-08-25)
+
+
+### Features
+
+* **stremio/list:** add letterboxd integration ([280b471](https://github.com/MunifTanjim/stremthru/commit/280b4710a62fdec738a4527b8e3f97401de8d4ec))
+* **stremio/list:** allow filtering out movie/series for trakt list ([2bd51e6](https://github.com/MunifTanjim/stremthru/commit/2bd51e66f78cb5d49d1ec7743a25725034edfff6))
+* **stremio/list:** show genre names for mdblist ([1b1d6a0](https://github.com/MunifTanjim/stremthru/commit/1b1d6a0704c0ae9a845a530a5a9d6fc75bc0c39a))
+* **stremio/list:** show genre names for trakt ([b7e603d](https://github.com/MunifTanjim/stremthru/commit/b7e603dc2c7b50555ba265e578f7fd2930908bab))
+* **stremio/list:** support letterbox via upstream peer ([575b5c1](https://github.com/MunifTanjim/stremthru/commit/575b5c103992c3d92bc029abcb52952f211dbe0b))
+* **stremio/wrap:** add config to include torz ([93ec8c4](https://github.com/MunifTanjim/stremthru/commit/93ec8c44d55f386818e11ddf6ede51595516d6af))
+
 ## [0.85.4](https://github.com/MunifTanjim/stremthru/compare/0.85.3...0.85.4) (2025-08-25)
 
 
