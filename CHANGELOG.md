@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.85.4](https://github.com/MunifTanjim/stremthru/compare/0.85.3...0.85.4) (2025-08-25)
+
+
+### Bug Fixes
+
+* **stremio/list:** correctly fetch list from trakt private profile ([73ac899](https://github.com/MunifTanjim/stremthru/commit/73ac8997a2165c49a058fd8c5fa663daebb69f0e))
+
 ## [0.85.3](https://github.com/MunifTanjim/stremthru/compare/0.85.2...0.85.3) (2025-08-25)
 
 
