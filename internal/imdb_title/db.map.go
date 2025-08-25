@@ -626,3 +626,63 @@ func GetIdMapByTVDBId(tvdbId string) (*IMDBTitleMap, error) {
 	}
 	return &idMap, nil
 }
+
+var query_get_id_maps_by_letterboxd_id = fmt.Sprintf(
+	`SELECT %s, coalesce(it.%s, '') as item_type FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s IN `,
+	db.JoinPrefixedColumnNames(
+		"itm.",
+		MapColumn.IMDBId,
+		MapColumn.TMDBId,
+		MapColumn.TVDBId,
+		MapColumn.TraktId,
+		MapColumn.LetterboxdId,
+		MapColumn.MALId,
+	),
+	Column.Type,
+	MapTableName,
+	TableName,
+	MapColumn.IMDBId,
+	Column.TId,
+	MapColumn.LetterboxdId,
+)
+
+func GetIdMapsByLetterboxdId(letterboxdIds []string) (map[string]IMDBTitleMap, error) {
+	count := len(letterboxdIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	query := query_get_id_maps_by_letterboxd_id + "(" + util.RepeatJoin("?", count, ",") + ")"
+	args := make([]any, count)
+	for i, id := range letterboxdIds {
+		args[i] = id
+	}
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	idMapById := make(map[string]IMDBTitleMap, count)
+	for rows.Next() {
+		idMap := IMDBTitleMap{}
+		if err := rows.Scan(
+			&idMap.IMDBId,
+			&idMap.TMDBId,
+			&idMap.TVDBId,
+			&idMap.TraktId,
+			&idMap.LetterboxdId,
+			&idMap.MALId,
+			&idMap.Type,
+		); err != nil {
+			return nil, err
+		}
+
+		idMapById[idMap.LetterboxdId] = idMap
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return idMapById, nil
+}
