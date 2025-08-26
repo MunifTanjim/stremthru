@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.86.2](https://github.com/MunifTanjim/stremthru/compare/0.86.1...0.86.2) (2025-08-26)
+
+
+### Bug Fixes
+
+* **imdb_title:** normalize ids for record id map ([a92ccde](https://github.com/MunifTanjim/stremthru/commit/a92ccde97fd2e9f55f17a9d1ec00b4a66e67cccf))
+* **imdb_title:** queries for id map ([e3257a1](https://github.com/MunifTanjim/stremthru/commit/e3257a1c3dde17e8e88ad6bb9a262e329269eca0))
+
 ## [0.86.1](https://github.com/MunifTanjim/stremthru/compare/0.86.0...0.86.1) (2025-08-26)
 
 
