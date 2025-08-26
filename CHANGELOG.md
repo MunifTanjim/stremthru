@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.86.3](https://github.com/MunifTanjim/stremthru/compare/0.86.2...0.86.3) (2025-08-26)
+
+
+### Bug Fixes
+
+* **util:** disable lazy quote for tsv dataset parser ([f60818e](https://github.com/MunifTanjim/stremthru/commit/f60818e45b0aac181e359cbd3534b3bd94686c60))
+
 ## [0.86.2](https://github.com/MunifTanjim/stremthru/compare/0.86.1...0.86.2) (2025-08-26)
 
 
