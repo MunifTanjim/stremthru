@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.86.1](https://github.com/MunifTanjim/stremthru/compare/0.86.0...0.86.1) (2025-08-26)
+
+
+### Bug Fixes
+
+* **stremio/list:** fix url for letterbox ([3e29f74](https://github.com/MunifTanjim/stremthru/commit/3e29f745904f99dc9fd6579463e6f024323583c6))
+
 ## [0.86.0](https://github.com/MunifTanjim/stremthru/compare/0.85.4...0.86.0) (2025-08-25)
 
 
