@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.86.5](https://github.com/MunifTanjim/stremthru/compare/0.86.4...0.86.5) (2025-08-27)
+
+
+### Performance Improvements
+
+* add cache-control header for generic endpoints ([e5e3b21](https://github.com/MunifTanjim/stremthru/commit/e5e3b21e560c504fdc656ca6af240106b57c679d))
+
 ## [0.86.4](https://github.com/MunifTanjim/stremthru/compare/0.86.3...0.86.4) (2025-08-27)
 
 
