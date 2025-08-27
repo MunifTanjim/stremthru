@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.86.4](https://github.com/MunifTanjim/stremthru/compare/0.86.3...0.86.4) (2025-08-27)
+
+
+### Bug Fixes
+
+* **letterboxd:** sync large list in background to avoid rate-limits ([40cce82](https://github.com/MunifTanjim/stremthru/commit/40cce82c1cf7b5b97874d3c55a91a7cc6b1efa79))
+
+
+### Performance Improvements
+
+* **stremio/list:** increase stale time for letterboxd ([7a7f9cf](https://github.com/MunifTanjim/stremthru/commit/7a7f9cf7d0e63f583f97036bef53d522766b2eb4))
+
 ## [0.86.3](https://github.com/MunifTanjim/stremthru/compare/0.86.2...0.86.3) (2025-08-26)
 
 
