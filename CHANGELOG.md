@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.86.6](https://github.com/MunifTanjim/stremthru/compare/0.86.5...0.86.6) (2025-08-28)
+
+
+### Bug Fixes
+
+* **imdb_title:** fix id map queries for postgresql ([747c66f](https://github.com/MunifTanjim/stremthru/commit/747c66f722f35ab47abbbd432d0a9f3bae63c91d))
+
+
+### Performance Improvements
+
+* add missing database indices ([13c2521](https://github.com/MunifTanjim/stremthru/commit/13c25219d0e9df91f4b8c25fcf2f04932d634ed7))
+* **anime:** cache result for get anidb id by kitsu/mal id query ([2b091aa](https://github.com/MunifTanjim/stremthru/commit/2b091aa12f585c44c599116d8f815761638afbaf))
+
 ## [0.86.5](https://github.com/MunifTanjim/stremthru/compare/0.86.4...0.86.5) (2025-08-27)
 
 
