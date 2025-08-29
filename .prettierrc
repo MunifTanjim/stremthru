@@ -1,0 +1,17 @@
+{
+  "plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+  "overrides": [
+    {
+      "files": "*.svelte",
+      "options": {
+        "parser": "svelte"
+      }
+    },
+    {
+      "files": "app/dash/**",
+      "options": {
+        "tailwindStylesheet": "./app/dash/src/app.css"
+      }
+    }
+  ]
+}
