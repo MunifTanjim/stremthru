@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.86.7](https://github.com/MunifTanjim/stremthru/compare/0.86.6...0.86.7) (2025-08-30)
+
+
+### Bug Fixes
+
+* **stremio/store:** normalize diacritics when matching titles ([5323fdd](https://github.com/MunifTanjim/stremthru/commit/5323fddcc7573bd544e4f954d82e9a9eefc7cfcf))
+* **stremio/wrap:** correctly send empty manifest.json ([085c2ee](https://github.com/MunifTanjim/stremthru/commit/085c2ee848250557db209b85ae1e8ddff296c4cd))
+
 ## [0.86.6](https://github.com/MunifTanjim/stremthru/compare/0.86.5...0.86.6) (2025-08-28)
 
 
