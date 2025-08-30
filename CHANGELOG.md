@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.86.8](https://github.com/MunifTanjim/stremthru/compare/0.86.7...0.86.8) (2025-08-30)
+
+
+### Bug Fixes
+
+* **stremio/store:** normalize diacritics when searching catalog ([b19913b](https://github.com/MunifTanjim/stremthru/commit/b19913b23f8e6db89655c568b541bbc2cf1a7e62))
+
 ## [0.86.7](https://github.com/MunifTanjim/stremthru/compare/0.86.6...0.86.7) (2025-08-30)
 
 
