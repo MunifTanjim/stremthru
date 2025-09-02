@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.86.9](https://github.com/MunifTanjim/stremthru/compare/0.86.8...0.86.9) (2025-09-02)
+
+
+### Bug Fixes
+
+* **imdb_title:** fix record genre query for empty args ([f2f2073](https://github.com/MunifTanjim/stremthru/commit/f2f2073f009e6f1c001ccf21caabf0df7733ad16))
+
 ## [0.86.8](https://github.com/MunifTanjim/stremthru/compare/0.86.7...0.86.8) (2025-08-30)
 
 
