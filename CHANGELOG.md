@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.86.10](https://github.com/MunifTanjim/stremthru/compare/0.86.9...0.86.10) (2025-09-04)
+
+
+### Bug Fixes
+
+* **letterboxd:** fix retry-after tracking ([3bcc216](https://github.com/MunifTanjim/stremthru/commit/3bcc21673e5541c106dd22eb8f439d0632fbed6b))
+* **store/debrider:** correctly extract name and path ([b88a514](https://github.com/MunifTanjim/stremthru/commit/b88a514701e8ece63de718a88db613192ebb5af5))
+* **store/debridlink:** fix list magnets pagination ([7ca9d54](https://github.com/MunifTanjim/stremthru/commit/7ca9d54acb04e5505b86f45c0161f17217e56f29))
+* **store/debridlink:** remove incorrect file path ([5a9a83f](https://github.com/MunifTanjim/stremthru/commit/5a9a83fe5d86e5aae9c7154cbd156e5c69c35071))
+* **store/premiumize:** correctly extract name and path ([aba10fc](https://github.com/MunifTanjim/stremthru/commit/aba10fc4d3e14d4294e7f605a017ae5b150167b1))
+* **store/torbox:** correctly extract name and path ([f4668e0](https://github.com/MunifTanjim/stremthru/commit/f4668e0e08ff1a5381485a7b6854b71b2a1d068b))
+
 ## [0.86.9](https://github.com/MunifTanjim/stremthru/compare/0.86.8...0.86.9) (2025-09-02)
 
 
