@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.86.11](https://github.com/MunifTanjim/stremthru/compare/0.86.10...0.86.11) (2025-09-05)
+
+
+### Bug Fixes
+
+* **store/debrider:** correctly extract name and path for check magnet ([3e7be2d](https://github.com/MunifTanjim/stremthru/commit/3e7be2d2def129bea3c9e4c1c0583b520dc9e145))
+* **store/easydebrid:** correctly extract name and path ([83b40b9](https://github.com/MunifTanjim/stremthru/commit/83b40b911d5dc90fd933281d513d00619b010e40))
+* **store/pikpak:** calculate size for get magnet ([b588717](https://github.com/MunifTanjim/stremthru/commit/b5887177da968a8f6e256c11019d2f07e57bb29c))
+
 ## [0.86.10](https://github.com/MunifTanjim/stremthru/compare/0.86.9...0.86.10) (2025-09-04)
 
 
