@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.86.12](https://github.com/MunifTanjim/stremthru/compare/0.86.11...0.86.12) (2025-09-06)
+
+
+### Bug Fixes
+
+* **store/offcloud:** correctly extract name and path ([9c2c71f](https://github.com/MunifTanjim/stremthru/commit/9c2c71f5b9f0e0f7df796f9035c9067d5ca579e7))
+* **store/offcloud:** fix magnet status detection ([2a268cc](https://github.com/MunifTanjim/stremthru/commit/2a268ccce4b0e07a543d978fea652b6275ca8690))
+
 ## [0.86.11](https://github.com/MunifTanjim/stremthru/compare/0.86.10...0.86.11) (2025-09-05)
 
 
