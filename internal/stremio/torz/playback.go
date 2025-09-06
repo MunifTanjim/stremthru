@@ -170,9 +170,9 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		if shouldTagStream {
 			if isIMDBId {
-				torrent_stream.TagStremId(magnet.Hash, file.Name, sid)
+				torrent_stream.TagStremId(magnet.Hash, file.Path, sid)
 			} else if isAnimeId {
-				go torrent_stream.TagAnimeStremId(magnet.Hash, file.Name, sid)
+				go torrent_stream.TagAnimeStremId(magnet.Hash, file.Path, sid)
 			}
 		}
 

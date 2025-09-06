@@ -144,12 +144,14 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	if t.DownloadPercent == 100 {
 		data.Status = store.MagnetStatusDownloaded
 
+		source := string(c.GetName().Code())
 		for idx, f := range t.Files {
 			file := &store.MagnetFile{
-				Idx:  idx,
-				Name: f.Name,
-				Size: f.Size,
-				Link: f.DownloadUrl,
+				Idx:    idx,
+				Name:   f.Name,
+				Size:   f.Size,
+				Link:   f.DownloadUrl,
+				Source: source,
 			}
 
 			data.Files = append(data.Files, *file)
@@ -189,12 +191,14 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	} else if t.DownloadPercent < 100 {
 		data.Status = store.MagnetStatusDownloading
 	}
+	source := string(c.GetName().Code())
 	for idx, f := range t.Files {
 		file := &store.MagnetFile{
-			Idx:  idx,
-			Link: f.DownloadUrl,
-			Name: f.Name,
-			Size: f.Size,
+			Idx:    idx,
+			Link:   f.DownloadUrl,
+			Name:   f.Name,
+			Size:   f.Size,
+			Source: source,
 		}
 
 		data.Files = append(data.Files, *file)

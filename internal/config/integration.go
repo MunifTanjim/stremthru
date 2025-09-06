@@ -19,6 +19,14 @@ type integrationConfigAniList struct {
 	ListStaleTime time.Duration
 }
 
+type integrationConfigBitmagnet struct {
+	DatabaseURI string
+}
+
+func (c integrationConfigBitmagnet) IsEnabled() bool {
+	return c.DatabaseURI != ""
+}
+
 type integrationConfigLettterboxd struct {
 	APIKey        string
 	Secret        string
@@ -84,6 +92,7 @@ func (c integrationConfigTVDB) IsEnabled() bool {
 
 type IntegrationConfig struct {
 	AniList    integrationConfigAniList
+	Bitmagnet  integrationConfigBitmagnet
 	GitHub     integrationConfigGitHub
 	Letterboxd integrationConfigLettterboxd
 	MDBList    integrationConfigMDBList
@@ -97,6 +106,9 @@ func parseIntegration() IntegrationConfig {
 	integration := IntegrationConfig{
 		AniList: integrationConfigAniList{
 			ListStaleTime: mustParseDuration("anilist list stale time", getEnv("STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME"), 15*time.Minute),
+		},
+		Bitmagnet: integrationConfigBitmagnet{
+			DatabaseURI: getEnv("STREMTHRU_INTEGRATION_BITMAGNET_DATABASE_URI"),
 		},
 		GitHub: integrationConfigGitHub{
 			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),

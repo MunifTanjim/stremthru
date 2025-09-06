@@ -53,6 +53,7 @@ func processResponseBody(res *http.Response, err error, v ResponseEnvelop) error
 		return err
 	}
 
+	println(string(body))
 	if res.StatusCode >= 400 {
 		contentType := res.Header.Get("Content-Type")
 		if !strings.Contains(contentType, "application/json") {

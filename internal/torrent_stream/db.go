@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -18,9 +19,10 @@ import (
 )
 
 type File struct {
-	Name      string `json:"n"`
+	Path      string `json:"p"`
 	Idx       int    `json:"i"`
 	Size      int64  `json:"s"`
+	Name      string `json:"n"`
 	SId       string `json:"sid,omitempty"`
 	ASId      string `json:"asid,omitempty"`
 	Source    string `json:"src,omitempty"`
@@ -50,9 +52,11 @@ func (arr Files) ToStoreMagnetFile() []store.MagnetFile {
 	files := make([]store.MagnetFile, len(arr))
 	for i, f := range arr {
 		files[i] = store.MagnetFile{
-			Idx:  f.Idx,
-			Name: f.Name,
-			Size: f.Size,
+			Idx:    f.Idx,
+			Path:   f.Path,
+			Name:   filepath.Base(f.Path),
+			Size:   f.Size,
+			Source: f.Source,
 		}
 	}
 	return files
@@ -62,7 +66,7 @@ const TableName = "torrent_stream"
 
 type TorrentStream struct {
 	Hash      string       `json:"h"`
-	Name      string       `json:"n"`
+	Path      string       `json:"p"`
 	Idx       int          `json:"i"`
 	Size      int64        `json:"s"`
 	SId       string       `json:"sid"`
@@ -75,7 +79,7 @@ type TorrentStream struct {
 
 var Column = struct {
 	Hash      string
-	Name      string
+	Path      string
 	Idx       string
 	Size      string
 	SId       string
@@ -86,7 +90,7 @@ var Column = struct {
 	UAt       string
 }{
 	Hash:      "h",
-	Name:      "n",
+	Path:      "p",
 	Idx:       "i",
 	Size:      "s",
 	SId:       "sid",
@@ -99,7 +103,7 @@ var Column = struct {
 
 var Columns = []string{
 	Column.Hash,
-	Column.Name,
+	Column.Path,
 	Column.Idx,
 	Column.Size,
 	Column.SId,
@@ -112,7 +116,7 @@ var Columns = []string{
 
 var query_get_anime_file_for_kitsu = fmt.Sprintf(
 	`SELECT %s, %s, %s FROM %s WHERE %s = ? AND %s = CONCAT((SELECT %s FROM %s WHERE %s = ?), ':', CAST(? AS varchar))`,
-	Column.Name, Column.Idx, Column.Size,
+	Column.Path, Column.Idx, Column.Size,
 	TableName,
 	Column.Hash,
 	Column.ASId,
@@ -125,7 +129,7 @@ func getAnimeFileForKitsu(hash string, asid string) (*File, error) {
 	kitsuId, episode, _ := strings.Cut(strings.TrimPrefix(asid, "kitsu:"), ":")
 	row := db.QueryRow(query_get_anime_file_for_kitsu, hash, kitsuId, episode)
 	var file File
-	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
+	if err := row.Scan(&file.Path, &file.Idx, &file.Size); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -136,7 +140,7 @@ func getAnimeFileForKitsu(hash string, asid string) (*File, error) {
 
 var query_get_anime_file_for_mal = fmt.Sprintf(
 	`SELECT %s, %s, %s FROM %s WHERE %s = ? AND %s = CONCAT((SELECT %s FROM %s WHERE %s = ?), ':', CAST(? AS varchar))`,
-	Column.Name, Column.Idx, Column.Size,
+	Column.Path, Column.Idx, Column.Size,
 	TableName,
 	Column.Hash,
 	Column.ASId,
@@ -149,7 +153,7 @@ func getAnimeFileForMAL(hash string, asid string) (*File, error) {
 	malId, episode, _ := strings.Cut(strings.TrimPrefix(asid, "mal:"), ":")
 	row := db.QueryRow(query_get_anime_file_for_mal, hash, malId, episode)
 	var file File
-	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
+	if err := row.Scan(&file.Path, &file.Idx, &file.Size); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -160,7 +164,7 @@ func getAnimeFileForMAL(hash string, asid string) (*File, error) {
 
 var query_get_file = fmt.Sprintf(
 	"SELECT %s, %s, %s FROM %s WHERE %s = ? AND %s = ?",
-	Column.Name, Column.Idx, Column.Size,
+	Column.Path, Column.Idx, Column.Size,
 	TableName,
 	Column.Hash,
 	Column.SId,
@@ -175,7 +179,7 @@ func GetFile(hash string, sid string) (*File, error) {
 	}
 	row := db.QueryRow(query_get_file, hash, sid)
 	var file File
-	if err := row.Scan(&file.Name, &file.Idx, &file.Size); err != nil {
+	if err := row.Scan(&file.Path, &file.Idx, &file.Size); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -198,7 +202,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		hashPlaceholders[i] = "?"
 	}
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'n', n, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +227,7 @@ func TrackFiles(filesByHash map[string]Files, discardIdx bool) {
 	items := []InsertData{}
 	for hash, files := range filesByHash {
 		for _, file := range files {
-			if file.Name == "" {
+			if file.Path == "" {
 				continue
 			}
 			items = append(items, InsertData{Hash: hash, File: file})
@@ -242,7 +246,7 @@ var record_streams_query_before_values = fmt.Sprintf(
 	TableName,
 	db.JoinColumnNames(
 		Column.Hash,
-		Column.Name,
+		Column.Path,
 		Column.Idx,
 		Column.Size,
 		Column.SId,
@@ -252,16 +256,16 @@ var record_streams_query_before_values = fmt.Sprintf(
 )
 var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 7, ","))
 var record_streams_query_on_conflict = fmt.Sprintf(
-	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s = %s",
+	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s",
 	Column.Hash,
-	Column.Name,
+	Column.Path,
 	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Idx, Column.Idx, Column.Source, Column.Idx, Column.Idx,
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Idx, Column.Source, Column.Idx, Column.Source, Column.Source, Column.Idx, Column.Idx,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Size, Column.Size, Column.Source, Column.Size, Column.Size,
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Size, Column.Source, Column.Size, Column.Source, Column.Source, Column.Size, Column.Size,
 	),
 	fmt.Sprintf(
 		"%s = CASE WHEN ts.%s IN ('', '*') THEN EXCLUDED.%s ELSE ts.%s END",
@@ -272,39 +276,50 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 		Column.VideoHash, Column.VideoHash, Column.VideoHash, Column.VideoHash,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
-		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
+		"%s = CASE WHEN (EXCLUDED.%s != 'dht' AND ts.%s = 'dht') OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
+		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
 	),
-	Column.UAt,
-	db.CurrentTimestamp,
+	fmt.Sprintf(
+		"%s = %s",
+		Column.UAt, db.CurrentTimestamp,
+	),
 )
 
-func Record(items []InsertData, discardIdx bool) {
+func Record(items []InsertData, discardIdx bool) error {
 	if len(items) == 0 {
-		return
+		return nil
 	}
 
+	errs := []error{}
 	for cItems := range slices.Chunk(items, 200) {
 		seenFileMap := map[string]struct{}{}
 
 		count := len(cItems)
-		args := make([]any, 0, count*6)
+		args := make([]any, 0, count*7)
 		for i := range cItems {
 			item := &cItems[i]
 			idx := item.Idx
-			if discardIdx {
+			if discardIdx && item.Source != "dht" {
 				idx = -1
 			}
 			sid := item.SId
 			if sid == "" {
 				sid = "*"
 			}
-			key := item.Hash + ":" + item.Name
+			key := item.Hash + ":" + item.Path
 			if _, seen := seenFileMap[key]; !seen {
 				seenFileMap[key] = struct{}{}
-				args = append(args, item.Hash, item.Name, idx, item.Size, sid, item.Source, item.VideoHash)
+				args = append(args,
+					item.Hash,
+					item.Path,
+					idx,
+					item.Size,
+					sid,
+					item.Source,
+					item.VideoHash,
+				)
 			} else {
-				log.Warn("skipped duplicate file", "hash", item.Hash, "name", item.Name)
+				log.Debug("skipped duplicate file", "hash", item.Hash, "path", item.Path)
 				count--
 			}
 		}
@@ -314,10 +329,13 @@ func Record(items []InsertData, discardIdx bool) {
 		_, err := db.Exec(query, args...)
 		if err != nil {
 			log.Error("failed partially to record", "error", err)
+			errs = append(errs, err)
 		} else {
 			log.Debug("recorded torrent stream", "count", count)
 		}
 	}
+
+	return errors.Join(errs...)
 }
 
 var tag_strem_id_query = fmt.Sprintf(
@@ -326,19 +344,19 @@ var tag_strem_id_query = fmt.Sprintf(
 	Column.SId,
 	Column.UAt,
 	Column.Hash,
-	Column.Name,
+	Column.Path,
 	Column.SId,
 )
 
-func TagStremId(hash string, filename string, sid string) {
+func TagStremId(hash string, filepath string, sid string) {
 	if !strings.HasPrefix(sid, "tt") {
 		return
 	}
-	_, err := db.Exec(tag_strem_id_query, sid, db.Timestamp{Time: time.Now()}, hash, filename)
+	_, err := db.Exec(tag_strem_id_query, sid, db.Timestamp{Time: time.Now()}, hash, filepath)
 	if err != nil {
-		log.Error("failed to tag strem id", "error", err, "hash", hash, "fname", filename, "sid", sid)
+		log.Error("failed to tag strem id", "error", err, "hash", hash, "fpath", filepath, "sid", sid)
 	} else {
-		log.Debug("tagged strem id", "hash", hash, "fname", filename, "sid", sid)
+		log.Debug("tagged strem id", "hash", hash, "fpath", filepath, "sid", sid)
 	}
 }
 
@@ -349,11 +367,11 @@ var query_tag_anime_strem_id = fmt.Sprintf(
 	Column.UAt,
 	db.CurrentTimestamp,
 	Column.Hash,
-	Column.Name,
+	Column.Path,
 	Column.ASId,
 )
 
-func TagAnimeStremId(hash string, filename string, sid string) {
+func TagAnimeStremId(hash string, filepath string, sid string) {
 	var anidbId, episode string
 	var err error
 	if kitsuSid, ok := strings.CutPrefix(sid, "kitsu:"); ok {
@@ -372,11 +390,11 @@ func TagAnimeStremId(hash string, filename string, sid string) {
 		return
 	}
 	asid := anidbId + ":" + episode
-	_, err = db.Exec(query_tag_anime_strem_id, asid, hash, filename)
+	_, err = db.Exec(query_tag_anime_strem_id, asid, hash, filepath)
 	if err != nil {
-		log.Error("failed to tag anime strem id", "error", err, "hash", hash, "fname", filename, "asid", asid, "strem_id", sid)
+		log.Error("failed to tag anime strem id", "error", err, "hash", hash, "fpath", filepath, "asid", asid, "strem_id", sid)
 	} else {
-		log.Debug("tagged anime strem id", "hash", hash, "fname", filename, "asid", asid, "strem_id", sid)
+		log.Debug("tagged anime strem id", "hash", hash, "fpath", filepath, "asid", asid, "strem_id", sid)
 	}
 }
 
@@ -428,7 +446,7 @@ type Stats struct {
 var stats_query = fmt.Sprintf(
 	"SELECT %s, COUNT(%s) FROM %s WHERE %s NOT IN ('', '*') AND %s != '' GROUP BY %s",
 	Column.Source,
-	Column.Name,
+	Column.Path,
 	TableName,
 	Column.SId,
 	Column.Source,

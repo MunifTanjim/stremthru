@@ -18,7 +18,7 @@ const (
 
 type ConnectionURI struct {
 	*url.URL
-	driverName string
+	DriverName string
 	Dialect    DBDialect
 }
 
@@ -67,13 +67,13 @@ func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
 	switch u.Scheme {
 	case "sqlite":
 		uri.Dialect = DBDialectSQLite
-		uri.driverName = "sqlite3"
+		uri.DriverName = "sqlite3"
 		if u.Host != "" && u.Host != "." {
 			return uri, errors.New("invalid path, must start with '/' or './'")
 		}
 	case "postgresql":
 		uri.Dialect = DBDialectPostgres
-		uri.driverName = "pgx"
+		uri.DriverName = "pgx"
 	default:
 		return uri, errors.New("unsupported scheme: " + u.Scheme)
 	}

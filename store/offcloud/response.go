@@ -60,6 +60,7 @@ func processResponseBody(res *http.Response, err error, v ResponseEnvelop) error
 		body = []byte("null")
 	}
 
+	println(string(body))
 	err = core.UnmarshalJSON(res.StatusCode, body, v)
 	if err != nil {
 		return err

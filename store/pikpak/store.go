@@ -301,13 +301,15 @@ func (c *StoreClient) listFilesFlat(ctx Ctx, folderId string, result []store.Mag
 		return nil, err
 	}
 
+	source := string(c.GetName().Code())
 	for _, f := range lfRes.Data.Files {
 		file := &store.MagnetFile{
-			Idx:  -1, // order is non-deterministic
-			Link: LockedFileLink("").create(rootFolderId, f.Id),
-			Name: f.Name,
-			Path: "/" + f.Name,
-			Size: toSize(f.Size),
+			Idx:    -1, // order is non-deterministic
+			Link:   LockedFileLink("").create(rootFolderId, f.Id),
+			Name:   f.Name,
+			Path:   "/" + f.Name,
+			Size:   toSize(f.Size),
+			Source: source,
 		}
 
 		if parent != nil {
@@ -367,11 +369,12 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 			}
 		} else {
 			data.Files = append(data.Files, store.MagnetFile{
-				Idx:  -1,
-				Link: LockedFileLink("").create(data.Id, data.Id),
-				Name: data.Name,
-				Path: "/" + data.Name,
-				Size: toSize(res.Data.Size),
+				Idx:    -1,
+				Link:   LockedFileLink("").create(data.Id, data.Id),
+				Name:   data.Name,
+				Path:   "/" + data.Name,
+				Size:   toSize(res.Data.Size),
+				Source: string(s.GetName().Code()),
 			})
 		}
 	}

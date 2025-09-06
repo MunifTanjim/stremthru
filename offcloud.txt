@@ -1,0 +1,48 @@
+{
+  "history": [
+    {
+      "requestId": "68bc0bb39fb0f83c7c1915ee",
+      "fileName": "www.UIndex.org    -    A Minecraft Movie _2025_ 1080p WEBRip 5.1-LAMA",
+      "site": "BitTorrent",
+      "status": "downloading",
+      "originalLink": "magnet:?xt=urn:btih:4fbfaabeac021a255b91d3526f06e6aac9d97b16",
+      "createdOn": "2025-09-06T10:23:47.765Z",
+      "fileSize": 2002337071,
+      "server": "de-9",
+      "userId": "68bbd6000ba19a4c9aa6a3bc"
+    }
+  ],
+  "isEnd": true
+}
+{
+  "requestId": "68bc0dd64bf5743dd9691990",
+  "fileName": "Dexter.Resurrection.S01E06.1080p.x265-ELiTE",
+  "site": "",
+  "status": "downloaded",
+  "originalLink": "magnet:?xt=urn:btih:2E806476DE12F24D1508AB3F39654489ED334E73&dn=Dexter.Resurrection.S01E06.1080p.x265-ELiTE&tr=udp%3A%2F%2Ftracker.torrent.eu.org%3A451%2Fannounce&tr=udp%3A%2F%2Fopen.stealth.si%3A80%2Fannounce&tr=udp%3A%2F%2Fopen.demonii.com%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=udp%3A%2F%2Fexplodie.org%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.darkness.services%3A6969%2Fannounce&tr=https%3A%2F%2Ftracker.bjut.jp%3A443%2Fannounce&tr=http%3A%2F%2Ftracker.bt4g.com%3A2095%2Fannounce&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce&tr=http%3A%2F%2Ftracker.openbittorrent.com%3A80%2Fannounce&tr=udp%3A%2F%2Fopentracker.i2p.rocks%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.internetwarriors.net%3A1337%2Fannounce&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969%2Fannounce&tr=udp%3A%2F%2Fcoppersurfer.tk%3A6969%2Fannounce&tr=udp%3A%2F%2Ftracker.zer0day.to%3A1337%2Fannounce",
+  "url": "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990",
+  "createdOn": "2025-09-06T10:32:54.146Z"
+}
+{
+  "file": "Dexter.Resurrection.S01E06.1080p.x265-ELiTE",
+  "server": "de-9",
+  "entries": [
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.mkv",
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.nfo",
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Screens/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0001.png",
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Screens/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0002.png",
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Screens/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0003.png",
+    "Dexter.Resurrection.S01E06.1080p.x265-ELiTE/Screens/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0004.png",
+    "/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.aria2"
+  ],
+  "isDirectory": true
+}
+[
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/0/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.mkv",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/1/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.nfo",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/2/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0001.png",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/3/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0002.png",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/4/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0003.png",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/5/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.Screen0004.png",
+  "https://de-9.offcloud.com/cloud/download/68bc0dd64bf5743dd9691990/6/Dexter.Resurrection.S01E06.1080p.x265-ELiTE.aria2"
+]

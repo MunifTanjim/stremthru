@@ -518,6 +518,7 @@ var config = func() Config {
 
 	lazyPeer := strings.ToLower(getEnv("STREMTHRU_LAZY_PEER"))
 
+	peerUrl = ""
 	return Config{
 		LogLevel:  logLevel,
 		LogFormat: logFormat,

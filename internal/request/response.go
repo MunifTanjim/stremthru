@@ -44,6 +44,7 @@ func ProcessResponseBody(res *http.Response, err error, v ResponseContainer) err
 		return err
 	}
 
+	println(string(body))
 	err = v.Unmarshal(res, body, v)
 	if err != nil {
 		return err
