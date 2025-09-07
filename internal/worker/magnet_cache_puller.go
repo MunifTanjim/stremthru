@@ -81,7 +81,13 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 									continue
 								}
 								seenByName[f.Name] = true
-								files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+								files = append(files, torrent_stream.File{
+									Idx:    f.Idx,
+									Path:   f.Path,
+									Name:   f.Name,
+									Size:   f.Size,
+									Source: f.Source,
+								})
 							}
 						}
 						filesByHash[item.Hash] = files

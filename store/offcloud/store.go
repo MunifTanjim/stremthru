@@ -79,6 +79,7 @@ func (s *StoreClient) getMagnetFiles(ctx Ctx, requestId string, server string) (
 	if err != nil {
 		return files, "", err
 	}
+	source := string(s.GetName().Code())
 	for _, link := range res.Data {
 		info, err := link.parse()
 		if err != nil {
@@ -93,10 +94,11 @@ func (s *StoreClient) getMagnetFiles(ctx Ctx, requestId string, server string) (
 		// 	size = size_res.Data
 		// }
 		file := store.MagnetFile{
-			Idx:  info.fileIdx,
-			Link: string(link),
-			Name: info.fileName,
-			Size: size,
+			Idx:    info.fileIdx,
+			Link:   string(link),
+			Name:   info.fileName,
+			Size:   size,
+			Source: source,
 		}
 		if path, ok := pathByName[file.Name]; ok {
 			file.Path = path

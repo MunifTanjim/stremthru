@@ -104,10 +104,11 @@ const (
 type MagnetFile struct {
 	Idx       int    `json:"index"`
 	Link      string `json:"link,omitempty"`
-	Name      string `json:"name"`
-	Path      string `json:"path,omitempty"`
+	Path      string `json:"path"`
+	Name      string `json:"name,omitempty"`
 	Size      int64  `json:"size"`
 	VideoHash string `json:"video_hash,omitempty"`
+	Source    string `json:"source,omitempty"`
 }
 
 type MagnetStatus string

@@ -17,10 +17,12 @@ type CheckMagnetCacheParams struct {
 }
 
 type CheckMagnetCacheDataItemFile struct {
-	Idx  int    `json:"i"`
-	Name string `json:"n"`
-	Size int64  `json:"s"`
-	SId  string `json:"sid"`
+	Idx    int    `json:"i"`
+	Path   string `json:"p"`
+	Name   string `json:"n"`
+	Size   int64  `json:"s"`
+	SId    string `json:"sid"`
+	Source string `json:"src"`
 }
 
 type CheckMagnetCacheDataItem struct {

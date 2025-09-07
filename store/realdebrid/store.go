@@ -388,6 +388,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	}
 	totalLinks := len(res.Data.Links)
 	if data.Status == store.MagnetStatusDownloaded {
+		source := string(c.GetName().Code())
 		idx := -1
 		for _, f := range res.Data.Files {
 			if f.Selected == 1 {
@@ -398,6 +399,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 				}
 				smFile := f.toStoreMagnetFile()
 				smFile.Link = link
+				smFile.Source = source
 				data.Files = append(data.Files, smFile)
 			}
 		}

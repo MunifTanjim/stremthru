@@ -33,7 +33,7 @@ func InitCrawlStoreWorker(conf *WorkerConfig) *Worker {
 				params.APIKey = item.StoreToken
 				res, err := s.ListMagnets(params)
 				if err != nil {
-					log.Error("failed to list magnets", "err", err)
+					log.Error("failed to list magnets", "error", err)
 					break
 				}
 

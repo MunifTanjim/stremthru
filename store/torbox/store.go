@@ -207,17 +207,22 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			tInfo.TorrentTitle = t.GetName()
 			tInfo.Size = t.Size
 			item.Status = store.MagnetStatusCached
+			source := string(c.GetName().Code())
 			for idx, f := range t.Files {
 				file := torrent_stream.File{
-					Idx:  idx,
-					Name: f.GetName(),
-					Size: f.Size,
+					Idx:    idx,
+					Path:   f.GetPath(),
+					Name:   f.GetName(),
+					Size:   f.Size,
+					Source: source,
 				}
 				tInfo.Files = append(tInfo.Files, file)
 				item.Files = append(item.Files, store.MagnetFile{
-					Idx:  file.Idx,
-					Name: file.Name,
-					Size: file.Size,
+					Idx:    file.Idx,
+					Path:   file.Path,
+					Name:   file.Name,
+					Size:   file.Size,
+					Source: file.Source,
 				})
 			}
 		}
@@ -301,6 +306,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	} else if t.Data.Progress > 0 {
 		data.Status = store.MagnetStatusDownloading
 	}
+	source := string(c.GetName().Code())
 	for _, f := range t.Data.Files {
 		file := store.MagnetFile{
 			Idx:       f.Id,
@@ -309,6 +315,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			Path:      f.GetPath(),
 			Size:      f.Size,
 			VideoHash: f.OpensubtitlesHash,
+			Source:    source,
 		}
 		data.Files = append(data.Files, file)
 	}
@@ -411,6 +418,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	} else if res.Data.Progress > 0 {
 		data.Status = store.MagnetStatusDownloading
 	}
+	source := string(c.GetName().Code())
 	for _, f := range res.Data.Files {
 		file := store.MagnetFile{
 			Idx:       f.Id,
@@ -419,6 +427,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 			Path:      f.GetPath(),
 			Size:      f.Size,
 			VideoHash: f.OpensubtitlesHash,
+			Source:    source,
 		}
 		data.Files = append(data.Files, file)
 	}

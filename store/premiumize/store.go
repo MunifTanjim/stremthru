@@ -192,12 +192,14 @@ func (c *StoreClient) getCachedMagnetFiles(apiKey string, magnet string, include
 		return nil, err
 	}
 	files := []store.MagnetFile{}
+	source := string(c.GetName().Code())
 	for idx, f := range res.Data.Content {
 		file := &store.MagnetFile{
-			Idx:  idx,
-			Name: f.GetName(),
-			Path: f.GetPath(),
-			Size: f.Size,
+			Idx:    idx,
+			Name:   f.GetName(),
+			Path:   f.GetPath(),
+			Size:   f.Size,
+			Source: source,
 		}
 		if includeLink {
 			file.Link = f.Link
@@ -362,14 +364,18 @@ func (c *StoreClient) checkMagnet(params *store.CheckMagnetParams, includeLinkAn
 			item.Status = it.Status
 			for _, f := range it.Files {
 				file := torrent_stream.File{
-					Idx:  f.Idx,
-					Name: f.Name,
-					Size: f.Size,
+					Idx:    f.Idx,
+					Name:   f.Name,
+					Path:   f.Path,
+					Size:   f.Size,
+					Source: f.Source,
 				}
 				mFile := store.MagnetFile{
-					Idx:  file.Idx,
-					Name: file.Name,
-					Size: file.Size,
+					Idx:    file.Idx,
+					Name:   file.Name,
+					Path:   file.Path,
+					Size:   file.Size,
+					Source: file.Source,
 				}
 				if includeLinkAndPath {
 					mFile.Path = f.Path
@@ -445,13 +451,15 @@ func listFolderFlat(c *StoreClient, apiKey string, folderId string, result []sto
 		idx = parent.Idx
 	}
 
+	source := string(c.GetName().Code())
 	for _, f := range c_res.Data.Content {
 		file := &store.MagnetFile{
-			Idx:  idx,
-			Name: f.Name,
-			Path: "/" + f.Name,
-			Size: f.Size,
-			Link: f.Link,
+			Idx:    idx,
+			Name:   f.Name,
+			Path:   "/" + f.Name,
+			Size:   f.Size,
+			Link:   f.Link,
+			Source: source,
 		}
 
 		if f.StreamLink != "" {

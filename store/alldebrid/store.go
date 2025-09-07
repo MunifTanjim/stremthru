@@ -161,13 +161,15 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 
 		magnet := ms.Data
 
+		source := string(c.GetName().Code())
 		for _, f := range magnet.GetFiles() {
 			data.Files = append(data.Files, store.MagnetFile{
-				Idx:  f.Idx,
-				Link: f.Link,
-				Name: f.Name,
-				Path: f.Path,
-				Size: f.Size,
+				Idx:    f.Idx,
+				Link:   f.Link,
+				Name:   f.Name,
+				Path:   f.Path,
+				Size:   f.Size,
+				Source: source,
 			})
 		}
 	}
@@ -235,13 +237,15 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		AddedAt: magnet.GetAddedAt(),
 	}
 
+	source := string(c.GetName().Code())
 	for _, f := range magnet.GetFiles() {
 		data.Files = append(data.Files, store.MagnetFile{
-			Idx:  f.Idx,
-			Link: f.Link,
-			Name: f.Name,
-			Path: f.Path,
-			Size: f.Size,
+			Idx:    f.Idx,
+			Link:   f.Link,
+			Name:   f.Name,
+			Path:   f.Path,
+			Size:   f.Size,
+			Source: source,
 		})
 	}
 

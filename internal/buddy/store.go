@@ -35,7 +35,18 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, files []st
 	tInfoSource := torrent_info.TorrentInfoSource(storeCode)
 	tsFiles := torrent_stream.Files{}
 	for _, f := range files {
-		tsFiles = append(tsFiles, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size, Source: string(tInfoSource), VideoHash: f.VideoHash})
+		source := f.Source
+		if source == "" {
+			source = string(tInfoSource)
+		}
+		tsFiles = append(tsFiles, torrent_stream.File{
+			Idx:       f.Idx,
+			Path:      f.Path,
+			Name:      f.Name,
+			Size:      f.Size,
+			Source:    source,
+			VideoHash: f.VideoHash,
+		})
 	}
 	magnet_cache.Touch(s.GetName().Code(), hash, tsFiles, !cacheMiss, true)
 	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{{
@@ -63,13 +74,18 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, files []st
 
 	if config.HasPeer && config.PeerAuthToken != "" {
 		params := &peer.TrackMagnetParams{
-			StoreName:  s.GetName(),
-			StoreToken: storeToken,
-			Hash:       hash,
-			Name:       name,
-			Size:       size,
-			Files:      files,
-			IsMiss:     cacheMiss,
+			StoreName:           s.GetName(),
+			StoreToken:          storeToken,
+			TorrentInfoCategory: tInfoCategory,
+			TorrentInfos: []torrent_info.TorrentInfoInsertData{
+				{
+					Hash:         hash,
+					TorrentTitle: name,
+					Source:       tInfoSource,
+					Size:         size,
+					Files:        tsFiles,
+				},
+			},
 		}
 		go func() {
 			start := time.Now()
@@ -94,7 +110,9 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, tInfoCategory tor
 	filesByHash := map[string]torrent_stream.Files{}
 	for i := range tInfos {
 		tInfo := &tInfos[i]
-		tInfo.Source = tInfoSource
+		if tInfo.Source == "" {
+			tInfo.Source = tInfoSource
+		}
 		filesByHash[tInfo.Hash] = tInfo.Files
 	}
 	magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, true)
@@ -107,9 +125,9 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, tInfoCategory tor
 		}
 		start := time.Now()
 		if _, err := Buddy.TrackMagnetCache(params); err != nil {
-			buddyLog.Error("failed to bulk track magnet cache", "store", s.GetName(), "error", core.PackError(err), "duration", time.Since(start))
+			buddyLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
 		} else {
-			buddyLog.Info("bulk track magnet cache", "store", s.GetName(), "hash_count", len(tInfos), "duration", time.Since(start))
+			buddyLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
 		}
 	}
 
@@ -123,9 +141,9 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, tInfoCategory tor
 		go func() {
 			start := time.Now()
 			if _, err := Peer.TrackMagnet(params); err != nil {
-				peerLog.Error("failed to bulk track magnet cache", "store", s.GetName(), "error", core.PackError(err), "duration", time.Since(start))
+				peerLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
 			} else {
-				peerLog.Info("bulk track magnet cache", "store", s.GetName(), "hash_count", len(tInfos), "duration", time.Since(start))
+				peerLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
 			}
 		}()
 	}
@@ -167,7 +185,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 			}
 			if mc.IsCached {
 				item.Status = store.MagnetStatusCached
-				item.Files = mc.Files.ToStoreMagnetFile()
+				item.Files = mc.Files.ToStoreMagnetFiles(magnet.Hash)
 			}
 			data.Items = append(data.Items, item)
 		} else {
@@ -204,15 +222,32 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 				res_files := []store.MagnetFile{}
 				files := torrent_stream.Files{}
 				if item.Status == store.MagnetStatusCached {
-					seenByName := map[string]bool{}
+					seenByName := map[string]struct{}{}
 					for _, f := range item.Files {
-						if _, seen := seenByName[f.Name]; seen {
+						key := f.Path
+						if key == "" {
+							key = f.Name
+						}
+						if _, seen := seenByName[key]; seen {
 							buddyLog.Info("found duplicate file", "hash", item.Hash, "filename", f.Name)
 							continue
 						}
-						seenByName[f.Name] = true
-						res_files = append(res_files, store.MagnetFile{Idx: f.Idx, Name: f.Name, Size: f.Size})
-						files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size, SId: f.SId})
+						seenByName[key] = struct{}{}
+						res_files = append(res_files, store.MagnetFile{
+							Idx:    f.Idx,
+							Path:   f.Path,
+							Name:   f.Name,
+							Size:   f.Size,
+							Source: f.Source,
+						})
+						files = append(files, torrent_stream.File{
+							Idx:    f.Idx,
+							Path:   f.Path,
+							Name:   f.Name,
+							Size:   f.Size,
+							SId:    f.SId,
+							Source: f.Source,
+						})
 					}
 				}
 				res_item.Files = res_files
@@ -274,14 +309,24 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 					for _, item := range res.Data.Items {
 						files := torrent_stream.Files{}
 						if item.Status == store.MagnetStatusCached {
-							seenByName := map[string]bool{}
+							seenByName := map[string]struct{}{}
 							for _, f := range item.Files {
-								if _, seen := seenByName[f.Name]; seen {
+								key := f.Path
+								if key == "" {
+									key = f.Name
+								}
+								if _, seen := seenByName[key]; seen {
 									peerLog.Info("found duplicate file", "hash", item.Hash, "filename", f.Name)
 									continue
 								}
-								seenByName[f.Name] = true
-								files = append(files, torrent_stream.File{Idx: f.Idx, Name: f.Name, Size: f.Size})
+								seenByName[key] = struct{}{}
+								files = append(files, torrent_stream.File{
+									Idx:    f.Idx,
+									Path:   f.Path,
+									Name:   f.Name,
+									Size:   f.Size,
+									Source: f.Source,
+								})
 							}
 						}
 						filesByHash[item.Hash] = files

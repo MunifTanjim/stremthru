@@ -707,10 +707,10 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 
 			tSource := string(t.Source)
 			for _, f := range t.Files {
-				if f.Name == "" {
+				if !strings.HasPrefix(f.Path, "/") {
 					continue
 				}
-				if t.Source == TorrentInfoSourceDebrider && f.Name == "__archive__.zip" {
+				if t.Source == TorrentInfoSourceDebrider && strings.HasSuffix(f.Path, "__archive__.zip") {
 					continue
 				}
 				if f.Source == "" {
@@ -1141,11 +1141,11 @@ var list_query_columns = strings.Join(
 )
 
 var query_list_by_stremid_select = fmt.Sprintf(
-	"SELECT %s, %s(%s('n',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'src',ts.%s)) AS files",
+	"SELECT %s, %s(%s('p',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'src',ts.%s)) AS files",
 	list_query_columns,
 	db.FnJSONGroupArray,
 	db.FnJSONObject,
-	ts.Column.Name,
+	ts.Column.Path,
 	ts.Column.Idx,
 	ts.Column.Size,
 	ts.Column.SId,
