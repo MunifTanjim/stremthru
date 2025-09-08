@@ -77,6 +77,7 @@ func (csi *CommaSeperatedInt) Scan(value any) error {
 type TorrentInfoSource string
 
 const (
+	TorrentInfoSourceDHT         TorrentInfoSource = "dht"
 	TorrentInfoSourceDMM         TorrentInfoSource = "dmm"
 	TorrentInfoSourceMediaFusion TorrentInfoSource = "mfn"
 	TorrentInfoSourceTorrentio   TorrentInfoSource = "tio"
@@ -112,6 +113,9 @@ type TorrentInfo struct {
 	ParsedAt      db.Timestamp        `json:"parsed_at"`
 	ParserVersion int                 `json:"parser_version"`
 	ParserInput   string              `json:"parser_input"`
+
+	Seeders  int `json:"seeders"`
+	Leechers int `json:"leechers"`
 
 	Audio        CommaSeperatedString `json:"audio"`
 	BitDepth     string               `json:"bit_depth"`
@@ -310,6 +314,9 @@ var Column = struct {
 	ParserVersion string
 	ParserInput   string
 
+	Seeders  string
+	Leechers string
+
 	Audio        string
 	BitDepth     string
 	Channels     string
@@ -362,6 +369,9 @@ var Column = struct {
 	ParsedAt:      "parsed_at",
 	ParserVersion: "parser_version",
 	ParserInput:   "parser_input",
+
+	Seeders:  "seeders",
+	Leechers: "leechers",
 
 	Audio:        "audio",
 	BitDepth:     "bit_depth",
@@ -417,6 +427,9 @@ var Columns = []string{
 	Column.ParsedAt,
 	Column.ParserVersion,
 	Column.ParserInput,
+
+	Column.Seeders,
+	Column.Leechers,
 
 	Column.Audio,
 	Column.BitDepth,
@@ -482,6 +495,9 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 		&tInfo.ParsedAt,
 		&tInfo.ParserVersion,
 		&tInfo.ParserInput,
+
+		&tInfo.Seeders,
+		&tInfo.Leechers,
 
 		&tInfo.Audio,
 		&tInfo.BitDepth,
@@ -573,6 +589,9 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 			&tInfo.ParserVersion,
 			&tInfo.ParserInput,
 
+			&tInfo.Seeders,
+			&tInfo.Leechers,
+
 			&tInfo.Audio,
 			&tInfo.BitDepth,
 			&tInfo.Channels,
@@ -627,7 +646,7 @@ type TorrentInfoInsertDataFile = ts.File
 
 type TorrentInfoInsertData = TorrentItem
 
-var insert_query_before_values = fmt.Sprintf(
+var query_upsert_before_values = fmt.Sprintf(
 	`INSERT INTO %s AS ti (%s) VALUES `,
 	TableName,
 	strings.Join([]string{
@@ -636,28 +655,33 @@ var insert_query_before_values = fmt.Sprintf(
 		Column.Size,
 		Column.Source,
 		Column.Category,
+		Column.Seeders,
+		Column.Leechers,
 	}, ","),
 )
-var insert_query_values_placeholder = "(" + util.RepeatJoin("?", 5, ",") + ")"
-var insert_query_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s`,
+var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 7, ",") + ")"
+var query_upsert_on_conflict = fmt.Sprintf(
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s`,
 	Column.Hash,
 	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s NOT IN ('tio','ad','dl','rd') THEN EXCLUDED.%s ELSE ti.%s END",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s NOT IN ('dht','tio','ad','dl','rd') THEN EXCLUDED.%s ELSE ti.%s END",
 		Column.TorrentTitle,
+		Column.Source,
 		Column.Source,
 		Column.TorrentTitle,
 		Column.TorrentTitle,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s = -1 THEN EXCLUDED.%s ELSE ti.%s END",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s = -1 THEN EXCLUDED.%s ELSE ti.%s END",
 		Column.Size,
+		Column.Source,
 		Column.Size,
 		Column.Size,
 		Column.Size,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s NOT IN ('tio','ad','dl','rd') THEN EXCLUDED.%s ELSE ti.%s END",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s NOT IN ('dht','tio','ad','dl','rd') THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Source,
 		Column.Source,
 		Column.Source,
 		Column.Source,
@@ -671,28 +695,38 @@ var insert_query_on_conflict = fmt.Sprintf(
 		Column.Category,
 	),
 	fmt.Sprintf(
-		"%s = ",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Seeders,
+		Column.Source,
+		Column.Seeders,
+		Column.Seeders,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Leechers,
+		Column.Source,
+		Column.Leechers,
+		Column.Leechers,
+	),
+	fmt.Sprintf(
+		"%s = %s",
 		Column.UpdatedAt,
+		db.CurrentTimestamp,
 	),
 )
 
-func get_insert_query(count int) string {
-	return insert_query_before_values +
-		util.RepeatJoin(insert_query_values_placeholder, count, ",") +
-		insert_query_on_conflict + db.CurrentTimestamp
-}
-
-func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) {
+func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) error {
 	if len(items) == 0 {
-		return
+		return nil
 	}
 
 	streamItems := []ts.InsertData{}
 
-	for cItems := range slices.Chunk(items, 200) {
+	errs := []error{}
+	for cItems := range slices.Chunk(items, 150) {
 		count := len(cItems)
 		seenHash := map[string]struct{}{}
-		args := make([]any, 0, 5*count)
+		args := make([]any, 0, 7*count)
 		for _, t := range cItems {
 			if _, seen := seenHash[t.Hash]; seen {
 				count--
@@ -735,23 +769,30 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				tCategory = category
 			}
 
-			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory)
+			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory, t.Seeders, t.Leechers)
 		}
 
 		if count == 0 {
 			continue
 		}
 
-		query := get_insert_query(count)
+		query := query_upsert_before_values +
+			util.RepeatJoin(query_upsert_values_placeholder, count, ",") +
+			query_upsert_on_conflict
 		_, err := db.Exec(query, args...)
 		if err != nil {
-			log.Error("failed to upsert torrent info", "count", count, "error", err)
+			log.Error("failed to upsert torrent info", "error", err, "count", count)
+			errs = append(errs, err)
 		} else {
 			log.Debug("upserted torrent info", "count", count)
 		}
 	}
 
-	ts.Record(streamItems, discardFileIdx)
+	if err := ts.Record(streamItems, discardFileIdx); err != nil {
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
 }
 
 var get_unparsed_query = fmt.Sprintf(
@@ -787,6 +828,9 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 			&tInfo.ParsedAt,
 			&tInfo.ParserVersion,
 			&tInfo.ParserInput,
+
+			&tInfo.Seeders,
+			&tInfo.Leechers,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
@@ -842,14 +886,14 @@ var upsert_parsed_on_conflict_columns = append([]string{
 	Column.ParserVersion,
 	Column.ParserInput,
 }, Columns[slices.Index(Columns, Column.Audio):]...)
-var upsert_parsed_query_before_values = fmt.Sprintf(
+var query_upsert_parsed_before_values = fmt.Sprintf(
 	`INSERT INTO %s (%s) VALUES `,
 	TableName,
 	db.JoinColumnNames(Columns...),
 )
-var upsert_parsed_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", len(Columns), ","))
-var upsert_parsed_query_on_confict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET (%s) = (%s), (%s, %s) = `,
+var query_upsert_parsed_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", len(Columns), ","))
+var query_upsert_parsed_on_confict = fmt.Sprintf(
+	` ON CONFLICT (%s) DO UPDATE SET (%s) = (%s), (%s, %s) = (%s, %s)`,
 	Column.Hash,
 	db.JoinColumnNames(upsert_parsed_on_conflict_columns...),
 	strings.Join(
@@ -864,13 +908,14 @@ var upsert_parsed_query_on_confict = fmt.Sprintf(
 	),
 	Column.ParsedAt,
 	Column.UpdatedAt,
+	db.CurrentTimestamp,
+	db.CurrentTimestamp,
 )
 
 func get_upsert_parsed_query(count int) string {
-	return upsert_parsed_query_before_values +
-		util.RepeatJoin(upsert_parsed_query_values_placeholder, count, ",") +
-		upsert_parsed_query_on_confict +
-		"(" + db.CurrentTimestamp + "," + db.CurrentTimestamp + ")"
+	return query_upsert_parsed_before_values +
+		util.RepeatJoin(query_upsert_parsed_values_placeholder, count, ",") +
+		query_upsert_parsed_on_confict
 }
 
 func UpsertParsed(tInfos []*TorrentInfo) error {
@@ -894,6 +939,9 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 				tInfo.ParsedAt,
 				tInfo.ParserVersion,
 				tInfo.ParserInput,
+
+				tInfo.Seeders,
+				tInfo.Leechers,
 
 				tInfo.Audio,
 				tInfo.BitDepth,
@@ -1122,6 +1170,8 @@ type TorrentItem struct {
 	Size         int64               `json:"size"`
 	Source       TorrentInfoSource   `json:"src"`
 	Category     TorrentInfoCategory `json:"category"`
+	Seeders      int                 `json:"seeders"`
+	Leechers     int                 `json:"leechers"`
 
 	Files ts.Files `json:"files"`
 }
@@ -1133,8 +1183,8 @@ type ListTorrentsData struct {
 
 var list_query_columns = strings.Join(
 	func() []string {
-		columns := []string{Column.Hash, Column.TorrentTitle, Column.Size, Column.Source, Column.Category}
-		cols := make([]string, 5)
+		columns := []string{Column.Hash, Column.TorrentTitle, Column.Size, Column.Source, Column.Category, Column.Seeders, Column.Leechers}
+		cols := make([]string, 7)
 		for i := range columns {
 			cols[i] = `ti."` + columns[i] + `"`
 		}
@@ -1219,7 +1269,7 @@ func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, 
 	items := []TorrentItem{}
 	for rows.Next() {
 		var item TorrentItem
-		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Source, &item.Category, &item.Files); err != nil {
+		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Source, &item.Category, &item.Seeders, &item.Leechers, &item.Files); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

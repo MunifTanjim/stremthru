@@ -9,11 +9,7 @@ import (
 
 var syncIMDBJobTracker *JobTracker[struct{}]
 
-func getTodayDateOnly() string {
-	return time.Now().Format(time.DateOnly)
-}
-
-func isIMDBSyncedToday() bool {
+func isIMDBSyncedInLast24Hours() bool {
 	if syncIMDBJobTracker == nil {
 		return false
 	}
@@ -21,7 +17,7 @@ func isIMDBSyncedToday() bool {
 	if err != nil {
 		return false
 	}
-	return job != nil && util.IsToday(job.CreatedAt) && job.Value.Status == "done"
+	return job != nil && job.Value.Status == "done" && !util.HasDurationPassedSince(job.CreatedAt, 24*time.Hour)
 }
 
 func InitSyncIMDBWorker(conf *WorkerConfig) *Worker {

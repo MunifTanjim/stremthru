@@ -377,12 +377,12 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 	Column.Hash,
 	Column.Path,
 	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Idx, Column.Idx, Column.Source, Column.Idx, Column.Idx,
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Idx, Column.Source, Column.Idx, Column.Source, Column.Source, Column.Idx, Column.Idx,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Size, Column.Size, Column.Source, Column.Size, Column.Size,
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Size, Column.Source, Column.Size, Column.Source, Column.Source, Column.Size, Column.Size,
 	),
 	fmt.Sprintf(
 		"%s = CASE WHEN ts.%s IN ('', '*') THEN EXCLUDED.%s ELSE ts.%s END",
@@ -393,8 +393,8 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 		Column.VideoHash, Column.VideoHash, Column.VideoHash, Column.VideoHash,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
-		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
+		"%s = CASE WHEN (EXCLUDED.%s != 'dht' AND ts.%s = 'dht') OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
+		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
 	),
 	fmt.Sprintf(
 		"%s = %s",
@@ -402,11 +402,12 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 	),
 )
 
-func Record(items []InsertData, discardIdx bool) {
+func Record(items []InsertData, discardIdx bool) error {
 	if len(items) == 0 {
-		return
+		return nil
 	}
 
+	errs := []error{}
 	for cItems := range slices.Chunk(items, 200) {
 		seenFileMap := map[string]struct{}{}
 
@@ -415,7 +416,7 @@ func Record(items []InsertData, discardIdx bool) {
 		for i := range cItems {
 			item := &cItems[i]
 			idx := item.Idx
-			if discardIdx {
+			if discardIdx && item.Source != "dht" {
 				idx = -1
 			}
 			sid := item.SId
@@ -445,10 +446,13 @@ func Record(items []InsertData, discardIdx bool) {
 		_, err := db.Exec(query, args...)
 		if err != nil {
 			log.Error("failed partially to record", "error", err)
+			errs = append(errs, err)
 		} else {
 			log.Debug("recorded torrent stream", "count", count)
 		}
 	}
+
+	return errors.Join(errs...)
 }
 
 var tag_strem_id_query = fmt.Sprintf(

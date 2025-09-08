@@ -169,7 +169,7 @@ func Ping() {
 }
 
 func Open() *DB {
-	database, err := sql.Open(connUri.driverName, connUri.DSN(dsnModifiers...))
+	database, err := sql.Open(connUri.DriverName, connUri.DSN(dsnModifiers...))
 	if err != nil {
 		log.Fatalf("[db] failed to open: %v\n", err)
 	}

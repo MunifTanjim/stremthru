@@ -181,6 +181,9 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 			&tInfo.ParserVersion,
 			&tInfo.ParserInput,
 
+			&tInfo.Seeders,
+			&tInfo.Leechers,
+
 			&tInfo.Audio,
 			&tInfo.BitDepth,
 			&tInfo.Channels,

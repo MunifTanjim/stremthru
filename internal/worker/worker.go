@@ -17,6 +17,7 @@ import (
 var mutex sync.Mutex
 var running_worker struct {
 	sync_anidb_titles           bool
+	sync_bitmagnet              bool
 	sync_dmm_hashlist           bool
 	sync_imdb                   bool
 	map_imdb_torrent            bool
@@ -234,6 +235,9 @@ func InitWorkers() func() {
 			mutex.Lock()
 			defer mutex.Unlock()
 
+			if running_worker.sync_bitmagnet {
+				return true, "sync_bitmagnet is running"
+			}
 			if running_worker.sync_dmm_hashlist {
 				return true, "sync_dmm_hashlist is running"
 			}
@@ -355,6 +359,9 @@ func InitWorkers() func() {
 
 			if running_worker.sync_imdb {
 				return true, "sync_imdb is running"
+			}
+			if running_worker.sync_bitmagnet {
+				return true, "sync_bitmagnet is running"
 			}
 			if running_worker.sync_dmm_hashlist {
 				return true, "sync_dmm_hashlist is running"
@@ -576,6 +583,42 @@ func InitWorkers() func() {
 		RunExclusive: true,
 		ShouldWait: func() (bool, string) {
 			return false, ""
+		},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitSyncBitmagnetWorker(&WorkerConfig{
+		Disabled:          !config.Integration.Bitmagnet.IsEnabled(),
+		Name:              "sync-bitmagnet",
+		Interval:          60 * time.Minute,
+		RunAtStartupAfter: 90 * time.Second,
+		RunExclusive:      true,
+		ShouldWait: func() (bool, string) {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			if running_worker.sync_imdb {
+				return true, "sync_imdb is running"
+			}
+
+			if running_worker.sync_dmm_hashlist {
+				return true, "sync_dmm_hashlist is running"
+			}
+
+			return false, ""
+		},
+		OnStart: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_bitmagnet = true
+		},
+		OnEnd: func() {
+			mutex.Lock()
+			defer mutex.Unlock()
+
+			running_worker.sync_bitmagnet = false
 		},
 	}); worker != nil {
 		workers = append(workers, worker)
