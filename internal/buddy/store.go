@@ -84,6 +84,7 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, files []st
 					Source:       tInfoSource,
 					Size:         size,
 					Files:        tsFiles,
+					// TODO: include seeders/leechers
 				},
 			},
 		}

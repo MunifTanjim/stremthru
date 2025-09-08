@@ -13,7 +13,7 @@ import (
 
 func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 	conf.Executor = func(w *Worker) error {
-		if !isIMDBSyncedToday() {
+		if !isIMDBSyncedInLast24Hours() {
 			w.Log.Info("IMDB not synced yet today, skipping")
 			return nil
 		}

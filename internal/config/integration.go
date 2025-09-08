@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var BaseURL = func() *url.URL {
@@ -17,6 +19,15 @@ var BaseURL = func() *url.URL {
 
 type integrationConfigAniList struct {
 	ListStaleTime time.Duration
+}
+
+type integrationConfigBitmagnet struct {
+	BaseURL     *url.URL
+	DatabaseURI string
+}
+
+func (c integrationConfigBitmagnet) IsEnabled() bool {
+	return c.BaseURL != nil && c.DatabaseURI != ""
 }
 
 type integrationConfigLettterboxd struct {
@@ -84,6 +95,7 @@ func (c integrationConfigTVDB) IsEnabled() bool {
 
 type IntegrationConfig struct {
 	AniList    integrationConfigAniList
+	Bitmagnet  integrationConfigBitmagnet
 	GitHub     integrationConfigGitHub
 	Letterboxd integrationConfigLettterboxd
 	MDBList    integrationConfigMDBList
@@ -94,10 +106,19 @@ type IntegrationConfig struct {
 }
 
 func parseIntegration() IntegrationConfig {
+	bitmagnet := integrationConfigBitmagnet{
+		DatabaseURI: getEnv("STREMTHRU_INTEGRATION_BITMAGNET_DATABASE_URI"),
+	}
+
+	if bitmagnetBaseUrl := getEnv("STREMTHRU_INTEGRATION_BITMAGNET_BASE_URL"); bitmagnetBaseUrl != "" {
+		bitmagnet.BaseURL = util.MustParseURL(bitmagnetBaseUrl)
+	}
+
 	integration := IntegrationConfig{
 		AniList: integrationConfigAniList{
 			ListStaleTime: mustParseDuration("anilist list stale time", getEnv("STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME"), 15*time.Minute),
 		},
+		Bitmagnet: bitmagnet,
 		GitHub: integrationConfigGitHub{
 			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
