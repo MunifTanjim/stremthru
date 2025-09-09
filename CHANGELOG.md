@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.86.13](https://github.com/MunifTanjim/stremthru/compare/0.86.12...0.86.13) (2025-09-09)
+
+
+### Bug Fixes
+
+* **store/premiumize:** fix name and size for add magnet response ([d75eec3](https://github.com/MunifTanjim/stremthru/commit/d75eec3f06fea761345d03908f43ef2a111eb5b7))
+* **stremio/wrap:** gracefully handle upstream failures ([29bfdb6](https://github.com/MunifTanjim/stremthru/commit/29bfdb6a9816393f80f345e64d1f87294ca03ee6))
+
 ## [0.86.12](https://github.com/MunifTanjim/stremthru/compare/0.86.11...0.86.12) (2025-09-06)
 
 
