@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.87.0](https://github.com/MunifTanjim/stremthru/compare/0.86.13...0.87.0) (2025-09-09)
+
+
+### Features
+
+* **bitmagnet:** add initial integration ([d88a568](https://github.com/MunifTanjim/stremthru/commit/d88a568a327e9f5aaba3135d8b24b29c93c2af60))
+* **store:** include video_hash in check magnet response ([483a245](https://github.com/MunifTanjim/stremthru/commit/483a245a808e5e51b76c2cc8ca2f40b2d2b99d61))
+* **torrent_stream:** save path instead of name ([94e7d72](https://github.com/MunifTanjim/stremthru/commit/94e7d723239ae98581533df23912371f3d718efa))
+
+
+### Bug Fixes
+
+* **bitmagnet:** sql query for get torrents ([e9f9cb2](https://github.com/MunifTanjim/stremthru/commit/e9f9cb24a9f69c4a2e9808b8ea00f35794ee9440))
+* **torrent_stream:** do not record pm files w/ missing videos ([7dcf4bf](https://github.com/MunifTanjim/stremthru/commit/7dcf4bf662d0590385e09def57c71bd01aa4c1f8))
+* **torrent_stream:** skip cleanup when sid/asid migration fails ([9e78072](https://github.com/MunifTanjim/stremthru/commit/9e780720aaaffefe8f629528c4e866e5e4e625bf))
+* **worker:** handle race condition between multiple instance ([0fc0445](https://github.com/MunifTanjim/stremthru/commit/0fc0445060953074305f864eba53d595770ed112))
+
 ## [0.86.13](https://github.com/MunifTanjim/stremthru/compare/0.86.12...0.86.13) (2025-09-09)
 
 
