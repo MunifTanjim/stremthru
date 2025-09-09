@@ -31,9 +31,12 @@ func (c integrationConfigBitmagnet) IsEnabled() bool {
 }
 
 type integrationConfigLettterboxd struct {
-	APIKey        string
-	Secret        string
-	ListStaleTime time.Duration
+	APIKey             string
+	Secret             string
+	ClientId           string
+	ClientSecret       string
+	SystemOAuthTokenId string
+	ListStaleTime      time.Duration
 }
 
 func (c integrationConfigLettterboxd) IsEnabled() bool {
@@ -124,9 +127,12 @@ func parseIntegration() IntegrationConfig {
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
 		},
 		Letterboxd: integrationConfigLettterboxd{
-			APIKey:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_API_KEY"),
-			Secret:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_SECRET"),
-			ListStaleTime: mustParseDuration("letterboxd list stale time", getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME"), 2*24*time.Hour),
+			APIKey:             getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_API_KEY"),
+			Secret:             getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_SECRET"),
+			ClientId:           getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_CLIENT_ID"),
+			ClientSecret:       getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_CLIENT_SECRET"),
+			SystemOAuthTokenId: "system:letterboxd",
+			ListStaleTime:      mustParseDuration("letterboxd list stale time", getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME"), 2*24*time.Hour),
 		},
 		MDBList: integrationConfigMDBList{
 			ListStaleTime: mustParseDuration("mdblist list stale time", getEnv("STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME"), 15*time.Minute),
