@@ -45,6 +45,9 @@ type JobTracker[T any] struct {
 }
 
 func (t JobTracker[T]) Get(id string) (*Job[T], error) {
+	if id == "" {
+		panic("job id cannot be empty")
+	}
 	j := Job[T]{}
 	err := t.kv.GetValue(id, &j)
 	return &j, err
@@ -59,6 +62,9 @@ func (t JobTracker[T]) GetLast() (*kv.ParsedKV[Job[T]], error) {
 }
 
 func (t JobTracker[T]) Set(id string, status string, err string, data *T) error {
+	if id == "" {
+		panic("job id cannot be empty")
+	}
 	terr := t.kv.Set(id, Job[T]{
 		Status: status,
 		Err:    err,

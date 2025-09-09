@@ -88,11 +88,12 @@ func NewWorker(conf *WorkerConfig) *Worker {
 		Interval:          conf.Interval,
 		RunSingleInstance: true,
 		TaskFunc: func() (err error) {
+			isAlreadyRunning := jobId != ""
 			defer func() {
 				if perr, stack := util.HandlePanic(recover(), true); perr != nil {
 					err = perr
 					log.Error("Worker Panic", "error", err, "stack", stack)
-				} else if err == nil {
+				} else if err == nil && !isAlreadyRunning {
 					jobId = ""
 				}
 				worker.onEnd()
@@ -108,7 +109,7 @@ func NewWorker(conf *WorkerConfig) *Worker {
 			}
 			worker.onStart()
 
-			if jobId != "" {
+			if isAlreadyRunning {
 				return nil
 			}
 
