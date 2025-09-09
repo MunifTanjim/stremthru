@@ -113,7 +113,7 @@ func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, i
 		return
 	}
 	if !skipFileTracking {
-		torrent_stream.TrackFiles(map[string]torrent_stream.Files{hash: files}, storeCode != store.StoreCodeRealDebrid)
+		torrent_stream.TrackFiles(storeCode, map[string]torrent_stream.Files{hash: files})
 	}
 }
 
@@ -165,7 +165,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 			mcLog.Error("failed to touch hits", "error", err)
 		}
 		if !skipFileTracking {
-			torrent_stream.TrackFiles(filesByHash, storeCode != store.StoreCodeRealDebrid)
+			torrent_stream.TrackFiles(storeCode, filesByHash)
 		}
 	}
 

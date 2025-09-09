@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -42,6 +43,15 @@ func (files Files) Normalize() {
 		f := &files[i]
 		f.Normalize()
 	}
+}
+
+func (files Files) HasVideo() bool {
+	for i := range files {
+		if core.HasVideoExtension(files[i].Path) {
+			return true
+		}
+	}
+	return false
 }
 
 func (files Files) Value() (driver.Value, error) {
@@ -325,9 +335,13 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	return byHash, nil
 }
 
-func TrackFiles(filesByHash map[string]Files, discardIdx bool) {
+func TrackFiles(storeCode store.StoreCode, filesByHash map[string]Files) {
 	items := []InsertData{}
 	for hash, files := range filesByHash {
+		shouldIgnoreFiles := storeCode == store.StoreCodePremiumize && !files.HasVideo()
+		if shouldIgnoreFiles {
+			continue
+		}
 		for _, file := range files {
 			if !strings.HasPrefix(file.Path, "/") {
 				continue
@@ -335,6 +349,7 @@ func TrackFiles(filesByHash map[string]Files, discardIdx bool) {
 			items = append(items, InsertData{Hash: hash, File: file})
 		}
 	}
+	discardIdx := storeCode != store.StoreCodeRealDebrid
 	Record(items, discardIdx)
 }
 

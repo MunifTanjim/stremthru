@@ -706,20 +706,23 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			}
 
 			tSource := string(t.Source)
-			for _, f := range t.Files {
-				if !strings.HasPrefix(f.Path, "/") {
-					continue
+			shouldIgnoreFiles := t.Source == TorrentInfoSourcePremiumize && !t.Files.HasVideo()
+			if !shouldIgnoreFiles {
+				for _, f := range t.Files {
+					if !strings.HasPrefix(f.Path, "/") {
+						continue
+					}
+					if t.Source == TorrentInfoSourceDebrider && strings.HasSuffix(f.Path, "__archive__.zip") {
+						continue
+					}
+					if f.Source == "" {
+						f.Source = tSource
+					}
+					streamItems = append(streamItems, ts.InsertData{
+						Hash: t.Hash,
+						File: f,
+					})
 				}
-				if t.Source == TorrentInfoSourceDebrider && strings.HasSuffix(f.Path, "__archive__.zip") {
-					continue
-				}
-				if f.Source == "" {
-					f.Source = tSource
-				}
-				streamItems = append(streamItems, ts.InsertData{
-					Hash: t.Hash,
-					File: f,
-				})
 			}
 
 			if t.TorrentTitle == "" || t.TorrentTitle == t.Hash || strings.HasPrefix(t.TorrentTitle, "magnet:?") {
