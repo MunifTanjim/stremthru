@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.4.0...sdk-py-0.5.0) (2025-09-10)
+
+
+### Features
+
+* **sdk/py:** add path and video_hash for check magnet ([7f5382f](https://github.com/MunifTanjim/stremthru/commit/7f5382f22a6ec8f8e17a7fd9d1df94b311dc4ea2))
+
 ## [0.4.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.3.0...sdk-py-0.4.0) (2025-07-25)
 
 
