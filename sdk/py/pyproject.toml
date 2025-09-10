@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stremthru"
-version = "0.5.0"
+version = "0.5.1"
 description = "SDK for StremThru"
 authors = ["Munif Tanjim <hello@muniftanjim.dev>"]
 license = "MIT"

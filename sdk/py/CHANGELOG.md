@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.0...sdk-py-0.5.1) (2025-09-10)
+
+
+### Bug Fixes
+
+* **sdk/py:** fix endpoint for check magnet ([f866774](https://github.com/MunifTanjim/stremthru/commit/f86677491d341751a2c46982fe55ad5095e466e0))
+
 ## [0.5.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.4.0...sdk-py-0.5.0) (2025-09-10)
 
 
