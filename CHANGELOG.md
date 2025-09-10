@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.87.1](https://github.com/MunifTanjim/stremthru/compare/0.87.0...0.87.1) (2025-09-10)
+
+
+### Bug Fixes
+
+* **torrent_info:** save seeders/leechers for pulled items ([70ee48b](https://github.com/MunifTanjim/stremthru/commit/70ee48b0b6a01cb057ad17e444b8e2d25a490a4b))
+
 ## [0.87.0](https://github.com/MunifTanjim/stremthru/compare/0.86.13...0.87.0) (2025-09-09)
 
 
