@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.8.0...sdk-js-0.9.0) (2025-09-10)
+
+
+### Features
+
+* **sdk/js:** add path and video_hash for check magnet ([396e7fd](https://github.com/MunifTanjim/stremthru/commit/396e7fdfe9929ba235546ca7d96d41ee43ee9dec))
+
 ## [0.8.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.7.0...sdk-js-0.8.0) (2025-07-25)
 
 
