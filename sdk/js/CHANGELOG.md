@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.9.0...sdk-js-0.9.1) (2025-09-11)
+
+
+### Bug Fixes
+
+* **sdk/js:** fix types for files ([49ce00c](https://github.com/MunifTanjim/stremthru/commit/49ce00c0ba084c3b7a2de8ca6a30525d7453b249))
+
 ## [0.9.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.8.0...sdk-js-0.9.0) (2025-09-10)
 
 
