@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.1...sdk-py-0.5.2) (2025-09-11)
+
+
+### Bug Fixes
+
+* **sdk/py:** fix types for files ([eb7296f](https://github.com/MunifTanjim/stremthru/commit/eb7296f9c1f99dbe5adb65dcfe75d5424b79ad54))
+
 ## [0.5.1](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.0...sdk-py-0.5.1) (2025-09-10)
 
 
