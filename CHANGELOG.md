@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.87.3](https://github.com/MunifTanjim/stremthru/compare/0.87.2...0.87.3) (2025-09-11)
+
+
+### Bug Fixes
+
+* **torrent_stream:** cleanup items with empty path ([f71f6ca](https://github.com/MunifTanjim/stremthru/commit/f71f6ca9f69e8aa8bbb71036ca42c3556fcf460e))
+
 ## [0.87.2](https://github.com/MunifTanjim/stremthru/compare/0.87.1...0.87.2) (2025-09-11)
 
 
