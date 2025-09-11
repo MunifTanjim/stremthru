@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.87.2](https://github.com/MunifTanjim/stremthru/compare/0.87.1...0.87.2) (2025-09-11)
+
+
+### Bug Fixes
+
+* **store:** make sure magnet file name field exists ([91f2ec9](https://github.com/MunifTanjim/stremthru/commit/91f2ec9eb646467b52e9fe83cf783287ba7e644e))
+
 ## [0.87.1](https://github.com/MunifTanjim/stremthru/compare/0.87.0...0.87.1) (2025-09-10)
 
 
