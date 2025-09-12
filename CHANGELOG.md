@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.87.5](https://github.com/MunifTanjim/stremthru/compare/0.87.4...0.87.5) (2025-09-12)
+
+
+### Bug Fixes
+
+* **db:** fix advisory lock for sqlite ([77aa0fb](https://github.com/MunifTanjim/stremthru/commit/77aa0fb6128f06fc9b583f5695a0e5a4f32a7522))
+* **oauth:** handle token refresh race condition ([0c652dd](https://github.com/MunifTanjim/stremthru/commit/0c652dd48910a0c6dbbe4191e19fecd98120b702))
+
 ## [0.87.4](https://github.com/MunifTanjim/stremthru/compare/0.87.3...0.87.4) (2025-09-12)
 
 
