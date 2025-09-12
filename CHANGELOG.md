@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.87.4](https://github.com/MunifTanjim/stremthru/compare/0.87.3...0.87.4) (2025-09-12)
+
+
+### Bug Fixes
+
+* **worker:** handle panic caused by empty kv key ([1d9e753](https://github.com/MunifTanjim/stremthru/commit/1d9e753f2aaa6abe98c8bc296acdb679b4a79f50))
+
 ## [0.87.3](https://github.com/MunifTanjim/stremthru/compare/0.87.2...0.87.3) (2025-09-11)
 
 
