@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.87.5](https://github.com/MunifTanjim/stremthru/compare/0.87.4...0.87.5) (2025-09-14)
+
+
+### Bug Fixes
+
+* **db:** fix advisory lock for sqlite ([77aa0fb](https://github.com/MunifTanjim/stremthru/commit/77aa0fb6128f06fc9b583f5695a0e5a4f32a7522))
+* **kv:** delete rows with empty keys when listing ([a84f7aa](https://github.com/MunifTanjim/stremthru/commit/a84f7aa12b58d93c62acb4358f5f72365a075eeb))
+* **oauth:** handle token refresh race condition ([0c652dd](https://github.com/MunifTanjim/stremthru/commit/0c652dd48910a0c6dbbe4191e19fecd98120b702))
+
 ## [0.87.4](https://github.com/MunifTanjim/stremthru/compare/0.87.3...0.87.4) (2025-09-12)
 
 
