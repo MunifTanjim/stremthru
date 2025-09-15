@@ -1,38 +1,41 @@
 package letterboxd
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/oauth"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
-	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
+
+type APIClientConfigOAuth struct {
+	GetTokenSource func(oauth2.Config) oauth2.TokenSource
+}
 
 type APIClientConfig struct {
 	HTTPClient *http.Client
-	apiKey     string
-	secret     string
+	OAuth      *APIClientConfigOAuth
+}
+
+type APIClientOAuth struct {
+	Config      oauth2.Config
+	TokenSource oauth2.TokenSource
 }
 
 type APIClient struct {
 	BaseURL    *url.URL
 	httpClient *http.Client
-	apiKey     string
-	secret     string
+	OAuth      APIClientOAuth
 
 	reqQuery   func(query *url.Values, params request.Context)
 	reqHeader  func(query *http.Header, params request.Context)
@@ -41,24 +44,38 @@ type APIClient struct {
 
 func NewAPIClient(conf *APIClientConfig) *APIClient {
 	if conf.HTTPClient == nil {
-		conf.HTTPClient = config.DefaultHTTPClient
+		conf.HTTPClient = config.GetHTTPClient(config.TUNNEL_TYPE_AUTO)
+		transport := config.DefaultHTTPTransport.Clone()
+		transport.DisableKeepAlives = false
+		conf.HTTPClient.Transport = transport
 	}
 
 	c := &APIClient{}
 
 	c.BaseURL = util.MustParseURL("https://api.letterboxd.com/api")
 
-	c.httpClient = conf.HTTPClient
-	c.apiKey = conf.apiKey
-	c.secret = conf.secret
+	c.OAuth.Config = oauth.LetterboxdOAuthConfig.Config
+	if conf.OAuth != nil {
+		c.OAuth.TokenSource = conf.OAuth.GetTokenSource(c.OAuth.Config)
+	}
+
+	if c.OAuth.TokenSource == nil {
+		c.httpClient = conf.HTTPClient
+	} else {
+		c.httpClient = oauth2.NewClient(
+			context.WithValue(context.Background(), oauth2.HTTPClient, conf.HTTPClient),
+			c.OAuth.TokenSource,
+		)
+	}
 
 	c.reqQuery = func(query *url.Values, params request.Context) {
-		query.Set("apikey", conf.apiKey)
-		query.Set("nonce", uuid.NewString())
-		query.Set("timestamp", strconv.FormatInt(time.Now().Unix(), 10))
 	}
 
 	c.reqHeader = func(header *http.Header, params request.Context) {
+		header.Set("Accept", "application/json")
+		header.Set("Accept-Charset", "UTF-8")
+		header.Set("Accept-Language", "en-US")
+		header.Set("User-Agent", config.Integration.Letterboxd.UserAgent)
 	}
 
 	return c
@@ -101,52 +118,6 @@ func (r *ResponseError) Unmarshal(res *http.Response, body []byte, v any) error 
 	}
 }
 
-func (c APIClient) getRequestSignature(req *http.Request) (string, error) {
-	var body []byte
-	if req.Body != nil {
-		var err error
-		body, err = io.ReadAll(req.Body)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	req.Body = io.NopCloser(bytes.NewReader(body))
-
-	data := []byte{}
-	data = append(data, []byte(req.Method)...)
-	data = append(data, 0)
-	data = append(data, []byte(req.URL.String())...)
-	data = append(data, 0)
-	data = append(data, body...)
-
-	mac := hmac.New(sha256.New, []byte(c.secret))
-	_, err := mac.Write(data)
-	if err != nil {
-		return "", err
-	}
-	result := mac.Sum(nil)
-
-	return hex.EncodeToString(result), nil
-}
-
-func (c APIClient) beforeRequest(req *http.Request) error {
-	if req.URL.Host != c.BaseURL.Host {
-		return nil
-	}
-
-	signature, err := c.getRequestSignature(req)
-	if err != nil {
-		return err
-	}
-
-	query := req.URL.Query()
-	query.Set("signature", signature)
-	req.URL.RawQuery = query.Encode()
-
-	return nil
-}
-
 func (c *APIClient) GetRetryAfter() time.Duration {
 	return c.retryAfter
 }
@@ -167,7 +138,6 @@ func (c *APIClient) Request(method, path string, params request.Context, v reque
 		return nil, error
 	}
 	c.retryAfter = 0
-	params.BeforeDo(c.beforeRequest)
 	res, err := params.DoRequest(c.httpClient, req)
 	err = request.ProcessResponseBody(res, err, v)
 	if err != nil {

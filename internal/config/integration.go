@@ -31,13 +31,18 @@ func (c integrationConfigBitmagnet) IsEnabled() bool {
 }
 
 type integrationConfigLettterboxd struct {
-	APIKey        string
-	Secret        string
+	ClientId      string
+	ClientSecret  string
+	UserAgent     string
 	ListStaleTime time.Duration
 }
 
 func (c integrationConfigLettterboxd) IsEnabled() bool {
-	return c.APIKey != "" && c.Secret != ""
+	return c.ClientId != "" && c.ClientSecret != ""
+}
+
+func (c integrationConfigLettterboxd) IsPiggybacked() bool {
+	return !c.IsEnabled() && HasPeer
 }
 
 type integrationConfigMDBList struct {
@@ -124,8 +129,9 @@ func parseIntegration() IntegrationConfig {
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
 		},
 		Letterboxd: integrationConfigLettterboxd{
-			APIKey:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_API_KEY"),
-			Secret:        getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_SECRET"),
+			ClientId:      getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_CLIENT_ID"),
+			ClientSecret:  getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_CLIENT_SECRET"),
+			UserAgent:     getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_USER_AGENT"),
 			ListStaleTime: mustParseDuration("letterboxd list stale time", getEnv("STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME"), 2*24*time.Hour),
 		},
 		MDBList: integrationConfigMDBList{

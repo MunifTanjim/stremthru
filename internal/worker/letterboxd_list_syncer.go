@@ -88,6 +88,8 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 
 			items := []letterboxd.LetterboxdItem{}
 
+			client := letterboxd.GetSystemClient()
+
 			hasMore := true
 			perPage := 100
 			page := 0
@@ -95,14 +97,14 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 			for hasMore {
 				page++
 				log.Debug("fetching list items", "id", l.Id, "page", page)
-				res, err := letterboxd.Client.FetchListEntries(&letterboxd.FetchListEntriesParams{
+				res, err := client.FetchListEntries(&letterboxd.FetchListEntriesParams{
 					Id:      l.Id,
 					Cursor:  cursor,
 					PerPage: perPage,
 				})
 				if err != nil {
 					if res.StatusCode == http.StatusTooManyRequests {
-						duration := letterboxd.Client.GetRetryAfter()
+						duration := client.GetRetryAfter()
 						log.Warn("rate limited, cooling down", "duration", duration, "id", l.Id, "page", page)
 						time.Sleep(duration)
 						page--
@@ -111,6 +113,8 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 					log.Error("failed to fetch list items", "error", err, "id", l.Id, "page", page)
 					return err
 				}
+
+				l.ItemCount = res.Data.Metadata.TotalFilmCount
 
 				now := time.Now()
 				for i := range res.Data.Items {
@@ -137,7 +141,7 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 
 				cursor = res.Data.Next
 				hasMore = cursor != "" && len(res.Data.Items) == perPage
-				time.Sleep(5 * time.Second)
+				time.Sleep(200 * time.Millisecond)
 			}
 
 			l.Items = items

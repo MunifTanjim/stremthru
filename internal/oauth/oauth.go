@@ -7,5 +7,6 @@ type OAuthConfig struct {
 	AuthCodeURL              func(state string, opts ...oauth2.AuthCodeOption) string
 	Exchange                 func(code, state string) (*oauth2.Token, error)
 	PasswordCredentialsToken func(username, password string) (*oauth2.Token, error)
+	ClientCredentialsToken   func(clientId, clientSecret string) (*oauth2.Token, error)
 	TryAuthCodeURL           func(state string, opts ...oauth2.AuthCodeOption) (string, error)
 }

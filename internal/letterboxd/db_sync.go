@@ -15,7 +15,7 @@ import (
 const MAX_LIST_ITEM_COUNT = 5000
 
 var LetterboxdEnabled = config.Integration.Letterboxd.IsEnabled()
-var HasPeer = config.HasPeer
+var LetterboxdPiggybacked = config.Integration.Letterboxd.IsPiggybacked()
 
 var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 	BaseURL: config.PeerURL,
@@ -43,14 +43,11 @@ func InvalidateListCache(list *LetterboxdList) {
 
 var syncListMutex sync.Mutex
 
-var Client = NewAPIClient(&APIClientConfig{
-	apiKey: config.Integration.Letterboxd.APIKey,
-	secret: config.Integration.Letterboxd.Secret,
-})
-
 func syncList(l *LetterboxdList) error {
 	syncListMutex.Lock()
 	defer syncListMutex.Unlock()
+
+	client := GetSystemClient()
 
 	var list *List
 
@@ -60,7 +57,7 @@ func syncList(l *LetterboxdList) error {
 		}
 
 		log.Debug("fetching list id by slug", "slug", l.UserName+"/"+l.Slug)
-		listId, err := Client.FetchListID(&FetchListIDParams{
+		listId, err := client.FetchListID(&FetchListIDParams{
 			ListURL: SITE_BASE_URL + "/" + l.UserName + "/list/" + l.Slug + "/",
 		})
 		if err != nil {
@@ -71,7 +68,7 @@ func syncList(l *LetterboxdList) error {
 	}
 
 	if !LetterboxdEnabled {
-		if !HasPeer {
+		if !LetterboxdPiggybacked {
 			return errors.New("letterboxd integration is not available")
 		}
 
@@ -129,7 +126,7 @@ func syncList(l *LetterboxdList) error {
 	}
 
 	log.Debug("fetching list by id", "id", l.Id)
-	res, err := Client.FetchList(&FetchListParams{
+	res, err := client.FetchList(&FetchListParams{
 		Id: l.Id,
 	})
 	if err != nil {
@@ -156,7 +153,7 @@ func syncList(l *LetterboxdList) error {
 	for hasMore && page < max_page {
 		page++
 		log.Debug("fetching list items", "id", l.Id, "page", page)
-		res, err := Client.FetchListEntries(&FetchListEntriesParams{
+		res, err := client.FetchListEntries(&FetchListEntriesParams{
 			Id:      l.Id,
 			Cursor:  cursor,
 			PerPage: perPage,

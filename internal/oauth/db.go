@@ -16,10 +16,11 @@ const TableName = "oauth_token"
 type Provider string
 
 const (
-	ProviderKitsu   Provider = "kitsu.app"
-	ProviderTMDB    Provider = "themoviedb.org"
-	ProviderTraktTv Provider = "trakt.tv"
-	ProviderTVDB    Provider = "thetvdb.com"
+	ProviderKitsu      Provider = "kitsu.app"
+	ProviderLetterboxd Provider = "letterboxd.com"
+	ProviderTMDB       Provider = "themoviedb.org"
+	ProviderTraktTv    Provider = "trakt.tv"
+	ProviderTVDB       Provider = "thetvdb.com"
 )
 
 type OAuthToken struct {

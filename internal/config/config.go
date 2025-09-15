@@ -67,6 +67,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STORE_CLIENT_USER_AGENT":                "stremthru",
 		"STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME": "120h",
+		"STREMTHRU_INTEGRATION_LETTERBOXD_USER_AGENT":      "stremthru",
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
@@ -874,16 +875,17 @@ func PrintConfig(state *AppState) {
 				l.Println("              password: " + "*******")
 			}
 		case "letterboxd.com":
-			disabled := ""
-			if !Integration.Letterboxd.IsEnabled() {
-				disabled = " (disabled)"
+			info := ""
+			if !Integration.Letterboxd.IsPiggybacked() {
+				info = " (piggybacked)"
 			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("               api_key: " + Integration.Letterboxd.APIKey[0:3] + "..." + Integration.Letterboxd.APIKey[len(Integration.Letterboxd.APIKey)-3:])
-				l.Println("                secret: " + Integration.Letterboxd.Secret[0:3] + "..." + Integration.Letterboxd.Secret[len(Integration.Letterboxd.Secret)-3:])
-				l.Println("       list stale time: " + Integration.Letterboxd.ListStaleTime.String())
+			l.Println("   - " + integration + info)
+			if Integration.Letterboxd.IsEnabled() {
+				l.Println("             client_id: " + Integration.Letterboxd.ClientId[0:3] + "..." + Integration.Letterboxd.ClientId[len(Integration.Letterboxd.ClientId)-3:])
+				l.Println("         client_secret: " + Integration.Letterboxd.ClientSecret[0:3] + "..." + Integration.Letterboxd.ClientSecret[len(Integration.Letterboxd.ClientSecret)-3:])
+				l.Println("            user_agent: " + Integration.Letterboxd.UserAgent)
 			}
+			l.Println("       list stale time: " + Integration.Letterboxd.ListStaleTime.String())
 		case "mdblist.com":
 			l.Println("   - " + integration)
 			l.Println("       list stale time: " + Integration.MDBList.ListStaleTime.String())

@@ -19,6 +19,7 @@ type dbTokenSource struct {
 	oauth2.TokenSource
 	oauthConfig *oauth2.Config
 	config      TokenSourceConfig
+	refresh     func(oauth2.TokenSource) (*oauth2.Token, error)
 	TokenId     string
 	tok         *oauth2.Token
 }
@@ -59,7 +60,7 @@ func (ts *dbTokenSource) Token() (*oauth2.Token, error) {
 	}
 
 	tokenSourceLog.Debug("token expired, refreshing token", "provider", ts.config.Provider, "user_id", ts.tok.Extra("user_id"), "user_name", ts.tok.Extra("user_name"))
-	tok, err := ts.TokenSource.Token()
+	tok, err := ts.refresh(ts.TokenSource)
 	if err != nil {
 		tokenSourceLog.Error("failed to refresh token", "error", err, "provider", ts.config.Provider, "user_id", ts.tok.Extra("user_id"), "user_name", ts.tok.Extra("user_name"))
 		return nil, err
@@ -84,12 +85,21 @@ func (ts *dbTokenSource) Token() (*oauth2.Token, error) {
 type DatabaseTokenSourceConfig struct {
 	OAuth *oauth2.Config
 	TokenSourceConfig
+	Refresh func(oauth2.TokenSource) (*oauth2.Token, error)
+}
+
+func defaultTokenSourceRefresher(ts oauth2.TokenSource) (*oauth2.Token, error) {
+	return ts.Token()
 }
 
 func DatabaseTokenSource(conf *DatabaseTokenSourceConfig, token *oauth2.Token) oauth2.TokenSource {
+	if conf.Refresh == nil {
+		conf.Refresh = defaultTokenSourceRefresher
+	}
 	return oauth2.ReuseTokenSource(token, &dbTokenSource{
 		TokenSource: conf.OAuth.TokenSource(context.Background(), token),
 		config:      conf.TokenSourceConfig,
+		refresh:     conf.Refresh,
 		oauthConfig: conf.OAuth,
 		TokenId:     token.Extra("id").(string),
 		tok:         token,
