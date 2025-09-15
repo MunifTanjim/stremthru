@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.88.0](https://github.com/MunifTanjim/stremthru/compare/0.87.5...0.88.0) (2025-09-15)
+
+
+### Features
+
+* **config:** print missing configs in startup log ([96f6208](https://github.com/MunifTanjim/stremthru/commit/96f620873a4a9a5a5b398e7cd45dc1d765757925))
+* **peer:** add peer flags ([ec7f00a](https://github.com/MunifTanjim/stremthru/commit/ec7f00a88b4b1d430591dd7769444daa2c7ecd92))
+* **stremio:** show seeders when available ([6a29ba4](https://github.com/MunifTanjim/stremthru/commit/6a29ba44f871918116d76480e738f6dbe9e8c819))
+
 ## [0.87.5](https://github.com/MunifTanjim/stremthru/compare/0.87.4...0.87.5) (2025-09-14)
 
 
