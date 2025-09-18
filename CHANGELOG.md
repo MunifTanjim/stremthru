@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.89.0](https://github.com/MunifTanjim/stremthru/compare/0.88.0...0.89.0) (2025-09-18)
+
+
+### Features
+
+* **config:** support alternative ip checker ([b816c87](https://github.com/MunifTanjim/stremthru/commit/b816c875e8ec9fbd0ffff783f06cea714c6d6fc6))
+* **letterboxd:** update client implementation ([6e206ad](https://github.com/MunifTanjim/stremthru/commit/6e206ad547a052b0e8edd3bba48e32fa43c9b049))
+* **stremio/list:** support letterboxd watchlist ([5ef291e](https://github.com/MunifTanjim/stremthru/commit/5ef291ee807bfaad95b6d3cfe3a214e98e2bb5d0))
+* **stremio/list:** support name/type override on public instance ([6b5c2a1](https://github.com/MunifTanjim/stremthru/commit/6b5c2a16fb28ff97b0b80e802d0f010944ddf0c6))
+* **stremio/list:** support tmdb company list ([d88ff2a](https://github.com/MunifTanjim/stremthru/commit/d88ff2a366fab09e4c83a69bc1e2a73093dae1f6))
+* **torrent_info:** support pulling anidb torrent ([72c7fb8](https://github.com/MunifTanjim/stremthru/commit/72c7fb8327b562dc2d1a7ba8f762b98e2fab10a7))
+* **torznab:** include seeders and leechers ([96410d4](https://github.com/MunifTanjim/stremthru/commit/96410d4d0b93aa76f0adfd211b5932146ce62af8))
+
+
+### Bug Fixes
+
+* **imdb_title:** fix catagorization for movie/show ([540b531](https://github.com/MunifTanjim/stremthru/commit/540b53134a472b82155849d7117ffe71b2dd1b90))
+* **stremio/list:** add missing examples ([5412a20](https://github.com/MunifTanjim/stremthru/commit/5412a203884db3868e2e02ff64a6c181e259b0d7))
+* **stremio/list:** fix type for letterboxd non-movie items ([e2d8c56](https://github.com/MunifTanjim/stremthru/commit/e2d8c56bafd21b587cbc9b2f417582e52cb36122))
+* **stremio/torz:** show appropriate error feedback ([e34526b](https://github.com/MunifTanjim/stremthru/commit/e34526ba69a1fd06ef9c6733aa2334bafb20d8eb))
+* **torrent_info:** make GetCategoryFromStremid stricter ([5ff1807](https://github.com/MunifTanjim/stremthru/commit/5ff18071b5a730987a250eca7a52c258bf033318))
+* **torrent_stream:** fix files normalization ([a2b13dd](https://github.com/MunifTanjim/stremthru/commit/a2b13dd95be666368adf7c9139a685d445bdf147))
+
 ## [0.88.0](https://github.com/MunifTanjim/stremthru/compare/0.87.5...0.88.0) (2025-09-15)
 
 
