@@ -97,6 +97,9 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 						},
 					},
 				}
+				if list.IsUserWatchlist() {
+					catalog.Name = list.UserName + " / " + list.Name
+				}
 				if hasListNames {
 					if name := ud.ListNames[idx]; name != "" {
 						catalog.Name = name

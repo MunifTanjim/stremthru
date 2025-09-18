@@ -8,7 +8,9 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	meta_type "github.com/MunifTanjim/stremthru/internal/meta/type"
 	"github.com/MunifTanjim/stremthru/internal/peer"
+	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 )
 
@@ -27,12 +29,6 @@ var listCache = cache.NewCache[LetterboxdList](&cache.CacheConfig{
 	LocalCapacity: 1024,
 })
 
-var listIdBySlugCache = cache.NewCache[string](&cache.CacheConfig{
-	Lifetime:      12 * time.Hour,
-	Name:          "letterboxd:list-id-by-slug",
-	LocalCapacity: 2048,
-})
-
 func getListCacheKey(l *LetterboxdList) string {
 	return l.Id
 }
@@ -44,28 +40,14 @@ func InvalidateListCache(list *LetterboxdList) {
 var syncListMutex sync.Mutex
 
 func syncList(l *LetterboxdList) error {
+	if l.Id == "" {
+		return errors.New("id must be provided")
+	}
+
 	syncListMutex.Lock()
 	defer syncListMutex.Unlock()
 
-	client := GetSystemClient()
-
 	var list *List
-
-	if l.Id == "" {
-		if l.UserName == "" || l.Slug == "" {
-			return errors.New("either id, or user_id and slug must be provided")
-		}
-
-		log.Debug("fetching list id by slug", "slug", l.UserName+"/"+l.Slug)
-		listId, err := client.FetchListID(&FetchListIDParams{
-			ListURL: SITE_BASE_URL + "/" + l.UserName + "/list/" + l.Slug + "/",
-		})
-		if err != nil {
-			log.Error("failed to fetch list id by slug", "error", err, "slug", l.UserName+"/"+l.Slug)
-			return err
-		}
-		l.Id = listId
-	}
 
 	if !LetterboxdEnabled {
 		if !LetterboxdPiggybacked {
@@ -73,9 +55,17 @@ func syncList(l *LetterboxdList) error {
 		}
 
 		log.Debug("fetching list by id from upstream", "id", l.Id)
-		res, err := Peer.FetchLetterboxdList(&peer.FetchLetterboxdListParams{
-			ListId: l.Id,
-		})
+		var res request.APIResponse[meta_type.List]
+		var err error
+		if l.IsUserWatchlist() {
+			res, err = Peer.FetchLetterboxdUserWatchlist(&peer.FetchLetterboxdUserWatchlistParams{
+				UserId: l.UserId,
+			})
+		} else {
+			res, err = Peer.FetchLetterboxdList(&peer.FetchLetterboxdListParams{
+				ListId: l.Id,
+			})
+		}
 		if err != nil {
 			return err
 		}
@@ -125,25 +115,46 @@ func syncList(l *LetterboxdList) error {
 		return nil
 	}
 
-	log.Debug("fetching list by id", "id", l.Id)
-	res, err := client.FetchList(&FetchListParams{
-		Id: l.Id,
-	})
-	if err != nil {
-		return err
-	}
-	list = &res.Data
+	client := GetSystemClient()
 
-	l.UserId = list.Owner.Id
-	l.UserName = list.Owner.Username
-	l.Name = list.Name
-	if slug := list.getLetterboxdSlug(); slug != "" {
-		l.Slug = slug
+	isUserWatchlist := l.IsUserWatchlist()
+
+	if isUserWatchlist {
+		userId, err := FetchLetterboxdUserIdentifier(l.UserName)
+		if err != nil {
+			log.Error("failed to fetch user id", "error", err, "username", l.UserName)
+			return err
+		}
+		l.UserId = userId
+		l.Name = "Watchlist"
+		res, err := client.FetchMemberStatistics(&FetchMemberStatisticsParams{
+			Id: l.UserId,
+		})
+		if err != nil {
+			return err
+		}
+		l.ItemCount = res.Data.Counts.Watchlist
+	} else {
+		log.Debug("fetching list by id", "id", l.Id)
+		res, err := client.FetchList(&FetchListParams{
+			Id: l.Id,
+		})
+		if err != nil {
+			return err
+		}
+		list = &res.Data
+
+		l.UserId = list.Owner.Id
+		l.UserName = list.Owner.Username
+		l.Name = list.Name
+		if slug := list.getLetterboxdSlug(); slug != "" {
+			l.Slug = slug
+		}
+		l.Description = list.Description
+		l.Private = false // list.SharePolicy != SharePolicyAnyone
+		l.ItemCount = list.FilmCount
+		l.Items = nil
 	}
-	l.Description = list.Description
-	l.Private = false // list.SharePolicy != SharePolicyAnyone
-	l.ItemCount = list.FilmCount
-	l.Items = nil
 
 	hasMore := true
 	perPage := 100
@@ -153,40 +164,75 @@ func syncList(l *LetterboxdList) error {
 	for hasMore && page < max_page {
 		page++
 		log.Debug("fetching list items", "id", l.Id, "page", page)
-		res, err := client.FetchListEntries(&FetchListEntriesParams{
-			Id:      l.Id,
-			Cursor:  cursor,
-			PerPage: perPage,
-		})
-		if err != nil {
-			log.Error("failed to fetch list items", "id", l.Id, "error", err)
-			return err
-		}
-		now := time.Now()
-		for i := range res.Data.Items {
-			item := &res.Data.Items[i]
-			rank := item.Rank
-			if rank == 0 {
-				rank = i
-			}
-			l.Items = append(l.Items, LetterboxdItem{
-				Id:          item.Film.Id,
-				Name:        item.Film.Name,
-				ReleaseYear: item.Film.ReleaseYear,
-				Runtime:     item.Film.RunTime,
-				Rating:      int(item.Film.Rating * 2 * 10),
-				Adult:       item.Film.Adult,
-				Poster:      item.Film.GetPoster(),
-				UpdatedAt:   db.Timestamp{Time: now},
-
-				GenreIds: item.Film.GenreIds(),
-				IdMap:    item.Film.GetIdMap(),
-				Rank:     rank,
+		if isUserWatchlist {
+			res, err := client.FetchMemberWatchlist(&FetchMemberWatchlistParams{
+				Id:      l.UserId,
+				Cursor:  cursor,
+				PerPage: perPage,
 			})
+			if err != nil {
+				log.Error("failed to fetch list items", "error", err, "id", l.Id)
+				return err
+			}
+			now := time.Now()
+			for i := range res.Data.Items {
+				item := &res.Data.Items[i]
+				rank := i
+				l.Items = append(l.Items, LetterboxdItem{
+					Id:          item.Id,
+					Name:        item.Name,
+					ReleaseYear: item.ReleaseYear,
+					Runtime:     item.RunTime,
+					Rating:      int(item.Rating * 2 * 10),
+					Adult:       item.Adult,
+					Poster:      item.GetPoster(),
+					UpdatedAt:   db.Timestamp{Time: now},
+
+					GenreIds: item.GenreIds(),
+					IdMap:    item.GetIdMap(),
+					Rank:     rank,
+				})
+			}
+
+			cursor = res.Data.Next
+			hasMore = cursor != "" && len(res.Data.Items) == perPage
+		} else {
+			res, err := client.FetchListEntries(&FetchListEntriesParams{
+				Id:      l.Id,
+				Cursor:  cursor,
+				PerPage: perPage,
+			})
+			if err != nil {
+				log.Error("failed to fetch list items", "error", err, "id", l.Id)
+				return err
+			}
+			now := time.Now()
+			for i := range res.Data.Items {
+				item := &res.Data.Items[i]
+				rank := item.Rank
+				if rank == 0 {
+					rank = i
+				}
+				l.Items = append(l.Items, LetterboxdItem{
+					Id:          item.Film.Id,
+					Name:        item.Film.Name,
+					ReleaseYear: item.Film.ReleaseYear,
+					Runtime:     item.Film.RunTime,
+					Rating:      int(item.Film.Rating * 2 * 10),
+					Adult:       item.Film.Adult,
+					Poster:      item.Film.GetPoster(),
+					UpdatedAt:   db.Timestamp{Time: now},
+
+					GenreIds: item.Film.GenreIds(),
+					IdMap:    item.Film.GetIdMap(),
+					Rank:     rank,
+				})
+			}
+
+			cursor = res.Data.Next
+			hasMore = cursor != "" && len(res.Data.Items) == perPage
 		}
-		cursor = res.Data.Next
-		hasMore = cursor != "" && len(res.Data.Items) == perPage
-		time.Sleep(2 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	if err := UpsertList(l); err != nil {
@@ -208,42 +254,26 @@ func syncList(l *LetterboxdList) error {
 }
 
 func (l *LetterboxdList) Fetch() error {
-	isMissing := false
-
 	if l.Id == "" {
-		if l.UserName == "" || l.Slug == "" {
-			return errors.New("either id, or user_name and slug must be provided")
-		}
-		listIdBySlugCacheKey := l.UserName + "/" + l.Slug
-		if !listIdBySlugCache.Get(listIdBySlugCacheKey, &l.Id) {
-			if listId, err := GetListIdBySlug(l.UserName, l.Slug); err != nil {
-				return err
-			} else if listId == "" {
-				isMissing = true
-			} else {
-				l.Id = listId
-				log.Debug("found list id by slug", "id", l.Id, "slug", l.UserName+"/"+l.Slug)
-				listIdBySlugCache.Add(listIdBySlugCacheKey, l.Id)
-			}
-		}
+		return errors.New("id must be provided")
 	}
 
+	isMissing := false
+
 	listCacheKey := getListCacheKey(l)
-	if !isMissing {
-		var cachedL LetterboxdList
-		if !listCache.Get(listCacheKey, &cachedL) {
-			if list, err := GetListById(l.Id); err != nil {
-				return err
-			} else if list == nil {
-				isMissing = true
-			} else {
-				*l = *list
-				log.Debug("found list by id", "id", l.Id, "is_stale", l.IsStale())
-				listCache.Add(listCacheKey, *l)
-			}
+	var cachedL LetterboxdList
+	if !listCache.Get(listCacheKey, &cachedL) {
+		if list, err := GetListById(l.Id); err != nil {
+			return err
+		} else if list == nil {
+			isMissing = true
 		} else {
-			*l = cachedL
+			*l = *list
+			log.Debug("found list by id", "id", l.Id, "is_stale", l.IsStale())
+			listCache.Add(listCacheKey, *l)
 		}
+	} else {
+		*l = cachedL
 	}
 
 	if isMissing {

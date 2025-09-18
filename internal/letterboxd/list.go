@@ -1,39 +1,12 @@
 package letterboxd
 
 import (
-	"errors"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/request"
 )
-
-type FetchListIDParams struct {
-	Ctx
-	ListURL string `json:"-"`
-}
-
-func beforeRequestFetchListID(req *http.Request) error {
-	req.URL.RawQuery = ""
-	return nil
-}
-
-func (c *APIClient) FetchListID(params *FetchListIDParams) (string, error) {
-	params.BeforeDo(beforeRequestFetchListID)
-	response := ResponseError{}
-	res, err := c.Request("HEAD", params.ListURL, params, &response)
-	if err != nil {
-		return "", err
-	}
-	lid := res.Header.Get("X-Letterboxd-Identifier")
-	if lid == "" {
-		return "", errors.New("not found")
-	}
-	return lid, nil
-}
 
 type Tag struct {
 	Code       string `json:"code"`
@@ -154,71 +127,6 @@ type MemberFilmRelationship struct {
 type Genre struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
-}
-
-type FilmSummary struct {
-	Id                   string                   `json:"id"`
-	Name                 string                   `json:"name"`
-	OriginalName         string                   `json:"originalName,omitempty"` // FIRST PARTY
-	SortingName          string                   `json:"sortingName"`
-	AlternativeNames     []string                 `json:"alternativeNames,omitempty"` // FIRST PARTY
-	ReleaseYear          int                      `json:"releaseYear"`
-	RunTime              int                      `json:"runTime,omitempty"`
-	Rating               float32                  `json:"rating,omitempty"`
-	Directors            []ContributorSummary     `json:"directors"`
-	Poster               *Image                   `json:"poster,omitempty"`
-	AdultPoster          *Image                   `json:"adultPoster,omitempty"`
-	Top250Position       int32                    `json:"top250Position,omitempty"`
-	Adult                bool                     `json:"adult"`
-	ReviewsHidden        bool                     `json:"reviewsHidden"`
-	PosterCustomizable   bool                     `json:"posterCustomizable"`
-	BackdropCustomizable bool                     `json:"backdropCustomizable"`
-	FilmCollectionId     string                   `json:"filmCollectionId,omitempty"`
-	Links                []Link                   `json:"links"`
-	Relationships        []MemberFilmRelationship `json:"relationships,omitempty"`
-	Genres               []Genre                  `json:"genres"`
-	PosterPickerURL      string                   `json:"posterPickerUrl,omitempty"`   // FIRST PARTY
-	BackdropPickerURL    string                   `json:"backdropPickerUrl,omitempty"` // FIRST PARTY
-}
-
-func (fs FilmSummary) GenreIds() []string {
-	ids := make([]string, len(fs.Genres))
-	for i := range fs.Genres {
-		ids[i] = fs.Genres[i].Id
-	}
-	return ids
-}
-
-func (fs FilmSummary) GetPoster() string {
-	var sizes []ImageSize
-	if fs.Adult && fs.AdultPoster != nil {
-		sizes = fs.AdultPoster.Sizes
-	} else if fs.Poster != nil {
-		sizes = fs.Poster.Sizes
-	}
-	for i := range sizes {
-		size := &sizes[i]
-		if size.Width >= 300 {
-			return size.URL
-		}
-	}
-	return ""
-}
-
-func (fs FilmSummary) GetIdMap() *meta.IdMap {
-	idMap := meta.IdMap{Type: meta.IdTypeMovie}
-	for i := range fs.Links {
-		link := &fs.Links[i]
-		switch link.Type {
-		case LinkTypeLetterboxd:
-			idMap.Letterboxd = link.Id
-		case LinkTypeIMDB:
-			idMap.IMDB = link.Id
-		case LinkTypeTMDB:
-			idMap.TMDB = link.Id
-		}
-	}
-	return &idMap
 }
 
 type ListEntrySummary struct {

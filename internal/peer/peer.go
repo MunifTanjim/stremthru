@@ -280,6 +280,17 @@ type FetchLetterboxdListParams struct {
 
 func (c APIClient) FetchLetterboxdList(params *FetchLetterboxdListParams) (request.APIResponse[meta_type.List], error) {
 	response := &Response[meta_type.List]{}
-	res, err := c.Request("GET", "/v0/meta/lists/letterboxd/"+params.ListId, params, response)
+	res, err := c.Request("GET", "/v0/meta/letterboxd/lists/"+params.ListId, params, response)
+	return request.NewAPIResponse(res, response.Data), err
+}
+
+type FetchLetterboxdUserWatchlistParams struct {
+	request.Ctx
+	UserId string
+}
+
+func (c APIClient) FetchLetterboxdUserWatchlist(params *FetchLetterboxdUserWatchlistParams) (request.APIResponse[meta_type.List], error) {
+	response := &Response[meta_type.List]{}
+	res, err := c.Request("GET", "/v0/meta/letterboxd/users/"+params.UserId+"/lists/watchlist", params, response)
 	return request.NewAPIResponse(res, response.Data), err
 }

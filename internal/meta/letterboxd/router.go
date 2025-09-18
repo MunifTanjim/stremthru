@@ -30,6 +30,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	router := http.NewServeMux()
 
 	router.HandleFunc("/lists/{list_id}", handleGetLetterboxdListById)
+	router.HandleFunc("/users/{user_id}/lists/watchlist", handleGetLetterboxdUserWatchlist)
 
 	mux.Handle("/v0/meta/letterboxd/", http.StripPrefix("/v0/meta/letterboxd", commonMiddleware(router)))
 }

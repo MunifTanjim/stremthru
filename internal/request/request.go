@@ -105,7 +105,9 @@ func (ctx *Ctx) NewRequest(baseURL *url.URL, method, path string, header func(he
 	}
 
 	q := reqUrl.Query()
-	query(&q, ctx)
+	if query != nil {
+		query(&q, ctx)
+	}
 	ctx.PrepareQuery(&q)
 
 	body, contentType, err := ctx.PrepareBody(method, &q)
@@ -120,7 +122,9 @@ func (ctx *Ctx) NewRequest(baseURL *url.URL, method, path string, header func(he
 		return nil, err
 	}
 
-	header(&req.Header, ctx)
+	if header != nil {
+		header(&req.Header, ctx)
+	}
 	ctx.PrepareHeader(&req.Header)
 
 	if len(contentType) > 0 {

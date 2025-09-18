@@ -298,6 +298,33 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 						udErr.list_urls[idx] = "Invalid List URL"
 						continue
 					}
+					listId, err := letterboxd.FetchLetterboxdListIdentifier(username, slug)
+					if err != nil {
+						udErr.list_urls[idx] = "Failed to fetch list identifier: " + err.Error()
+						continue
+					}
+					userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
+					if err != nil {
+						udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
+						continue
+					}
+					list.Id = listId
+					list.UserId = userId
+					list.UserName = username
+					list.Slug = slug
+				case len(parts) == 2 && parts[1] == "watchlist":
+					username, slug := parts[0], parts[1]
+					if username == "" || slug == "" {
+						udErr.list_urls[idx] = "Invalid List URL"
+						continue
+					}
+					userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
+					if err != nil {
+						udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
+						continue
+					}
+					list.Id = letterboxd.ID_PREFIX_USER_WATCHLIST + userId
+					list.UserId = userId
 					list.UserName = username
 					list.Slug = slug
 				default:

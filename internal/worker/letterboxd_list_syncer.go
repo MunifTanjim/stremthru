@@ -33,7 +33,7 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 			}
 
 			if !config.Integration.Letterboxd.IsEnabled() {
-				if !config.HasPeer {
+				if !config.Integration.Letterboxd.IsPiggybacked() {
 					return nil
 				}
 
@@ -90,6 +90,16 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 
 			client := letterboxd.GetSystemClient()
 
+			if l.IsUserWatchlist() {
+				res, err := client.FetchMemberStatistics(&letterboxd.FetchMemberStatisticsParams{
+					Id: l.UserId,
+				})
+				if err != nil {
+					return err
+				}
+				l.ItemCount = res.Data.Counts.Watchlist
+			}
+
 			hasMore := true
 			perPage := 100
 			page := 0
@@ -97,50 +107,84 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 			for hasMore {
 				page++
 				log.Debug("fetching list items", "id", l.Id, "page", page)
-				res, err := client.FetchListEntries(&letterboxd.FetchListEntriesParams{
-					Id:      l.Id,
-					Cursor:  cursor,
-					PerPage: perPage,
-				})
-				if err != nil {
-					if res.StatusCode == http.StatusTooManyRequests {
-						duration := client.GetRetryAfter()
-						log.Warn("rate limited, cooling down", "duration", duration, "id", l.Id, "page", page)
-						time.Sleep(duration)
-						page--
-						continue
-					}
-					log.Error("failed to fetch list items", "error", err, "id", l.Id, "page", page)
-					return err
-				}
-
-				l.ItemCount = res.Data.Metadata.TotalFilmCount
-
-				now := time.Now()
-				for i := range res.Data.Items {
-					item := &res.Data.Items[i]
-					rank := item.Rank
-					if rank == 0 {
-						rank = i
-					}
-					items = append(items, letterboxd.LetterboxdItem{
-						Id:          item.Film.Id,
-						Name:        item.Film.Name,
-						ReleaseYear: item.Film.ReleaseYear,
-						Runtime:     item.Film.RunTime,
-						Rating:      int(item.Film.Rating * 2 * 10),
-						Adult:       item.Film.Adult,
-						Poster:      item.Film.GetPoster(),
-						UpdatedAt:   db.Timestamp{Time: now},
-
-						GenreIds: item.Film.GenreIds(),
-						IdMap:    item.Film.GetIdMap(),
-						Rank:     rank,
+				if l.IsUserWatchlist() {
+					res, err := client.FetchMemberWatchlist(&letterboxd.FetchMemberWatchlistParams{
+						Id:      l.UserId,
+						Cursor:  cursor,
+						PerPage: perPage,
 					})
-				}
+					if err != nil {
+						log.Error("failed to fetch list items", "error", err, "id", l.Id)
+						return err
+					}
+					now := time.Now()
+					for i := range res.Data.Items {
+						item := &res.Data.Items[i]
+						rank := i
+						l.Items = append(l.Items, letterboxd.LetterboxdItem{
+							Id:          item.Id,
+							Name:        item.Name,
+							ReleaseYear: item.ReleaseYear,
+							Runtime:     item.RunTime,
+							Rating:      int(item.Rating * 2 * 10),
+							Adult:       item.Adult,
+							Poster:      item.GetPoster(),
+							UpdatedAt:   db.Timestamp{Time: now},
 
-				cursor = res.Data.Next
-				hasMore = cursor != "" && len(res.Data.Items) == perPage
+							GenreIds: item.GenreIds(),
+							IdMap:    item.GetIdMap(),
+							Rank:     rank,
+						})
+					}
+
+					cursor = res.Data.Next
+					hasMore = cursor != "" && len(res.Data.Items) == perPage
+				} else {
+					res, err := client.FetchListEntries(&letterboxd.FetchListEntriesParams{
+						Id:      l.Id,
+						Cursor:  cursor,
+						PerPage: perPage,
+					})
+					if err != nil {
+						if res.StatusCode == http.StatusTooManyRequests {
+							duration := client.GetRetryAfter()
+							log.Warn("rate limited, cooling down", "duration", duration, "id", l.Id, "page", page)
+							time.Sleep(duration)
+							page--
+							continue
+						}
+						log.Error("failed to fetch list items", "error", err, "id", l.Id, "page", page)
+						return err
+					}
+
+					l.ItemCount = res.Data.Metadata.TotalFilmCount
+
+					now := time.Now()
+					for i := range res.Data.Items {
+						item := &res.Data.Items[i]
+						rank := item.Rank
+						if rank == 0 {
+							rank = i
+						}
+						items = append(items, letterboxd.LetterboxdItem{
+							Id:          item.Film.Id,
+							Name:        item.Film.Name,
+							ReleaseYear: item.Film.ReleaseYear,
+							Runtime:     item.Film.RunTime,
+							Rating:      int(item.Film.Rating * 2 * 10),
+							Adult:       item.Film.Adult,
+							Poster:      item.Film.GetPoster(),
+							UpdatedAt:   db.Timestamp{Time: now},
+
+							GenreIds: item.Film.GenreIds(),
+							IdMap:    item.Film.GetIdMap(),
+							Rank:     rank,
+						})
+					}
+
+					cursor = res.Data.Next
+					hasMore = cursor != "" && len(res.Data.Items) == perPage
+				}
 				time.Sleep(200 * time.Millisecond)
 			}
 

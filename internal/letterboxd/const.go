@@ -1,6 +1,12 @@
 package letterboxd
 
+import (
+	"github.com/MunifTanjim/stremthru/internal/util"
+)
+
 const SITE_BASE_URL = "https://letterboxd.com"
+
+var SITE_BASE_URL_PARSED = util.MustParseURL(SITE_BASE_URL)
 
 var genreNameById = map[string]string{
 	"8G":  "Action",

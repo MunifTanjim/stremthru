@@ -30,6 +30,9 @@ type LetterboxdList struct {
 	Items []LetterboxdItem `json:"-"`
 }
 
+const ID_PREFIX_DYNAMIC = "~:"
+const ID_PREFIX_USER_WATCHLIST = ID_PREFIX_DYNAMIC + "watchlist:"
+
 func (l *LetterboxdList) IsStale() bool {
 	return time.Now().After(l.UpdatedAt.Add(config.Integration.Letterboxd.ListStaleTime + util.GetRandomDuration(5*time.Second, 5*time.Minute)))
 }
@@ -43,6 +46,10 @@ func (l *LetterboxdList) StaleIn() time.Duration {
 
 func (l *LetterboxdList) GetURL() string {
 	return SITE_BASE_URL + "/" + strings.ToLower(l.UserName) + "/list/" + l.Slug
+}
+
+func (l *LetterboxdList) IsUserWatchlist() bool {
+	return strings.HasPrefix(l.Id, ID_PREFIX_USER_WATCHLIST)
 }
 
 func (l *LetterboxdList) HasUnfetchedItems() bool {
