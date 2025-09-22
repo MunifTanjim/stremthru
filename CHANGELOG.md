@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.89.1](https://github.com/MunifTanjim/stremthru/compare/0.89.0...0.89.1) (2025-09-22)
+
+
+### Bug Fixes
+
+* **config:** fix letterboxd startup log ([269f6a5](https://github.com/MunifTanjim/stremthru/commit/269f6a52a3d8aea63decdff8f938672f72104310))
+
+
+### Performance Improvements
+
+* **peer_token:** cache peer token check ([5c41c1b](https://github.com/MunifTanjim/stremthru/commit/5c41c1b47d21623bf6bb64a8f537b2a49e9b02e4))
+
 ## [0.89.0](https://github.com/MunifTanjim/stremthru/compare/0.88.0...0.89.0) (2025-09-18)
 
 
