@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.89.2](https://github.com/MunifTanjim/stremthru/compare/0.89.1...0.89.2) (2025-09-22)
+
+
+### Bug Fixes
+
+* **meta/letterboxd:** ensure user id for watchlist ([32fbe1f](https://github.com/MunifTanjim/stremthru/commit/32fbe1fff3cf0a259608039caddcfedce64644eb))
+
 ## [0.89.1](https://github.com/MunifTanjim/stremthru/compare/0.89.0...0.89.1) (2025-09-22)
 
 
