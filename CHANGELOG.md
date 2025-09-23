@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.89.3](https://github.com/MunifTanjim/stremthru/compare/0.89.2...0.89.3) (2025-09-23)
+
+
+### Bug Fixes
+
+* **letterboxd:** respect max list item count ([0c6b2f1](https://github.com/MunifTanjim/stremthru/commit/0c6b2f1c1865e57d400397d4970384c863e9cd1c))
+* **letterboxd:** tweak min list stale time ([c169e7a](https://github.com/MunifTanjim/stremthru/commit/c169e7a984aa96dfc7f0a414e489b6f5a004646f))
+
 ## [0.89.2](https://github.com/MunifTanjim/stremthru/compare/0.89.1...0.89.2) (2025-09-22)
 
 
