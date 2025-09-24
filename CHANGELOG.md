@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.89.4](https://github.com/MunifTanjim/stremthru/compare/0.89.3...0.89.4) (2025-09-24)
+
+
+### Bug Fixes
+
+* **letterboxd:** fix piggybacked sync and stale detection ([6b75f8e](https://github.com/MunifTanjim/stremthru/commit/6b75f8e4ebe3b90598fca50948101612602811da))
+
 ## [0.89.3](https://github.com/MunifTanjim/stremthru/compare/0.89.2...0.89.3) (2025-09-23)
 
 
