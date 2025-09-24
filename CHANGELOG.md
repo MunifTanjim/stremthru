@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.89.5](https://github.com/MunifTanjim/stremthru/compare/0.89.4...0.89.5) (2025-09-24)
+
+
+### Bug Fixes
+
+* **meta/letterboxd:** respond with correct item type ([d34fe1d](https://github.com/MunifTanjim/stremthru/commit/d34fe1dde2cdb1072d440745cf49040491361c35))
+
 ## [0.89.4](https://github.com/MunifTanjim/stremthru/compare/0.89.3...0.89.4) (2025-09-24)
 
 
