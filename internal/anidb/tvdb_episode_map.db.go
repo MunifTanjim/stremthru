@@ -332,6 +332,22 @@ func (ms AniDBTVDBEpisodeMaps) HasSplitedTVSeasons() bool {
 	return false
 }
 
+// single tv season for the splitted anime seasons
+// func (ms AniDBTVDBEpisodeMaps) HasJoinedTVSeasons() bool {
+// 	seenAniDBSeason := map[int]struct{}{}
+// 	for i := range ms {
+// 		m := &ms[i]
+// 		if m.TVDBSeason < 1 || m.AniDBSeason < 1 {
+// 			continue
+// 		}
+// 		if _, seen := seenAniDBSeason[m.]; seen {
+// 			return true
+// 		}
+// 		seenAniDBSeason[m.AniDBId] = struct{}{}
+// 	}
+// 	return false
+// }
+
 func (ms AniDBTVDBEpisodeMaps) AreAbsoluteEpisode(episodes ...int) bool {
 	hasAbsoluteOrder := false
 	var largestNormalEpisode int

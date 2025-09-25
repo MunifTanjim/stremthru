@@ -554,7 +554,7 @@ func InitWorkers() func() {
 		Disabled:          !config.Feature.IsEnabled("anime"),
 		Name:              "map-anidb-torrent",
 		Interval:          30 * time.Minute,
-		RunAtStartupAfter: 90 * time.Second,
+		RunAtStartupAfter: 3 * time.Second,
 		RunExclusive:      true,
 		ShouldWait: func() (bool, string) {
 			mutex.Lock()

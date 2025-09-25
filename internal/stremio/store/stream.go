@@ -455,8 +455,12 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			}
 
 			streamId := matcher.IdPrefix + matcher.MagnetId + ":" + file.Link
+			streamUrl := streamBaseUrl.JoinPath(url.PathEscape(streamId), "/")
+			if file.Name != "" {
+				streamUrl = streamUrl.JoinPath(file.Name)
+			}
 			stream := stremio.Stream{
-				URL:  streamBaseUrl.JoinPath(url.PathEscape(streamId)).String(),
+				URL:  streamUrl.String(),
 				Name: file.Name,
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: matcher.IdPrefix + cInfo.Hash,

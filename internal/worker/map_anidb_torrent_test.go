@@ -1523,8 +1523,102 @@ func TestPrepareAniDBTorrentsFromTVDBEpisodeMaps(t *testing.T) {
 				},
 			},
 		},
+		{
+			toEpisodeMaps(`
+  <anime anidbid="16947" tvdbid="405920" defaulttvdbseason="1" tmdbtv="120089" tmdbseason="1">
+    <name>Spy x Family</name>
+  </anime>
+
+  <anime anidbid="17061" tvdbid="405920" defaulttvdbseason="1" episodeoffset="12" tmdbtv="120089" tmdbseason="1" tmdboffset="12">
+    <name>Spy x Family (2022)</name>
+  </anime>
+
+  <anime anidbid="17784" tvdbid="405920" defaulttvdbseason="2" tmdbtv="120089" tmdbseason="2">
+    <name>Spy x Family (2023)</name>
+  </anime>
+
+  <anime anidbid="17785" tvdbid="405920" defaulttvdbseason="0" episodeoffset="2" tmdbid="1062807" imdbid="tt26684398">
+    <name>Gekijouban Spy x Family Code: White</name>
+  </anime>
+			`),
+			[]anidb.AniDBTitle{
+				{TId: "16947", Value: "Spy x Family", Season: "1"},
+				{TId: "17061", Value: "Spy x Family", Season: "1"},
+				{TId: "17784", Value: "Spy x Family", Season: "2"},
+				{TId: "17785", Value: "Gekijouban Spy x Family Code White", Season: "1"},
+			},
+			[]testCase{
+				{
+					makeTorrentInfo("[LostYears] SPY x FAMILY - S01E04 (WEB 1080p HEVC AAC E-AC-3) [CDD0F677].mkv"),
+					[]torrentMap{
+						{
+							anidbId:      "16947",
+							seasonType:   "ani",
+							season:       1,
+							episodeStart: 4,
+							episodeEnd:   4,
+						},
+						{
+							anidbId:      "16947",
+							seasonType:   "tv",
+							season:       1,
+							episodeStart: 4,
+							episodeEnd:   4,
+						},
+					},
+				},
+				{
+					makeTorrentInfo("[ToonsHub] SPY x FAMILY (Multi Dub) - S01E16 (WEB 1080p x264 AAC).mkv"),
+					[]torrentMap{
+						{
+							anidbId:      "17061",
+							seasonType:   "ani",
+							season:       1,
+							episodeStart: 4,
+							episodeEnd:   4,
+						},
+						{
+							anidbId:      "17061",
+							seasonType:   "tv",
+							season:       1,
+							episodeStart: 16,
+							episodeEnd:   16,
+						},
+					},
+				},
+				{
+					makeTorrentInfo("Spy x Family - 01-25 END (2160p) (Bilibili)"),
+					[]torrentMap{
+						{
+							anidbId:      "16947",
+							seasonType:   "ani",
+							season:       1,
+							episodeStart: 1,
+							episodeEnd:   12,
+						},
+						{
+							anidbId:      "16947",
+							seasonType:   "tv",
+							season:       1,
+							episodeStart: 1,
+							episodeEnd:   12,
+						},
+						{
+							anidbId:      "17061",
+							seasonType:   "ani",
+							season:       1,
+							episodeStart: 1,
+							episodeEnd:   13,
+						},
+					},
+				},
+			},
+		},
 	} {
 		for _, c := range tc.cases {
+			// if c.tInfo.TorrentTitle != "[LostYears] SPY x FAMILY - S01E04 (WEB 1080p HEVC AAC E-AC-3) [CDD0F677].mkv" {
+			// 	continue
+			// }
 			tMaps, err := prepareAniDBTorrentMaps(tc.tvdbMaps, tc.titles, c.tInfo)
 			assert.NoError(t, err)
 			assert.Len(t, tMaps, len(c.result), tc.tvdbMaps[0].TVDBId+" - "+c.tInfo.TorrentTitle)

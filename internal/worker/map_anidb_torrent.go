@@ -190,6 +190,8 @@ func prepareAniDBTorrentMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles anidb.A
 
 	// has seasons
 	if tSeasonCount != 0 {
+		println("tSeasonCount != 0")
+
 		idSeen := map[string]struct{}{}
 
 		hasEpisodes := tEpisodeCount > 0
@@ -203,6 +205,7 @@ func prepareAniDBTorrentMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles anidb.A
 				tEpisodesAreAbsolute = tvdbMaps.AreAbsoluteEpisode(tInfo.Episodes...)
 			}
 		}
+		println("tEpisodesAreAbsolute", tEpisodesAreAbsolute)
 
 		minAnimeSeason, maxAnimeSeason := titles.SeasonBoundary()
 		canBeAnimeSeason := tEpisodeCount != 1
@@ -219,7 +222,10 @@ func prepareAniDBTorrentMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles anidb.A
 			}
 		}
 		for _, anidbGroup := range tvdbMaps.GroupByAniDBId() {
+			println("")
 			animeSeason := titles.GetSeason(anidbGroup.AniDBId)
+			println("anidbId", anidbGroup.AniDBId)
+			println("animeSeason", animeSeason)
 
 			animeYear := titles.GetYear(anidbGroup.AniDBId)
 			if animeYear != 0 && tInfo.Year != 0 {
@@ -269,10 +275,20 @@ func prepareAniDBTorrentMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles anidb.A
 								} else if tEpisodeCount > 1 {
 									isTVSeason = tvEpiStart == tFirstEpisode && tLastEpisode == tvEpiEnd
 								}
+							} else if tvdbMap.End != 0 {
+								tvEpiEnd := tvdbMap.TVDBEpisodeEnd()
+								isTVSeason = tLastEpisode <= tvEpiEnd
+							} else if tvdbMap.Start != 0 {
+								tvEpiStart := tvdbMap.TVDBEpisodeStart()
+								isTVSeason = tvEpiStart <= tFirstEpisode
+							} else if tvdbMap.Offset != 0 {
+								isTVSeason = tvdbMap.TVDBEpisodeStart() < tFirstEpisode
 							}
 						}
 					}
 				}
+
+				println("isTVSeason", isTVSeason)
 
 				if isTVSeason {
 					if _, seen := idSeen[anidbGroup.AniDBId]; !seen {
@@ -330,6 +346,10 @@ func prepareAniDBTorrentMaps(tvdbMaps anidb.AniDBTVDBEpisodeMaps, titles anidb.A
 						} else if hasEpisodes {
 							if !anidbGroup.TVDBEpisodeMaps.HasSplitedTVSeasons() {
 								animeTMap.episodeStart, animeTMap.episodeEnd = tFirstEpisode, tLastEpisode
+								if tvdbMap.Offset != 0 {
+									animeTMap.episodeStart -= tvdbMap.Offset
+									animeTMap.episodeEnd -= tvdbMap.Offset
+								}
 							}
 						}
 

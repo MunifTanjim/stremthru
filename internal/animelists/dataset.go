@@ -130,6 +130,11 @@ func (a *AnimeListItem) Equal(b *AnimeListItem) bool {
 func PrepareAniDBTVDBEpisodeMaps(tvdbId string, items []AnimeListItem) []anidb.AniDBTVDBEpisodeMap {
 	tvdbMaps := []anidb.AniDBTVDBEpisodeMap{}
 
+	// KEY: tvdb_season, VAL: anidb_part
+	lastAniDBPartByTVDBSeason := map[string]int{}
+	// KEY: tvdb_season:anidb_part, VAL: tvdb_map_idx
+	seenPartMap := map[string]int{}
+
 	for _, item := range items {
 		episodeOffset := 0
 		if item.EpisodeOffset != "" {
@@ -173,6 +178,29 @@ func PrepareAniDBTVDBEpisodeMaps(tvdbId string, items []AnimeListItem) []anidb.A
 
 			tvdbMaps = append(tvdbMaps, tvdbMap)
 			seenMap["1:"+item.DefaultTVDBSeason] = len(tvdbMaps) - 1
+
+			anidbPart := 1
+			if item.DefaultTVDBSeason != "a" {
+				if lastPart, ok := lastAniDBPartByTVDBSeason[item.DefaultTVDBSeason]; ok {
+					anidbPart = lastPart + 1
+				}
+				lastAniDBPartByTVDBSeason[item.DefaultTVDBSeason] = anidbPart
+			}
+			seenPartMap[item.DefaultTVDBSeason+":"+strconv.Itoa(anidbPart)] = len(tvdbMaps) - 1
+
+			if anidbPart > 1 {
+				lastPart := anidbPart - 1
+				lastPartKey := item.DefaultTVDBSeason + ":" + strconv.Itoa(lastPart)
+				if lastPartIdx, ok := seenPartMap[lastPartKey]; ok {
+					lastPartTvdbMap := &tvdbMaps[lastPartIdx]
+					if lastPartTvdbMap.Start == 0 {
+						lastPartTvdbMap.Start = 1
+					}
+					if lastPartTvdbMap.End == 0 {
+						lastPartTvdbMap.End = tvdbMap.Offset - lastPartTvdbMap.Offset
+					}
+				}
+			}
 		}
 
 		if item.Before != "" {
@@ -206,9 +234,10 @@ func PrepareAniDBTVDBEpisodeMaps(tvdbId string, items []AnimeListItem) []anidb.A
 				}
 			}
 
-			if m.AniDBSeason == "0" {
+			switch m.AniDBSeason {
+			case "0":
 				tvdbMap.AniDBSeason = 0
-			} else if m.AniDBSeason == "1" {
+			case "1":
 				tvdbMap.AniDBSeason = 1
 			}
 

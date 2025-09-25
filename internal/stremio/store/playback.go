@@ -24,7 +24,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	videoIdWithLink := r.PathValue("videoId")
+	videoIdWithLink := r.PathValue("stremId")
 	idr, err := parseId(videoIdWithLink)
 	if err != nil {
 		SendError(w, r, err)

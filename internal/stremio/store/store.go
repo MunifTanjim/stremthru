@@ -41,7 +41,8 @@ func AddStremioStoreEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/{userData}/stream/{contentType}/{idJson}", withCors(handleStream))
 
 	router.HandleFunc("/{userData}/_/action/{actionId}", withCors(handleAction))
-	router.HandleFunc("/{userData}/_/strem/{videoId}", withCors(handleStrem))
+	router.HandleFunc("/{userData}/_/strem/{videoId}/{$}", withCors(handleStrem))
+	router.HandleFunc("/{userData}/_/strem/{videoId}/{fileName}", withCors(handleStrem))
 
 	mux.Handle("/stremio/store/", http.StripPrefix("/stremio/store", commonMiddleware(router)))
 }

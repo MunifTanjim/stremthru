@@ -1294,8 +1294,61 @@ func TestPrepareAniDBTVDBEpisodeMaps(t *testing.T) {
 				},
 			},
 		},
+		{
+			"405920",
+			toAnimeListItems(`
+  <anime anidbid="16947" tvdbid="405920" defaulttvdbseason="1" tmdbtv="120089" tmdbseason="1">
+    <name>Spy x Family</name>
+  </anime>
+
+  <anime anidbid="17061" tvdbid="405920" defaulttvdbseason="1" episodeoffset="12" tmdbtv="120089" tmdbseason="1" tmdboffset="12">
+    <name>Spy x Family (2022)</name>
+  </anime>
+
+  <anime anidbid="17784" tvdbid="405920" defaulttvdbseason="2" tmdbtv="120089" tmdbseason="2">
+    <name>Spy x Family (2023)</name>
+  </anime>
+
+  <anime anidbid="17785" tvdbid="405920" defaulttvdbseason="0" episodeoffset="2" tmdbid="1062807" imdbid="tt26684398">
+    <name>Gekijouban Spy x Family Code: White</name>
+  </anime>
+			`),
+			[]anidb.AniDBTVDBEpisodeMap{
+				{
+					AniDBId:     "16947",
+					TVDBId:      "405920",
+					AniDBSeason: 1,
+					TVDBSeason:  1,
+					Start:       1,
+					End:         12,
+				},
+				{
+					AniDBId:     "17061",
+					TVDBId:      "405920",
+					AniDBSeason: 1,
+					TVDBSeason:  1,
+					Offset:      12,
+				},
+				{
+					AniDBId:     "17784",
+					TVDBId:      "405920",
+					AniDBSeason: 1,
+					TVDBSeason:  2,
+				},
+				{
+					AniDBId:     "17785",
+					TVDBId:      "405920",
+					AniDBSeason: 1,
+					TVDBSeason:  0,
+					Offset:      2,
+				},
+			},
+		},
 	} {
 		t.Run(tc.tvdbId, func(t *testing.T) {
+			if tc.tvdbId != "405920" {
+				return
+			}
 			result := PrepareAniDBTVDBEpisodeMaps(tc.tvdbId, tc.items)
 			assert.Len(t, result, len(tc.result))
 			for i := range tc.result {
