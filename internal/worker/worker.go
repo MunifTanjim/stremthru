@@ -62,8 +62,6 @@ func NewWorker(conf *WorkerConfig) *Worker {
 		conf.Log = logger.Scoped("worker/" + conf.Name)
 	}
 
-	intervalTolerance := 5 * time.Second
-
 	if conf.HeartbeatInterval == 0 {
 		conf.HeartbeatInterval = 5 * time.Second
 	}
@@ -133,21 +131,28 @@ func NewWorker(conf *WorkerConfig) *Worker {
 				}
 				if tjob != nil {
 					status := tjob.Value.Status
-					if util.HasDurationPassedSince(tjob.CreatedAt, conf.Interval-intervalTolerance) {
-						if status == "started" {
-							if util.HasDurationPassedSince(tjob.UpdatedAt, conf.HeartbeatInterval+heartbeatIntervalTolerance) {
-								log.Info("last job heartbeat timed out, restarting", "jobId", tjob.Key, "status", status)
-								if err := jobTracker.Set(tjob.Key, "failed", "heartbeat timed out", nil); err != nil {
-									log.Error("failed to set last job status", "error", err, "jobId", tjob.Key, "status", "failed")
-								}
+					switch status {
+					case "started":
+						if !util.HasDurationPassedSince(tjob.UpdatedAt, conf.HeartbeatInterval+heartbeatIntervalTolerance) {
+							if util.HasDurationPassedSince(tjob.CreatedAt, conf.Interval) {
+								log.Warn("skipping, last job is still running, for too long", "jobId", tjob.Key, "status", status)
 							} else {
 								log.Info("skipping, last job is still running", "jobId", tjob.Key, "status", status)
-								return nil
 							}
+							return nil
 						}
-					} else if status == "done" || status == "started" {
-						log.Info("already done or started", "jobId", tjob.Key, "status", status)
-						return nil
+
+						log.Info("last job heartbeat timed out, restarting", "jobId", tjob.Key, "status", status)
+						if err := jobTracker.Set(tjob.Key, "failed", "heartbeat timed out", nil); err != nil {
+							log.Error("failed to set last job status", "error", err, "jobId", tjob.Key, "status", "failed")
+						}
+					case "done":
+						if !util.HasDurationPassedSince(tjob.CreatedAt, conf.Interval) {
+							log.Info("already done", "jobId", tjob.Key, "status", status)
+							return nil
+						}
+					case "failed":
+						log.Warn("last job failed", "jobId", tjob.Key, "status", status, "error", tjob.Value.Err)
 					}
 				}
 			}
@@ -172,6 +177,9 @@ func NewWorker(conf *WorkerConfig) *Worker {
 				for {
 					select {
 					case <-heartbeat.C:
+						if jobId == "" {
+							return
+						}
 						if err := jobTracker.Set(jobId, "started", "", nil); err != nil {
 							log.Error("failed to set job status heartbeat", "error", err, "jobId", jobId)
 						}
