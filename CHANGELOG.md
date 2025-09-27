@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.89.6](https://github.com/MunifTanjim/stremthru/compare/0.89.5...0.89.6) (2025-09-27)
+
+
+### Bug Fixes
+
+* **anidb:** fix season detection for title dataset ([6cd7fd4](https://github.com/MunifTanjim/stremthru/commit/6cd7fd407a2a9539e17a305325eb39e4f3d9f5c2))
+* **anime:** improve processing for joined tv seasons ([de8a49b](https://github.com/MunifTanjim/stremthru/commit/de8a49b3d1e4016ab626777236877cffcc986d4f))
+* **stremio/store:** improve file matching for joined tv seasons ([5ee9b60](https://github.com/MunifTanjim/stremthru/commit/5ee9b60296f77c1bb87a80d40736ebf35dbdcba2))
+* **stremio/store:** include filename in playback url ([53617c0](https://github.com/MunifTanjim/stremthru/commit/53617c06295ace1011d73a839e5b8bd0bcd99b6e))
+* **util:** correctly normalize unicode decomposed chars ([aff1696](https://github.com/MunifTanjim/stremthru/commit/aff1696337760d3168318e48871310a2893393f3))
+* **worker:** detect heartbeat timeout correctly ([d195d56](https://github.com/MunifTanjim/stremthru/commit/d195d56ccb3f4ab1f9bf1dd92b146d515cc1822a))
+
 ## [0.89.5](https://github.com/MunifTanjim/stremthru/compare/0.89.4...0.89.5) (2025-09-24)
 
 
