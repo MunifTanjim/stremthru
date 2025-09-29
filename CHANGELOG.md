@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.90.3](https://github.com/MunifTanjim/stremthru/compare/0.90.2...0.90.3) (2025-09-29)
+
+
+### Performance Improvements
+
+* **stremio/store:** add cache for generated playback link ([20db222](https://github.com/MunifTanjim/stremthru/commit/20db22243e73342b87babfec98709740d1aa41fd))
+* **stremio/store:** add optimizations and logs ([b4a8a08](https://github.com/MunifTanjim/stremthru/commit/b4a8a08f0d5fdbfb35889dd7f425cc6d6bbdbbc9))
+* **stremio/store:** increase catalog cache capacity ([8331f49](https://github.com/MunifTanjim/stremthru/commit/8331f499e08cebb1d6d30ebd2ff9f9d5d86c9aa1))
+
 ## [0.90.2](https://github.com/MunifTanjim/stremthru/compare/0.90.1...0.90.2) (2025-09-29)
 
 
