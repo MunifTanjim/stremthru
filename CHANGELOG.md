@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.90.1](https://github.com/MunifTanjim/stremthru/compare/0.90.0...0.90.1) (2025-09-29)
+
+
+### Bug Fixes
+
+* **util:** handle nested dirs in EnsureDir ([642b915](https://github.com/MunifTanjim/stremthru/commit/642b915c208a8d2919e0b8d4bbfb2cbcaad89191))
+
 ## [0.90.0](https://github.com/MunifTanjim/stremthru/compare/0.89.6...0.90.0) (2025-09-29)
 
 
