@@ -139,6 +139,7 @@ const (
 	TorrentDownloadStateCached             TorrentDownloadState = "cached"             // The torrent is cached from the server
 	TorrentDownloadStateMetaDL             TorrentDownloadState = "metaDL"             // The torrent is downloading metadata from the hoard
 	TorrentDownloadStateCheckingResumeData TorrentDownloadState = "checkingResumeData" // The torrent is checking resumable data
+	TorrentDownloadStateUploadingNoPeers   TorrentDownloadState = "uploading (no peers)"
 )
 
 type Torrent struct {
@@ -167,6 +168,16 @@ type Torrent struct {
 	Files            []TorrentFile        `json:"files"`
 	InactiveCheck    int                  `json:"inactive_check"`
 	Availability     float32              `json:"availability"`
+	TotalUploaded    int64                `json:"total_uploaded,omitempty"`
+	TotalDownloaded  int64                `json:"total_downloaded,omitempty"`
+	Tracker          string               `json:"tracker,omitempty"`
+	Owner            string               `json:"owner,omitempty"`
+	Private          bool                 `json:"private,omitempty"`
+	SeedTorrent      bool                 `json:"seed_torrent,omitempty"`
+	AllowZipped      bool                 `json:"allow_zipped,omitempty"`
+	LongTermSeeding  bool                 `json:"long_term_seeding,omitempty"`
+	TrackerMessage   string               `json:"tracker_message,omitempty"`
+	CachedAt         string               `json:"cached_at,omitempty"`
 }
 
 func (t Torrent) GetName() string {
