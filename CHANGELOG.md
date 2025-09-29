@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.90.0](https://github.com/MunifTanjim/stremthru/compare/0.89.6...0.90.0) (2025-09-29)
+
+
+### Features
+
+* **animetosho:** add dataset sync ([2134c42](https://github.com/MunifTanjim/stremthru/commit/2134c421cb30ab3c7e8a908d880e989f17ed96a6))
+* **stremio/list:** support tmdb network list ([cfdc10c](https://github.com/MunifTanjim/stremthru/commit/cfdc10cfac9cc95a6e22d3e4cc197a607b7ff492))
+* **stremio/store:** add config for item limit and cache time ([4b3aa21](https://github.com/MunifTanjim/stremthru/commit/4b3aa21cf8ec9ca6646f8b17a419c407eed21526))
+
+
+### Bug Fixes
+
+* **store/alldebrid:** construct file path correctly ([656fb41](https://github.com/MunifTanjim/stremthru/commit/656fb416a94e1b3a57dbd43a811abf8bf1c2ce6d))
+* **stremio/torz:** do not pick largest file from multiple episodes ([1a2159f](https://github.com/MunifTanjim/stremthru/commit/1a2159f08c8152ee79241ef6f7fed470f8587ca2))
+
 ## [0.89.6](https://github.com/MunifTanjim/stremthru/compare/0.89.5...0.89.6) (2025-09-27)
 
 
