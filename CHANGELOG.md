@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.90.2](https://github.com/MunifTanjim/stremthru/compare/0.90.1...0.90.2) (2025-09-29)
+
+
+### Bug Fixes
+
+* **store/premiumize:** fix index out of range panic ([125f518](https://github.com/MunifTanjim/stremthru/commit/125f51859a14a5a60861889bbea2d14feaaf16d0))
+
 ## [0.90.1](https://github.com/MunifTanjim/stremthru/compare/0.90.0...0.90.1) (2025-09-29)
 
 
