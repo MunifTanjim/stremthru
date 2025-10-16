@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.90.4](https://github.com/MunifTanjim/stremthru/compare/0.90.3...0.90.4) (2025-10-16)
+
+
+### Bug Fixes
+
+* **config:** reject invalid store name ([042763d](https://github.com/MunifTanjim/stremthru/commit/042763d73a3ce9c947230f919212e891a437efa8))
+* **letterboxd:** fix oauth client credentials token refresh ([50397a8](https://github.com/MunifTanjim/stremthru/commit/50397a8a71cb868f9434b4886a7d7fcccc1cbb15))
+* **store/realdebrid:** handle get magnet failure when adding magnet ([b29c438](https://github.com/MunifTanjim/stremthru/commit/b29c438d1c21617f350882a3e13c8700a77d790d))
+* **stremio/store:** escape path segments for generated playback url properly ([9b74f69](https://github.com/MunifTanjim/stremthru/commit/9b74f690612c08b399176accd568b8c6606ba2da))
+* **stremio/torz:** escape path segments for generated playback url properly ([bf07909](https://github.com/MunifTanjim/stremthru/commit/bf0790990d1b1c397525c59a32a69d7b7c220824))
+* **trakt:** fix unhandled error ([b54fca4](https://github.com/MunifTanjim/stremthru/commit/b54fca42caf7c81ee0381fe1b81ab66251904065))
+
+
+### Performance Improvements
+
+* **peer:** decrease http timeout to 30s ([2ca1ce9](https://github.com/MunifTanjim/stremthru/commit/2ca1ce96509900c2cf059aa7cba3c63c4d608a63))
+
 ## [0.90.3](https://github.com/MunifTanjim/stremthru/compare/0.90.2...0.90.3) (2025-09-29)
 
 
