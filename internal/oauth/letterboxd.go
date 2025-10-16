@@ -47,6 +47,9 @@ func (r *letterboxdResponseError) GetError(res *http.Response) error {
 
 var LetterboxdTokenSourceConfig = TokenSourceConfig{
 	Provider: ProviderLetterboxd,
+	GetUser: func(client *http.Client, oauthConfig *oauth2.Config) (userId, userName string, err error) {
+		return "", "", errors.New("not implemented")
+	},
 	PrepareToken: func(tok *oauth2.Token, id, userId, userName string) *oauth2.Token {
 		created_at := tok.Extra("created_at")
 		if created_at != nil {

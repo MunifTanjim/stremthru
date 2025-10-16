@@ -19,6 +19,7 @@ type dbTokenSource struct {
 	oauth2.TokenSource
 	oauthConfig *oauth2.Config
 	config      TokenSourceConfig
+	get_user    func(*oauth2.Token, *TokenSourceConfig, *oauth2.Config) (userId, userName string, err error)
 	refresh     func(oauth2.TokenSource) (*oauth2.Token, error)
 	TokenId     string
 	tok         *oauth2.Token
@@ -66,10 +67,7 @@ func (ts *dbTokenSource) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	userId, userName, err := ts.config.GetUser(
-		oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(tok)),
-		ts.oauthConfig,
-	)
+	userId, userName, err := ts.get_user(tok, &ts.config, ts.oauthConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +83,7 @@ func (ts *dbTokenSource) Token() (*oauth2.Token, error) {
 type DatabaseTokenSourceConfig struct {
 	OAuth *oauth2.Config
 	TokenSourceConfig
+	GetUser func(*oauth2.Token, *TokenSourceConfig, *oauth2.Config) (userId, userName string, err error)
 	Refresh func(oauth2.TokenSource) (*oauth2.Token, error)
 }
 
@@ -92,13 +91,24 @@ func defaultTokenSourceRefresher(ts oauth2.TokenSource) (*oauth2.Token, error) {
 	return ts.Token()
 }
 
+func defaultDBTokenSourceGetUser(tok *oauth2.Token, tsc *TokenSourceConfig, oauthConfig *oauth2.Config) (userId, userName string, err error) {
+	return tsc.GetUser(
+		oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(tok)),
+		oauthConfig,
+	)
+}
+
 func DatabaseTokenSource(conf *DatabaseTokenSourceConfig, token *oauth2.Token) oauth2.TokenSource {
+	if conf.GetUser == nil {
+		conf.GetUser = defaultDBTokenSourceGetUser
+	}
 	if conf.Refresh == nil {
 		conf.Refresh = defaultTokenSourceRefresher
 	}
 	return oauth2.ReuseTokenSource(token, &dbTokenSource{
 		TokenSource: conf.OAuth.TokenSource(context.Background(), token),
 		config:      conf.TokenSourceConfig,
+		get_user:    conf.GetUser,
 		refresh:     conf.Refresh,
 		oauthConfig: conf.OAuth,
 		TokenId:     token.Extra("id").(string),

@@ -32,6 +32,9 @@ func GetSystemClient() *APIClient {
 				return oauth.DatabaseTokenSource(&oauth.DatabaseTokenSourceConfig{
 					OAuth:             &oauthConfig,
 					TokenSourceConfig: oauth.LetterboxdTokenSourceConfig,
+					GetUser: func(tok *oauth2.Token, tsc *oauth.TokenSourceConfig, oauthConfig *oauth2.Config) (userId string, userName string, err error) {
+						return config.Integration.Letterboxd.ClientId, "", nil
+					},
 					Refresh: func(ts oauth2.TokenSource) (*oauth2.Token, error) {
 						return oauth.LetterboxdOAuthConfig.ClientCredentialsToken(config.Integration.Letterboxd.ClientId, config.Integration.Letterboxd.ClientSecret)
 					},
