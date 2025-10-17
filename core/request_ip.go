@@ -22,17 +22,17 @@ var ipRequestHeaders = []string{
 	"Cf-Pseudo-IPv4",      // Cloudflare fallback
 }
 
-func isCorrectIP(ip string) bool {
-	return net.ParseIP(ip) != nil
+func isCorrectIP(input string) bool {
+	ip := net.ParseIP(input)
+	return ip != nil && !ip.IsPrivate()
 }
 
 func getClientIPFromXForwardedFor(headers string) (string, bool) {
 	if headers == "" {
 		return "", false
 	}
-	forwardedIps := strings.Split(headers, ",")
-	for _, ip := range forwardedIps {
-		if ip, _, found := strings.Cut(strings.TrimSpace(ip), ":"); found && isCorrectIP(ip) {
+	for ip := range strings.SplitSeq(headers, ",") {
+		if ip, _, _ := strings.Cut(strings.TrimSpace(ip), ":"); isCorrectIP(ip) {
 			return ip, true
 		}
 	}
