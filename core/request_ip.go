@@ -63,7 +63,7 @@ func GetRequestIP(r *http.Request) string {
 
 func GetClientIP(r *http.Request) string {
 	ip := r.URL.Query().Get("client_ip")
-	if ip != "" {
+	if isCorrectIP(ip) {
 		return ip
 	}
 	return GetRequestIP(r)
