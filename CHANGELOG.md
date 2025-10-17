@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.90.5](https://github.com/MunifTanjim/stremthru/compare/0.90.4...0.90.5) (2025-10-17)
+
+
+### Bug Fixes
+
+* **core:** do not use private ip as client ip ([5ee678b](https://github.com/MunifTanjim/stremthru/commit/5ee678b2f22c5818954d2029b4c053f59498d6b4))
+
 ## [0.90.4](https://github.com/MunifTanjim/stremthru/compare/0.90.3...0.90.4) (2025-10-16)
 
 
