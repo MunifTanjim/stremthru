@@ -3,8 +3,8 @@ package torbox
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
+	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
 )
@@ -39,36 +39,16 @@ type response[T any] struct {
 	Error   ErrorCode `json:"error,omitempty"`
 }
 
-func (r *Response[T]) UnmarshalJSON(data []byte) error {
-	resp := response[T]{}
-	respErr := json.Unmarshal(data, &resp)
-	if respErr == nil {
-		r.response = resp
-		return nil
-	}
-	fallbackResp := response[any]{}
-	if err := json.Unmarshal(data, &fallbackResp); err != nil {
-		return err
-	}
-	if fallbackResp.Success {
-		return respErr
-	}
-	r.Error = fallbackResp.Error
-	r.Detail = fallbackResp.Detail
-	r.errData = fallbackResp.Data
-	return nil
-}
-
 type ResponseEnvelop interface {
-	IsSuccess() bool
-	GetError() *ResponseError
+	GetError(res *http.Response) error
+	Unmarshal(res *http.Response, body []byte, v any) error
 }
 
 func (r Response[any]) IsSuccess() bool {
 	return r.Success && r.Error == ""
 }
 
-func (r Response[any]) GetError() *ResponseError {
+func (r Response[any]) GetError(res *http.Response) error {
 	if r.IsSuccess() {
 		return nil
 	}
@@ -80,6 +60,40 @@ func (r Response[any]) GetError() *ResponseError {
 		err.Data = data
 	}
 	return &err
+}
+
+func (r *Response[T]) Unmarshal(res *http.Response, body []byte, v any) error {
+	contentType := res.Header.Get("Content-Type")
+	switch {
+	case strings.Contains(contentType, "application/json"):
+		return r.unmarshalJSON(res.StatusCode, body)
+	case strings.Contains(contentType, "text/plain") && res.StatusCode >= 400:
+		r.Error = ErrorCodeUnknownError
+		r.Detail = string(body)
+		return nil
+	default:
+		return errors.New("unexpected content type: " + contentType)
+	}
+}
+
+func (r *Response[T]) unmarshalJSON(statusCode int, body []byte) error {
+	resp := response[T]{}
+	respErr := core.UnmarshalJSON(statusCode, body, &resp)
+	if respErr == nil {
+		r.response = resp
+		return nil
+	}
+	fallbackResp := response[any]{}
+	if err := core.UnmarshalJSON(statusCode, body, &fallbackResp); err != nil {
+		return err
+	}
+	if fallbackResp.Success {
+		return respErr
+	}
+	r.Error = fallbackResp.Error
+	r.Detail = fallbackResp.Detail
+	r.errData = fallbackResp.Data
+	return nil
 }
 
 type APIResponse[T any] struct {
@@ -100,34 +114,4 @@ func newAPIResponse[T any](res *http.Response, data T, detail string) APIRespons
 		apiResponse.StatusCode = res.StatusCode
 	}
 	return apiResponse
-}
-
-func extractResponseError(statusCode int, body []byte, v ResponseEnvelop) error {
-	if !v.IsSuccess() {
-		return v.GetError()
-	}
-	if statusCode >= http.StatusBadRequest {
-		return errors.New(string(body))
-	}
-	return nil
-}
-
-func processResponseBody(res *http.Response, err error, v ResponseEnvelop) error {
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-
-	if err != nil {
-		return err
-	}
-
-	err = core.UnmarshalJSON(res.StatusCode, body, v)
-	if err != nil {
-		return err
-	}
-
-	return extractResponseError(res.StatusCode, body, v)
 }

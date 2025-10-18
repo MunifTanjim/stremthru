@@ -76,8 +76,8 @@ func (c APIClient) Request(method, path string, params request.Context, v Respon
 		error.Cause = err
 		return nil, error
 	}
-	res, err := c.HTTPClient.Do(req)
-	err = processResponseBody(res, err, v)
+	res, err := params.DoRequest(c.HTTPClient, req)
+	err = request.ProcessResponseBody(res, err, v)
 	if err != nil {
 		err := UpstreamErrorWithCause(err)
 		err.InjectReq(req)
@@ -87,6 +87,7 @@ func (c APIClient) Request(method, path string, params request.Context, v Respon
 		if err.StatusCode <= http.StatusBadRequest {
 			err.StatusCode = http.StatusBadRequest
 		}
+		err.Pack(req)
 		return res, err
 	}
 	return res, nil
