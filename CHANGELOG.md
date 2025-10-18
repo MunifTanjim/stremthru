@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.90.6](https://github.com/MunifTanjim/stremthru/compare/0.90.5...0.90.6) (2025-10-18)
+
+
+### Bug Fixes
+
+* **core:** ignore private ip in client_ip query param ([f9215e3](https://github.com/MunifTanjim/stremthru/commit/f9215e311c657009eebde8e9558724c5ca7d7c8a))
+* **store/torbox:** process non-json response body correctly ([5aae12a](https://github.com/MunifTanjim/stremthru/commit/5aae12a0b8d0250e67b980c10b78868c3f41e5f4))
+
 ## [0.90.5](https://github.com/MunifTanjim/stremthru/compare/0.90.4...0.90.5) (2025-10-17)
 
 
