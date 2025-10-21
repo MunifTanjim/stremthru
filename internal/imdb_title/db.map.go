@@ -468,10 +468,10 @@ func RecordMappingFromMDBList(tx *db.Tx, imdbId, tmdbId, tvdbId, traktId, malId 
 		MapColumn.IMDBId,
 		strings.Join(
 			[]string{
-				fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId),
-				fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId),
-				fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId),
-				fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.MALId, MapColumn.MALId, MapColumn.MALId, MapColumn.MALId),
+				fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId),
+				fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId),
+				fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId),
+				fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.MALId, MapColumn.MALId, MapColumn.MALId, MapColumn.MALId),
 			},
 			", ",
 		),
@@ -515,11 +515,11 @@ var query_bulk_record_mapping_after_values = fmt.Sprintf(
 	MapColumn.IMDBId,
 	strings.Join(
 		[]string{
-			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId),
-			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId),
-			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId),
-			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId),
-			fmt.Sprintf("%s = CASE WHEN itm.%s = '' THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.MALId, MapColumn.MALId, MapColumn.MALId, MapColumn.MALId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId, MapColumn.TMDBId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId, MapColumn.TVDBId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId, MapColumn.TraktId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId, MapColumn.LetterboxdId),
+			fmt.Sprintf("%s = CASE WHEN itm.%s IN ('','0') THEN EXCLUDED.%s ELSE itm.%s END", MapColumn.MALId, MapColumn.MALId, MapColumn.MALId, MapColumn.MALId),
 		},
 		", ",
 	),
