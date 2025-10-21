@@ -33,20 +33,25 @@ const (
 )
 
 type AnimeIdMap struct {
-	Id          int            `json:"id"`
-	Type        AnimeIdMapType `json:"type"`
-	AniDB       string         `json:"anidb"`
-	AniList     string         `json:"anilist"`
-	AniSearch   string         `json:"anisearch"`
-	AnimePlanet string         `json:"animeplanet"`
-	IMDB        string         `json:"imdb"`
-	Kitsu       string         `json:"kitsu"`
-	LiveChart   string         `json:"livechart"`
-	MAL         string         `json:"mal"`
-	NotifyMoe   string         `json:"notifymoe"`
-	TMDB        string         `json:"tmdb"`
-	TVDB        string         `json:"tvdb"`
-	UpdatedAt   db.Timestamp   `json:"uat"`
+	Id           int            `json:"id"`
+	Type         AnimeIdMapType `json:"type"`
+	AniDB        string         `json:"anidb"`
+	AniList      string         `json:"anilist"`
+	AniSearch    string         `json:"anisearch"`
+	AnimePlanet  string         `json:"animeplanet"`
+	IMDB         string         `json:"imdb"`
+	Kitsu        string         `json:"kitsu"`
+	Letterboxd   string         `json:"lboxd"`
+	LiveChart    string         `json:"livechart"`
+	MAL          string         `json:"mal"`
+	NotifyMoe    string         `json:"notifymoe"`
+	TMDB         string         `json:"tmdb"`
+	TMDBSeasonId int            `json:"tmdb_season_id"`
+	TVDB         string         `json:"tvdb"`
+	TVDBSeasonId int            `json:"tvdb_season_id"`
+	Trakt        string         `json:"trakt"`
+	TraktSeason  int            `json:"trakt_season"`
+	UpdatedAt    db.Timestamp   `json:"uat"`
 }
 
 func (aim *AnimeIdMap) shouldPersist() bool {
@@ -87,54 +92,69 @@ func (idMap *AnimeIdMap) IsStale() bool {
 }
 
 type rawAnimeIdMap struct {
-	Id          int            `json:"id"`
-	Type        AnimeIdMapType `json:"type"`
-	AniList     db.NullString  `json:"anilist"`
-	AniDB       db.NullString  `json:"anidb"`
-	AniSearch   db.NullString  `json:"anisearch"`
-	AnimePlanet db.NullString  `json:"animeplanet"`
-	IMDB        db.NullString  `json:"imdb"`
-	Kitsu       db.NullString  `json:"kitsu"`
-	LiveChart   db.NullString  `json:"livechart"`
-	MAL         db.NullString  `json:"mal"`
-	NotifyMoe   db.NullString  `json:"notifymoe"`
-	TMDB        db.NullString  `json:"tmdb"`
-	TVDB        db.NullString  `json:"tvdb"`
-	UpdatedAt   db.Timestamp   `json:"uat"`
+	Id           int            `json:"id"`
+	Type         AnimeIdMapType `json:"type"`
+	AniList      db.NullString  `json:"anilist"`
+	AniDB        db.NullString  `json:"anidb"`
+	AniSearch    db.NullString  `json:"anisearch"`
+	AnimePlanet  db.NullString  `json:"animeplanet"`
+	IMDB         db.NullString  `json:"imdb"`
+	Kitsu        db.NullString  `json:"kitsu"`
+	Letterboxd   db.NullString  `json:"lboxd"`
+	LiveChart    db.NullString  `json:"livechart"`
+	MAL          db.NullString  `json:"mal"`
+	NotifyMoe    db.NullString  `json:"notifymoe"`
+	TMDB         db.NullString  `json:"tmdb"`
+	TMDBSeasonId int            `json:"tmdb_season_id"`
+	TVDB         db.NullString  `json:"tvdb"`
+	TVDBSeasonId int            `json:"tvdb_season_id"`
+	Trakt        db.NullString  `json:"trakt"`
+	TraktSeason  int            `json:"trakt_season"`
+	UpdatedAt    db.Timestamp   `json:"uat"`
 }
 
 type IdMapColumnStruct struct {
-	Id          string
-	Type        string
-	AniDB       string
-	AniList     string
-	AniSearch   string
-	AnimePlanet string
-	IMDB        string
-	Kitsu       string
-	LiveChart   string
-	MAL         string
-	NotifyMoe   string
-	TMDB        string
-	TVDB        string
-	UpdatedAt   string
+	Id           string
+	Type         string
+	AniDB        string
+	AniList      string
+	AniSearch    string
+	AnimePlanet  string
+	IMDB         string
+	Kitsu        string
+	Letterboxd   string
+	LiveChart    string
+	MAL          string
+	NotifyMoe    string
+	TMDB         string
+	TMDBSeasonId string
+	TVDB         string
+	TVDBSeasonId string
+	Trakt        string
+	TraktSeason  string
+	UpdatedAt    string
 }
 
 var IdMapColumn = IdMapColumnStruct{
-	Id:          "id",
-	Type:        "type",
-	AniDB:       "anidb",
-	AniList:     "anilist",
-	AniSearch:   "anisearch",
-	AnimePlanet: "animeplanet",
-	IMDB:        "imdb",
-	Kitsu:       "kitsu",
-	LiveChart:   "livechart",
-	MAL:         "mal",
-	NotifyMoe:   "notifymoe",
-	TMDB:        "tmdb",
-	TVDB:        "tvdb",
-	UpdatedAt:   "uat",
+	Id:           "id",
+	Type:         "type",
+	AniDB:        "anidb",
+	AniList:      "anilist",
+	AniSearch:    "anisearch",
+	AnimePlanet:  "animeplanet",
+	IMDB:         "imdb",
+	Kitsu:        "kitsu",
+	Letterboxd:   "lboxd",
+	LiveChart:    "livechart",
+	MAL:          "mal",
+	NotifyMoe:    "notifymoe",
+	TMDB:         "tmdb",
+	TMDBSeasonId: "tmdb_season_id",
+	TVDB:         "tvdb",
+	TVDBSeasonId: "tvdb_season_id",
+	Trakt:        "trakt",
+	TraktSeason:  "trakt_season",
+	UpdatedAt:    "uat",
 }
 
 var IdMapColumns = []string{
@@ -146,11 +166,16 @@ var IdMapColumns = []string{
 	IdMapColumn.AnimePlanet,
 	IdMapColumn.IMDB,
 	IdMapColumn.Kitsu,
+	IdMapColumn.Letterboxd,
 	IdMapColumn.LiveChart,
 	IdMapColumn.MAL,
 	IdMapColumn.NotifyMoe,
 	IdMapColumn.TMDB,
+	IdMapColumn.TMDBSeasonId,
 	IdMapColumn.TVDB,
+	IdMapColumn.TVDBSeasonId,
+	IdMapColumn.Trakt,
+	IdMapColumn.TraktSeason,
 	IdMapColumn.UpdatedAt,
 }
 
@@ -186,30 +211,40 @@ func GetIdMapsForAniList(ids []int) ([]AnimeIdMap, error) {
 			&item.AnimePlanet,
 			&item.IMDB,
 			&item.Kitsu,
+			&item.Letterboxd,
 			&item.LiveChart,
 			&item.MAL,
 			&item.NotifyMoe,
 			&item.TMDB,
+			&item.TMDBSeasonId,
 			&item.TVDB,
+			&item.TVDBSeasonId,
+			&item.Trakt,
+			&item.TraktSeason,
 			&item.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
 		idMaps = append(idMaps, AnimeIdMap{
-			Id:          item.Id,
-			Type:        item.Type,
-			AniList:     item.AniList.String,
-			AniDB:       item.AniDB.String,
-			AniSearch:   item.AniSearch.String,
-			AnimePlanet: item.AnimePlanet.String,
-			IMDB:        item.IMDB.String,
-			Kitsu:       item.Kitsu.String,
-			LiveChart:   item.LiveChart.String,
-			MAL:         item.MAL.String,
-			NotifyMoe:   item.NotifyMoe.String,
-			TMDB:        item.TMDB.String,
-			TVDB:        item.TVDB.String,
-			UpdatedAt:   item.UpdatedAt,
+			Id:           item.Id,
+			Type:         item.Type,
+			AniList:      item.AniList.String,
+			AniDB:        item.AniDB.String,
+			AniSearch:    item.AniSearch.String,
+			AnimePlanet:  item.AnimePlanet.String,
+			IMDB:         item.IMDB.String,
+			Kitsu:        item.Kitsu.String,
+			Letterboxd:   item.Letterboxd.String,
+			LiveChart:    item.LiveChart.String,
+			MAL:          item.MAL.String,
+			NotifyMoe:    item.NotifyMoe.String,
+			TMDB:         item.TMDB.String,
+			TMDBSeasonId: item.TMDBSeasonId,
+			TVDB:         item.TVDB.String,
+			TVDBSeasonId: item.TVDBSeasonId,
+			Trakt:        item.Trakt.String,
+			TraktSeason:  item.TraktSeason,
+			UpdatedAt:    item.UpdatedAt,
 		})
 	}
 
@@ -418,17 +453,22 @@ var query_bulk_record_id_maps_on_conflict_after_column = fmt.Sprintf(
 	db.CurrentTimestamp,
 )
 var query_bulk_record_id_maps_on_conflict_set_by_column = map[string]string{
-	IdMapColumn.AniDB:       fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniDB, IdMapColumn.AniDB, IdMapColumn.AniDB, IdMapColumn.AniDB),
-	IdMapColumn.AniList:     fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniList, IdMapColumn.AniList, IdMapColumn.AniList, IdMapColumn.AniList),
-	IdMapColumn.AniSearch:   fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniSearch, IdMapColumn.AniSearch, IdMapColumn.AniSearch, IdMapColumn.AniSearch),
-	IdMapColumn.AnimePlanet: fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet),
-	IdMapColumn.IMDB:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.IMDB, IdMapColumn.IMDB, IdMapColumn.IMDB, IdMapColumn.IMDB),
-	IdMapColumn.Kitsu:       fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.Kitsu, IdMapColumn.Kitsu, IdMapColumn.Kitsu, IdMapColumn.Kitsu),
-	IdMapColumn.LiveChart:   fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.LiveChart, IdMapColumn.LiveChart, IdMapColumn.LiveChart, IdMapColumn.LiveChart),
-	IdMapColumn.MAL:         fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.MAL, IdMapColumn.MAL, IdMapColumn.MAL, IdMapColumn.MAL),
-	IdMapColumn.NotifyMoe:   fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe),
-	IdMapColumn.TMDB:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TMDB, IdMapColumn.TMDB, IdMapColumn.TMDB, IdMapColumn.TMDB),
-	IdMapColumn.TVDB:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TVDB, IdMapColumn.TVDB, IdMapColumn.TVDB, IdMapColumn.TVDB),
+	IdMapColumn.AniDB:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniDB, IdMapColumn.AniDB, IdMapColumn.AniDB, IdMapColumn.AniDB),
+	IdMapColumn.AniList:      fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniList, IdMapColumn.AniList, IdMapColumn.AniList, IdMapColumn.AniList),
+	IdMapColumn.AniSearch:    fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AniSearch, IdMapColumn.AniSearch, IdMapColumn.AniSearch, IdMapColumn.AniSearch),
+	IdMapColumn.AnimePlanet:  fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet),
+	IdMapColumn.IMDB:         fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.IMDB, IdMapColumn.IMDB, IdMapColumn.IMDB, IdMapColumn.IMDB),
+	IdMapColumn.Kitsu:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.Kitsu, IdMapColumn.Kitsu, IdMapColumn.Kitsu, IdMapColumn.Kitsu),
+	IdMapColumn.Letterboxd:   fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.Letterboxd, IdMapColumn.Letterboxd, IdMapColumn.Letterboxd, IdMapColumn.Letterboxd),
+	IdMapColumn.LiveChart:    fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.LiveChart, IdMapColumn.LiveChart, IdMapColumn.LiveChart, IdMapColumn.LiveChart),
+	IdMapColumn.MAL:          fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.MAL, IdMapColumn.MAL, IdMapColumn.MAL, IdMapColumn.MAL),
+	IdMapColumn.NotifyMoe:    fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe),
+	IdMapColumn.TMDB:         fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TMDB, IdMapColumn.TMDB, IdMapColumn.TMDB, IdMapColumn.TMDB),
+	IdMapColumn.TMDBSeasonId: fmt.Sprintf("%s = CASE WHEN aim.%s = 0 THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TMDBSeasonId, IdMapColumn.TMDBSeasonId, IdMapColumn.TMDBSeasonId, IdMapColumn.TMDBSeasonId),
+	IdMapColumn.TVDB:         fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TVDB, IdMapColumn.TVDB, IdMapColumn.TVDB, IdMapColumn.TVDB),
+	IdMapColumn.TVDBSeasonId: fmt.Sprintf("%s = CASE WHEN aim.%s = 0 THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TVDBSeasonId, IdMapColumn.TVDBSeasonId, IdMapColumn.TVDBSeasonId, IdMapColumn.TVDBSeasonId),
+	IdMapColumn.Trakt:        fmt.Sprintf("%s = CASE WHEN aim.%s IS NULL THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.Trakt, IdMapColumn.Trakt, IdMapColumn.Trakt, IdMapColumn.Trakt),
+	IdMapColumn.TraktSeason:  fmt.Sprintf("%s = CASE WHEN aim.%s = 0 THEN EXCLUDED.%s ELSE aim.%s END", IdMapColumn.TraktSeason, IdMapColumn.TraktSeason, IdMapColumn.TraktSeason, IdMapColumn.TraktSeason),
 }
 
 func normalizeOptionalId(id string) string {
@@ -503,11 +543,16 @@ func tryBulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 			db.NullString{String: normalizeOptionalId(item.AnimePlanet)},
 			db.NullString{String: normalizeOptionalId(item.IMDB)},
 			db.NullString{String: normalizeOptionalId(item.Kitsu)},
+			db.NullString{String: normalizeOptionalId(item.Letterboxd)},
 			db.NullString{String: normalizeOptionalId(item.LiveChart)},
 			db.NullString{String: normalizeOptionalId(item.MAL)},
 			db.NullString{String: normalizeOptionalId(item.NotifyMoe)},
 			db.NullString{String: normalizeOptionalId(item.TMDB)},
+			item.TMDBSeasonId,
 			db.NullString{String: normalizeOptionalId(item.TVDB)},
+			item.TVDBSeasonId,
+			db.NullString{String: normalizeOptionalId(item.Trakt)},
+			item.TraktSeason,
 		)
 	}
 
@@ -565,11 +610,16 @@ var query_update_id_map_by_id = fmt.Sprintf(
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.AnimePlanet, IdMapColumn.AnimePlanet),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.IMDB, IdMapColumn.IMDB),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.Kitsu, IdMapColumn.Kitsu),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.Letterboxd, IdMapColumn.Letterboxd),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.LiveChart, IdMapColumn.LiveChart),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.MAL, IdMapColumn.MAL),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.NotifyMoe, IdMapColumn.NotifyMoe),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.TMDB, IdMapColumn.TMDB),
+		fmt.Sprintf(" %s = CASE WHEN %s = 0 THEN ? ELSE %s END", IdMapColumn.TMDBSeasonId, IdMapColumn.TMDBSeasonId, IdMapColumn.TMDBSeasonId),
 		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.TVDB, IdMapColumn.TVDB),
+		fmt.Sprintf(" %s = CASE WHEN %s = 0 THEN ? ELSE %s END", IdMapColumn.TVDBSeasonId, IdMapColumn.TVDBSeasonId, IdMapColumn.TVDBSeasonId),
+		fmt.Sprintf(" %s = COALESCE(%s, ?) ", IdMapColumn.Trakt, IdMapColumn.Trakt),
+		fmt.Sprintf(" %s = CASE WHEN %s = 0 THEN ? ELSE %s END", IdMapColumn.TraktSeason, IdMapColumn.TraktSeason, IdMapColumn.TraktSeason),
 	}, ", "),
 	IdMapColumn.Id,
 )
@@ -718,11 +768,16 @@ func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 				db.NullString{String: normalizeOptionalId(item.AnimePlanet)},
 				db.NullString{String: normalizeOptionalId(item.IMDB)},
 				db.NullString{String: normalizeOptionalId(item.Kitsu)},
+				db.NullString{String: normalizeOptionalId(item.Letterboxd)},
 				db.NullString{String: normalizeOptionalId(item.LiveChart)},
 				db.NullString{String: normalizeOptionalId(item.MAL)},
 				db.NullString{String: normalizeOptionalId(item.NotifyMoe)},
 				db.NullString{String: normalizeOptionalId(item.TMDB)},
+				item.TMDBSeasonId,
 				db.NullString{String: normalizeOptionalId(item.TVDB)},
+				item.TVDBSeasonId,
+				db.NullString{String: normalizeOptionalId(item.Trakt)},
+				item.TraktSeason,
 			}
 			if _, err = db.Exec(query_insert_id_map, args...); err != nil {
 				log.Error("failed to insert idMap", "error", err, "item", item)
@@ -736,11 +791,16 @@ func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 				db.NullString{String: normalizeOptionalId(item.AnimePlanet)},
 				db.NullString{String: normalizeOptionalId(item.IMDB)},
 				db.NullString{String: normalizeOptionalId(item.Kitsu)},
+				db.NullString{String: normalizeOptionalId(item.Letterboxd)},
 				db.NullString{String: normalizeOptionalId(item.LiveChart)},
 				db.NullString{String: normalizeOptionalId(item.MAL)},
 				db.NullString{String: normalizeOptionalId(item.NotifyMoe)},
 				db.NullString{String: normalizeOptionalId(item.TMDB)},
+				item.TMDBSeasonId,
 				db.NullString{String: normalizeOptionalId(item.TVDB)},
+				item.TVDBSeasonId,
+				db.NullString{String: normalizeOptionalId(item.Trakt)},
+				item.TraktSeason,
 				id,
 			}
 			if _, err = db.Exec(query_update_id_map_by_id, args...); err != nil {

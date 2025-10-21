@@ -27,6 +27,7 @@ type Mapping struct {
 	Kaize            string `json:"kaize"`
 	KaizeId          int    `json:"kaize_id"`
 	Kitsu            int    `json:"kitsu"`
+	LetterboxdLId    string `json:"letterboxd_lid"`
 	LiveChart        int    `json:"livechart"`
 	MyAnimeList      int    `json:"myanimelist"`
 	Nautiljon        string `json:"nautiljon"`
@@ -38,6 +39,10 @@ type Mapping struct {
 	Silveryasha      int    `json:"silveryasha"`
 	Simkl            int    `json:"simkl"`
 	TMDB             int    `json:"themoviedb"`
+	TMDBType         string `json:"themoviedb_type"` // movie / tv
+	TMDBSeasonId     int    `json:"themoviedb_season_id"`
+	TVDB             int    `json:"thetvdb"`
+	TVDBSeasonId     int    `json:"thetvdb_season_id"`
 	Trakt            int    `json:"trakt"`
 	TraktType        string `json:"trakt_type"` // movies / shows
 	TraktSeason      int    `json:"trakt_season"`
@@ -95,6 +100,9 @@ func SyncDataset() error {
 				"kaize",
 				"kaize_id",
 				"kitsu",
+				"letterboxd_lid",
+				"letterboxd_slug",
+				"letterboxd_uid",
 				"livechart",
 				"myanimelist",
 				"nautiljon",
@@ -106,9 +114,16 @@ func SyncDataset() error {
 				"silveryasha",
 				"simkl",
 				"themoviedb",
+				"themoviedb_season_id",
+				"themoviedb_type",
+				"thetvdb",
+				"thetvdb_season_id",
 				"trakt",
-				"trakt_type",
+				"trakt_may_invalid",
 				"trakt_season",
+				"trakt_season_id",
+				"trakt_slug",
+				"trakt_type",
 			})
 		},
 		GetRowKey: func(row []string) string {
@@ -127,20 +142,29 @@ func SyncDataset() error {
 				Kaize:            parseStringId(row[8]),
 				KaizeId:          parseIntId(row[9]),
 				Kitsu:            parseIntId(row[10]),
-				LiveChart:        parseIntId(row[11]),
-				MyAnimeList:      parseIntId(row[12]),
-				Nautiljon:        parseStringId(row[13]),
-				NautiljonId:      parseIntId(row[14]),
-				Notify:           parseStringId(row[15]),
-				Otakotaku:        parseIntId(row[16]),
-				Shikimori:        parseIntId(row[17]),
-				Shoboi:           parseIntId(row[18]),
-				Silveryasha:      parseIntId(row[19]),
-				Simkl:            parseIntId(row[20]),
-				TMDB:             parseIntId(row[21]),
-				Trakt:            parseIntId(row[22]),
-				TraktType:        parseStringId(row[23]),
-				TraktSeason:      parseIntId(row[24]),
+				LetterboxdLId:    parseStringId(row[11]),
+				LiveChart:        parseIntId(row[14]),
+				MyAnimeList:      parseIntId(row[15]),
+				Nautiljon:        parseStringId(row[16]),
+				NautiljonId:      parseIntId(row[17]),
+				Notify:           parseStringId(row[18]),
+				Otakotaku:        parseIntId(row[19]),
+				Shikimori:        parseIntId(row[20]),
+				Shoboi:           parseIntId(row[21]),
+				Silveryasha:      parseIntId(row[22]),
+				Simkl:            parseIntId(row[23]),
+				TMDB:             parseIntId(row[24]),
+				TMDBSeasonId:     parseIntId(row[25]),
+				TMDBType:         parseStringId(row[26]),
+				TVDB:             parseIntId(row[27]),
+				TVDBSeasonId:     parseIntId(row[28]),
+				Trakt:            parseIntId(row[29]),
+				TraktType:        parseStringId(row[34]),
+				TraktSeason:      parseIntId(row[31]),
+			}
+
+			if traktSeasonMayInvalid := row[30] == "true"; traktSeasonMayInvalid {
+				m.TraktSeason = 0
 			}
 			return &m, nil
 		},
@@ -151,6 +175,7 @@ func SyncDataset() error {
 				typeByAnilistId := map[int]anime.AnimeIdMapType{}
 				typeByIMDBId := map[string]anime.AnimeIdMapType{}
 				typeByTraktId := map[int]anime.AnimeIdMapType{}
+				typeByTMDBId := map[int]anime.AnimeIdMapType{}
 				typeByKitsuId := map[int]anime.AnimeIdMapType{}
 				anilistIdsMissingType := []int{}
 				kitsuIdsMissingTypes := []int{}
@@ -161,6 +186,10 @@ func SyncDataset() error {
 						typeByTraktId[item.Trakt] = anime.AnimeIdMapTypeMovie
 					} else if item.TraktType == "shows" {
 						typeByTraktId[item.Trakt] = anime.AnimeIdMapTypeTV
+					} else if item.TMDBType == "movie" {
+						typeByTMDBId[item.TMDB] = anime.AnimeIdMapTypeMovie
+					} else if item.TMDBType == "tv" {
+						typeByTMDBId[item.TMDB] = anime.AnimeIdMapTypeTV
 					} else if item.AniList != 0 {
 						anilistIdsMissingType = append(anilistIdsMissingType, item.AniList)
 					} else if Kitsu != nil && item.Kitsu != 0 {
@@ -283,13 +312,17 @@ func SyncDataset() error {
 						AnimePlanet: item.AnimePlanet,
 						IMDB:        item.IMDB,
 						Kitsu:       strconv.Itoa(item.Kitsu),
+						Letterboxd:  item.LetterboxdLId,
 						LiveChart:   strconv.Itoa(item.LiveChart),
 						MAL:         strconv.Itoa(item.MyAnimeList),
 						NotifyMoe:   item.Notify,
 						TMDB:        strconv.Itoa(item.TMDB),
-						TVDB:        "",
+						TVDB:        strconv.Itoa(item.TVDB),
+						Trakt:       strconv.Itoa(item.Trakt),
 					}
-					if t, found := typeByTraktId[item.Trakt]; found {
+					if t, found := typeByTMDBId[item.TMDB]; found {
+						idMap.Type = t
+					} else if t, found := typeByTraktId[item.Trakt]; found {
 						idMap.Type = t
 					} else if t, found := typeByAnilistId[item.AniList]; found {
 						idMap.Type = t
