@@ -47,7 +47,7 @@ func GetIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 					Type: TVDBItemTypeMovie,
 					Id:   util.SafeParseInt(movieId, -1),
 				}
-				err := li.Fetch(tvdbClient)
+				err := li.Fetch(tvdbClient, true)
 				return &li, err
 			})
 		}
@@ -59,7 +59,7 @@ func GetIMDBIdsForTVDBIds(tvdbMovieIds, tvdbSeriesIds []string) (map[string]stri
 					Type: TVDBItemTypeSeries,
 					Id:   util.SafeParseInt(seriesId, -1),
 				}
-				err := li.Fetch(tvdbClient)
+				err := li.Fetch(tvdbClient, true)
 				return &li, err
 			})
 		}

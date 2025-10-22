@@ -100,7 +100,7 @@ func syncItem(client *APIClient, li *TVDBItem, saveToDB bool) error {
 	return nil
 }
 
-func (li *TVDBItem) Fetch(client *APIClient) error {
+func (li *TVDBItem) Fetch(client *APIClient, waitForSync bool) error {
 	if li.Id == 0 {
 		return errors.New("id must be provided")
 	}
@@ -121,15 +121,18 @@ func (li *TVDBItem) Fetch(client *APIClient) error {
 	}
 
 	if !isMissing {
-		if li.IsStale() {
+		if !li.IsStale() {
+			return nil
+		}
+		if !waitForSync {
 			staleItem := *li
 			go func() {
 				if err := syncItem(client, &staleItem, true); err != nil {
 					log.Error("failed to sync stale item", "error", err, "type", li.Type, "id", li.Id)
 				}
 			}()
+			return nil
 		}
-		return nil
 	}
 
 	if err := syncItem(client, li, true); err != nil {
