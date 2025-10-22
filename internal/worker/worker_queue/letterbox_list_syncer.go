@@ -23,5 +23,5 @@ var LetterboxdListSyncerQueue = WorkerQueue[LetterboxdListSyncerQueueItem]{
 	transform: func(item *LetterboxdListSyncerQueueItem) *LetterboxdListSyncerQueueItem {
 		return item
 	},
-	Disabled: !config.Integration.Letterboxd.IsEnabled() && !config.Integration.Letterboxd.IsPiggybacked(),
+	Disabled: !config.Feature.HasStremioList() || (!config.Integration.Letterboxd.IsEnabled() && !config.Integration.Letterboxd.IsPiggybacked()),
 }

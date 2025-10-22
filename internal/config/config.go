@@ -220,8 +220,12 @@ type FeatureConfig struct {
 	disabled []string
 }
 
+func (f FeatureConfig) IsDisabled(name string) bool {
+	return slices.Contains(f.disabled, name)
+}
+
 func (f FeatureConfig) IsEnabled(name string) bool {
-	if slices.Contains(f.disabled, name) {
+	if f.IsDisabled(name) {
 		return false
 	}
 
@@ -230,6 +234,22 @@ func (f FeatureConfig) IsEnabled(name string) bool {
 	}
 
 	return slices.Contains(f.enabled, name)
+}
+
+func (f FeatureConfig) HasStremioList() bool {
+	return f.IsEnabled(FeatureStremioList)
+}
+
+func (f FeatureConfig) HasTorrentInfo() bool {
+	return f.IsEnabled(FeatureStremioStore) || f.IsEnabled(FeatureStremioTorz)
+}
+
+func (f FeatureConfig) HasDMMHashlist() bool {
+	return !f.IsDisabled(FeatureDMMHashlist) && f.HasTorrentInfo()
+}
+
+func (f FeatureConfig) HasIMDBTitle() bool {
+	return !f.IsDisabled(FeatureIMDBTitle) && f.HasTorrentInfo()
 }
 
 type StoreContentProxyMap map[string]bool
@@ -820,24 +840,41 @@ func PrintConfig(state *AppState) {
 	l.Println(" Features:")
 	for _, feature := range features {
 		disabled := ""
-		if !Feature.IsEnabled(feature) {
-			disabled = " (disabled)"
+		switch feature {
+		case FeatureDMMHashlist:
+			if !Feature.HasDMMHashlist() {
+				disabled = " (disabled)"
+			}
+		case FeatureIMDBTitle:
+			if !Feature.HasIMDBTitle() {
+				disabled = " (disabled)"
+			}
+		default:
+			if !Feature.IsEnabled(feature) {
+				disabled = " (disabled)"
+			}
 		}
 		l.Println("   - " + feature + disabled)
+		if disabled != "" {
+			continue
+		}
 		switch feature {
 		case FeatureStremioList:
 			l.Println("       public max list count: " + strconv.Itoa(Stremio.List.PublicMaxListCount))
 		case FeatureStremioStore:
-			l.Println("          catalog item limit: " + strconv.Itoa(Stremio.Store.CatalogItemLimit))
-			l.Println("          catalog cache time: " + Stremio.Store.CatalogCacheTime.String())
+			l.Println("       catalog item limit: " + strconv.Itoa(Stremio.Store.CatalogItemLimit))
+			l.Println("       catalog cache time: " + Stremio.Store.CatalogCacheTime.String())
 		case FeatureStremioTorz:
-			l.Println("      public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
+			if disabled != "" {
+				break
+			}
+			l.Println("       public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
 			if Stremio.Torz.LazyPull {
-				l.Println("      [lazy pull]")
+				l.Println("       [lazy pull]")
 			}
 		case FeatureStremioWrap:
-			l.Println("   public max upstream count: " + strconv.Itoa(Stremio.Wrap.PublicMaxUpstreamCount))
-			l.Println("      public max store count: " + strconv.Itoa(Stremio.Wrap.PublicMaxStoreCount))
+			l.Println("       public max upstream count: " + strconv.Itoa(Stremio.Wrap.PublicMaxUpstreamCount))
+			l.Println("          public max store count: " + strconv.Itoa(Stremio.Wrap.PublicMaxStoreCount))
 		}
 	}
 	l.Println()

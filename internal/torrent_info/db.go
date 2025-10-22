@@ -13,6 +13,7 @@ import (
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -719,6 +720,8 @@ var query_upsert_on_conflict = fmt.Sprintf(
 	),
 )
 
+var noTorrentInfo = !config.Feature.HasTorrentInfo()
+
 func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) error {
 	if len(items) == 0 {
 		return nil
@@ -776,7 +779,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory, t.Seeders, t.Leechers)
 		}
 
-		if count == 0 {
+		if noTorrentInfo || count == 0 {
 			continue
 		}
 

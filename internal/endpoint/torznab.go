@@ -3,6 +3,7 @@ package endpoint
 import (
 	"net/http"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torznab"
 )
@@ -41,5 +42,9 @@ func handleTorznab(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func AddTorznabEndpoints(mux *http.ServeMux) {
+	if !config.Feature.HasTorrentInfo() {
+		return
+	}
+
 	mux.HandleFunc("/v0/torznab/api", handleTorznab)
 }

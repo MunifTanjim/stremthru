@@ -28,9 +28,11 @@ var PullPeer, pullLocalOnly = func() (*peer.APIClient, bool) {
 
 var pullPeerLog = logger.Scoped("peer:pull")
 
+var noTorrentInfo = !config.Feature.HasTorrentInfo()
+
 // supports imdb or anidb
 func PullTorrentsByStremId(sid string, originInstanceId string) {
-	if PullPeer == nil || !tss.ShouldPull(sid) {
+	if noTorrentInfo || PullPeer == nil || !tss.ShouldPull(sid) {
 		return
 	}
 

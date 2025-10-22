@@ -244,6 +244,7 @@ func InitWorkers() func() {
 	workers := []*Worker{}
 
 	if worker := InitParseTorrentWorker(&WorkerConfig{
+		Disabled:     !config.Feature.HasTorrentInfo(),
 		Name:         "parse-torrent",
 		Interval:     5 * time.Minute,
 		RunExclusive: true,
@@ -291,6 +292,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitCrawlStoreWorker(&WorkerConfig{
+		Disabled: worker_queue.StoreCrawlerQueue.Disabled,
 		Name:     "crawl-store",
 		Interval: 30 * time.Minute,
 		ShouldWait: func() (bool, string) {
@@ -314,7 +316,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitSyncIMDBWorker(&WorkerConfig{
-		Disabled:          !config.Feature.IsEnabled("imdb_title"),
+		Disabled:          !config.Feature.HasIMDBTitle(),
 		Name:              "sync-imdb",
 		Interval:          24 * time.Hour,
 		RunAtStartupAfter: 30 * time.Second,
@@ -339,7 +341,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitSyncDMMHashlistWorker(&WorkerConfig{
-		Disabled:          !config.Feature.IsEnabled("dmm_hashlist"),
+		Disabled:          !config.Feature.HasDMMHashlist(),
 		Name:              "sync-dmm-hashlist",
 		Interval:          6 * time.Hour,
 		RunAtStartupAfter: 30 * time.Second,
@@ -370,7 +372,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitMapIMDBTorrentWorker(&WorkerConfig{
-		Disabled:          !config.Feature.IsEnabled("imdb_title"),
+		Disabled:          !config.Feature.HasIMDBTitle(),
 		Name:              "map-imdb-torrent",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 30 * time.Second,

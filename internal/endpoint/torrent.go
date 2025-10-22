@@ -114,6 +114,10 @@ func handleTorrentStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddTorrentEndpoints(mux *http.ServeMux) {
+	if !config.Feature.HasTorrentInfo() {
+		return
+	}
+
 	mux.HandleFunc("/v0/torrents", handleTorrents)
 	mux.HandleFunc("/v0/torrents/stats", handleTorrentStats)
 }

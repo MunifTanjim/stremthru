@@ -17,7 +17,7 @@ var TorrentPusherQueue = IdQueue{
 		sid, _, _ = strings.Cut(sid, ":")
 		return sid
 	},
-	disabled: !config.HasPeer || config.PeerAuthToken == "",
+	disabled: !config.HasPeer || config.PeerAuthToken == "" || !config.Feature.HasTorrentInfo(),
 }
 
 var Peer = peer.NewAPIClient(&peer.APIClientConfig{

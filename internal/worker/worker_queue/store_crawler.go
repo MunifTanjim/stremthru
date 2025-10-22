@@ -2,6 +2,8 @@ package worker_queue
 
 import (
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/config"
 )
 
 type StoreCrawlerQueueItem struct {
@@ -17,4 +19,5 @@ var StoreCrawlerQueue = WorkerQueue[StoreCrawlerQueueItem]{
 	transform: func(item *StoreCrawlerQueueItem) *StoreCrawlerQueueItem {
 		return item
 	},
+	Disabled: !config.Feature.HasTorrentInfo(),
 }
