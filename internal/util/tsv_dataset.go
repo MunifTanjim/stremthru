@@ -14,6 +14,7 @@ type TSVDataset[T any] struct {
 	get_row_key      func(row []string) string
 	has_headers      bool
 	is_valid_headers func(headers []string) bool
+	no_diff          bool
 	parse_row        func(row []string) (*T, error)
 	w                *DatasetWriter[T]
 }
@@ -23,6 +24,7 @@ type TSVDatasetConfig[T any] struct {
 	GetRowKey      func(row []string) string
 	HasHeaders     bool
 	IsValidHeaders func(headers []string) bool
+	NoDiff         bool
 	ParseRow       func(row []string) (*T, error)
 	Writer         *DatasetWriter[T]
 }
@@ -33,6 +35,7 @@ func NewTSVDataset[T any](conf *TSVDatasetConfig[T]) *TSVDataset[T] {
 		get_row_key:      conf.GetRowKey,
 		has_headers:      conf.HasHeaders,
 		is_valid_headers: conf.IsValidHeaders,
+		no_diff:          conf.NoDiff,
 		parse_row:        conf.ParseRow,
 		w:                conf.Writer,
 	}
@@ -195,7 +198,7 @@ func (ds *TSVDataset[T]) Process() error {
 		return err
 	}
 
-	if ds.prev_filename == "" || ds.prev_filename == ds.curr_filename {
+	if ds.no_diff || ds.prev_filename == "" || ds.prev_filename == ds.curr_filename {
 		return ds.processAll()
 	}
 	return ds.processDiff()
