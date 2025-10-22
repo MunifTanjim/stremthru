@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.90.8](https://github.com/MunifTanjim/stremthru/compare/0.90.7...0.90.8) (2025-10-22)
+
+
+### Performance Improvements
+
+* **config:** respect feature config everywhere ([b96ea52](https://github.com/MunifTanjim/stremthru/commit/b96ea52730f8a2a8a2329f41b0799091215cbabc))
+
 ## [0.90.7](https://github.com/MunifTanjim/stremthru/compare/0.90.6...0.90.7) (2025-10-22)
 
 
