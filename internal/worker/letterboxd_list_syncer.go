@@ -51,6 +51,11 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 
 				list := &res.Data
 
+				if list.Version != 0 && list.Version == l.Version {
+					log.Debug("list not modified upstream", "id", l.Id)
+					return nil
+				}
+
 				l.UserId = list.UserId
 				l.UserName = list.UserSlug
 				l.Name = list.Title
@@ -58,6 +63,7 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 				l.Description = list.Description
 				l.Private = list.IsPrivate
 				l.ItemCount = list.ItemCount
+				l.Version = list.Version
 				l.UpdatedAt = db.Timestamp{Time: list.UpdatedAt}
 				l.Items = nil
 				for i := range list.Items {
@@ -99,6 +105,32 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 					return err
 				}
 				l.ItemCount = res.Data.Counts.Watchlist
+				l.Version = time.Now().Unix()
+			} else {
+				log.Debug("fetching list by id", "id", l.Id)
+				res, err := client.FetchList(&letterboxd.FetchListParams{
+					Id: l.Id,
+				})
+				if err != nil {
+					return err
+				}
+				list := &res.Data
+
+				if list.Version == l.Version {
+					log.Debug("list not modified at source", "id", l.Id)
+					return nil
+				}
+
+				l.UserId = list.Owner.Id
+				l.UserName = list.Owner.Username
+				l.Name = list.Name
+				if slug := list.GetLetterboxdSlug(); slug != "" {
+					l.Slug = slug
+				}
+				l.Description = list.Description
+				l.Private = false // list.SharePolicy != SharePolicyAnyone
+				l.ItemCount = list.FilmCount
+				l.Version = list.Version
 			}
 
 			items := []letterboxd.LetterboxdItem{}
@@ -166,8 +198,6 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 						log.Error("failed to fetch list items", "error", err, "id", l.Id, "page", page)
 						return err
 					}
-
-					l.ItemCount = res.Data.Metadata.TotalFilmCount
 
 					now := time.Now()
 					for i := range res.Data.Items {

@@ -195,7 +195,7 @@ func (l List) getLetterboxdLink() string {
 	return ""
 }
 
-func (l List) getLetterboxdSlug() string {
+func (l List) GetLetterboxdSlug() string {
 	link := l.getLetterboxdLink()
 	if link == "" {
 		return ""

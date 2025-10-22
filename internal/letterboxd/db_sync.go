@@ -55,8 +55,6 @@ func syncList(l *LetterboxdList) error {
 	syncListMutex.Lock()
 	defer syncListMutex.Unlock()
 
-	var list *List
-
 	if !LetterboxdEnabled {
 		if !LetterboxdPiggybacked {
 			return errors.New("letterboxd integration is not available")
@@ -87,6 +85,7 @@ func syncList(l *LetterboxdList) error {
 		l.Description = list.Description
 		l.Private = list.IsPrivate
 		l.ItemCount = list.ItemCount
+		l.Version = list.Version
 		l.UpdatedAt = db.Timestamp{Time: list.UpdatedAt}
 		l.Items = nil
 		for i := range list.Items {
@@ -122,6 +121,7 @@ func syncList(l *LetterboxdList) error {
 			return err
 		}
 		l.ItemCount = res.Data.Counts.Watchlist
+		l.Version = time.Now().Unix()
 	} else {
 		log.Debug("fetching list by id", "id", l.Id)
 		res, err := client.FetchList(&FetchListParams{
@@ -130,17 +130,18 @@ func syncList(l *LetterboxdList) error {
 		if err != nil {
 			return err
 		}
-		list = &res.Data
+		list := &res.Data
 
 		l.UserId = list.Owner.Id
 		l.UserName = list.Owner.Username
 		l.Name = list.Name
-		if slug := list.getLetterboxdSlug(); slug != "" {
+		if slug := list.GetLetterboxdSlug(); slug != "" {
 			l.Slug = slug
 		}
 		l.Description = list.Description
 		l.Private = false // list.SharePolicy != SharePolicyAnyone
 		l.ItemCount = list.FilmCount
+		l.Version = list.Version
 	}
 	l.Items = nil
 	l.UpdatedAt = db.Timestamp{Time: time.Now()}

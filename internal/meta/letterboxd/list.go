@@ -24,6 +24,7 @@ func toList(l *letterboxd.LetterboxdList) (*meta_type.List, error) {
 		IsPrivate:   l.Private,
 		IsPersonal:  false,
 		ItemCount:   l.ItemCount,
+		Version:     l.Version,
 		UpdatedAt:   l.UpdatedAt.Time,
 		Items:       []meta_type.ListItem{},
 	}

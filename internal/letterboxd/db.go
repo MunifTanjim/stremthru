@@ -25,6 +25,7 @@ type LetterboxdList struct {
 	Description string
 	Private     bool
 	ItemCount   int
+	Version     int64
 	UpdatedAt   db.Timestamp
 
 	Items []LetterboxdItem `json:"-"`
@@ -69,6 +70,7 @@ var ListColumn = struct {
 	Description string
 	Private     string
 	ItemCount   string
+	Version     string
 	UpdatedAt   string
 }{
 	Id:          "id",
@@ -79,6 +81,7 @@ var ListColumn = struct {
 	Description: "description",
 	Private:     "private",
 	ItemCount:   "item_count",
+	Version:     "v",
 	UpdatedAt:   "uat",
 }
 
@@ -91,6 +94,7 @@ var ListColumns = []string{
 	ListColumn.Description,
 	ListColumn.Private,
 	ListColumn.ItemCount,
+	ListColumn.Version,
 	ListColumn.UpdatedAt,
 }
 
@@ -224,6 +228,7 @@ func GetListById(id string) (*LetterboxdList, error) {
 		&list.Description,
 		&list.Private,
 		&list.ItemCount,
+		&list.Version,
 		&list.UpdatedAt,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -302,6 +307,7 @@ var query_upsert_list = fmt.Sprintf(
 		fmt.Sprintf(`%s = EXCLUDED.%s`, ListColumn.Description, ListColumn.Description),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, ListColumn.Private, ListColumn.Private),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, ListColumn.ItemCount, ListColumn.ItemCount),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, ListColumn.Version, ListColumn.Version),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, ListColumn.UpdatedAt, ListColumn.UpdatedAt),
 	}, ", "),
 )
@@ -333,6 +339,7 @@ func UpsertList(list *LetterboxdList) (err error) {
 		list.Description,
 		list.Private,
 		list.ItemCount,
+		list.Version,
 		list.UpdatedAt,
 	)
 	if err != nil {
