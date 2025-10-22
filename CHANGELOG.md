@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.90.7](https://github.com/MunifTanjim/stremthru/compare/0.90.6...0.90.7) (2025-10-22)
+
+
+### Bug Fixes
+
+* **animeapi:** process newly added columns in dataset ([9a3a37b](https://github.com/MunifTanjim/stremthru/commit/9a3a37bcc9dacbba857d75826a1318dbf259f052))
+* **imdb_title:** fix sql query for upserting id map ([c0daa7e](https://github.com/MunifTanjim/stremthru/commit/c0daa7e1573125ddec348baf6e6c7584dfb2102a))
+* **tvdb:** wait for sync when fetching for id map ([ab6127d](https://github.com/MunifTanjim/stremthru/commit/ab6127d04633ab4041daecce35f79ece2a1c3625))
+
+
+### Performance Improvements
+
+* **letterboxd:** fetch list items only if version is newer ([bde1c0b](https://github.com/MunifTanjim/stremthru/commit/bde1c0bde1147bbc2d6a4ad7a31d76877373363e))
+
 ## [0.90.6](https://github.com/MunifTanjim/stremthru/compare/0.90.5...0.90.6) (2025-10-18)
 
 
