@@ -674,6 +674,9 @@ func PrintConfig(state *AppState) {
 	l.Printf(" Time: %v\n", ServerStartTime.Format(time.RFC3339))
 	l.Printf(" Version: %v\n", Version)
 	l.Printf(" Port: %v\n", Port)
+	if Environment != "" {
+		l.Printf(" Env: %v\n", Environment)
+	}
 	l.Println("========================")
 	l.Println()
 

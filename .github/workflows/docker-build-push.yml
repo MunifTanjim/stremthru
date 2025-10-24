@@ -22,6 +22,21 @@ jobs:
           fetch-depth: 0
           ref: ${{inputs.ref}}
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+          package_json_file: package.json
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm run dash:build
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:

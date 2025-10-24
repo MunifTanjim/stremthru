@@ -29,7 +29,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: sdk/js
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm --ignore-workspace install
       - name: Check Format
         run: pnpm exec prettier --cache --ignore-unknown --check .
       - name: Lint

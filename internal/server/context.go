@@ -12,12 +12,13 @@ import (
 type reqCtxKey struct{}
 
 type ReqCtx struct {
-	StartTime time.Time
-	RequestId string
-	Error     error
-	ReqPath   string
-	ReqQuery  url.Values
-	Log       *slog.Logger
+	StartTime    time.Time
+	RequestId    string
+	Error        error
+	ReqPath      string
+	ReqQuery     url.Values
+	Log          *slog.Logger
+	NoRequestLog bool
 }
 
 func (ctx *ReqCtx) RedactURLPathValues(r *http.Request, names ...string) {
