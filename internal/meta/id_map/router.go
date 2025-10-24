@@ -53,7 +53,7 @@ func commonMiddleware(next http.Handler) http.Handler {
 func AddEndpoints(mux *http.ServeMux) {
 	router := http.NewServeMux()
 
-	router.HandleFunc("/id-map/{idType}/{id}", handleIdMap)
+	router.HandleFunc("/{idType}/{id}", handleIdMap)
 
-	mux.Handle("/v0/meta/id-map/", http.StripPrefix("/v0/meta", commonMiddleware(router)))
+	mux.Handle("/v0/meta/id-map/", http.StripPrefix("/v0/meta/id-map", commonMiddleware(router)))
 }
