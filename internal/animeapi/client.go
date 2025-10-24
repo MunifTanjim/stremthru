@@ -51,7 +51,6 @@ func getLastUpdated() (time.Time, error) {
 		return time.Time{}, err
 	}
 	timestring := strings.TrimPrefix(string(response), "Updated on ")
-	println(timestring)
 	updatedAt, err := time.Parse("01/02/2006 15:04:05 MST", timestring)
 	return updatedAt, err
 }
