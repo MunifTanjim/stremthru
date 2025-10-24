@@ -415,19 +415,23 @@ var config = func() Config {
 	for _, admin := range authAdminList {
 		if strings.Contains(admin, ":") {
 			username, password, _ := strings.Cut(admin, ":")
+			authAdminMap[username] = true
 			adminPasswordMap[username] = password
-		} else {
+		} else if password := proxyAuthPasswordMap.GetPassword(admin); password != "" {
 			authAdminMap[admin] = true
+			adminPasswordMap[admin] = password
 		}
 	}
 	if len(authAdminMap) == 0 {
 		for username := range proxyAuthPasswordMap {
 			authAdminMap[username] = true
+			adminPasswordMap[username] = proxyAuthPasswordMap[username]
 		}
 	}
 	if len(adminPasswordMap) == 0 {
 		username := "st-" + util.GenerateRandomString(7, util.CharSet.AlphaNumeric)
 		password := util.GenerateRandomString(27, util.CharSet.AlphaNumericMixedCase)
+		authAdminMap[username] = true
 		adminPasswordMap[username] = password
 	}
 
