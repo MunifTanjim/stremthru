@@ -622,7 +622,7 @@ Get ID mapping for a given ID.
   "imdb": "string",
   "tmdb": "string",
   "tvdb": "string",
-  "trakt": "string",
+  "trakt": "string"
 }
 ```
 

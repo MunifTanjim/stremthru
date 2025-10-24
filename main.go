@@ -37,6 +37,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	endpoint.AddRootEndpoint(mux)
+	endpoint.AddDashEndpoint(mux)
 	endpoint.AddAuthEndpoints(mux)
 	endpoint.AddHealthEndpoints(mux)
 	endpoint.AddMetaEndpoints(mux)

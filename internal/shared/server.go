@@ -90,6 +90,9 @@ func (rw *responseWriter) getStatusCode() int {
 
 func logRequest(w *responseWriter, r *http.Request) {
 	ctx := server.GetReqCtx(r)
+	if ctx.NoRequestLog {
+		return
+	}
 
 	status := w.getStatusCode()
 	req := slog.GroupValue(

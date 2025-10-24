@@ -1,0 +1,42 @@
+{
+  "private": true,
+  "name": "stremthru",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dash:dev": "pnpm run -F dash dev",
+    "dash:build": "pnpm run -F dash build",
+    "lint:commit:current": "commitlint --edit",
+    "lint:staged": "lint-staged",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^9.35.0",
+    "@tanstack/eslint-plugin-query": "^5.91.0",
+    "@tsconfig/recommended": "^1.0.10",
+    "@types/node": "^24.5.2",
+    "eslint": "^9.35.0",
+    "eslint-plugin-perfectionist": "^4.15.0",
+    "eslint-plugin-react-dom": "^1.53.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-react-x": "^1.53.1",
+    "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.43.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "esbuild"
+    ]
+  }
+}

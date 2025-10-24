@@ -1,0 +1,11 @@
+# generated files
+CHANGELOG.md
+pnpm-lock.yaml
+routeTree.gen.ts
+
+# build output
+**/build
+**/public
+
+# golang
+internal/**/*.html
