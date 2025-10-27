@@ -388,6 +388,8 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/list", func(td *TemplateData) *TemplateData {
 		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
+		td.IsTrusted = config.IsTrusted
+
 		td.CanAuthorize = !IsPublicInstance
 		td.CanAddList = td.IsAuthed || len(td.Lists) < MaxPublicInstanceListCount
 		td.CanRemoveList = len(td.Lists) > 1

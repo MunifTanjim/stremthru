@@ -184,7 +184,7 @@
         <li id="nav-home">
           <strong>
             <a href="/">
-              ✨ StremThru
+              {{if .IsTrusted}}<span data-tooltip="❇️ Trusted" style="border-bottom:0;cursor:pointer;">💫</span>{{end}} StremThru
               <small>
                 <sup>v{{.Version}}</sup>
               </small>

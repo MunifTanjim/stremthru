@@ -635,6 +635,23 @@ var ContentProxyConnectionLimit = config.ContentProxyConnectionLimit
 var InstanceId = strings.ReplaceAll(uuid.NewString(), "-", "")
 var IP = config.IP
 
+var IsTrusted = func() bool {
+	rootHost := util.MustDecodeBase64("c3RyZW10aHJ1LjEzMzc3MDAxLnh5eg==")
+	switch BaseURL.Hostname() {
+	case rootHost:
+		return true
+	}
+	if config.PeerURL == "" || config.PeerAuthToken == "" {
+		return false
+	}
+	u := util.MustParseURL(config.PeerURL)
+	switch u.Hostname() {
+	case rootHost, "localhost":
+		return true
+	}
+	return false
+}()
+
 var DataDir = config.DataDir
 
 var IsPublicInstance = len(ProxyAuthPassword) == 0

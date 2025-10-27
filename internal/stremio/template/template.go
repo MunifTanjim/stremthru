@@ -17,6 +17,7 @@ type BaseData struct {
 	NavTitle        string
 	Version         string
 	StremThruAddons []BaseDataStremThruAddon
+	IsTrusted       bool
 }
 
 type Executor[T any] func(data *T, name string) (bytes.Buffer, error)

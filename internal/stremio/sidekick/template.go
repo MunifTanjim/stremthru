@@ -110,6 +110,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		td.CanAuthAdmin = !IsPublicInstance
 
 		td.Version = config.Version
+		td.IsTrusted = config.IsTrusted
 		if td.Addons == nil {
 			td.Addons = []stremio.Addon{}
 		}

@@ -105,6 +105,8 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/torz", func(td *TemplateData) *TemplateData {
 		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
+		td.IsTrusted = config.IsTrusted
+
 		td.CanAuthorize = !IsPublicInstance
 		td.CanAddStore = td.IsAuthed || len(td.Stores) < MaxPublicInstanceStoreCount
 		if !IsPublicInstance && td.CanAddStore {

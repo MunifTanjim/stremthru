@@ -34,6 +34,7 @@
   <body class="container">
     <header class="text-center">
       <h1>
+        {{if .IsTrusted}}<small data-tooltip="❇️ Trusted" style="border-bottom:0;cursor:pointer;">💫</small>{{end}}
         {{.Title}}
         <small>
           <sup>v{{.Version}}</sup>

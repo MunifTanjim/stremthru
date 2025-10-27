@@ -30,6 +30,7 @@ type RootTemplateData struct {
 	Version     string                    `json:"-"`
 	Addons      []rootTemplateDataAddon   `json:"-"`
 	Sections    []rootTemplateDataSection `json:"sections"`
+	IsTrusted   bool                      `json:"-"`
 }
 
 var rootTemplateData = func() RootTemplateData {
@@ -57,6 +58,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		Version:     config.Version,
 		Addons:      []rootTemplateDataAddon{},
 		Sections:    rootTemplateData.Sections,
+		IsTrusted:   config.IsTrusted,
 	}
 	addons := stremio_shared.GetStremThruAddons()
 	for _, addon := range addons {

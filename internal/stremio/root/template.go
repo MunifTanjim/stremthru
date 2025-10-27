@@ -54,6 +54,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/wrap", func(td *TemplateData) *TemplateData {
 		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
+		td.IsTrusted = config.IsTrusted
 		return td
 	}, template.FuncMap{}, "root.html")
 }()
