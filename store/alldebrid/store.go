@@ -1,6 +1,7 @@
 package alldebrid
 
 import (
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
@@ -122,21 +123,52 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	um, err := c.client.UploadMagnet(&UploadMagnetParams{
-		Ctx:     params.Ctx,
-		Magnets: []string{params.Magnet},
-	})
-	if err != nil {
-		return nil, err
+	var magnet *UploadMagnetDataMagnet
+	var isPrivate bool
+	if params.Magnet != "" {
+		um, err := c.client.UploadMagnet(&UploadMagnetParams{
+			Ctx:     params.Ctx,
+			Magnets: []string{params.Magnet},
+		})
+		if err != nil {
+			return nil, err
+		}
+		magnet = &um.Data[0]
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		uf, err := c.client.UploadFile(&UploadFileParams{
+			Ctx:   params.Ctx,
+			Files: []*multipart.FileHeader{params.Torrent},
+		})
+		if err != nil {
+			return nil, err
+		}
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		file := &uf.Data[0]
+		magnet = &UploadMagnetDataMagnet{
+			Error:            file.Error,
+			FilenameOriginal: file.File,
+			Hash:             file.Hash,
+			Id:               file.Id,
+			Magnet:           m.Link,
+			Name:             file.Name,
+			Ready:            file.Ready,
+			Size:             file.Size,
+		}
 	}
-
-	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
-
-	magnet := um.Data[0]
 
 	if magnet.Error != nil {
 		return nil, UpstreamErrorWithCause(magnet.Error)
 	}
+
+	c.listMagnetsCache.Remove(c.getCacheKey(params, ""))
 
 	data := &store.AddMagnetData{
 		Id:      strconv.Itoa(magnet.Id),
@@ -145,6 +177,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Name:    magnet.Name,
 		Size:    magnet.Size,
 		Status:  store.MagnetStatusQueued,
+		Private: isPrivate,
 		AddedAt: time.Now().UTC(),
 	}
 
@@ -174,7 +207,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 	}
 
-	return data, err
+	return data, nil
 }
 
 func statusCodeToMagnetStatus(statusCode MagnetStatusCode) store.MagnetStatus {

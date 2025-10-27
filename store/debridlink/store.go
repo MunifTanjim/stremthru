@@ -114,16 +114,37 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
-	if err != nil {
-		return nil, err
+	var magnet *core.MagnetLink
+	var isPrivate bool
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
 	}
-	res, err := c.client.AddSeedboxTorrent(&AddSeedboxTorrentParams{
+	ast_params := &AddSeedboxTorrentParams{
 		Ctx:           params.Ctx,
-		Url:           magnet.RawLink,
 		StructureType: SeedboxTorrentStructureTypeList,
 		IP:            params.ClientIP,
-	})
+	}
+	if params.Magnet != "" {
+		ast_params.Url = magnet.RawLink
+	} else {
+		ast_params.File = params.Torrent
+	}
+	res, err := c.client.AddSeedboxTorrent(ast_params)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +158,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Name:    t.Name,
 		Size:    t.TotalSize,
 		Status:  store.MagnetStatusQueued,
+		Private: isPrivate,
 		Files:   []store.MagnetFile{},
 		AddedAt: t.GetAddedAt(),
 	}

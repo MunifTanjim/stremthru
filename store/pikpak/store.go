@@ -1,6 +1,7 @@
 package pikpak
 
 import (
+	"errors"
 	"net/http"
 	"path"
 	"slices"
@@ -134,6 +135,10 @@ func (s *StoreClient) getFileByMagnetHash(ctx Ctx, hash string) (*File, error) {
 }
 
 func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
+	if params.Magnet == "" {
+		return nil, errors.New("torrent file not supported")
+	}
+
 	magnet, err := core.ParseMagnetLink(params.Magnet)
 	if err != nil {
 		return nil, err

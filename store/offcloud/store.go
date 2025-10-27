@@ -1,6 +1,7 @@
 package offcloud
 
 import (
+	"errors"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -109,6 +110,10 @@ func (s *StoreClient) getMagnetFiles(ctx Ctx, requestId string, server string) (
 }
 
 func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
+	if params.Magnet == "" {
+		return nil, errors.New("torrent file not supported")
+	}
+
 	magnet, err := core.ParseMagnetLink(params.Magnet)
 	if err != nil {
 		return nil, err

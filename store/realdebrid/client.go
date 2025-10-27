@@ -65,6 +65,8 @@ func (c APIClient) newRequest(method, path string, params request.Context) (req 
 
 	query := url.Query()
 
+	params.PrepareQuery(&query)
+
 	body, contentType, err := params.PrepareBody(method, &query)
 	if err != nil {
 		return nil, err
@@ -76,6 +78,8 @@ func (c APIClient) newRequest(method, path string, params request.Context) (req 
 	if err != nil {
 		return nil, err
 	}
+
+	params.PrepareHeader(&req.Header)
 
 	req.Header.Set("Authorization", "Bearer "+params.GetAPIKey(c.apiKey))
 	req.Header.Add("User-Agent", c.agent)

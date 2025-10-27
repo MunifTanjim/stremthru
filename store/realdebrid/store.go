@@ -199,9 +199,26 @@ func (f *GetTorrentInfoDataFile) toStoreMagnetFile() store.MagnetFile {
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
-	if err != nil {
-		return nil, err
+	var magnet *core.MagnetLink
+	var err error
+	var isPrivate bool
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		magnet = &m
 	}
 
 	tIdsMap := map[string]bool{}
@@ -237,17 +254,31 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 
 	if t == nil {
-		res, err := c.client.AddMagnet(&AddMagnetParams{
-			Ctx:    params.Ctx,
-			Magnet: magnet.RawLink,
-			IP:     params.ClientIP,
-		})
-		if err != nil {
-			return nil, err
+		var id string
+		if params.Magnet != "" {
+			res, err := c.client.AddMagnet(&AddMagnetParams{
+				Ctx:    params.Ctx,
+				Magnet: magnet.RawLink,
+				IP:     params.ClientIP,
+			})
+			if err != nil {
+				return nil, err
+			}
+			id = res.Data.Id
+		} else {
+			res, err := c.client.AddTorrent(&AddTorrentParams{
+				Ctx:  params.Ctx,
+				File: params.Torrent,
+				IP:   params.ClientIP,
+			})
+			if err != nil {
+				return nil, err
+			}
+			id = res.Data.Id
 		}
 		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
 			Ctx: params.Ctx,
-			Id:  res.Data.Id,
+			Id:  id,
 		})
 		if err != nil {
 			return nil, err
@@ -285,6 +316,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Name:    m.Name,
 		Size:    t.OriginalBytes,
 		Status:  m.Status,
+		Private: isPrivate,
 		Files:   m.Files,
 		AddedAt: m.AddedAt,
 	}

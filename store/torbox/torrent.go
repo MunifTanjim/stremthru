@@ -1,6 +1,7 @@
 package torbox
 
 import (
+	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -77,6 +78,7 @@ const (
 
 type CreateTorrentParams struct {
 	Ctx
+	File     *multipart.FileHeader
 	Magnet   string
 	Seed     int
 	AllowZip bool
@@ -88,17 +90,32 @@ Possible Detail values:
   - Found Cached Torrent. Using Cached Torrent.
 */
 func (c APIClient) CreateTorrent(params *CreateTorrentParams) (APIResponse[CreateTorrentData], error) {
-	form := &url.Values{}
-	form.Add("magnet", params.Magnet)
 	if params.Seed == 0 {
 		params.Seed = int(CreateTorrentParamsSeedAuto)
 	}
-	form.Add("seed", strconv.Itoa(int(params.Seed)))
-	form.Add("allow_zip", strconv.FormatBool(params.AllowZip))
-	if params.Name != "" {
-		form.Add("name", params.Name)
+	if params.Magnet != "" {
+		form := &url.Values{}
+		form.Add("magnet", params.Magnet)
+		form.Add("seed", strconv.Itoa(int(params.Seed)))
+		form.Add("allow_zip", strconv.FormatBool(params.AllowZip))
+		if params.Name != "" {
+			form.Add("name", params.Name)
+		}
+		params.Form = form
+	} else {
+		form := &multipart.Form{}
+		form.File = map[string][]*multipart.FileHeader{
+			"file": {params.File},
+		}
+		form.Value = map[string][]string{
+			"seed":      {strconv.Itoa(int(params.Seed))},
+			"allow_zip": {strconv.FormatBool(params.AllowZip)},
+		}
+		if params.Name != "" {
+			form.Value["name"] = []string{params.Name}
+		}
+		params.MultiPartForm = form
 	}
-	params.Form = form
 	response := &Response[CreateTorrentData]{}
 	res, err := c.Request("POST", "/v1/api/torrents/createtorrent", params, response)
 	return newAPIResponse(res, response.Data, response.Detail), err

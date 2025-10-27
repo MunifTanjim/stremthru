@@ -74,17 +74,42 @@ func (l LockedFileLink) Parse() (taskId, fileName string, err error) {
 }
 
 func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
-	if err != nil {
-		return nil, err
+	var magnet *core.MagnetLink
+	var isPrivate bool
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
 	}
-	res, err := s.client.CreateDownloadTask(&CreateDownloadTaskParams{
-		Ctx:  params.Ctx,
-		Type: DownloadTaskTypeMagnet,
-		Data: CreateDownloadTaskParamsData{
+
+	cdt_params := &CreateDownloadTaskParams{
+		Ctx: params.Ctx,
+	}
+	if params.Magnet != "" {
+		cdt_params.Type = DownloadTaskTypeMagnet
+		cdt_params.Data = CreateDownloadTaskParamsData{
 			MagnetLink: magnet.RawLink,
-		},
-	})
+		}
+	} else {
+		cdt_params.Type = DownloadTaskTypeTorrent
+		cdt_params.Data = CreateDownloadTaskParamsData{
+			FileContent: params.Torrent,
+		}
+	}
+	res, err := s.client.CreateDownloadTask(cdt_params)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +120,7 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Name:    res.Data.Name,
 		Size:    res.Data.Size,
 		Status:  getMagnetStatusFromTaskStatus(res.Data.Status),
+		Private: isPrivate,
 		Files:   []store.MagnetFile{},
 		AddedAt: res.Data.GetAddedAt(),
 	}

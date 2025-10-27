@@ -1,10 +1,13 @@
 package store
 
 import (
+	"errors"
+	"mime/multipart"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/anacrolix/torrent/metainfo"
 )
 
 type Ctx = request.Ctx
@@ -164,15 +167,46 @@ type AddMagnetData struct {
 	Name    string       `json:"name"`
 	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
-	Files   []MagnetFile `json:"files"`
+	Files   []MagnetFile `json:"files,omitempty"`
 	Private bool         `json:"private,omitempty"`
 	AddedAt time.Time    `json:"added_at"`
 }
 
 type AddMagnetParams struct {
 	Ctx
-	Magnet   string
-	ClientIP string
+	Magnet          string
+	Torrent         *multipart.FileHeader
+	ClientIP        string
+	torrentMetaInfo *metainfo.MetaInfo
+	torrentInfo     *metainfo.Info
+}
+
+func (p *AddMagnetParams) GetTorrentMeta() (*metainfo.MetaInfo, *metainfo.Info, error) {
+	if p.Torrent == nil {
+		return nil, nil, nil
+	}
+	if p.torrentMetaInfo != nil && p.torrentInfo != nil {
+		return p.torrentMetaInfo, p.torrentInfo, nil
+	}
+	f, err := p.Torrent.Open()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer f.Close()
+	mi, err := metainfo.Load(f)
+	if err != nil {
+		return nil, nil, err
+	}
+	p.torrentMetaInfo = mi
+	mii, err := mi.UnmarshalInfo()
+	if err != nil {
+		return nil, nil, err
+	}
+	if !mii.HasV1() {
+		return nil, nil, errors.New("unsupported torrent file")
+	}
+	p.torrentInfo = &mii
+	return p.torrentMetaInfo, p.torrentInfo, nil
 }
 
 type GetMagnetData struct {

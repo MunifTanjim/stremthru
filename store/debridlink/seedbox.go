@@ -1,6 +1,7 @@
 package debridlink
 
 import (
+	"mime/multipart"
 	"net/url"
 	"strconv"
 	"strings"
@@ -106,15 +107,34 @@ type AddSeedboxTorrentBody struct {
 
 type AddSeedboxTorrentParams struct {
 	Ctx
-	Url           string                      `json:"url"`   // torrent url, magnet or hash
-	Wait          bool                        `json:"wait"`  // wait before starting the torrent to select files. default: false
-	Async         bool                        `json:"async"` // If true, won't wait metadata before returning result, recommended. default: false
-	StructureType SeedboxTorrentStructureType `json:"structureType,omitempty"`
+	Url           string                      `json:"url"`                     // torrent url, magnet or hash
+	File          *multipart.FileHeader       `json:"-"`                       // File MUST use "multipart/form-data" content-type
+	Wait          bool                        `json:"wait"`                    // wait before starting the torrent to select files. default: false
+	StructureType SeedboxTorrentStructureType `json:"structureType,omitempty"` // Files structure type. list or tree. Default to list
 	IP            string                      `json:"ip,omitempty"`
+	// Async         bool                        `json:"async"`                   // If true, won't wait metadata before returning result, recommended. default: false
 }
 
 func (c APIClient) AddSeedboxTorrent(params *AddSeedboxTorrentParams) (APIResponse[AddSeedboxTorrentData], error) {
-	params.JSON = params
+	if params.Url != "" {
+		params.JSON = params
+	} else {
+		form := multipart.Form{}
+		form.File = map[string][]*multipart.FileHeader{
+			"file": {params.File},
+		}
+		form.Value = map[string][]string{}
+		if params.Wait {
+			form.Value["wait"] = []string{"true"}
+		}
+		if params.StructureType != "" {
+			form.Value["structureType"] = []string{string(params.StructureType)}
+		}
+		if params.IP != "" {
+			form.Value["ip"] = []string{params.IP}
+		}
+		params.MultiPartForm = &form
+	}
 	response := &Response[AddSeedboxTorrentData]{}
 	res, err := c.Request("POST", "/v2/seedbox/add", params, response)
 	return newAPIResponse(res, response.Value), err

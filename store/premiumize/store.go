@@ -488,9 +488,25 @@ func listFolderFlat(c *StoreClient, apiKey string, folderId string, result []sto
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
-	if err != nil {
-		return nil, err
+	var magnet *core.MagnetLink
+	var isPrivate bool
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
 	}
 
 	cm_res, err := c.checkMagnet(&store.CheckMagnetParams{
@@ -522,6 +538,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			Name:    name,
 			Status:  store.MagnetStatusDownloaded,
 			Size:    cm.Size,
+			Private: isPrivate,
 			Files:   cm.Files,
 			AddedAt: time.Unix(0, 0).UTC(),
 		}
@@ -544,11 +561,16 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		return nil, err
 	}
 
-	ct_res, err := c.client.CreateTransfer(&CreateTransferParams{
+	ct_params := &CreateTransferParams{
 		Ctx:      params.Ctx,
-		Src:      magnet.RawLink,
 		FolderId: folder.Id,
-	})
+	}
+	if params.Magnet != "" {
+		ct_params.Src = magnet.RawLink
+	} else {
+		ct_params.File = params.Torrent
+	}
+	ct_res, err := c.client.CreateTransfer(ct_params)
 	if err != nil {
 		return nil, err
 	}
@@ -560,6 +582,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Name:    ct_res.Data.Name,
 		Size:    -1,
 		Status:  store.MagnetStatusQueued,
+		Private: isPrivate,
 		AddedAt: time.Now().UTC(),
 	}
 

@@ -2,6 +2,7 @@ package debrider
 
 import (
 	"encoding/json"
+	"mime/multipart"
 	"path/filepath"
 	"time"
 
@@ -29,15 +30,24 @@ type createWebDownloadTaskParamsData struct {
 }
 
 type CreateDownloadTaskParamsData struct {
-	FileContent string // nzb / torrent
-	MagnetLink  string // magnet
-	Url         string // web
-	Password    string // web
+	FileContent *multipart.FileHeader // nzb / torrent
+	MagnetLink  string                // magnet
+	Url         string                // web
+	Password    string                // web
 }
 
 func (d *CreateDownloadTaskParamsData) MarshalJSON() ([]byte, error) {
-	if d.FileContent != "" {
-		return json.Marshal(core.Base64EncodeToByte(d.FileContent))
+	if d.FileContent != nil {
+		f, err := d.FileContent.Open()
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		encoded, err := core.Base64EncodeFile(f)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(encoded)
 	}
 	if d.MagnetLink != "" {
 		return json.Marshal(d.MagnetLink)

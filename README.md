@@ -425,6 +425,8 @@ Add magnet link for download.
 }
 ```
 
+or `multipart/form-data` request with a torrent file in `torrent` field.
+
 **Response**:
 
 ```json

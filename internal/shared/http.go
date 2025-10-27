@@ -62,6 +62,10 @@ type response struct {
 }
 
 func (res response) send(w http.ResponseWriter, r *http.Request, statusCode int) {
+	if statusCode == http.StatusNoContent {
+		w.WriteHeader(statusCode)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	encoder := json.NewEncoder(w)

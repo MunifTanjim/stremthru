@@ -16,6 +16,10 @@ type response struct {
 }
 
 func (res response) send(w http.ResponseWriter, r *http.Request, statusCode int) {
+	if statusCode == http.StatusNoContent {
+		w.WriteHeader(statusCode)
+		return
+	}
 	ctx := server.GetReqCtx(r)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)

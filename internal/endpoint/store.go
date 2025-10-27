@@ -1,6 +1,7 @@
 package endpoint
 
 import (
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -194,10 +195,11 @@ func handleStoreMagnetsList(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, data, err)
 }
 
-func addMagnet(ctx *context.StoreContext, magnet string) (*store.AddMagnetData, error) {
+func addMagnet(ctx *context.StoreContext, magnet string, torrent *multipart.FileHeader) (*store.AddMagnetData, error) {
 	params := &store.AddMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnet = magnet
+	params.Torrent = torrent
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
 	}
@@ -214,15 +216,54 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := &AddMagnetPayload{}
-	err := shared.ReadRequestBodyJSON(r, payload)
-	if err != nil {
-		SendError(w, r, err)
+	var data *store.AddMagnetData
+	var err error
+	contentType := r.Header.Get("Content-Type")
+	switch {
+	case strings.Contains(contentType, "application/json"):
+		payload := &AddMagnetPayload{}
+		if err := shared.ReadRequestBodyJSON(r, payload); err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		ctx := context.GetStoreContext(r)
+		data, err = addMagnet(ctx, payload.Magnet, nil)
+
+	case strings.Contains(contentType, "multipart/form-data"):
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		if err := r.ParseMultipartForm(512 << 10); err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		var fileHeader *multipart.FileHeader
+		if r.MultipartForm.File != nil {
+			fileHeaders := r.MultipartForm.File["torrent"]
+			if len(fileHeaders) == 0 {
+				shared.ErrorBadRequest(r, "missing torrent file").Send(w, r)
+				return
+			}
+			if len(fileHeaders) > 1 {
+				shared.ErrorBadRequest(r, "multiple torrent files provided").Send(w, r)
+				return
+			}
+			fileHeader = fileHeaders[0]
+		}
+
+		if !strings.Contains(fileHeader.Header.Get("Content-Type"), "application/x-bittorrent") {
+			shared.ErrorBadRequest(r, "invalid torrent file").Send(w, r)
+			return
+		}
+
+		ctx := context.GetStoreContext(r)
+		data, err = addMagnet(ctx, "", fileHeader)
+
+	default:
+		shared.ErrorUnsupportedMediaType(r).Send(w, r)
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
-	data, err := addMagnet(ctx, payload.Magnet)
 	if err == nil && data != nil {
 		data.Hash = strings.ToLower(data.Hash)
 	}

@@ -271,17 +271,35 @@ func (l LockedFileLink) Parse() (id, fileId int, err error) {
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
+	ctParams := &CreateTorrentParams{
+		Ctx:      params.Ctx,
+		AllowZip: false,
+		File:     params.Torrent,
+	}
+
+	var magnet *core.MagnetLink
+	var err error
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+		ctParams.Magnet = magnet.RawLink
+	} else {
+		ctParams.File = params.Torrent
+	}
+
+	res, err := c.client.CreateTorrent(ctParams)
 	if err != nil {
 		return nil, err
 	}
-	res, err := c.client.CreateTorrent(&CreateTorrentParams{
-		Ctx:      params.Ctx,
-		Magnet:   magnet.RawLink,
-		AllowZip: false,
-	})
-	if err != nil {
-		return nil, err
+	if magnet == nil {
+		m, err := core.ParseMagnetLink(res.Data.Hash)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
 	}
 	data := &store.AddMagnetData{
 		Id:     strconv.Itoa(res.Data.TorrentId),

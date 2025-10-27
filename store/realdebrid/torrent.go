@@ -2,6 +2,8 @@ package realdebrid
 
 import (
 	"encoding/json"
+	"mime/multipart"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -113,6 +115,42 @@ func (c APIClient) AddMagnet(params *AddMagnetParams) (APIResponse[AddMagnetData
 	params.Form = form
 	response := &AddMagnetData{}
 	res, err := c.Request("POST", "/rest/1.0/torrents/addMagnet", params, response)
+	return newAPIResponse(res, *response), err
+}
+
+type AddTorrentData struct {
+	*ResponseError
+	Id  string `json:"id"`
+	Uri string `json:"uri"`
+}
+
+type AddTorrentParams struct {
+	Ctx
+	File *multipart.FileHeader
+	Host string
+	IP   string
+}
+
+func (c APIClient) AddTorrent(params *AddTorrentParams) (APIResponse[AddTorrentData], error) {
+	f, err := params.File.Open()
+	if err != nil {
+		return newAPIResponse(nil, AddTorrentData{}), err
+	}
+	params.Body = f
+	if contentType := params.File.Header.Get("ContentType"); contentType != "" {
+		params.Headers = &http.Header{}
+		params.Headers.Set("Content-Type", contentType)
+	}
+	query := &url.Values{}
+	if params.Host != "" {
+		query.Set("host", params.Host)
+	}
+	if params.IP != "" {
+		query.Set("ip", params.IP)
+	}
+	params.Query = query
+	response := &AddTorrentData{}
+	res, err := c.Request("PUT", "/rest/1.0/torrents/addTorrent", params, response)
 	return newAPIResponse(res, *response), err
 }
 

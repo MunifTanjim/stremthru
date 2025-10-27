@@ -73,9 +73,25 @@ func (l LockedFileLink) parse() (magnetHash string, fileIdx int, err error) {
 const magnetIdPrefix = "st:ed:"
 
 func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
-	magnet, err := core.ParseMagnetLink(params.Magnet)
-	if err != nil {
-		return nil, err
+	var magnet *core.MagnetLink
+	var isPrivate bool
+	if params.Magnet != "" {
+		m, err := core.ParseMagnetLink(params.Magnet)
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
+	} else {
+		mi, mii, err := params.GetTorrentMeta()
+		if err != nil {
+			return nil, err
+		}
+		isPrivate = *mii.Private
+		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
+		if err != nil {
+			return nil, err
+		}
+		magnet = &m
 	}
 	res, err := s.client.LookupLinkDetails(&LookupLinkDetailsParams{
 		Ctx:  params.Ctx,
@@ -90,6 +106,7 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Magnet:  magnet.Link,
 		Name:    magnet.Name,
 		Status:  store.MagnetStatusUnknown,
+		Private: isPrivate,
 		Files:   []store.MagnetFile{},
 		AddedAt: time.Unix(0, 0),
 	}

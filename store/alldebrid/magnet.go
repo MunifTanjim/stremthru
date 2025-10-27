@@ -2,6 +2,7 @@ package alldebrid
 
 import (
 	"encoding/json"
+	"mime/multipart"
 	"net/url"
 	"path"
 	"strconv"
@@ -135,6 +136,38 @@ func (c APIClient) UploadMagnet(params *UploadMagnetParams) (APIResponse[[]Uploa
 	response := &Response[UploadMagnetData]{}
 	res, err := c.Request("POST", "/v4/magnet/upload", params, response)
 	return newAPIResponse(res, response.Data.Magnets), err
+}
+
+type UploadFileDataFile struct {
+	Error *MagnetError `json:"error,omitempty"`
+	File  string       `json:"file"`
+	Hash  string       `json:"hash,omitempty"`
+	Id    int          `json:"id,omitempty"`
+	Name  string       `json:"name,omitempty"`
+	Ready bool         `json:"ready,omitempty"`
+	Size  int64        `json:"size,omitempty"`
+}
+
+type UploadFileData struct {
+	Files []UploadFileDataFile `json:"files"`
+}
+
+type UploadFileParams struct {
+	Ctx
+	Files []*multipart.FileHeader
+}
+
+func (c APIClient) UploadFile(params *UploadFileParams) (APIResponse[[]UploadFileDataFile], error) {
+	form := multipart.Form{}
+	form.File = make(map[string][]*multipart.FileHeader, len(params.Files))
+	for i, file := range params.Files {
+		form.File["files["+strconv.Itoa(i)+"]"] = []*multipart.FileHeader{file}
+	}
+	params.MultiPartForm = &form
+
+	response := &Response[UploadFileData]{}
+	res, err := c.Request("POST", "/v4/magnet/upload/file", params, response)
+	return newAPIResponse(res, response.Data.Files), err
 }
 
 type MagnetStatusCode int

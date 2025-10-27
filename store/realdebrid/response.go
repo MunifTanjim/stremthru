@@ -10,8 +10,9 @@ import (
 )
 
 type ResponseError struct {
-	Err     string    `json:"error,omitempty"`
-	ErrCode ErrorCode `json:"error_code,omitempty"`
+	Err        string    `json:"error,omitempty"`
+	ErrCode    ErrorCode `json:"error_code,omitempty"`
+	ErrDetails string    `json:"error_details,omitempty"`
 }
 
 func (e *ResponseError) Error() string {

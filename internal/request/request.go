@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -22,12 +23,14 @@ type Context interface {
 }
 
 type Ctx struct {
-	APIKey  string          `json:"-"`
-	Context context.Context `json:"-"`
-	Form    *url.Values     `json:"-"`
-	JSON    any             `json:"-"`
-	Headers *http.Header    `json:"-"`
-	Query   *url.Values     `json:"-"`
+	APIKey        string          `json:"-"`
+	Context       context.Context `json:"-"`
+	Form          *url.Values     `json:"-"`
+	MultiPartForm *multipart.Form `json:"-"`
+	JSON          any             `json:"-"`
+	Headers       *http.Header    `json:"-"`
+	Query         *url.Values     `json:"-"`
+	Body          io.Reader       `json:"-"`
 
 	beforeDoHooks [](func(req *http.Request) error) `json:"-"`
 }
@@ -66,6 +69,41 @@ func (ctx Ctx) PrepareBody(method string, query *url.Values) (body io.Reader, co
 			body = strings.NewReader(ctx.Form.Encode())
 			contentType = "application/x-www-form-urlencoded"
 		}
+	}
+	if ctx.MultiPartForm != nil {
+		bodyBuffer := &bytes.Buffer{}
+		writer := multipart.NewWriter(bodyBuffer)
+		for key, values := range ctx.MultiPartForm.Value {
+			for i := range values {
+				if err := writer.WriteField(key, values[i]); err != nil {
+					return nil, "", err
+				}
+			}
+		}
+		for key, values := range ctx.MultiPartForm.File {
+			for i := range values {
+				part, err := writer.CreateFormFile(key, values[i].Filename)
+				if err != nil {
+					return nil, "", err
+				}
+				file, err := values[i].Open()
+				if err != nil {
+					return nil, "", err
+				}
+				defer file.Close()
+				if _, err = io.Copy(part, file); err != nil {
+					return nil, "", err
+				}
+			}
+		}
+		if err := writer.Close(); err != nil {
+			return nil, "", err
+		}
+		body = bodyBuffer
+		contentType = writer.FormDataContentType()
+	}
+	if ctx.Body != nil {
+		body = ctx.Body
 	}
 	return body, contentType, nil
 }

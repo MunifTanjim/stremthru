@@ -1,6 +1,7 @@
 package premiumize
 
 import (
+	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"time"
@@ -82,17 +83,31 @@ type createTransferData struct {
 type CreateTransferParams struct {
 	Ctx
 	Src      string
+	File     *multipart.FileHeader
 	FolderId string
 }
 
 func (c APIClient) CreateTransfer(params *CreateTransferParams) (APIResponse[CreateTransferData], error) {
-	form := &url.Values{}
-	form.Add("src", params.Src)
-	if params.FolderId != "" {
-		form.Add("folder_id", params.FolderId)
+	if params.Src != "" {
+		form := &url.Values{}
+		form.Add("src", params.Src)
+		if params.FolderId != "" {
+			form.Add("folder_id", params.FolderId)
 
+		}
+		params.Form = form
+	} else {
+		form := multipart.Form{}
+		form.File = map[string][]*multipart.FileHeader{
+			"file": {params.File},
+		}
+		if params.FolderId != "" {
+			form.Value = map[string][]string{
+				"folder_id": {params.FolderId},
+			}
+		}
+		params.MultiPartForm = &form
 	}
-	params.Form = form
 
 	response := &createTransferData{}
 	res, err := c.Request("POST", "/transfer/create", params, response)
