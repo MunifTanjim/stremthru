@@ -500,6 +500,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		TorrentTitle: cInfo.Name,
 		Size:         cInfo.Size,
 		Source:       torrent_info.TorrentInfoSource(ctx.Store.GetName().Code()),
+		Private:      cInfo.Private,
 		Files:        []torrent_info.TorrentInfoInsertDataFile{},
 	}
 

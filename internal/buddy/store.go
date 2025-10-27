@@ -30,7 +30,7 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 
 var peerLog = logger.Scoped("buddy:upstream")
 
-func TrackMagnet(s store.Store, hash string, name string, size int64, files []store.MagnetFile, tInfoCategory torrent_info.TorrentInfoCategory, cacheMiss bool, storeToken string) {
+func TrackMagnet(s store.Store, hash string, name string, size int64, private bool, files []store.MagnetFile, tInfoCategory torrent_info.TorrentInfoCategory, cacheMiss bool, storeToken string) {
 	storeCode := s.GetName().Code()
 	tInfoSource := torrent_info.TorrentInfoSource(storeCode)
 	tsFiles := torrent_stream.Files{}
@@ -55,6 +55,7 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, files []st
 		Size:         size,
 		Source:       tInfoSource,
 		Files:        tsFiles,
+		Private:      private,
 	}}, tInfoCategory, storeCode != store.StoreCodeRealDebrid)
 
 	if config.HasBuddy {
@@ -84,6 +85,7 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, files []st
 					Source:       tInfoSource,
 					Size:         size,
 					Files:        tsFiles,
+					Private:      private,
 				},
 			},
 		}

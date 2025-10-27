@@ -124,7 +124,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			sid = "*"
 		}
 
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		var pattern *regexp.Regexp
 		if re := query.Get("re"); re != "" {

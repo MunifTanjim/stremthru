@@ -436,6 +436,7 @@ Add magnet link for download.
     "name": "string",
     "size": "int",
     "status": "MagnetStatus",
+    "private": "boolean",
     "files": [
       {
         "index": "int",
@@ -476,6 +477,7 @@ List magnets on user's account.
         "name": "string",
         "size": "int",
         "status": "MagnetStatus",
+        "private": "boolean",
         "added_at": "datetime"
       }
     ],
@@ -504,6 +506,7 @@ Get magnet on user's account.
     "name": "string",
     "size": "int",
     "status": "MagnetStatus",
+    "private": "boolean",
     "files": [
       {
         "index": "int",

@@ -167,6 +167,18 @@ type Torrent struct {
 	Files            []TorrentFile        `json:"files"`
 	InactiveCheck    int                  `json:"inactive_check"`
 	Availability     float32              `json:"availability"`
+	Owner            string               `json:"owner"`
+	Private          bool                 `json:"private"`
+	// AllowZipped      bool                 `json:"allow_zipped"`
+	// Cached           bool                 `json:"cached"`
+	// CachedAt         string               `json:"cached_at"`
+	// DownloadPath     string               `json:"download_path"`
+	// LongTermSeeding  bool                 `json:"long_term_seeding"`
+	// SeedTorrent      bool                 `json:"seed_torrent"`
+	// TotalDownloaded  int64                `json:"total_downloaded"`
+	// TotalUploaded    int64                `json:"total_uploaded"`
+	// Tracker          string               `json:"tracker"`
+	// TrackerMessage   any                  `json:"tracker_message"`
 }
 
 func (t Torrent) GetName() string {

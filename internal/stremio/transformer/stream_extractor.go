@@ -127,16 +127,17 @@ type StreamExtractorResultRaw struct {
 type StreamExtractorResult struct {
 	*ptt.Result
 
-	Addon    StreamExtractorResultAddon
-	Category string
-	Episode  int
-	File     StreamExtractorResultFile
-	Hash     string
-	Raw      StreamExtractorResultRaw
-	Season   int
-	Seeders  int
-	Store    StreamExtractorResultStore
-	TTitle   string
+	Addon     StreamExtractorResultAddon
+	Category  string
+	Episode   int
+	File      StreamExtractorResultFile
+	Hash      string
+	IsPrivate bool
+	Raw       StreamExtractorResultRaw
+	Season    int
+	Seeders   int
+	Store     StreamExtractorResultStore
+	TTitle    string
 }
 
 var language_to_code = map[string]string{

@@ -128,10 +128,11 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string) ([]WrappedS
 			return nil, err
 		}
 		data := &stremio_transformer.StreamExtractorResult{
-			Hash:    tInfo.Hash,
-			TTitle:  tInfo.TorrentTitle,
-			Result:  pttr,
-			Seeders: tInfo.Seeders,
+			Hash:      tInfo.Hash,
+			TTitle:    tInfo.TorrentTitle,
+			Result:    pttr,
+			Seeders:   tInfo.Seeders,
+			IsPrivate: tInfo.Private,
 			Addon: stremio_transformer.StreamExtractorResultAddon{
 				Name: "Torz",
 			},
@@ -279,7 +280,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	for _, wStream := range wrappedStreams {
 		hash := wStream.R.Hash
 		if isP2P {
-			if wStream.FileIndex == -1 {
+			if wStream.FileIndex == -1 || wStream.R.IsPrivate {
 				continue
 			}
 
@@ -310,7 +311,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			stream.InfoHash = ""
 			stream.FileIndex = 0
 			cachedStreams = append(cachedStreams, *stream)
-		} else if !ud.CachedOnly {
+		} else if !ud.CachedOnly && !wStream.R.IsPrivate {
 			stores := ud.GetStores()
 			for i := range stores {
 				s := &stores[i]

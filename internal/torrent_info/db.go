@@ -115,8 +115,9 @@ type TorrentInfo struct {
 	ParserVersion int                 `json:"parser_version"`
 	ParserInput   string              `json:"parser_input"`
 
-	Seeders  int `json:"seeders"`
-	Leechers int `json:"leechers"`
+	Seeders  int  `json:"seeders"`
+	Leechers int  `json:"leechers"`
+	Private  bool `json:"private"`
 
 	Audio        CommaSeperatedString `json:"audio"`
 	BitDepth     string               `json:"bit_depth"`
@@ -317,6 +318,7 @@ var Column = struct {
 
 	Seeders  string
 	Leechers string
+	Private  string
 
 	Audio        string
 	BitDepth     string
@@ -373,6 +375,7 @@ var Column = struct {
 
 	Seeders:  "seeders",
 	Leechers: "leechers",
+	Private:  "private",
 
 	Audio:        "audio",
 	BitDepth:     "bit_depth",
@@ -431,6 +434,7 @@ var Columns = []string{
 
 	Column.Seeders,
 	Column.Leechers,
+	Column.Private,
 
 	Column.Audio,
 	Column.BitDepth,
@@ -499,6 +503,7 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 
 		&tInfo.Seeders,
 		&tInfo.Leechers,
+		&tInfo.Private,
 
 		&tInfo.Audio,
 		&tInfo.BitDepth,
@@ -592,6 +597,7 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 
 			&tInfo.Seeders,
 			&tInfo.Leechers,
+			&tInfo.Private,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
@@ -658,11 +664,12 @@ var query_upsert_before_values = fmt.Sprintf(
 		Column.Category,
 		Column.Seeders,
 		Column.Leechers,
+		Column.Private,
 	}, ","),
 )
-var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 7, ",") + ")"
+var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 8, ",") + ")"
 var query_upsert_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s`,
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s`,
 	Column.Hash,
 	fmt.Sprintf(
 		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
@@ -712,6 +719,14 @@ var query_upsert_on_conflict = fmt.Sprintf(
 		Column.Source,
 		Column.Leechers,
 		Column.Leechers,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN ti.%s = %s THEN ti.%s ELSE EXCLUDED.%s END",
+		Column.Private,
+		Column.Private,
+		db.BooleanTrue,
+		Column.Private,
+		Column.Private,
 	),
 	fmt.Sprintf(
 		"%s = %s",
@@ -776,7 +791,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				tCategory = category
 			}
 
-			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory, t.Seeders, t.Leechers)
+			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
 		}
 
 		if noTorrentInfo || count == 0 {
@@ -838,6 +853,7 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 
 			&tInfo.Seeders,
 			&tInfo.Leechers,
+			&tInfo.Private,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
@@ -949,6 +965,7 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 
 				tInfo.Seeders,
 				tInfo.Leechers,
+				tInfo.Private,
 
 				tInfo.Audio,
 				tInfo.BitDepth,
@@ -1164,6 +1181,7 @@ type TorrentItem struct {
 	Category     TorrentInfoCategory `json:"category"`
 	Seeders      int                 `json:"seeders"`
 	Leechers     int                 `json:"leechers"`
+	Private      bool                `json:"private"`
 
 	Files ts.Files `json:"files"`
 }
@@ -1224,7 +1242,9 @@ var query_list_by_stremid_cond_no_missing_size = fmt.Sprintf(
 	Column.Size,
 )
 var query_list_by_stremid_after_cond = fmt.Sprintf(
-	" GROUP BY %s",
+	" AND %s = %s GROUP BY %s",
+	Column.Private,
+	db.BooleanFalse,
 	Column.Hash,
 )
 
@@ -1320,7 +1340,8 @@ SELECT ti.%s,
 FROM %s ti
          LEFT JOIN %s ts
                    ON ti.%s <= 0 AND ts.%s = ti.%s AND ts.%s >= 0
-                       AND ts.%s != '' AND ts.%s NOT LIKE '%%:%%'`,
+                       AND ts.%s != '' AND ts.%s NOT LIKE '%%:%%'
+WHERE %s = %s `,
 	Column.Hash,
 	Column.TorrentTitle,
 	Column.Size, Column.Size, ts.Column.Size,
@@ -1329,9 +1350,10 @@ FROM %s ti
 	ts.TableName,
 	Column.Size, ts.Column.Hash, Column.Hash, ts.Column.Size,
 	ts.Column.SId, ts.Column.SId,
+	Column.Private, db.BooleanFalse,
 )
 var query_dump_torrents_after_cond = fmt.Sprintf(
-	"GROUP BY ti.%s",
+	" GROUP BY ti.%s",
 	Column.Hash,
 )
 
@@ -1350,7 +1372,7 @@ func DumpTorrents(noApproxSize bool, noMissingSize bool, excludeSource []string)
 		query = query_dump_torrents_before_cond + query_dump_torrents_after_cond
 	} else {
 		query = query_dump_torrents_before_cond +
-			" WHERE ti." + Column.Source + " NOT IN (" + util.RepeatJoin("?", len(excludeSource), ",") + ") " +
+			"AND ti." + Column.Source + " NOT IN (" + util.RepeatJoin("?", len(excludeSource), ",") + ")" +
 			query_dump_torrents_after_cond
 		for i, src := range excludeSource {
 			args[i] = src

@@ -49,6 +49,7 @@ func InitCrawlStoreWorker(conf *WorkerConfig) *Worker {
 						TorrentTitle: item.Name,
 						Size:         item.Size,
 						Source:       tSource,
+						Private:      item.Private,
 					}
 					tInfos = append(tInfos, tInfo)
 				}

@@ -144,7 +144,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			return strem, err
 		}
 
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		videoFiles := []store.MagnetFile{}
 		for i := range magnet.Files {

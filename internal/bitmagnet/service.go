@@ -12,6 +12,7 @@ type Torrent struct {
 	Title       string
 	Seeders     int
 	Leechers    int
+	Private     bool
 	Size        int64
 	FilesCount  int
 	FilesStatus string
@@ -25,6 +26,7 @@ SELECT encode(tc.info_hash, 'hex'::text)  AS hash,
        min(t.name)                        AS t_title,
        min(coalesce(tc.seeders, 0))       AS seeders,
        min(coalesce(tc.leechers, 0))      AS leechers,
+       bool_or(t.private)                 AS private,
        min(tc.size)                       AS size,
        min(tc.files_count)                AS files_count,
        min(t.files_status)                AS files_status,
@@ -62,6 +64,7 @@ func GetTorrents(db *sql.DB, limit, offset int, cursor_updated_at time.Time) ([]
 			&t.Title,
 			&t.Seeders,
 			&t.Leechers,
+			&t.Private,
 			&t.Size,
 			&t.FilesCount,
 			&t.FilesStatus,

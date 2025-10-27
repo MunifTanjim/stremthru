@@ -165,6 +165,7 @@ type AddMagnetData struct {
 	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
 	Files   []MagnetFile `json:"files"`
+	Private bool         `json:"private,omitempty"`
 	AddedAt time.Time    `json:"added_at"`
 }
 
@@ -181,6 +182,7 @@ type GetMagnetData struct {
 	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
 	Files   []MagnetFile `json:"files"`
+	Private bool         `json:"private,omitempty"`
 	AddedAt time.Time    `json:"added_at"`
 }
 
@@ -196,6 +198,7 @@ type ListMagnetsDataItem struct {
 	Name    string       `json:"name"`
 	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
+	Private bool         `json:"private,omitempty"`
 	AddedAt time.Time    `json:"added_at"`
 }
 

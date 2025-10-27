@@ -203,7 +203,7 @@ func addMagnet(ctx *context.StoreContext, magnet string) (*store.AddMagnetData, 
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Private, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }
@@ -252,7 +252,7 @@ func getMagnet(ctx *context.StoreContext, magnetId string) (*store.GetMagnetData
 	}
 	data, err := ctx.Store.GetMagnet(params)
 	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Private, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 	}
 	return data, err
 }

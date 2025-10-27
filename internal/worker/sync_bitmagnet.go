@@ -82,6 +82,7 @@ func InitSyncBitmagnetWorker(conf *WorkerConfig) *Worker {
 					Source:       torrent_info.TorrentInfoSourceDHT,
 					Seeders:      t.Seeders,
 					Leechers:     t.Leechers,
+					Private:      t.Private,
 					Files:        make(ts.Files, len(t.Files)),
 				}
 				hasValidFiles := false

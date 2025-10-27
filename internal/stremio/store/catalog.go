@@ -194,6 +194,7 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix
 					TorrentTitle: item.Name,
 					Size:         item.Size,
 					Source:       tInfoSource,
+					Private:      item.Private,
 				})
 			}
 			log.Debug("processed magnets", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
