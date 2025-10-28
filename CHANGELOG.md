@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.91.0](https://github.com/MunifTanjim/stremthru/compare/0.90.8...0.91.0) (2025-10-28)
+
+
+### Features
+
+* add indicator for trusted instance ([c7a4347](https://github.com/MunifTanjim/stremthru/commit/c7a434722826187e8548fa12325b1d87aa393560))
+* **dash:** initial implementation ([4fd609d](https://github.com/MunifTanjim/stremthru/commit/4fd609d58a97c3741b89df040a80529b20647a79))
+* **store:** support add magnet using torrent file ([f00aeb9](https://github.com/MunifTanjim/stremthru/commit/f00aeb96a796e61c149f1bdc760edaf5fab9b5fa))
+* **torrent_info:** add flag for private torrent ([c40958f](https://github.com/MunifTanjim/stremthru/commit/c40958ffd9d773f43a4a951b4f0fdf0678de6cee))
+
+
+### Bug Fixes
+
+* **config:** correctly process auth admin config ([395109a](https://github.com/MunifTanjim/stremthru/commit/395109a04e0ee10f0fc0febd69ef87f2861a0d0f))
+* **meta/id-map:** fix typo ([22495b5](https://github.com/MunifTanjim/stremthru/commit/22495b5d9ad54a70beb8aa01157d4083304869d6))
+
+
+### Performance Improvements
+
+* add database indices for torrents stats ([66781ea](https://github.com/MunifTanjim/stremthru/commit/66781ea088a83b1ee7d78fad53d5f6099b04976c))
+
 ## [0.90.8](https://github.com/MunifTanjim/stremthru/compare/0.90.7...0.90.8) (2025-10-22)
 
 
