@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/kv"
+	"github.com/MunifTanjim/stremthru/internal/job_log"
 )
 
 type IdQueue struct {
@@ -41,54 +41,63 @@ type Job[T any] struct {
 }
 
 type JobTracker[T any] struct {
-	kv kv.KVStore[Job[T]]
+	name      string
+	expiresIn time.Duration
 }
 
 func (t JobTracker[T]) Get(id string) (*Job[T], error) {
 	if id == "" {
 		panic("job id cannot be empty")
 	}
-	j := Job[T]{}
-	err := t.kv.GetValue(id, &j)
-	return &j, err
-}
-
-func (t JobTracker[T]) GetLast() (*kv.ParsedKV[Job[T]], error) {
-	kv, err := t.kv.GetLast()
+	pjl, err := job_log.GetJobLog[T](t.name, id)
 	if err != nil {
 		return nil, err
 	}
-	if kv != nil && kv.Key == "" {
-		return nil, t.kv.Del(kv.Key)
+	if pjl == nil {
+		return &Job[T]{}, nil
 	}
-	return kv, nil
+	return &Job[T]{
+		Status: pjl.Status,
+		Err:    pjl.Error,
+		Data:   pjl.Data,
+	}, nil
+}
+
+func (t JobTracker[T]) GetLast() (*job_log.ParsedJobLog[T], error) {
+	pjl, err := job_log.GetLastJobLog[T](t.name)
+	if err != nil {
+		return nil, err
+	}
+	if pjl == nil {
+		return nil, nil
+	}
+	if pjl.Id == "" {
+		return nil, job_log.DeleteJobLog(t.name, pjl.Id)
+	}
+	return pjl, nil
 }
 
 func (t JobTracker[T]) Set(id string, status string, err string, data *T) error {
 	if id == "" {
 		panic("job id cannot be empty")
 	}
-	terr := t.kv.Set(id, Job[T]{
-		Status: status,
-		Err:    err,
-		Data:   data,
-	})
-	return terr
+	return job_log.SaveJobLog(t.name, id, status, data, err, t.expiresIn)
 }
 
 func (t JobTracker[T]) IsRunning(id string) (bool, error) {
 	j, err := t.Get(id)
-	return j.Status == "started", err
+	if err != nil {
+		return false, err
+	}
+	return j.Status == "started", nil
 }
 
 func NewJobTracker[T any](name string, expiresIn time.Duration) *JobTracker[T] {
 	tracker := JobTracker[T]{
-		kv: kv.NewKVStore[Job[T]](&kv.KVStoreConfig{
-			Type:      "job:" + name,
-			ExpiresIn: expiresIn,
-		}),
+		name:      name,
+		expiresIn: expiresIn,
 	}
-	if _, err := tracker.kv.List(); err != nil {
+	if _, err := job_log.GetAllJobLogs[T](name); err != nil {
 		panic(err)
 	}
 	return &tracker

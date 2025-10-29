@@ -7,7 +7,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/kv"
+	"github.com/MunifTanjim/stremthru/internal/job_log"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
@@ -125,36 +125,36 @@ func NewWorker(conf *WorkerConfig) *Worker {
 			}
 			defer lock.Release()
 
-			var tjob *kv.ParsedKV[Job[struct{}]]
+			var tjob *job_log.ParsedJobLog[struct{}]
 			if conf.RunExclusive {
 				tjob, err = jobTracker.GetLast()
 				if err != nil {
 					return err
 				}
 				if tjob != nil {
-					status := tjob.Value.Status
+					status := tjob.Status
 					switch status {
 					case "started":
 						if !util.HasDurationPassedSince(tjob.UpdatedAt, conf.HeartbeatInterval+heartbeatIntervalTolerance) {
 							if util.HasDurationPassedSince(tjob.CreatedAt, conf.Interval) {
-								log.Warn("skipping, last job is still running, for too long", "jobId", tjob.Key, "status", status)
+								log.Warn("skipping, last job is still running, for too long", "jobId", tjob.Id, "status", status)
 							} else {
-								log.Info("skipping, last job is still running", "jobId", tjob.Key, "status", status)
+								log.Info("skipping, last job is still running", "jobId", tjob.Id, "status", status)
 							}
 							return nil
 						}
 
-						log.Warn("last job heartbeat timed out, restarting", "jobId", tjob.Key, "status", status)
-						if err := jobTracker.Set(tjob.Key, "failed", "heartbeat timed out", nil); err != nil {
-							log.Error("failed to set last job status", "error", err, "jobId", tjob.Key, "status", "failed")
+						log.Warn("last job heartbeat timed out, restarting", "jobId", tjob.Id, "status", status)
+						if err := jobTracker.Set(tjob.Id, "failed", "heartbeat timed out", nil); err != nil {
+							log.Error("failed to set last job status", "error", err, "jobId", tjob.Id, "status", "failed")
 						}
 					case "done":
 						if !util.HasDurationPassedSince(tjob.CreatedAt, conf.Interval) {
-							log.Info("already done", "jobId", tjob.Key, "status", status)
+							log.Info("already done", "jobId", tjob.Id, "status", status)
 							return nil
 						}
 					case "failed":
-						log.Warn("last job failed", "jobId", tjob.Key, "status", status, "error", tjob.Value.Err)
+						log.Warn("last job failed", "jobId", tjob.Id, "status", status, "error", tjob.Error)
 					}
 				}
 			}

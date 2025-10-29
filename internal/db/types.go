@@ -87,8 +87,16 @@ type NullString struct {
 	String string
 }
 
+func (nv NullString) Is(value string) bool {
+	return nv.String == value
+}
+
+func (nv NullString) IsZero() bool {
+	return nv.String == ""
+}
+
 func (nv NullString) Value() (driver.Value, error) {
-	if nv.String == "" {
+	if nv.IsZero() {
 		return nil, nil
 	}
 	return nv.String, nil
