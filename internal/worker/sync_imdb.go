@@ -17,7 +17,7 @@ func isIMDBSyncedInLast24Hours() bool {
 	if err != nil {
 		return false
 	}
-	return job != nil && job.Value.Status == "done" && !util.HasDurationPassedSince(job.CreatedAt, 24*time.Hour)
+	return job != nil && job.Status == "done" && !util.HasDurationPassedSince(job.CreatedAt, 24*time.Hour)
 }
 
 func InitSyncIMDBWorker(conf *WorkerConfig) *Worker {

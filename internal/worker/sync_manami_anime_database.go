@@ -17,7 +17,7 @@ func isManamiAnimeDatabaseSyncedThisWeek() bool {
 	if err != nil {
 		return false
 	}
-	return job != nil && !util.HasDurationPassedSince(job.CreatedAt, 7*24*time.Hour) && job.Value.Status == "done"
+	return job != nil && !util.HasDurationPassedSince(job.CreatedAt, 7*24*time.Hour) && job.Status == "done"
 }
 
 func InitSyncManamiAnimeDatabaseWorker(conf *WorkerConfig) *Worker {
