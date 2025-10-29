@@ -15,7 +15,7 @@ func isAnimeAPISyncedToday() bool {
 	if err != nil {
 		return false
 	}
-	return job != nil && util.IsToday(job.CreatedAt) && job.Value.Status == "done"
+	return job != nil && util.IsToday(job.CreatedAt) && job.Status == "done"
 }
 
 func InitSyncAnimeAPIWorker(conf *WorkerConfig) *Worker {

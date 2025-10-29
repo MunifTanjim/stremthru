@@ -15,7 +15,7 @@ func isAniDBTVDBEpisodeMapSyncedToday() bool {
 	if err != nil {
 		return false
 	}
-	return job != nil && util.IsToday(job.CreatedAt) && job.Value.Status == "done"
+	return job != nil && util.IsToday(job.CreatedAt) && job.Status == "done"
 }
 
 func InitSyncAniDBTVDBEpisodeMapWorker(conf *WorkerConfig) *Worker {
