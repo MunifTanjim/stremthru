@@ -1,17 +1,16 @@
 import { DropdownMenuGroup } from "@radix-ui/react-dropdown-menu";
-import { type FileRoutesByPath, Link } from "@tanstack/react-router";
+import { Link, useMatchRoute } from "@tanstack/react-router";
 import { capitalize } from "es-toolkit";
 import {
   ChevronRight,
   ChevronsUpDown,
-  LayoutDashboard,
   LogOut,
-  type LucideIcon,
   Moon,
   Sparkles,
   Sun,
   User,
 } from "lucide-react";
+import { LayoutDashboard, type LucideIcon } from "lucide-react";
 import * as React from "react";
 
 import { useSignOut } from "@/api/auth";
@@ -47,26 +46,28 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/hooks/auth";
+import { FileRouteTypes } from "@/routeTree.gen";
 
-import { useTheme } from "./theme";
+import { useTheme } from "../theme";
 
-const navMain: Array<{
+type NavItem = {
   icon?: LucideIcon;
-  isActive?: boolean;
-  items?: {
-    path: keyof FileRoutesByPath;
-    title: string;
-  }[];
-  path: string;
+  items?: Pick<NavItem, "path" | "title">[];
+  path: FileRouteTypes["to"];
   title: string;
-}> = [
+};
+
+const navItems: NavItem[] = [
   {
     icon: LayoutDashboard,
-    isActive: true,
     items: [
       {
-        path: "/dash/",
+        path: "/dash",
         title: "Stats",
+      },
+      {
+        path: "/dash/workers",
+        title: "Workers",
       },
     ],
     path: "/dash",
@@ -99,7 +100,7 @@ export function DashSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavGroup items={navMain} />
+        <NavGroup />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
@@ -109,29 +110,18 @@ export function DashSidebar({
   );
 }
 
-function NavGroup({
-  items,
-}: {
-  items: {
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      path: string;
-      title: string;
-    }[];
-    path: string;
-    title: string;
-  }[];
-}) {
+function NavGroup() {
+  const matchRoute = useMatchRoute();
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        {navItems.map((item) => (
           <Collapsible
             asChild
             className="group/collapsible"
-            defaultOpen={item.isActive}
+            defaultOpen={true}
             key={item.title}
           >
             <SidebarMenuItem>
@@ -146,15 +136,18 @@ function NavGroup({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <Link to={subItem.path}>
-                          <span>{subItem.title}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
+                  {item.items?.map((subItem) => {
+                    const isActive = !!matchRoute({ to: subItem.path });
+                    return (
+                      <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton asChild isActive={isActive}>
+                          <Link to={subItem.path}>
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
                 </SidebarMenuSub>
               </CollapsibleContent>
             </SidebarMenuItem>

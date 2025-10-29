@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,6 +22,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/dash/")({
   component: RouteComponent,
+  staticData: {
+    crumb: "Stats",
+  },
 });
 
 const listsChartConfig = {
@@ -45,11 +47,11 @@ const listsChartConfig = {
     label: "MDBList",
   },
   tmdb: {
-    color: "var(--chart-4)",
+    color: "var(--chart-1)",
     label: "TMDB",
   },
   trakt: {
-    color: "var(--chart-1)",
+    color: "var(--chart-4)",
     label: "Trakt",
   },
   tvdb: {
@@ -203,9 +205,9 @@ function RouteComponent() {
         <CardHeader className="items-center pb-0">
           <CardTitle>Lists Statistics</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 pb-0">
+        <CardContent className="flex flex-1 flex-col flex-wrap pb-0 md:flex-row">
           <ChartContainer
-            className="mx-auto aspect-square max-h-[250px]"
+            className="mx-auto aspect-square max-h-[250px] min-w-[250px] flex-1 shrink-0 grow"
             config={listsChartConfig}
           >
             <PieChart>
@@ -232,9 +234,7 @@ function RouteComponent() {
               />
             </PieChart>
           </ChartContainer>
-        </CardContent>
-        <CardFooter className="flex-col gap-2 text-sm">
-          <div className="flex w-full grow flex-wrap">
+          <div className="flex flex-1 flex-wrap">
             {listsCountChartData.map((ld, i) => (
               <div
                 className="flex flex-1 grow flex-col justify-center gap-1 border px-6 py-4 text-left sm:px-8 sm:py-6"
@@ -257,7 +257,7 @@ function RouteComponent() {
               </div>
             ))}
           </div>
-        </CardFooter>
+        </CardContent>
       </Card>
     </>
   );

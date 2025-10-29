@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashRouteImport } from './routes/dash'
 import { Route as DashIndexRouteImport } from './routes/dash/index'
+import { Route as DashWorkersRouteImport } from './routes/dash/workers'
 import { Route as DashLoginRouteImport } from './routes/dash/login'
 
 const DashRoute = DashRouteImport.update({
@@ -23,6 +24,11 @@ const DashIndexRoute = DashIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashRoute,
 } as any)
+const DashWorkersRoute = DashWorkersRouteImport.update({
+  id: '/workers',
+  path: '/workers',
+  getParentRoute: () => DashRoute,
+} as any)
 const DashLoginRoute = DashLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -32,24 +38,27 @@ const DashLoginRoute = DashLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
 }
 export interface FileRoutesByTo {
   '/dash/login': typeof DashLoginRoute
+  '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/dash': typeof DashRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/dash' | '/dash/login' | '/dash/'
+  fullPaths: '/dash' | '/dash/login' | '/dash/workers' | '/dash/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/dash/login' | '/dash'
-  id: '__root__' | '/dash' | '/dash/login' | '/dash/'
+  to: '/dash/login' | '/dash/workers' | '/dash'
+  id: '__root__' | '/dash' | '/dash/login' | '/dash/workers' | '/dash/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -72,6 +81,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashIndexRouteImport
       parentRoute: typeof DashRoute
     }
+    '/dash/workers': {
+      id: '/dash/workers'
+      path: '/workers'
+      fullPath: '/dash/workers'
+      preLoaderRoute: typeof DashWorkersRouteImport
+      parentRoute: typeof DashRoute
+    }
     '/dash/login': {
       id: '/dash/login'
       path: '/login'
@@ -84,11 +100,13 @@ declare module '@tanstack/react-router' {
 
 interface DashRouteChildren {
   DashLoginRoute: typeof DashLoginRoute
+  DashWorkersRoute: typeof DashWorkersRoute
   DashIndexRoute: typeof DashIndexRoute
 }
 
 const DashRouteChildren: DashRouteChildren = {
   DashLoginRoute: DashLoginRoute,
+  DashWorkersRoute: DashWorkersRoute,
   DashIndexRoute: DashIndexRoute,
 }
 
