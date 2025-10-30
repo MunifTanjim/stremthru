@@ -51,9 +51,73 @@ type WorkerConfig struct {
 	ShouldWait        func() (bool, string)
 }
 
+type WorkerDetail struct {
+	Id       string        `json:"id"`
+	Title    string        `json:"title"`
+	Interval time.Duration `json:"interval"`
+}
+
+var WorkerDetailsById = map[string]*WorkerDetail{
+	"parse-torrent": {
+		Title: "Parse Torrent",
+	},
+	"push-torrent": {
+		Title: "Push Torrent",
+	},
+	"crawl-store": {
+		Title: "Crawl Store",
+	},
+	"sync-imdb": {
+		Title: "Sync IMDB",
+	},
+	"sync-dmm-hashlist": {
+		Title: "Sync DMM Hashlist",
+	},
+	"map-imdb-torrent": {
+		Title: "Map IMDB Torrent",
+	},
+	"pull-magnet-cache": {
+		Title: "Pull Magnet Cache",
+	},
+	"map-anime-id": {
+		Title: "Map Anime ID",
+	},
+	"sync-animeapi": {
+		Title: "Sync AnimeAPI",
+	},
+	"sync-anidb-titles": {
+		Title: "Sync AniDB Titles",
+	},
+	"sync-anidb-tvdb-episode-map": {
+		Title: "Sync AniDB-TVDB Episode Map",
+	},
+	"manami-anime-database": {
+		Title: "Sync Manami Anime Database",
+	},
+	"map-anidb-torrent": {
+		Title: "Map AniDB Torrent",
+	},
+	"sync-letterboxd-list": {
+		Title: "Sync Letterboxd List",
+	},
+	"sync-bitmagnet": {
+		Title: "Sync Bitmagnet",
+	},
+	"sync-animetosho": {
+		Title: "Sync AnimeTosho",
+	},
+}
+
 func NewWorker(conf *WorkerConfig) *Worker {
 	if conf.Name == "" {
 		panic("worker name cannot be empty")
+	}
+
+	if details, ok := WorkerDetailsById[conf.Name]; !ok {
+		panic("worker details not present: " + conf.Name)
+	} else {
+		details.Id = conf.Name
+		details.Interval = conf.Interval
 	}
 
 	if conf.Disabled {

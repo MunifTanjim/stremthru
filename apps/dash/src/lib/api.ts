@@ -1,5 +1,5 @@
 type Response<
-  Data extends null | Record<string, unknown>,
+  Data extends null | unknown,
   Params extends null | Record<string, string> = Record<string, string>,
   Meta extends Record<string, unknown> = Record<string, unknown>,
 > = {
@@ -31,7 +31,7 @@ export class APIError extends Error {
 }
 
 export async function api<
-  Data extends null | Record<string, unknown>,
+  Data extends null | unknown,
   Params extends null | Record<string, string> = null,
   Meta extends Record<string, unknown> = Record<string, unknown>,
 >(
