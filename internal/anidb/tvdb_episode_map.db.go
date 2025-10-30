@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -403,13 +404,14 @@ type AniDBTVDBEpisodeMapsResult struct {
 	AniDBTVDBEpisodeMaps
 	groupedByAniDBId []tvdbEpisodeMapByAniDBId
 	idxByAniDBId     map[string]int
+	m                sync.Mutex
 }
 
-func (r AniDBTVDBEpisodeMapsResult) Val() AniDBTVDBEpisodeMaps {
+func (r *AniDBTVDBEpisodeMapsResult) Val() AniDBTVDBEpisodeMaps {
 	return r.AniDBTVDBEpisodeMaps
 }
 
-func (r AniDBTVDBEpisodeMapsResult) Len() int {
+func (r *AniDBTVDBEpisodeMapsResult) Len() int {
 	return len(r.AniDBTVDBEpisodeMaps)
 }
 
@@ -420,6 +422,9 @@ type tvdbEpisodeMapByAniDBId struct {
 }
 
 func (r *AniDBTVDBEpisodeMapsResult) GroupByAniDBId() []tvdbEpisodeMapByAniDBId {
+	r.m.Lock()
+	defer r.m.Unlock()
+
 	if r.groupedByAniDBId != nil {
 		return r.groupedByAniDBId
 	}
