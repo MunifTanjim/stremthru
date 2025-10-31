@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.91.1](https://github.com/MunifTanjim/stremthru/compare/0.91.0...0.91.1) (2025-10-31)
+
+
+### Bug Fixes
+
+* **anidb:** fix concurrent map writes ([e72fa6d](https://github.com/MunifTanjim/stremthru/commit/e72fa6d4c3ea7dd78a446fc26fbe9e266396fee0))
+* **anizip:** fix nil pointer dereference ([e2593c8](https://github.com/MunifTanjim/stremthru/commit/e2593c81952f8b162fb484c977277caa9ddc75f4))
+* **dash:** fix breadcrumb and sidebar ([4c2f18a](https://github.com/MunifTanjim/stremthru/commit/4c2f18a8dc786622ed97f08d5e57d8e451d2c89f))
+* **dash:** support cookie in insecure context ([ce0bc5a](https://github.com/MunifTanjim/stremthru/commit/ce0bc5aed7435e35801f076b10d39304f76d737b))
+* **letterboxd:** fix nil pointer dereference ([9ec18c7](https://github.com/MunifTanjim/stremthru/commit/9ec18c749cc6d1638484ad2f3cc227e2fb93a04a))
+* **store/realdebrid:** fix concurrent map writes ([5e72259](https://github.com/MunifTanjim/stremthru/commit/5e72259151277cd6ee497971f8ca7839963e7445))
+
 ## [0.91.0](https://github.com/MunifTanjim/stremthru/compare/0.90.8...0.91.0) (2025-10-28)
 
 
