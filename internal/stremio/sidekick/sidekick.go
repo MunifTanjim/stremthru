@@ -1115,6 +1115,72 @@ func handleLibraryRestore(w http.ResponseWriter, r *http.Request) {
 	SendHTML(w, 200, buf)
 }
 
+func handleLibraryReset(w http.ResponseWriter, r *http.Request) {
+	if !IsMethod(r, http.MethodPost) {
+		shared.ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	cookie, err := getCookieValue(w, r)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	td := getTemplateData(cookie, w, r)
+
+	understood := r.FormValue("understood") == "on"
+
+	if !understood {
+		td.BackupRestore.HasError.LibraryReset = true
+		td.BackupRestore.Message.LibraryReset = "Missing Acknowledgement"
+	} else {
+		gl_params := &stremio_api.GetAllLibraryItemsParams{}
+		gl_params.APIKey = cookie.AuthKey()
+		gl_res, err := client.GetAllLibraryItems(gl_params)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		params := &stremio_api.UpdateLibraryItemsParams{Changes: []stremio_api.LibraryItem{}}
+		params.APIKey = cookie.AuthKey()
+		for _, item := range gl_res.Data {
+			changed := false
+			if !item.Removed {
+				item.Removed = true
+				changed = true
+			}
+			if item.State.Watched != "" {
+				item.State.Watched = ""
+				changed = true
+			}
+			if changed {
+				params.Changes = append(params.Changes, item)
+			}
+		}
+
+		result, err := client.UpdateLibraryItems(params)
+		if err != nil {
+			td.BackupRestore.HasError.LibraryReset = true
+			td.BackupRestore.Message.LibraryReset = "Failed to reset: " + err.Error()
+		} else if !result.Data.Success {
+			td.BackupRestore.HasError.LibraryReset = true
+			td.BackupRestore.Message.LibraryReset = "Failed to reset!"
+		} else {
+			td.BackupRestore.HasError.LibraryReset = false
+			td.BackupRestore.Message.LibraryReset = "Successfully Reset"
+		}
+	}
+
+	buf, err := executeTemplate(td, "sidekick_library_section.html")
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, buf)
+}
+
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := server.GetReqCtx(r)
@@ -1149,6 +1215,7 @@ func AddStremioSidekickEndpoints(mux *http.ServeMux) {
 
 	router.HandleFunc("/library/backup", handleLibraryBackup)
 	router.HandleFunc("/library/restore", handleLibraryRestore)
+	router.HandleFunc("/library/reset", handleLibraryReset)
 
 	mux.Handle("/stremio/sidekick/", http.StripPrefix("/stremio/sidekick", commonMiddleware(router)))
 }
