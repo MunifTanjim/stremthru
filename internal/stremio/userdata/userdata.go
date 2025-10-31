@@ -6,4 +6,5 @@ type UserData[T any] interface {
 	GetEncoded() string
 	SetEncoded(encoded string)
 	Ptr() *T
+	StripSecrets() T
 }

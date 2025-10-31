@@ -41,6 +41,10 @@
         position: relative;
       }
 
+      .hidden {
+        display: none;
+      }
+
       .w-full {
         width: 100%;
       }
@@ -142,11 +146,13 @@
           const trigger = evt.target;
           const modalSelector = trigger.dataset.modal;
           const modalOnOpenFnName = trigger.dataset.modalOnOpen;
+          const modalOnCloseFnName = trigger.dataset.modalOnClose;
 
           function onClose() {
             const modal = document.querySelector(modalSelector);
             modal.removeAttribute("open");
             document.querySelector("html").classList.remove("modal-is-open");
+            window[modalOnCloseFnName]?.({ modal, trigger });
             modal.replaceWith(modal.cloneNode(true));
           }
 

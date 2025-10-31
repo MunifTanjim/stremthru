@@ -13,7 +13,9 @@ import (
 
 type Manager[T any] interface {
 	Delete(ud UserData[T]) error
+	Export(ud UserData[T]) (string, error)
 	GetId(ud UserData[T]) string
+	Import(encoded string, ud UserData[T]) error
 	IsSaved(ud UserData[T]) bool
 	Load(id string, ud UserData[T]) error
 	Resolve(ud UserData[T]) error
@@ -136,6 +138,22 @@ func (m iManager[T]) Sync(ud UserData[T]) error {
 	}
 	m.cache.Remove(id)
 	return nil
+}
+
+func (m iManager[T]) Export(ud UserData[T]) (string, error) {
+	blob, err := json.Marshal(ud.StripSecrets())
+	if err != nil {
+		return "", err
+	}
+	return core.Base64Encode(string(blob)), nil
+}
+
+func (m iManager[T]) Import(encodedBlob string, ud UserData[T]) error {
+	blob, err := core.Base64Decode(encodedBlob)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(blob), ud)
 }
 
 func NewManager[T any](config *ManagerConfig) Manager[T] {

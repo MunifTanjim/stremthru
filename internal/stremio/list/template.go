@@ -124,8 +124,9 @@ type TemplateData struct {
 
 	Shuffle configure.Config
 
-	ManifestURL string
-	Script      template.JS
+	ManifestURL     string
+	Script          template.JS
+	ShareableConfig string
 
 	CanAuthorize bool
 	IsAuthed     bool

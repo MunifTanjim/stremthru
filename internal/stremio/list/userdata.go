@@ -53,6 +53,14 @@ type UserData struct {
 	letterboxdById map[string]letterboxd.LetterboxdList `json:"-"`
 }
 
+func (ud UserData) StripSecrets() UserData {
+	ud.MDBListAPIkey = ""
+	ud.TMDBTokenId = ""
+	ud.TraktTokenId = ""
+	ud.RPDBAPIKey = ""
+	return ud
+}
+
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
 	AddonName: "list",
 })
@@ -61,7 +69,7 @@ func (ud UserData) HasRequiredValues() bool {
 	return len(ud.Lists) != 0
 }
 
-func (ud *UserData) GetEncoded() string {
+func (ud UserData) GetEncoded() string {
 	return ud.encoded
 }
 

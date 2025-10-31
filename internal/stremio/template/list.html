@@ -16,8 +16,85 @@
 
 {{if .CanAuthorize}}
 <div class="flex flex-row flex-wrap align-center justify-between mb-8">
-  <div>
+  <div class="flex flex-row gap-4">
     {{template "saved_userdata_field.html" .}}
+
+    <div class="{{if .IsRedacted}}hidden{{end}}">
+      <div role="group" class="mb-0">
+        <button
+          class="secondary"
+          style="
+            font-size: 0.75rem;
+            padding: 0.25em 0.75em;
+          "
+          type="button"
+          hx-ext="htmx-modal"
+          data-modal="#export_modal"
+          data-modal-on-open="onOpenExportModal"
+          data-modal-on-close="onCloseExportModal"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"export"}'
+          hx-trigger="confirmed"
+          data-tooltip="Export"
+        >
+          ⬇️
+        </button>
+        <button
+          class="secondary"
+          style="
+            font-size: 0.75rem;
+            padding: 0.25em 0.75em;
+          "
+          type="button"
+          hx-ext="htmx-modal"
+          data-modal="#import_modal"
+          data-modal-on-open="onOpenImportModal"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"import"}'
+          hx-trigger="confirmed"
+          data-tooltip="Import"
+        >
+          ⬆️
+        </button>
+      </div>
+      <dialog id="export_modal">
+        <article>
+          <header>
+            <button aria-label="Close" rel="prev" data-modal-close></button>
+            <h3>
+              <span>Export Config</span>
+            </h3>
+          </header>
+          <form>
+            <label for="export_config">Config *</label>
+            <fieldset role="group">
+              <input id="export_config" name="export_config" readonly value="{{.ShareableConfig}}" />
+              <button type="button" onclick="copyExportConfig()">Copy</button>
+            </fieldset>
+            <button class="hidden" type="submit">Export</button>
+          </form>
+        </article>
+      </dialog>
+      <dialog id="import_modal">
+        <article>
+          <header>
+            <button aria-label="Close" rel="prev" data-modal-close></button>
+            <h3>
+              <span>Import Config</span>
+            </h3>
+          </header>
+          <form>
+            <label for="import_config">Config *</label>
+            <input id="import_config" name="import_config" required />
+            <button type="submit">Import</button>
+          </form>
+        </article>
+      </dialog>
+    </div>
   </div>
   <div>
     <button
@@ -349,6 +426,50 @@
       onClose();
       htmx.trigger(trigger, "confirmed");
     }, { once: true });
+  }
+
+  {{if ne .ShareableConfig ""}}
+  htmx.on("htmx:load", function(evt) {
+    setTimeout(() => {
+      document.querySelector("[data-modal-on-open='onOpenExportModal']").click();
+    }, 200);
+  }, { once: true });
+  {{end}}
+
+  function onOpenExportModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+    if (!modal.querySelector("form input#export_config").value) {
+      modal.querySelector("form button[type='submit']")?.click();
+    }
+  }
+
+  function onCloseExportModal({ modal }) {
+    modal.querySelector("form input#export_config").value = '';
+  }
+
+  function onOpenImportModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-headers", JSON.stringify({
+        ...JSON.parse(trigger.getAttribute("hx-headers")),
+        "x-addon-configure-action-data": modal.querySelector("form input#import_config").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function copyExportConfig() {
+    const config = document.querySelector("input#export_config")?.value;
+    if (!config) {
+      return;
+    }
+    navigator.clipboard.writeText(config);
+    return config;
   }
 
   function onOpenSupportedService(e, { modal, onClose, trigger }) {

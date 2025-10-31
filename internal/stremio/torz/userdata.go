@@ -25,6 +25,11 @@ type UserData struct {
 	encoded string `json:"-"` // correctly configured
 }
 
+func (ud UserData) StripSecrets() UserData {
+	ud.UserDataStores = ud.UserDataStores.StripSecrets()
+	return ud
+}
+
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
 	AddonName: "torz",
 })

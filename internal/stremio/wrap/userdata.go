@@ -91,6 +91,13 @@ type UserData struct {
 	resolver  upstreamsResolver  `json:"-"`
 }
 
+func (ud UserData) StripSecrets() UserData {
+	ud.UserDataStores = ud.UserDataStores.StripSecrets()
+	ud.StoreToken = ""
+	ud.RPDBAPIKey = ""
+	return ud
+}
+
 var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
 	AddonName: "wrap",
 })
