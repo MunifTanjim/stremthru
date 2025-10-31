@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -52,6 +53,7 @@ type StoreClient struct {
 	client                  *APIClient
 	getMagnetCache          cache.Cache[store.GetMagnetData] // for downloaded magnets
 	idsByHashCache          cache.Cache[map[string]bool]
+	idsByHashCacheMutex     sync.Mutex
 	hashByIdCache           cache.Cache[string]
 	subscriptionStatusCache cache.Cache[store.UserSubscriptionStatus]
 }
@@ -96,6 +98,9 @@ func (c *StoreClient) getCacheKey(params request.Context, key string) string {
 }
 
 func (c *StoreClient) addIdHashMapCache(params request.Context, id, hash string) {
+	c.idsByHashCacheMutex.Lock()
+	defer c.idsByHashCacheMutex.Unlock()
+
 	c.hashByIdCache.Add(c.getCacheKey(params, id), hash)
 	ids := map[string]bool{}
 	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
@@ -107,6 +112,9 @@ func (c *StoreClient) addIdHashMapCache(params request.Context, id, hash string)
 }
 
 func (c *StoreClient) removeIdHashMapCache(params request.Context, id, hash string) {
+	c.idsByHashCacheMutex.Lock()
+	defer c.idsByHashCacheMutex.Unlock()
+
 	c.hashByIdCache.Remove(c.getCacheKey(params, id))
 	ids := map[string]bool{}
 	if c.idsByHashCache.Get(c.getCacheKey(params, hash), &ids) {
