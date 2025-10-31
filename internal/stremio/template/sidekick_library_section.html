@@ -31,12 +31,36 @@
   </form>
 </article>
 
+<article id="library_backup_restore_reset">
+  <header>
+    <h3>Reset Library</h3>
+    <small>
+      ⚠️ This will remove all library items, including watched progress, on your Stremio account! 
+    </small>
+  </header>
+
+  <form hx-post="library/reset" hx-target="#library_section">
+    <fieldset {{if .BackupRestore.HasError.LibraryReset}}aria-invalid="true"{{end}}>
+      <label>
+        <input type="checkbox" name="understood" {{if .BackupRestore.HasError.LibraryReset}}aria-invalid="true"{{end}}>
+        I Understand
+      </label>
+    </fieldset>
+    <small>{{.BackupRestore.Message.LibraryReset}}</small>
+
+    <button type="submit" class="grow">Reset</button>
+  </form>
+</article>
+
 </div>
 
 <script>
 function libraryBackupRestoreCleanupFormFieldMessage(field) {
   field.removeAttribute("aria-invalid");
-  field.parentElement.querySelector(`[name="${field.name}"] + small span`).innerHTML = "";
+  const fieldMessage = field.parentElement.querySelector(`[name="${field.name}"] + small span`)
+  if (fieldMessage) {
+    fieldMessage.innerHTML = "";
+  }
 }
 function onLibraryBackupRestoreBlobChange(e) {
   console.log('changed', e.target.value)

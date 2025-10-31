@@ -40,10 +40,12 @@ type TemplateData struct {
 		HasError           struct {
 			LibraryRestoreBlob bool
 			AddonsReset        bool
+			LibraryReset       bool
 		}
 		Message struct {
 			LibraryRestoreBlob string
 			AddonsReset        string
+			LibraryReset       string
 		}
 		Error struct {
 			AddonsRestoreBlob string
