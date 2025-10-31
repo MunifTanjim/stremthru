@@ -154,7 +154,7 @@ func (c APIClient) GetMappings(params *GetMappingsParams) (*GetMappingsData, err
 	time.Sleep(500 * time.Millisecond)
 	res, err := c.Request("GET", "/mappings", params, &response)
 	if err != nil || res.StatusCode != 200 {
-		if res.StatusCode == 404 {
+		if res != nil && res.StatusCode == 404 {
 			idInt, _ := strconv.Atoi(params.Id)
 			switch params.Service {
 			case "anidb":
