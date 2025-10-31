@@ -25,7 +25,7 @@ var sessionStorage = cache.NewCache[Session](&cache.CacheConfig{
 const SESSION_COOKIE_NAME = "stremthru.dash.session"
 const SESSION_COOKIE_PATH = "/dash/"
 
-func (s Session) Save(w http.ResponseWriter) error {
+func (s Session) Save(w http.ResponseWriter, r *http.Request) error {
 	if s.Id == "" {
 		s.Id = strings.ReplaceAll(uuid.NewString(), "-", "")
 	}
@@ -37,7 +37,7 @@ func (s Session) Save(w http.ResponseWriter) error {
 		Value:    s.Id,
 		HttpOnly: true,
 		Path:     SESSION_COOKIE_PATH,
-		Secure:   true,
+		Secure:   strings.HasPrefix(r.Referer(), "https:"),
 		SameSite: http.SameSiteStrictMode,
 	}
 	http.SetCookie(w, cookie)
@@ -110,7 +110,7 @@ func HandleSignIn(w http.ResponseWriter, r *http.Request) {
 		ctx.Session = &Session{}
 	}
 	ctx.Session.User = request.User
-	if err := ctx.Session.Save(w); err != nil {
+	if err := ctx.Session.Save(w, r); err != nil {
 		SendError(w, r, err)
 		return
 	}
