@@ -141,7 +141,7 @@ func (c *APIClient) Request(method, path string, params request.Context, v reque
 	res, err := params.DoRequest(c.httpClient, req)
 	err = request.ProcessResponseBody(res, err, v)
 	if err != nil {
-		if res.StatusCode == http.StatusTooManyRequests {
+		if res != nil && res.StatusCode == http.StatusTooManyRequests {
 			retryAfter := res.Header.Get("Retry-After")
 			c.retryAfter = time.Duration(util.SafeParseInt(retryAfter, 30)) * time.Second
 		}
