@@ -3,6 +3,7 @@ package stremio_userdata
 import (
 	"errors"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 
@@ -35,6 +36,15 @@ type UserDataStores struct {
 	stores           []resolvedStore `json:"-"`
 	isStremThruStore bool            `json:"-"`
 	isP2P            bool            `json:"-"`
+}
+
+func (ud UserDataStores) StripSecrets() UserDataStores {
+	ud.Stores = slices.Clone(ud.Stores)
+	for i := range ud.Stores {
+		s := &ud.Stores[i]
+		s.Token = ""
+	}
+	return ud
 }
 
 func (ud *UserDataStores) IsStremThruStore() bool {

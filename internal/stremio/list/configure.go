@@ -168,6 +168,22 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
+		case "export":
+			if ud.HasRequiredValues() {
+				conf, err := udManager.Export(ud)
+				if err != nil {
+					SendError(w, r, err)
+					return
+				}
+				td.ShareableConfig = conf
+			}
+		case "import":
+			ud := &UserData{}
+			if err = udManager.Import(r.Header.Get("x-addon-configure-action-data"), ud); err != nil {
+				SendError(w, r, err)
+				return
+			}
+			td = getTemplateData(ud, userDataError{}, td.IsAuthed, r)
 		}
 
 		page, err := getPage(td)
