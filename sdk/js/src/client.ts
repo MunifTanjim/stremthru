@@ -1,6 +1,4 @@
-import fetch, { Headers, type RequestInit } from "node-fetch";
-
-import { StremThruError } from "./error";
+import { ErrorCode, ErrorType, StremThruError } from "./error";
 import { StoreMagnetStatus, StoreUserSubscriptionStatus } from "./types";
 import { VERSION } from "./version";
 
@@ -38,10 +36,20 @@ class StremThruStore {
   async addMagnet({
     clientIp = this.#clientIp,
     magnet,
+    torrent,
   }: {
     clientIp?: string;
-    magnet: string;
-  }) {
+  } & (
+    | { magnet: string; torrent?: never }
+    | { magnet?: never; torrent: File }
+  )) {
+    let body: FormData | Record<string, unknown>;
+    if (torrent) {
+      body = new FormData();
+      body.set("torrent", torrent);
+    } else {
+      body = { magnet };
+    }
     return await this.#client.request<{
       added_at: string;
       files: Array<{
@@ -59,7 +67,7 @@ class StremThruStore {
       private?: boolean;
       status: StoreMagnetStatus;
     }>("/v0/store/magnets", {
-      body: { magnet },
+      body,
       method: "POST",
       params: clientIp ? { client_ip: clientIp } : {},
     });
@@ -215,7 +223,7 @@ export class StremThru {
       params,
       ...options
     }: Omit<RequestInit, "body"> & {
-      body?: Record<string, unknown> | URLSearchParams;
+      body?: FormData | Record<string, unknown> | URLSearchParams;
       params?: Record<string, string | string[]> | URLSearchParams;
     } = {},
   ): Promise<{
@@ -237,11 +245,16 @@ export class StremThru {
     const req: RequestInit = {
       ...options,
       method,
-      timeout: this.#timeout,
     };
+
+    if (this.#timeout) {
+      req.signal = AbortSignal.timeout(this.#timeout);
+    }
 
     if (body instanceof URLSearchParams) {
       headers.set("Content-Type", "application/x-www-form-urlencoded");
+      req.body = body;
+    } else if (body instanceof FormData) {
       req.body = body;
     } else if (typeof body === "object") {
       headers.set("Content-Type", "application/json");
@@ -255,7 +268,17 @@ export class StremThru {
     const contentType = res.headers.get("content-type") ?? "";
 
     const resBody = contentType.includes("application/json")
-      ? await res.json()
+      ? ((await res.json()) as
+          | { data: T; error?: never }
+          | {
+              data?: never;
+              error?: {
+                [key: string]: unknown;
+                code: ErrorCode;
+                message: string;
+                type: ErrorType;
+              };
+            })
       : await res.text();
 
     const meta: ResponseMeta = {
@@ -270,14 +293,14 @@ export class StremThru {
         body: resBody,
       };
       if (typeof resBody === "object") {
-        const error = resBody.error;
+        const error = resBody.error!;
         opts.type = error.type;
         opts.code = error.code;
       }
       throw new StremThruError(
         typeof resBody === "string"
           ? resBody
-          : "message" in resBody.error
+          : "message" in resBody.error!
             ? `(${resBody.error.type}) ${resBody.error.message}`
             : JSON.stringify(resBody.error),
         opts,
@@ -285,6 +308,7 @@ export class StremThru {
     }
 
     return {
+      // @ts-expect-error ...
       data: resBody.data,
       meta,
     };

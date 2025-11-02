@@ -35,10 +35,6 @@
     "build": "pkgroll --clean-dist --export-condition=node",
     "test": "vitest"
   },
-  "dependencies": {
-    "@types/node-fetch": "^2.6.11",
-    "node-fetch": "release-2.x"
-  },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
     "@tsconfig/node20": "^20.1.4",
