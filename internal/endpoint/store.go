@@ -266,6 +266,9 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 
 	if err == nil && data != nil {
 		data.Hash = strings.ToLower(data.Hash)
+		if data.Files == nil {
+			data.Files = []store.MagnetFile{}
+		}
 	}
 	SendResponse(w, r, 201, data, err)
 }

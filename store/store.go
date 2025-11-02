@@ -167,7 +167,7 @@ type AddMagnetData struct {
 	Name    string       `json:"name"`
 	Size    int64        `json:"size"`
 	Status  MagnetStatus `json:"status"`
-	Files   []MagnetFile `json:"files,omitempty"`
+	Files   []MagnetFile `json:"files"`
 	Private bool         `json:"private,omitempty"`
 	AddedAt time.Time    `json:"added_at"`
 }
