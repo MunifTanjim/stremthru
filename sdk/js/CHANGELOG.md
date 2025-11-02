@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.9.1...sdk-js-0.10.0) (2025-11-02)
+
+
+### Features
+
+* **sdk/js:** add private field for magnet ([91b310e](https://github.com/MunifTanjim/stremthru/commit/91b310e74a346cb7e05436d7bf6668d20fecaf0b))
+* **sdk/js:** support torrent file for add magnet ([c9b8224](https://github.com/MunifTanjim/stremthru/commit/c9b82248223278fa6958da2a18ae19e00c91c495))
+
 ## [0.9.1](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.9.0...sdk-js-0.9.1) (2025-09-11)
 
 
