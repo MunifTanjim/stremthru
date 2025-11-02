@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.2...sdk-py-0.6.0) (2025-11-02)
+
+
+### Features
+
+* **sdk/py:** add private field for magnet ([0acac80](https://github.com/MunifTanjim/stremthru/commit/0acac80581d68a62e60b5a8a63c74ab986c34f69))
+* **sdk/py:** support torrent file for add magnet ([cb1810e](https://github.com/MunifTanjim/stremthru/commit/cb1810e9c3c8191ec100a2142f827d38fd5f0f57))
+
 ## [0.5.2](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.1...sdk-py-0.5.2) (2025-09-11)
 
 
