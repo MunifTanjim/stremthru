@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.91.2](https://github.com/MunifTanjim/stremthru/compare/0.91.1...0.91.2) (2025-11-02)
+
+
+### Bug Fixes
+
+* **store:** ensure files array is always present ([6233335](https://github.com/MunifTanjim/stremthru/commit/6233335b2d17d82f7a5ff35828bef5df64ca7a64))
+
 ## [0.91.1](https://github.com/MunifTanjim/stremthru/compare/0.91.0...0.91.1) (2025-10-31)
 
 
