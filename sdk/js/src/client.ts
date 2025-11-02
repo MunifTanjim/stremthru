@@ -56,6 +56,7 @@ class StremThruStore {
       id: string;
       magnet: string;
       name: string;
+      private?: boolean;
       status: StoreMagnetStatus;
     }>("/v0/store/magnets", {
       body: { magnet },
@@ -114,6 +115,7 @@ class StremThruStore {
       hash: string;
       id: string;
       name: string;
+      private?: boolean;
       status: StoreMagnetStatus;
     }>(`/v0/store/magnets/${magnetId}`, { method: "GET" });
   }
@@ -148,6 +150,7 @@ class StremThruStore {
         hash: string;
         id: string;
         name: string;
+        private?: boolean;
         status: StoreMagnetStatus;
       }>;
       total_items: number;
