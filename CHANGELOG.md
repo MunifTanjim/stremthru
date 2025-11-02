@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.91.3](https://github.com/MunifTanjim/stremthru/compare/0.91.2...0.91.3) (2025-11-02)
+
+
+### Bug Fixes
+
+* **store:** update validation for add magnet ([736e7de](https://github.com/MunifTanjim/stremthru/commit/736e7de997130c5519ee2b55960d244da86a5b23))
+
 ## [0.91.2](https://github.com/MunifTanjim/stremthru/compare/0.91.1...0.91.2) (2025-11-02)
 
 
