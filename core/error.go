@@ -143,6 +143,9 @@ func (e *Error) Send(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Error) InjectReq(r *http.Request) {
+	if r == nil {
+		return
+	}
 	e.RequestId = r.Header.Get("Request-ID")
 	e.Method = r.Method
 	e.Path = r.URL.Path

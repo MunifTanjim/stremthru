@@ -199,9 +199,15 @@ func addMagnet(ctx *context.StoreContext, magnet string, torrent *multipart.File
 	params := &store.AddMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnet = magnet
-	params.Torrent = torrent
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
+	}
+	if torrent != nil {
+		params.Torrent = torrent
+		if _, _, err := params.GetTorrentMeta(); err != nil {
+			e := shared.ErrorBadRequest(nil, "invalid torrent file").WithCause(err)
+			return nil, e
+		}
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	if err == nil {
@@ -227,6 +233,11 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if payload.Magnet == "" {
+			shared.ErrorBadRequest(r, "missing magnet link").Send(w, r)
+			return
+		}
+
 		ctx := context.GetStoreContext(r)
 		data, err = addMagnet(ctx, payload.Magnet, nil)
 
@@ -249,11 +260,6 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			fileHeader = fileHeaders[0]
-		}
-
-		if !strings.Contains(fileHeader.Header.Get("Content-Type"), "application/x-bittorrent") {
-			shared.ErrorBadRequest(r, "invalid torrent file").Send(w, r)
-			return
 		}
 
 		ctx := context.GetStoreContext(r)
