@@ -53,7 +53,7 @@ jobs:
       - name: SDK/JS - Install Dependencies
         if: ${{ steps.release.outputs['sdk/js--release_created'] }}
         working-directory: sdk/js
-        run: pnpm install
+        run: pnpm --ignore-workspace install
       - name: SDK/JS - Build
         if: ${{ steps.release.outputs['sdk/js--release_created'] }}
         working-directory: sdk/js
