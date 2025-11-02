@@ -168,6 +168,7 @@ class AddMagnetData(TypedDict):
     id: str
     magnet: str
     name: str
+    private: Optional[bool]
     status: StoreMagnetStatus
 
 
@@ -209,6 +210,7 @@ class GetMagnetData(TypedDict):
     hash: str
     id: str
     name: str
+    private: Optional[bool]
     status: StoreMagnetStatus
 
 
@@ -226,6 +228,7 @@ class ListMagnetsDataItem(TypedDict):
     hash: str
     id: str
     name: str
+    private: Optional[bool]
     status: StoreMagnetStatus
 
 
