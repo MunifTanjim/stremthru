@@ -183,6 +183,7 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 
 			&tInfo.Seeders,
 			&tInfo.Leechers,
+			&tInfo.Private,
 
 			&tInfo.Audio,
 			&tInfo.BitDepth,
