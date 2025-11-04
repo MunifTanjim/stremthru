@@ -721,8 +721,10 @@ var query_upsert_on_conflict = fmt.Sprintf(
 		Column.Leechers,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s = %s THEN ti.%s ELSE EXCLUDED.%s END",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (ti.%s != 'dht' AND ti.%s = %s) THEN ti.%s ELSE EXCLUDED.%s END",
 		Column.Private,
+		Column.Source,
+		Column.Source,
 		Column.Private,
 		db.BooleanTrue,
 		Column.Private,
