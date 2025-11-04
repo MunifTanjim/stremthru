@@ -153,7 +153,8 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 	}
 	query.WriteString(
 		fmt.Sprintf(
-			" AND ti.%s != -1",
+			" AND ti.%s = %s AND ti.%s != -1",
+			torrent_info.Column.Private, db.BooleanFalse,
 			torrent_info.Column.Size,
 		),
 	)
