@@ -318,7 +318,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 	data.Name = t.Data.GetName()
 	data.Size = t.Data.Size
-	data.Private = t.Data.Active
+	data.Private = t.Data.Private
 	data.AddedAt = t.Data.GetAddedAt()
 	if t.Data.DownloadFinished && t.Data.DownloadPresent {
 		data.Status = store.MagnetStatusDownloaded
