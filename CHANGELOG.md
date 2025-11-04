@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.91.6](https://github.com/MunifTanjim/stremthru/compare/0.91.5...0.91.6) (2025-11-04)
+
+
+### Bug Fixes
+
+* **torrent_info:** priotize private flag from dht ([a6bd9e1](https://github.com/MunifTanjim/stremthru/commit/a6bd9e1e80998489c964d1164eeecabee186285c))
+
 ## [0.91.5](https://github.com/MunifTanjim/stremthru/compare/0.91.4...0.91.5) (2025-11-04)
 
 
