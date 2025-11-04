@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.91.4](https://github.com/MunifTanjim/stremthru/compare/0.91.3...0.91.4) (2025-11-04)
+
+
+### Bug Fixes
+
+* **torznab:** fix sql query for search ([afc0867](https://github.com/MunifTanjim/stremthru/commit/afc0867ad1c908a3c91656c1bfb1d3013c55a90e))
+
 ## [0.91.3](https://github.com/MunifTanjim/stremthru/compare/0.91.2...0.91.3) (2025-11-02)
 
 
