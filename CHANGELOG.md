@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.91.5](https://github.com/MunifTanjim/stremthru/compare/0.91.4...0.91.5) (2025-11-04)
+
+
+### Bug Fixes
+
+* **store/torbox:** fix typo in add magnet ([35cf875](https://github.com/MunifTanjim/stremthru/commit/35cf875006ed157fc84acdd05fa924967ea71996))
+* **torznab:** exclude private torrents ([c5a249d](https://github.com/MunifTanjim/stremthru/commit/c5a249d445d25b4cebed338d51b4ead8f8505077))
+
 ## [0.91.4](https://github.com/MunifTanjim/stremthru/compare/0.91.3...0.91.4) (2025-11-04)
 
 
