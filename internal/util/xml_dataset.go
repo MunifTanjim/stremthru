@@ -5,8 +5,9 @@ import (
 	"errors"
 	"io"
 	"iter"
-	"log/slog"
 	"os"
+
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 )
 
 type XMLDataset[T any, I any] struct {
@@ -52,7 +53,7 @@ type XMLDatasetReader[T any, I any] struct {
 	is_done       bool
 	item_tag_name string
 	list_tag_name string
-	log           *slog.Logger
+	log           *log.Logger
 	prepare       func(item *T) *I
 }
 
@@ -61,7 +62,7 @@ type XMLDatasetReaderConfig[T any, I any] struct {
 	GetItemKey  func(item *I) string
 	ItemTagName string
 	ListTagName string
-	Log         *slog.Logger
+	Log         *log.Logger
 	Prepare     func(item *T) *I
 }
 

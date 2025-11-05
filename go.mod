@@ -58,7 +58,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/jamespfennell/xz v0.1.2
 	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
-	github.com/lmittmann/tint v1.0.7
+	github.com/lmittmann/tint v1.1.2
 	github.com/madflojo/tasks v1.2.1
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-sqlite3 v1.14.24
