@@ -2,9 +2,9 @@ package context
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -19,7 +19,7 @@ type StoreContext struct {
 	ProxyAuthPassword string
 	ClientIP          string // optional
 
-	Log *slog.Logger
+	Log *logger.Logger
 }
 
 func SetStoreContext(r *http.Request) *http.Request {

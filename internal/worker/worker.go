@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"log/slog"
 	"sync"
 	"time"
 
@@ -33,7 +32,7 @@ type Worker struct {
 	shouldWait func() (bool, string)
 	onStart    func()
 	onEnd      func()
-	Log        *slog.Logger
+	Log        *logger.Logger
 	jobTracker *JobTracker[struct{}]
 }
 
@@ -42,7 +41,7 @@ type WorkerConfig struct {
 	Executor          func(w *Worker) error
 	Interval          time.Duration
 	HeartbeatInterval time.Duration
-	Log               *slog.Logger
+	Log               *logger.Logger
 	Name              string
 	OnEnd             func()
 	OnStart           func()

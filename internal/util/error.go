@@ -2,8 +2,9 @@ package util
 
 import (
 	"errors"
-	"log/slog"
 	"runtime"
+
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 )
 
 func HandlePanic(e any, captureStack bool) (err error, stack string) {
@@ -28,7 +29,7 @@ func HandlePanic(e any, captureStack bool) (err error, stack string) {
 	return err, stack
 }
 
-func LogError(log *slog.Logger, err error, message string) {
+func LogError(log *log.Logger, err error, message string) {
 	if err != nil {
 		log.Error(message, "error", err)
 	}

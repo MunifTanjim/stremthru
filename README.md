@@ -86,10 +86,12 @@ Log level.
 
 | Log Level          |
 | ------------------ |
+| `TRACE`            |
 | `DEBUG`            |
 | `INFO` _(default)_ |
 | `WARN`             |
 | `ERROR`            |
+| `FATAL`            |
 
 #### `STREMTHRU_LOG_FORMAT`
 

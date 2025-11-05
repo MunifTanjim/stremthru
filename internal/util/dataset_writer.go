@@ -1,8 +1,9 @@
 package util
 
 import (
-	"log/slog"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 )
 
 type DatasetWriter[T any] struct {
@@ -10,7 +11,7 @@ type DatasetWriter[T any] struct {
 	batch_size     int
 	idx            int
 	is_done        bool
-	log            *slog.Logger
+	log            *log.Logger
 	items          []T
 	upsert         func([]T) error
 	sleep_duration time.Duration
@@ -18,7 +19,7 @@ type DatasetWriter[T any] struct {
 
 type DatasetWriterConfig[T any] struct {
 	BatchSize     int
-	Log           *slog.Logger
+	Log           *log.Logger
 	Upsert        func([]T) error
 	SleepDuration time.Duration
 }

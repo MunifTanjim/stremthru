@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"log"
-	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	llog "github.com/MunifTanjim/stremthru/internal/logger/log"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/google/uuid"
@@ -354,7 +354,7 @@ type configPeerFlag struct {
 }
 
 type Config struct {
-	LogLevel  slog.Level
+	LogLevel  llog.Level
 	LogFormat string
 
 	Port                        string
@@ -519,7 +519,7 @@ var config = func() Config {
 		}
 	}
 
-	var logLevel slog.Level
+	var logLevel llog.Level
 	if err := logLevel.UnmarshalText([]byte(getEnv("STREMTHRU_LOG_LEVEL"))); err != nil {
 		log.Fatalf("Invalid log level: %v", err)
 	}

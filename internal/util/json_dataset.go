@@ -3,8 +3,9 @@ package util
 import (
 	"errors"
 	"iter"
-	"log/slog"
 	"os"
+
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 )
 
 type JSONDataset[T any] struct {
@@ -40,7 +41,7 @@ func NewJSONDataset[T any](conf *JSONDatasetConfig[T]) *JSONDataset[T] {
 type JSONDatasetReader[T any] struct {
 	get_item_key func(item *T) string
 	is_done      bool
-	log          *slog.Logger
+	log          *log.Logger
 	seq_next     func() (*T, bool)
 	seq_stop     func()
 }
@@ -49,7 +50,7 @@ type JSONDatasetReaderConfig[T any] struct {
 	Blob       []byte
 	GetItemKey func(item *T) string
 	GetSeq     func(blob []byte) (iter.Seq[*T], error)
-	Log        *slog.Logger
+	Log        *log.Logger
 }
 
 func NewJSONDatasetReader[T any](conf *JSONDatasetReaderConfig[T]) *JSONDatasetReader[T] {
