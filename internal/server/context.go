@@ -2,11 +2,12 @@ package server
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 )
 
 type reqCtxKey struct{}
@@ -17,7 +18,7 @@ type ReqCtx struct {
 	Error        error
 	ReqPath      string
 	ReqQuery     url.Values
-	Log          *slog.Logger
+	Log          *log.Logger
 	NoRequestLog bool
 }
 

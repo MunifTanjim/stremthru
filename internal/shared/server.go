@@ -60,7 +60,7 @@ func RootServerContext(next http.Handler) http.Handler {
 		}
 		w.Header().Set("Request-ID", ctx.RequestId)
 
-		ctx.Log = slog.With("request_id", ctx.RequestId)
+		ctx.Log = logger.With("request_id", ctx.RequestId)
 
 		next.ServeHTTP(rw, r)
 		logRequest(rw, r)

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/logger/log"
 	"github.com/jamespfennell/xz"
 )
 
@@ -35,7 +35,7 @@ type Dataset struct {
 	download_headers       map[string]string
 	get_download_file_time func() time.Time
 	is_stale               func(time.Time) bool
-	log                    *slog.Logger
+	log                    *log.Logger
 	prefix_time_format     string
 	prev_filename          string
 	url                    string
@@ -47,7 +47,7 @@ type DatasetConfig struct {
 	DownloadHeaders     map[string]string
 	GetDownloadFileTime func() time.Time
 	IsStale             func(time.Time) bool
-	Log                 *slog.Logger
+	Log                 *log.Logger
 	Name                string
 	URL                 string
 }

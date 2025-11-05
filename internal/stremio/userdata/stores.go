@@ -2,7 +2,6 @@ package stremio_userdata
 
 import (
 	"errors"
-	"log/slog"
 	"slices"
 	"strings"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/context"
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -199,7 +199,7 @@ type storesCheckMagnetData struct {
 	m                 sync.Mutex
 }
 
-func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *slog.Logger) *storesCheckMagnetData {
+func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logger.Logger) *storesCheckMagnetData {
 	ms := ud.stores
 
 	storeCount := len(ms)
