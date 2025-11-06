@@ -32,7 +32,7 @@ var noTorrentInfo = !config.Feature.HasTorrentInfo()
 
 // supports imdb or anidb
 func PullTorrentsByStremId(sid string, originInstanceId string) {
-	if noTorrentInfo || PullPeer == nil || !tss.ShouldPull(sid) {
+	if noTorrentInfo || PullPeer == nil || PullPeer.IsHaltedCheckMagnet() || !tss.ShouldPull(sid) {
 		return
 	}
 
@@ -46,6 +46,10 @@ func PullTorrentsByStremId(sid string, originInstanceId string) {
 	duration := time.Since(start)
 
 	if err != nil {
+		if duration > 25*time.Second {
+			PullPeer.HaltCheckMagnet()
+		}
+
 		pullPeerLog.Error("failed to pull torrents", "error", core.PackError(err), "duration", duration, "sid", cleanSId)
 		return
 	}
