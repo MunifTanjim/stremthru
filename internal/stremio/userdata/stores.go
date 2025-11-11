@@ -93,6 +93,10 @@ func (ud *UserDataStores) Prepare(ctx *context.StoreContext) (err error, errFiel
 	return nil, ""
 }
 
+func (ud *UserDataStores) HasStores() bool {
+	return len(ud.stores) > 0
+}
+
 func (ud *UserDataStores) GetStores() []resolvedStore {
 	return ud.stores
 }
@@ -177,6 +181,12 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *slog
 		Err:               make([]error, storeCount),
 		HasErr:            false,
 		HasErrByStoreCode: map[string]struct{}{},
+	}
+
+	if storeCount == 0 {
+		res.Err = []error{errors.New("no configured store")}
+		res.HasErr = true
+		return &res
 	}
 
 	firstStore := ms[0]

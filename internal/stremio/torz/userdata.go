@@ -109,6 +109,10 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		}
 	}
 
+	if !ud.HasStores() {
+		return ctx, &userDataError{storeCode: []string{"no configured store"}}
+	}
+
 	ctx.ClientIP = shared.GetClientIP(r, ctx)
 
 	return ctx, nil
