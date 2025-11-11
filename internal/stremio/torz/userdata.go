@@ -109,7 +109,7 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		}
 	}
 
-	if !ud.HasStores() {
+	if !ud.HasStores() && !ud.IsP2P() {
 		return ctx, &userDataError{storeCode: []string{"no configured store"}}
 	}
 
