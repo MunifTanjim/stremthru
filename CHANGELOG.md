@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.91.8](https://github.com/MunifTanjim/stremthru/compare/0.91.7...0.91.8) (2025-11-11)
+
+
+### Bug Fixes
+
+* **stremio/torz:** fix installion w/ p2p as store ([a032366](https://github.com/MunifTanjim/stremthru/commit/a032366fb718442c076149d4da0cb9023e3b8e42))
+
 ## [0.91.7](https://github.com/MunifTanjim/stremthru/compare/0.91.6...0.91.7) (2025-11-11)
 
 
