@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.91.7](https://github.com/MunifTanjim/stremthru/compare/0.91.6...0.91.7) (2025-11-11)
+
+
+### Bug Fixes
+
+* **buddy:** pause pull torrent if peer is under pressure ([be40d2d](https://github.com/MunifTanjim/stremthru/commit/be40d2dd7583cdad11bb7f48707738ed78cfc142))
+* **stremio:** handle no configured store bad config ([c014f78](https://github.com/MunifTanjim/stremthru/commit/c014f7814631bd8dd0d0bf31de3a2f0a75d76479))
+
 ## [0.91.6](https://github.com/MunifTanjim/stremthru/compare/0.91.5...0.91.6) (2025-11-04)
 
 
