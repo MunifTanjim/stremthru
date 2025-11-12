@@ -33,10 +33,20 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	if action := r.Header.Get("x-addon-configure-action"); action != "" {
 		switch action {
+		case "add-indexer":
+			if td.IsAuthed || len(td.Indexers) < MaxPublicInstanceIndexerCount {
+				td.Indexers = append(td.Indexers, newTemplateDataIndexer(len(td.Indexers), "", "", ""))
+			}
+
+		case "remove-indexer":
+			end := max(len(td.Indexers)-1, 0)
+			td.Indexers = slices.Clone(td.Indexers[0:end])
+
 		case "add-store":
 			if td.IsAuthed || len(td.Stores) < MaxPublicInstanceStoreCount {
 				td.Stores = append(td.Stores, StoreConfig{})
 			}
+
 		case "remove-store":
 			end := len(td.Stores) - 1
 			if end == 0 {
@@ -90,6 +100,19 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 						ts.Error.Token = "Failed to access store"
 					}
 				}
+			}
+		}
+
+		for i := range ud.Indexers {
+			indexer := &ud.Indexers[i]
+			field, err := indexer.Validate()
+			switch field {
+			case "name":
+				td.Indexers[i].Name.Error = err.Error()
+			case "url":
+				td.Indexers[i].URL.Error = err.Error()
+			case "apikey":
+				td.Indexers[i].APIKey.Error = err.Error()
 			}
 		}
 	}

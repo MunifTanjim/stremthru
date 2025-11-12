@@ -76,6 +76,8 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT":     "10",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
+		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
+		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_INDEXER_COUNT":  "2",
 		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT": "5",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT":    "3",
@@ -98,18 +100,20 @@ func getEnv(key string) string {
 	return ""
 }
 
-func parseDuration(key string, value string, minDuration time.Duration) (time.Duration, error) {
+func parseDuration(key string, value string, boundary ...time.Duration) (time.Duration, error) {
 	if duration, err := time.ParseDuration(value); err != nil {
 		return -1, fmt.Errorf("invalid %s (%s): %v", key, value, err)
-	} else if duration < minDuration {
-		return -1, fmt.Errorf("%s (%s) must be at least %s", key, duration, minDuration.String())
+	} else if len(boundary) > 0 && boundary[0] > 0 && duration < boundary[0] {
+		return -1, fmt.Errorf("%s (%s) must be at least %s", key, duration, boundary[0].String())
+	} else if len(boundary) > 1 && boundary[1] > 0 && duration > boundary[1] {
+		return -1, fmt.Errorf("%s (%s) must be at most %s", key, duration, boundary[1].String())
 	} else {
 		return duration, nil
 	}
 }
 
-func mustParseDuration(key string, value string, minDuration time.Duration) time.Duration {
-	duration, err := parseDuration(key, value, minDuration)
+func mustParseDuration(key string, value string, boundary ...time.Duration) time.Duration {
+	duration, err := parseDuration(key, value, boundary...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -892,6 +896,8 @@ func PrintConfig(state *AppState) {
 			if disabled != "" {
 				break
 			}
+			l.Println("          indexer max timeout: " + Stremio.Torz.IndexerMaxTimeout.String())
+			l.Println("     public max indexer count: " + strconv.Itoa(Stremio.Torz.PublicMaxIndexerCount))
 			l.Println("       public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
 			if Stremio.Torz.LazyPull {
 				l.Println("       [lazy pull]")

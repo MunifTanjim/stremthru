@@ -129,7 +129,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		isAnimeId := isKitsuId || isMALId
 		shouldTagStream := isIMDBId || isAnimeId
 
-		magnet, err = stremio_shared.WaitForMagnetStatus(ctx, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
+		magnet, err = stremio_shared.WaitForMagnetStatus(ctx.StoreContext, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {
 			strem := &stremResult{
 				error_log:   "failed wait for magnet status",
@@ -196,7 +196,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		glRes, err := shared.GenerateStremThruLink(r, ctx, link)
+		glRes, err := shared.GenerateStremThruLink(r, ctx.StoreContext, link)
 		if err != nil {
 			return &stremResult{
 				error_log:   "failed to generate stremthru link",

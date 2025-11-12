@@ -384,12 +384,12 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 	Column.Hash,
 	Column.Path,
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Idx, Column.Source, Column.Idx, Column.Source, Column.Source, Column.Idx, Column.Idx,
+		"%s = CASE WHEN EXCLUDED.%s IN ('dht','tor') OR ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Idx, Column.Source, Column.Idx, Column.Source, Column.Idx, Column.Idx,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ts.%s = -1 OR (ts.%s != 'dht' AND ts.%s IN ('','mfn')) THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Size, Column.Source, Column.Size, Column.Source, Column.Source, Column.Size, Column.Size,
+		"%s = CASE WHEN EXCLUDED.%s IN ('dht','tor') OR ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.Size, Column.Source, Column.Size, Column.Source, Column.Size, Column.Size,
 	),
 	fmt.Sprintf(
 		"%s = CASE WHEN ts.%s IN ('', '*') THEN EXCLUDED.%s ELSE ts.%s END",
@@ -404,7 +404,7 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 		Column.VideoHash, Column.VideoHash, Column.VideoHash, Column.VideoHash,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN (EXCLUDED.%s != 'dht' AND ts.%s = 'dht') OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
+		"%s = CASE WHEN (EXCLUDED.%s NOT IN ('dht','tor') AND ts.%s IN ('dht','tor')) OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
 		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
 	),
 	fmt.Sprintf(
@@ -431,7 +431,7 @@ func Record(items []InsertData, discardIdx bool) error {
 			}
 
 			idx := item.Idx
-			if discardIdx && item.Source != "dht" {
+			if discardIdx && item.Source != "dht" && item.Source != "tor" {
 				idx = -1
 			}
 			sid := item.SId

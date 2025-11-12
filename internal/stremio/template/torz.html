@@ -20,7 +20,7 @@
 <form
   id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false" 
 >
-  <div id="stores" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
+  <div id="stores" class="relative border border-dashed rounded-sm mb-8 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
       <span class="px-2" style="background-color: var(--pico-background-color);">
         Stores
@@ -83,6 +83,63 @@
     {{range .Configs}}
       {{template "configure_config.html" .}}
     {{end}}
+  </div>
+
+  <div id="indexers" class="relative border border-dashed rounded-sm mb-8 {{ if gt (.Indexers | len) 0 }}p-4{{end}}" style="border-color: gray">
+    <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
+      <span class="px-2" style="background-color: var(--pico-background-color);">
+        Indexers
+      </span>
+    </header>
+
+    <div class="relative mb-8">
+      <input type="hidden" name="indexers_length" value="{{ .Indexers | len }}" />
+
+      {{range $idx, $i := .Indexers}}
+      <div class="relative border border-dashed rounded-sm my-4 p-4" style="border-color: gray">
+        {{template "configure_config.html" $i.URL}}
+        <div class="flex flex-row flex-wrap gap-4">
+          <div class="grow-1">
+            {{template "configure_config.html" $i.Name}}
+          </div>
+          <div class="grow-3">
+            {{template "configure_config.html" $i.APIKey}}
+          </div>
+        </div>
+      </div>
+      {{end}}
+    </div>
+
+    <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
+      <small>
+        <button
+          {{if not .CanRemoveIndexer}}disabled{{end}}
+          id="configure-action-remove-indexer"
+          type="button"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"remove-indexer"}'
+          class="secondary mb-0"
+          style="font-size: 0.75rem; padding: 0.25em;"
+        >
+          - Remove
+        </button>
+        <button
+          {{if not .CanAddIndexer}}disabled{{end}}
+          id="configure-action-add-indexer"
+          type="button"
+          hx-target="body"
+          hx-post="configure"
+          hx-include="#configuration"
+          hx-headers='{"x-addon-configure-action":"add-indexer"}'
+          class="secondary mb-0"
+          style="font-size: 0.75rem; padding: 0.25em;"
+        >
+          + Add
+        </button>
+      </small>
+    </div>
   </div>
 
   <button type="submit">Install</button>

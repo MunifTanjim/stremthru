@@ -31,6 +31,10 @@ type normalizedStremId struct {
 	Season  string
 }
 
+func (nsid normalizedStremId) IsSeries() bool {
+	return nsid.Season != "" || nsid.Episode != ""
+}
+
 func (nsid normalizedStremId) ToClean() string {
 	if nsid.IsAnime && nsid.Id != "" {
 		return "anidb:" + nsid.Id

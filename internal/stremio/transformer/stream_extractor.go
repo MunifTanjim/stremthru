@@ -138,6 +138,7 @@ type StreamExtractorResult struct {
 	Seeders   int
 	Store     StreamExtractorResultStore
 	TTitle    string
+	Indexer   string
 }
 
 var language_to_code = map[string]string{

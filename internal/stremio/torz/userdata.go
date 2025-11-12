@@ -9,16 +9,12 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
+	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
-type UserDataStoreCode string
-
-type UserDataStore struct {
-	Code  UserDataStoreCode `json:"c"`
-	Token string            `json:"t"`
-}
-
 type UserData struct {
+	stremio_userdata.UserDataIndexers
 	stremio_userdata.UserDataStores
 	CachedOnly bool `json:"cached,omitempty"`
 
@@ -26,6 +22,7 @@ type UserData struct {
 }
 
 func (ud UserData) StripSecrets() UserData {
+	ud.UserDataIndexers = ud.UserDataIndexers.StripSecrets()
 	ud.UserDataStores = ud.UserDataStores.StripSecrets()
 	return ud
 }
@@ -35,17 +32,11 @@ var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerC
 })
 
 func (ud UserData) HasRequiredValues() bool {
-	if len(ud.Stores) == 0 {
+	if !ud.UserDataIndexers.HasRequiredValues() {
 		return false
 	}
-	for i := range ud.Stores {
-		s := &ud.Stores[i]
-		if (s.Code.IsStremThru() || s.Code.IsP2P()) && len(ud.Stores) > 1 {
-			return false
-		}
-		if !s.Code.IsP2P() && s.Token == "" {
-			return false
-		}
+	if !ud.UserDataStores.HasRequiredValues() {
+		return false
 	}
 	return true
 }
@@ -63,6 +54,10 @@ func (ud *UserData) Ptr() *UserData {
 }
 
 type userDataError struct {
+	indexerName   []string
+	indexerURL    []string
+	indexerAPIKey []string
+
 	storeCode  []string
 	storeToken []string
 }
@@ -70,6 +65,42 @@ type userDataError struct {
 func (uderr *userDataError) Error() string {
 	var str strings.Builder
 	hasSome := false
+	for i, err := range uderr.indexerName {
+		if err == "" {
+			continue
+		}
+		if hasSome {
+			str.WriteString(", ")
+			hasSome = false
+		}
+		str.WriteString("indexers[" + strconv.Itoa(i) + "].name: ")
+		str.WriteString(err)
+		hasSome = true
+	}
+	for i, err := range uderr.indexerURL {
+		if err == "" {
+			continue
+		}
+		if hasSome {
+			str.WriteString(", ")
+			hasSome = false
+		}
+		str.WriteString("indexers[" + strconv.Itoa(i) + "].url: ")
+		str.WriteString(err)
+		hasSome = true
+	}
+	for i, err := range uderr.indexerAPIKey {
+		if err == "" {
+			continue
+		}
+		if hasSome {
+			str.WriteString(", ")
+			hasSome = false
+		}
+		str.WriteString("indexers[" + strconv.Itoa(i) + "].apikey: ")
+		str.WriteString(err)
+		hasSome = true
+	}
 	for i, err := range uderr.storeCode {
 		if err == "" {
 			continue
@@ -97,13 +128,20 @@ func (uderr *userDataError) Error() string {
 	return str.String()
 }
 
-func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, error) {
+type RequestContext struct {
+	*context.StoreContext
+	Indexers []torznab_client.Indexer
+}
+
+func (ud *UserData) GetRequestContext(r *http.Request) (*RequestContext, error) {
 	rCtx := server.GetReqCtx(r)
-	ctx := &context.StoreContext{
-		Log: rCtx.Log,
+	ctx := &RequestContext{
+		StoreContext: &context.StoreContext{
+			Log: rCtx.Log,
+		},
 	}
 
-	if err, errField := ud.UserDataStores.Prepare(ctx); err != nil {
+	if err, errField := ud.UserDataStores.Prepare(ctx.StoreContext); err != nil {
 		switch errField {
 		case "store":
 			return ctx, &userDataError{storeCode: []string{err.Error()}}
@@ -118,7 +156,13 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		return ctx, &userDataError{storeCode: []string{"no configured store"}}
 	}
 
-	ctx.ClientIP = shared.GetClientIP(r, ctx)
+	ctx.ClientIP = shared.GetClientIP(r, ctx.StoreContext)
+
+	if indexers, err := ud.UserDataIndexers.Prepare(); err != nil {
+		return ctx, &userDataError{indexerURL: []string{err.Error()}}
+	} else {
+		ctx.Indexers = indexers
+	}
 
 	return ctx, nil
 }
@@ -170,6 +214,19 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 
 		data.CachedOnly = r.Form.Get("cached") == "on"
+
+		for i := range util.SafeParseInt(r.Form.Get("indexers_length"), 1) {
+			idx := strconv.Itoa(i)
+			name := r.Form.Get("indexers[" + idx + "].name")
+			url := r.Form.Get("indexers[" + idx + "].url")
+			apiKey := r.Form.Get("indexers[" + idx + "].apikey")
+
+			data.Indexers = append(data.Indexers, stremio_userdata.Indexer{
+				Name:   stremio_userdata.IndexerName(name),
+				URL:    url,
+				APIKey: apiKey,
+			})
+		}
 	}
 
 	if IsPublicInstance && len(data.Stores) > MaxPublicInstanceStoreCount {

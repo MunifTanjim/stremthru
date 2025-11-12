@@ -44,7 +44,7 @@ func (query Query) HasMovies() bool {
 	return false
 }
 
-func (query Query) Encode() string {
+func (query Query) ToValues() *url.Values {
 	v := url.Values{}
 
 	if query.Type != "" {
@@ -123,7 +123,11 @@ func (query Query) Encode() string {
 		v.Set("imdbid", strings.TrimPrefix(query.IMDBId, "tt"))
 	}
 
-	return v.Encode()
+	return &v
+}
+
+func (query Query) Encode() string {
+	return query.ToValues().Encode()
 }
 
 func (query Query) String() string {

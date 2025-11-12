@@ -4,22 +4,29 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
+	"github.com/alitto/pond/v2"
 )
 
 var streamTemplate = stremio_transformer.StreamTemplateDefault
@@ -48,6 +55,443 @@ func (s WrappedStream) GetSize() string {
 
 func (s WrappedStream) GetHDR() string {
 	return strings.Join(s.R.HDR, "|")
+}
+
+type indexerSearchQueryMeta struct {
+	titles     []string
+	year       int
+	season, ep int
+}
+
+func (m *indexerSearchQueryMeta) MatchesTitle(parsedTitle string, normalizer *util.StringNormalizer) bool {
+	for _, title := range m.titles {
+		if util.MaxLevenshteinDistance(5, parsedTitle, title, normalizer) {
+			return true
+		}
+	}
+	return false
+}
+
+type indexerSearchQuery struct {
+	indexer  tznc.Indexer
+	query    *tznc.Query
+	is_exact bool
+}
+
+var torrentFetchPool = pond.NewPool(20)
+
+func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]WrappedStream, []string, error) {
+	if len(ctx.Indexers) == 0 {
+		return []WrappedStream{}, []string{}, nil
+	}
+
+	log = ctx.Log
+
+	nsid, err := torrent_stream.NormalizeStreamId(stremId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	queryMeta := indexerSearchQueryMeta{titles: []string{}}
+	if nsid.IsAnime {
+		if aniEp := util.SafeParseInt(nsid.Episode, -1); aniEp != -1 {
+			tvdbMaps, err := anidb.GetTVDBEpisodeMaps(nsid.Id, false)
+			if err != nil {
+				return nil, nil, err
+			}
+			if epMap := tvdbMaps.GetByAnidbEpisode(aniEp); epMap != nil {
+				ep := epMap.GetTMDBEpisode(aniEp)
+				titles, err := anidb.GetTitlesByIds([]string{nsid.Id})
+				if err != nil {
+					return nil, nil, err
+				}
+				queryMeta.titles = make([]string, len(titles))
+				queryMeta.season = epMap.TVDBSeason
+				queryMeta.ep = ep
+				seenTitle := util.NewSet[string]()
+				for i := range titles {
+					title := &titles[i]
+					if seenTitle.Has(title.Value) {
+						continue
+					}
+					seenTitle.Add(title.Value)
+					queryMeta.titles[i] = title.Value
+					if queryMeta.year == 0 && title.Year != "" {
+						queryMeta.year = util.SafeParseInt(title.Year, 0)
+					}
+				}
+			}
+		}
+	} else {
+		it, err := imdb_title.Get(nsid.Id)
+		if err != nil {
+			return nil, nil, err
+		}
+		queryMeta.titles = append(queryMeta.titles, it.Title)
+		if it.Year > 0 {
+			queryMeta.year = it.Year
+		}
+		if nsid.IsSeries() {
+			queryMeta.season = util.SafeParseInt(nsid.Season, 0)
+			queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
+		}
+		if it.OrigTitle != "" && it.OrigTitle != it.Title {
+			queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
+		}
+	}
+
+	sQueries := make([]indexerSearchQuery, 0, len(ctx.Indexers)*2)
+	for i := range ctx.Indexers {
+		indexer := ctx.Indexers[i]
+
+		query, err := indexer.NewSearchQuery(func(caps tznc.Caps) tznc.Function {
+			if nsid.IsSeries() && caps.SupportsFunction(tznc.FunctionSearchTV) {
+				return tznc.FunctionSearchTV
+			}
+			if caps.SupportsFunction(tznc.FunctionSearchMovie) {
+				return tznc.FunctionSearchMovie
+			}
+			return tznc.FunctionSearch
+		})
+		if err != nil {
+			log.Error("failed to create search query", "error", err, "indexer", indexer.GetId())
+			continue
+		}
+		query.SetLimit(-1)
+		if !nsid.IsAnime && query.IsSupported(tznc.SearchParamIMDBId) {
+			query.Set(tznc.SearchParamIMDBId, nsid.Id)
+			is_exact := !nsid.IsSeries()
+			if nsid.IsSeries() {
+				if query.IsSupported(tznc.SearchParamSeason) && nsid.Season != "" {
+					query.Set(tznc.SearchParamSeason, nsid.Season)
+					if query.IsSupported(tznc.SearchParamEp) && nsid.Episode != "" {
+						query.Set(tznc.SearchParamEp, nsid.Episode)
+						is_exact = true
+					}
+				}
+			}
+			sQueries = append(sQueries, indexerSearchQuery{
+				indexer:  indexer,
+				query:    query,
+				is_exact: is_exact,
+			})
+		} else {
+			query.SetT(tznc.FunctionSearch)
+			supportsYear := query.IsSupported(tznc.SearchParamYear)
+			if supportsYear && queryMeta.year != 0 {
+				query.Set(tznc.SearchParamYear, strconv.Itoa(queryMeta.year))
+			}
+			for _, title := range queryMeta.titles {
+				var q strings.Builder
+				q.WriteString(title)
+				if nsid.IsSeries() {
+					sQueries = append(sQueries, indexerSearchQuery{
+						indexer: indexer,
+						query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
+					})
+					if queryMeta.season > 0 {
+						q.WriteString(" S")
+						q.WriteString(util.ZeroPadInt(queryMeta.season, 2))
+						if queryMeta.ep > 0 {
+							sQueries = append(sQueries, indexerSearchQuery{
+								indexer: indexer,
+								query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
+							})
+							q.WriteString("E")
+							q.WriteString(util.ZeroPadInt(queryMeta.ep, 2))
+						}
+						sQueries = append(sQueries, indexerSearchQuery{
+							indexer: indexer,
+							query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
+						})
+					}
+				} else if queryMeta.year > 0 {
+					if !supportsYear {
+						q.WriteString(" ")
+						q.WriteString(strconv.Itoa(queryMeta.year))
+					}
+					sQueries = append(sQueries, indexerSearchQuery{
+						indexer: indexer,
+						query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
+					})
+				}
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	results := make([][]tznc.Torz, len(sQueries))
+	errs := make([]error, len(sQueries))
+	for i := range sQueries {
+		wg.Add(1)
+		go func(sq indexerSearchQuery, i int) {
+			defer wg.Done()
+			start := time.Now()
+			results[i], errs[i] = sq.indexer.Search(sq.query)
+			if errs[i] == nil {
+				log.Debug("indexer search completed", "indexer", sq.indexer.GetId(), "query", sq.query.Encode(), "duration", time.Since(start).String(), "count", len(results[i]))
+			} else {
+				log.Error("indexer search failed", "error", errs[i], "indexer", sq.indexer.GetId(), "query", sq.query.Encode(), "duration", time.Since(start).String())
+			}
+		}(sQueries[i], i)
+	}
+	wg.Wait()
+
+	if len(results) == 0 && len(errs) > 0 {
+		return nil, nil, errors.Join(errs...)
+	}
+
+	seenSourceURL := util.NewSet[string]()
+	torzFetchWg := torrentFetchPool.NewGroup()
+	for _, items := range results {
+		for i := range items {
+			item := &items[i]
+			if item.HasMissingData() && item.SourceLink != "" {
+				if seenSourceURL.Has(item.SourceLink) {
+					continue
+				}
+				seenSourceURL.Add(item.SourceLink)
+
+				torzFetchWg.Submit(func() {
+					err := item.EnsureMagnet()
+					if err != nil {
+						log.Warn("failed to ensure magnet link for torrent", "error", err)
+					}
+				})
+			}
+		}
+	}
+	err = torzFetchWg.Wait()
+	if err != nil {
+		log.Warn("errors occurred while fetching torrent magnets", "error", err)
+	}
+
+	hashSet := util.NewSet[string]()
+	hashes := []string{}
+	for _, items := range results {
+		for i := range items {
+			item := &items[i]
+			if item.HasMissingData() {
+				continue
+			}
+			if !hashSet.Has(item.Hash) {
+				hashSet.Add(item.Hash)
+				hashes = append(hashes, item.Hash)
+			}
+		}
+	}
+
+	tInfoByHash, err := torrent_info.GetByHashes(hashes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	filesByHashes, err := torrent_stream.GetFilesByHashes(hashes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	strn := util.NewStringNormalizer()
+	tInfosToUpsert := []torrent_info.TorrentItem{}
+	wrappedStreams := []WrappedStream{}
+	for i, items := range results {
+		is_exact := sQueries[i].is_exact
+		for i := range items {
+			item := &items[i]
+			if item.HasMissingData() {
+				continue
+			}
+
+			if !is_exact {
+				pttr, err := util.ParseTorrentTitle(item.Title)
+				if err != nil {
+					continue
+				}
+				if !queryMeta.MatchesTitle(pttr.Title, strn) {
+					continue
+				}
+				if nsid.IsSeries() {
+					if !slices.Contains(pttr.Seasons, queryMeta.season) {
+						continue
+					}
+					if len(pttr.Episodes) > 0 && !slices.Contains(pttr.Episodes, queryMeta.ep) {
+						continue
+					}
+				} else if queryMeta.year > 0 {
+					if pttr.Year != "" && pttr.Year != strconv.Itoa(queryMeta.year) {
+						continue
+					}
+				}
+			}
+
+			if tInfo, ok := tInfoByHash[item.Hash]; ok {
+				var file *torrent_stream.File
+				if files, ok := filesByHashes[item.Hash]; ok {
+					idToMatch := stremId
+					if idToMatch != "" {
+						for i := range files {
+							f := &files[i]
+							if core.HasVideoExtension(f.Name) {
+								if f.SId == idToMatch || f.ASId == idToMatch {
+									file = f
+								}
+							}
+						}
+					}
+				}
+				fName := ""
+				fIdx := -1
+				fSize := int64(0)
+				fVideoHash := ""
+				if file != nil {
+					fIdx = file.Idx
+					fName = file.Name
+					if file.Size > 0 {
+						fSize = file.Size
+					}
+					fVideoHash = file.VideoHash
+				} else if core.HasVideoExtension(tInfo.TorrentTitle) {
+					fName = tInfo.TorrentTitle
+				}
+
+				pttr, err := tInfo.ToParsedResult()
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if len(tInfo.TorrentTitle) < len(item.Title)/2 {
+					tInfo := torrent_info.TorrentItem{
+						Hash:         item.Hash,
+						TorrentTitle: item.Title,
+						Size:         item.Size,
+						Indexer:      item.Indexer,
+						Source:       torrent_info.TorrentInfoSourceIndexer,
+						Seeders:      item.Seeders,
+						Leechers:     item.Leechers,
+						Private:      item.Private,
+						Files:        item.Files,
+					}
+					tInfosToUpsert = append(tInfosToUpsert, tInfo)
+				}
+
+				data := &stremio_transformer.StreamExtractorResult{
+					Hash:      tInfo.Hash,
+					TTitle:    tInfo.TorrentTitle,
+					Result:    pttr,
+					Seeders:   item.Seeders,
+					IsPrivate: tInfo.Private || item.Private,
+					Indexer:   jackett.GetIndexerName(item.Indexer),
+					Addon: stremio_transformer.StreamExtractorResultAddon{
+						Name: "Torz",
+					},
+					Category: stremType,
+					File: stremio_transformer.StreamExtractorResultFile{
+						Name: fName,
+						Idx:  fIdx,
+					},
+				}
+				if fSize > 0 {
+					data.File.Size = util.ToSize(fSize)
+				}
+				wrappedStreams = append(wrappedStreams, WrappedStream{
+					R: data,
+					Stream: &stremio.Stream{
+						Name:        data.Addon.Name,
+						Description: data.TTitle,
+						InfoHash:    data.Hash,
+						FileIndex:   fIdx,
+						BehaviorHints: &stremio.StreamBehaviorHints{
+							Filename:   data.File.Name,
+							VideoSize:  fSize,
+							BingeGroup: "torz:" + data.Hash,
+							VideoHash:  fVideoHash,
+						},
+					},
+				})
+
+				continue
+			}
+
+			tInfo := torrent_info.TorrentItem{
+				Hash:         item.Hash,
+				TorrentTitle: item.Title,
+				Size:         item.Size,
+				Indexer:      item.Indexer,
+				Source:       torrent_info.TorrentInfoSourceIndexer,
+				Seeders:      item.Seeders,
+				Leechers:     item.Leechers,
+				Private:      item.Private,
+				Files:        item.Files,
+			}
+			tInfosToUpsert = append(tInfosToUpsert, tInfo)
+
+			data := &stremio_transformer.StreamExtractorResult{
+				Hash:      item.Hash,
+				TTitle:    item.Title,
+				Seeders:   item.Seeders,
+				IsPrivate: item.Private,
+				Indexer:   jackett.GetIndexerName(item.Indexer),
+				Addon: stremio_transformer.StreamExtractorResultAddon{
+					Name: "Torz",
+				},
+				Category: stremType,
+			}
+
+			wrappedStream := WrappedStream{
+				R: data,
+				Stream: &stremio.Stream{
+					Name:        data.Addon.Name,
+					Description: data.TTitle,
+					InfoHash:    data.Hash,
+					BehaviorHints: &stremio.StreamBehaviorHints{
+						Filename:   data.File.Name,
+						BingeGroup: "torz:" + data.Hash,
+					},
+				},
+			}
+
+			if len(item.Files) > 0 {
+				var file *torrent_stream.File
+				if files, ok := filesByHashes[item.Hash]; ok {
+					idToMatch := stremId
+					if nsid.IsAnime {
+						if nsid.Id == "" {
+							idToMatch = ""
+						} else {
+							idToMatch = nsid.Id + ":" + nsid.Episode
+						}
+					}
+					if idToMatch != "" {
+						for i := range files {
+							f := &files[i]
+							if core.HasVideoExtension(f.Name) {
+								if f.SId == idToMatch || f.ASId == idToMatch {
+									file = f
+								}
+							}
+						}
+					}
+				}
+				if file != nil {
+					data.File.Idx = file.Idx
+					wrappedStream.Stream.FileIndex = file.Idx
+					data.File.Name = file.Name
+					if file.Size > 0 {
+						data.File.Size = util.ToSize(file.Size)
+						wrappedStream.Stream.BehaviorHints.VideoSize = file.Size
+					}
+					wrappedStream.Stream.BehaviorHints.VideoHash = file.VideoHash
+				} else if core.HasVideoExtension(tInfo.TorrentTitle) {
+					data.File.Name = tInfo.TorrentTitle
+				}
+			}
+
+			wrappedStreams = append(wrappedStreams, wrappedStream)
+		}
+	}
+	go torrent_info.Upsert(tInfosToUpsert, torrent_info.TorrentInfoCategoryUnknown, false)
+
+	return wrappedStreams, hashes, nil
 }
 
 func GetStreamsForHashes(stremType, stremId string, hashes []string) ([]WrappedStream, error) {
@@ -133,6 +577,7 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string) ([]WrappedS
 			Result:    pttr,
 			Seeders:   tInfo.Seeders,
 			IsPrivate: tInfo.Private,
+			Indexer:   jackett.GetIndexerName(tInfo.Indexer),
 			Addon: stremio_transformer.StreamExtractorResultAddon{
 				Name: "Torz",
 			},
@@ -226,48 +671,76 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	var wg sync.WaitGroup
 
-	isP2P := ud.IsP2P()
-
-	var isCachedByHash map[string]string
-	var hasErrByStoreCode map[string]struct{}
-	var checkMagnetError error
-	if !isP2P && len(hashes) > 0 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			cmRes := ud.CheckMagnet(&store.CheckMagnetParams{
-				Magnets:  hashes,
-				ClientIP: ctx.ClientIP,
-				SId:      id,
-			}, log)
-			if cmRes.HasErr && len(cmRes.ByHash) == 0 {
-				checkMagnetError = errors.Join(cmRes.Err...)
-				return
-			}
-			isCachedByHash = cmRes.ByHash
-			hasErrByStoreCode = cmRes.HasErrByStoreCode
-		}()
-	}
-
 	var wrappedStreams []WrappedStream
 	var getStreamsError error
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		wrappedStreams, getStreamsError = GetStreamsForHashes(contentType, id, hashes)
 	}()
 
-	wg.Wait()
+	var wrappedStreamsFromIndexers []WrappedStream
+	var hashesFromIndexers []string
+	var getStreamsFromIndexersError error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	if checkMagnetError != nil {
-		SendError(w, r, checkMagnetError)
-		return
-	}
+		var streams []WrappedStream
+		var hashes []string
+		var err error
+		done := make(chan struct{})
+		go func() {
+			streams, hashes, err = GetStreamsFromIndexers(ctx, contentType, id)
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			wrappedStreamsFromIndexers = streams
+			hashesFromIndexers = hashes
+			getStreamsFromIndexersError = err
+			log.Debug("fetched streams from indexers", "count", len(streams))
+		case <-time.After(config.Stremio.Torz.IndexerMaxTimeout):
+			log.Warn("fetching streams from indexers timed out")
+		}
+	}()
+
+	wg.Wait()
 
 	if getStreamsError != nil {
 		SendError(w, r, getStreamsError)
+		return
+	}
+
+	if getStreamsFromIndexersError != nil {
+		log.Error("failed to get streams from indexers", "error", getStreamsFromIndexersError)
+	} else {
+		wrappedStreams = append(wrappedStreams, wrappedStreamsFromIndexers...)
+		hashes = append(hashes, hashesFromIndexers...)
+	}
+
+	isP2P := ud.IsP2P()
+
+	var isCachedByHash map[string]string
+	var hasErrByStoreCode map[string]struct{}
+	var checkMagnetError error
+	if !isP2P && len(hashes) > 0 {
+		cmRes := ud.CheckMagnet(&store.CheckMagnetParams{
+			Magnets:  hashes,
+			ClientIP: ctx.ClientIP,
+			SId:      id,
+		}, log)
+		if cmRes.HasErr && len(cmRes.ByHash) == 0 {
+			checkMagnetError = errors.Join(cmRes.Err...)
+		} else {
+			isCachedByHash = cmRes.ByHash
+			hasErrByStoreCode = cmRes.HasErrByStoreCode
+		}
+	}
+
+	if checkMagnetError != nil {
+		SendError(w, r, checkMagnetError)
 		return
 	}
 
