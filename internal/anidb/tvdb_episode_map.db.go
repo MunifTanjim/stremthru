@@ -173,9 +173,12 @@ func (m AniDBTVDBEpisodeMap) getTMDBEpisodes(anidbEpisode int) []int {
 }
 
 func (m AniDBTVDBEpisodeMap) GetTMDBEpisode(anidbEpisode int) int {
+	if anidbEpisode == -1 {
+		return anidbEpisode
+	}
 	tvdbEpisodes := m.getTMDBEpisodes(anidbEpisode)
 	if len(tvdbEpisodes) == 0 {
-		return 0
+		return -1
 	}
 	return tvdbEpisodes[0]
 }
@@ -279,6 +282,33 @@ func (ms AniDBTVDBEpisodeMaps) Sort() {
 		}
 		return 0
 	})
+}
+
+func (ms AniDBTVDBEpisodeMaps) GetByAnidbEpisode(ep int) *AniDBTVDBEpisodeMap {
+	if ep == -1 {
+		return nil
+	}
+	for i := range ms {
+		m := &ms[i]
+		if m.TVDBSeason <= 0 {
+			continue
+		}
+		switch {
+		case m.HasEpisodeRange():
+			if ep >= m.Start && ep <= m.End {
+				return m
+			}
+		case m.Start > 0:
+			if m.Start <= ep {
+				return m
+			}
+		case m.End > 0:
+			if ep <= m.End {
+				return m
+			}
+		}
+	}
+	return nil
 }
 
 func (ms AniDBTVDBEpisodeMaps) GetTVDBId() string {

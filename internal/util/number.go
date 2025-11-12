@@ -1,6 +1,9 @@
 package util
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 func IntRange(start int, end int) []int {
 	length := end - start + 1
@@ -20,4 +23,8 @@ func SafeParseInt(str string, fallbackValue int) int {
 		return fallbackValue
 	}
 	return val
+}
+
+func ZeroPadInt(n int, length int) string {
+	return fmt.Sprintf("%0"+strconv.Itoa(length)+"d", n)
 }

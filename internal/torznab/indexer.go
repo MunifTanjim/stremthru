@@ -174,6 +174,7 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 			&tInfo.Hash,
 			&tInfo.TorrentTitle,
 
+			&tInfo.Indexer,
 			&tInfo.Source,
 			&tInfo.Category,
 			&tInfo.CreatedAt,

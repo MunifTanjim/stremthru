@@ -38,6 +38,23 @@ type UserDataStores struct {
 	isP2P            bool            `json:"-"`
 }
 
+func (ud UserDataStores) HasRequiredValues() bool {
+	storeCount := len(ud.Stores)
+	if storeCount == 0 {
+		return false
+	}
+	for i := range ud.Stores {
+		s := &ud.Stores[i]
+		if (s.Code.IsStremThru() || s.Code.IsP2P()) && storeCount > 1 {
+			return false
+		}
+		if !s.Code.IsP2P() && s.Token == "" {
+			return false
+		}
+	}
+	return true
+}
+
 func (ud UserDataStores) StripSecrets() UserDataStores {
 	ud.Stores = slices.Clone(ud.Stores)
 	for i := range ud.Stores {

@@ -10,6 +10,7 @@ import (
 
 var IsPublicInstance = config.IsPublicInstance
 var MaxPublicInstanceStoreCount = config.Stremio.Torz.PublicMaxStoreCount
+var MaxPublicInstanceIndexerCount = config.Stremio.Torz.PublicMaxIndexerCount
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/stremio/torz/configure", http.StatusFound)

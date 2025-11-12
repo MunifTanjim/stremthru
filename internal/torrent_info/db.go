@@ -80,6 +80,7 @@ const (
 	TorrentInfoSourceAnimeTosho  TorrentInfoSource = "ato"
 	TorrentInfoSourceDHT         TorrentInfoSource = "dht"
 	TorrentInfoSourceDMM         TorrentInfoSource = "dmm"
+	TorrentInfoSourceIndexer     TorrentInfoSource = "ixr"
 	TorrentInfoSourceMediaFusion TorrentInfoSource = "mfn"
 	TorrentInfoSourceTorrentio   TorrentInfoSource = "tio"
 	TorrentInfoSourceAllDebrid   TorrentInfoSource = "ad"
@@ -107,6 +108,7 @@ type TorrentInfo struct {
 	Hash         string `json:"hash"`
 	TorrentTitle string `json:"t_title"`
 
+	Indexer       string              `json:"indexer"`
 	Source        string              `json:"src"`
 	Category      TorrentInfoCategory `json:"category"`
 	CreatedAt     db.Timestamp        `json:"created_at"`
@@ -308,6 +310,7 @@ var Column = struct {
 	Hash         string
 	TorrentTitle string
 
+	Indexer       string
 	Source        string
 	Category      string
 	CreatedAt     string
@@ -365,6 +368,7 @@ var Column = struct {
 	Hash:         "hash",
 	TorrentTitle: "t_title",
 
+	Indexer:       "indexer",
 	Source:        "src",
 	Category:      "category",
 	CreatedAt:     "created_at",
@@ -424,6 +428,7 @@ var Columns = []string{
 	Column.Hash,
 	Column.TorrentTitle,
 
+	Column.Indexer,
 	Column.Source,
 	Column.Category,
 	Column.CreatedAt,
@@ -493,6 +498,7 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 		&tInfo.Hash,
 		&tInfo.TorrentTitle,
 
+		&tInfo.Indexer,
 		&tInfo.Source,
 		&tInfo.Category,
 		&tInfo.CreatedAt,
@@ -587,6 +593,7 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 			&tInfo.Hash,
 			&tInfo.TorrentTitle,
 
+			&tInfo.Indexer,
 			&tInfo.Source,
 			&tInfo.Category,
 			&tInfo.CreatedAt,
@@ -660,6 +667,7 @@ var query_upsert_before_values = fmt.Sprintf(
 		Column.Hash,
 		Column.TorrentTitle,
 		Column.Size,
+		Column.Indexer,
 		Column.Source,
 		Column.Category,
 		Column.Seeders,
@@ -667,9 +675,9 @@ var query_upsert_before_values = fmt.Sprintf(
 		Column.Private,
 	}, ","),
 )
-var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 8, ",") + ")"
+var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 9, ",") + ")"
 var query_upsert_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s`,
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s, %s`,
 	Column.Hash,
 	fmt.Sprintf(
 		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
@@ -687,6 +695,13 @@ var query_upsert_on_conflict = fmt.Sprintf(
 		Column.Size,
 		Column.Size,
 		Column.Size,
+	),
+	fmt.Sprintf(
+		"%s = CASE WHEN EXCLUDED.%s != '' THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Indexer,
+		Column.Indexer,
+		Column.Indexer,
+		Column.Indexer,
 	),
 	fmt.Sprintf(
 		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
@@ -793,7 +808,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				tCategory = category
 			}
 
-			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
+			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Indexer, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
 		}
 
 		if noTorrentInfo || count == 0 {
@@ -845,6 +860,7 @@ func GetUnparsed(limit int) ([]TorrentInfo, error) {
 			&tInfo.Hash,
 			&tInfo.TorrentTitle,
 
+			&tInfo.Indexer,
 			&tInfo.Source,
 			&tInfo.Category,
 			&tInfo.CreatedAt,
@@ -957,6 +973,7 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 				tInfo.Hash,
 				tInfo.TorrentTitle,
 
+				tInfo.Indexer,
 				tInfo.Source,
 				tInfo.Category,
 				tInfo.CreatedAt,
@@ -1179,6 +1196,7 @@ type TorrentItem struct {
 	Hash         string              `json:"hash"`
 	TorrentTitle string              `json:"name"`
 	Size         int64               `json:"size"`
+	Indexer      string              `json:"indexer"`
 	Source       TorrentInfoSource   `json:"src"`
 	Category     TorrentInfoCategory `json:"category"`
 	Seeders      int                 `json:"seeders"`
@@ -1195,8 +1213,8 @@ type ListTorrentsData struct {
 
 var list_query_columns = strings.Join(
 	func() []string {
-		columns := []string{Column.Hash, Column.TorrentTitle, Column.Size, Column.Source, Column.Category, Column.Seeders, Column.Leechers}
-		cols := make([]string, 7)
+		columns := []string{Column.Hash, Column.TorrentTitle, Column.Size, Column.Indexer, Column.Source, Column.Category, Column.Seeders, Column.Leechers}
+		cols := make([]string, 8)
 		for i := range columns {
 			cols[i] = `ti."` + columns[i] + `"`
 		}
@@ -1317,7 +1335,7 @@ func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, 
 	items := []TorrentItem{}
 	for rows.Next() {
 		var item TorrentItem
-		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Source, &item.Category, &item.Seeders, &item.Leechers, &item.Files); err != nil {
+		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Indexer, &item.Source, &item.Category, &item.Seeders, &item.Leechers, &item.Files); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

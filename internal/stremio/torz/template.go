@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
@@ -13,6 +14,12 @@ import (
 )
 
 type Base = stremio_template.BaseData
+
+type TemplateDataIndexer struct {
+	Name   configure.Config
+	URL    configure.Config
+	APIKey configure.Config
+}
 
 type StoreConfig struct {
 	Code  stremio_userdata.StoreCode
@@ -25,6 +32,10 @@ type StoreConfig struct {
 
 type TemplateData struct {
 	Base
+
+	Indexers         []TemplateDataIndexer
+	CanAddIndexer    bool
+	CanRemoveIndexer bool
 
 	Stores           []StoreConfig
 	StoreCodeOptions []configure.ConfigOption
@@ -42,6 +53,15 @@ type TemplateData struct {
 	AuthError    string
 }
 
+func (td *TemplateData) HasIndexerError() bool {
+	for i := range td.Indexers {
+		if td.Indexers[i].Name.Error != "" || td.Indexers[i].URL.Error != "" || td.Indexers[i].APIKey.Error != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (td *TemplateData) HasStoreError() bool {
 	for i := range td.Stores {
 		if td.Stores[i].Error.Code != "" || td.Stores[i].Error.Token != "" {
@@ -52,7 +72,7 @@ func (td *TemplateData) HasStoreError() bool {
 }
 
 func (td *TemplateData) HasFieldError() bool {
-	if td.HasStoreError() {
+	if td.HasIndexerError() || td.HasStoreError() {
 		return true
 	}
 	for i := range td.Configs {
@@ -63,6 +83,47 @@ func (td *TemplateData) HasFieldError() bool {
 	return false
 }
 
+func getIndexerNameOptions() []configure.ConfigOption {
+	options := []configure.ConfigOption{
+		// {
+		// 	Disabled: true,
+		// 	Value:    string(stremio_userdata.IndexerNameGeneric),
+		// 	Label:    "Generic",
+		// },
+		{
+			Value: string(stremio_userdata.IndexerNameJackett),
+			Label: "Jackett",
+		},
+	}
+	return options
+}
+
+func newTemplateDataIndexer(index int, name, url, apiKey string) TemplateDataIndexer {
+	return TemplateDataIndexer{
+		Name: configure.Config{
+			Key:      "indexers[" + strconv.Itoa(index) + "].name",
+			Type:     configure.ConfigTypeSelect,
+			Default:  name,
+			Title:    "Name",
+			Options:  getIndexerNameOptions(),
+			Required: true,
+		},
+		URL: configure.Config{
+			Key:      "indexers[" + strconv.Itoa(index) + "].url",
+			Type:     configure.ConfigTypeURL,
+			Default:  url,
+			Title:    "URL",
+			Required: true,
+		},
+		APIKey: configure.Config{
+			Key:     "indexers[" + strconv.Itoa(index) + "].apikey",
+			Type:    configure.ConfigTypePassword,
+			Default: apiKey,
+			Title:   "API Key",
+		},
+	}
+}
+
 func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *TemplateData {
 	td := &TemplateData{
 		Base: Base{
@@ -70,6 +131,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Stremio Addon to access crowdsourced Torz",
 			NavTitle:    "Torz",
 		},
+		Indexers:         []TemplateDataIndexer{},
 		Stores:           []StoreConfig{},
 		StoreCodeOptions: stremio_shared.GetStoreCodeOptions(true),
 		Configs: []configure.Config{
@@ -84,6 +146,16 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 
 	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
 		td.IsAuthed = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
+	}
+
+	for i := range ud.Indexers {
+		indexer := &ud.Indexers[i]
+		td.Indexers = append(td.Indexers, newTemplateDataIndexer(
+			i,
+			string(indexer.Name),
+			indexer.URL,
+			indexer.APIKey,
+		))
 	}
 
 	for i := range ud.Stores {
@@ -108,16 +180,16 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		td.IsTrusted = config.IsTrusted
 
 		td.CanAuthorize = !IsPublicInstance
+
+		td.CanAddIndexer = td.IsAuthed || len(td.Indexers) < MaxPublicInstanceIndexerCount
+		td.CanRemoveIndexer = len(td.Indexers) > 0
+
 		td.CanAddStore = td.IsAuthed || len(td.Stores) < MaxPublicInstanceStoreCount
 		if !IsPublicInstance && td.CanAddStore {
 			for i := range td.Stores {
 				s := &td.Stores[i]
-				if s.Code.IsStremThru() && s.Token != "" {
+				if s.Code.IsP2P() || (s.Code.IsStremThru() && s.Token != "") {
 					td.CanAddStore = false
-					td.Stores = td.Stores[i : i+1]
-					break
-				}
-				if s.Code.IsP2P() {
 					td.Stores = td.Stores[i : i+1]
 					break
 				}
