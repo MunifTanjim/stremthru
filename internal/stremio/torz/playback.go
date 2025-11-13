@@ -46,7 +46,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 	log := server.GetReqCtx(r).Log
 
-	magnetHash := r.PathValue("magnetHash")
+	magnetHash, encodedLink, _ := strings.Cut(r.PathValue("magnetHash"), "-")
 	fileName := r.PathValue("fileName")
 	fileIdx := -1
 	if idx, err := strconv.Atoi(r.PathValue("fileIdx")); err == nil {
@@ -84,10 +84,34 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	result, err, _ := stremGroup.Do(cacheKey, func() (any, error) {
 		log.Debug("creating stream link")
 		amParams := &store.AddMagnetParams{
-			Magnet:   magnetHash,
 			ClientIP: ctx.ClientIP,
 		}
 		amParams.APIKey = ctx.StoreAuthToken
+		if encodedLink == "" {
+			amParams.Magnet = magnetHash
+		} else {
+			link, err := core.Base64Decode(encodedLink)
+			if err != nil {
+				return &stremResult{
+					error_log:   "failed to decode torrent link",
+					error_video: store_video.StoreVideoName500,
+				}, err
+			}
+			fileHeader, err := shared.FetchTorrentFile(link, 1024*1024)
+			if err != nil {
+				return &stremResult{
+					error_log:   "failed to fetch torrent file",
+					error_video: store_video.StoreVideoName500,
+				}, err
+			}
+			amParams.Torrent = fileHeader
+			if _, _, err := amParams.GetTorrentMeta(); err != nil {
+				return &stremResult{
+					error_log:   "invalid torrent file",
+					error_video: store_video.StoreVideoName500,
+				}, err
+			}
+		}
 		amRes, err := ctx.Store.AddMagnet(amParams)
 		if err != nil {
 			result := &stremResult{

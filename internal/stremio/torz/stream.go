@@ -34,7 +34,8 @@ var torzLazyPull = config.Stremio.Torz.LazyPull
 
 type WrappedStream struct {
 	*stremio.Stream
-	R *stremio_transformer.StreamExtractorResult
+	R           *stremio_transformer.StreamExtractorResult
+	torrentLink string
 }
 
 func (s WrappedStream) IsSortable() bool {
@@ -394,7 +395,8 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 					data.File.Size = util.ToSize(fSize)
 				}
 				wrappedStreams = append(wrappedStreams, WrappedStream{
-					R: data,
+					torrentLink: item.SourceLink,
+					R:           data,
 					Stream: &stremio.Stream{
 						Name:        data.Addon.Name,
 						Description: data.TTitle,
@@ -438,7 +440,8 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 			}
 
 			wrappedStream := WrappedStream{
-				R: data,
+				torrentLink: item.SourceLink,
+				R:           data,
 				Stream: &stremio.Stream{
 					Name:        data.Addon.Name,
 					Description: data.TTitle,
@@ -776,7 +779,8 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				SendError(w, r, err)
 				return
 			}
-			steamUrl := streamBaseUrl.JoinPath(strings.ToLower(storeCode), hash, strconv.Itoa(wStream.R.File.Idx), "/")
+			identifier := hash
+			steamUrl := streamBaseUrl.JoinPath(strings.ToLower(storeCode), identifier, strconv.Itoa(wStream.R.File.Idx), "/")
 			if wStream.R.File.Name != "" {
 				steamUrl = steamUrl.JoinPath(url.PathEscape(wStream.R.File.Name))
 			}
@@ -784,13 +788,16 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			stream.InfoHash = ""
 			stream.FileIndex = 0
 			cachedStreams = append(cachedStreams, *stream)
-		} else if !ud.CachedOnly && !wStream.R.IsPrivate {
+		} else if !ud.CachedOnly && ud.IncludeUncachedPrivate {
 			stores := ud.GetStores()
 			for i := range stores {
 				s := &stores[i]
 				storeName := s.Store.GetName()
 				storeCode := storeName.Code()
 				if _, hasErr := hasErrByStoreCode[strings.ToUpper(string(storeCode))]; hasErr || storeCode == store.StoreCodeEasyDebrid {
+					continue
+				}
+				if wStream.R.IsPrivate && (wStream.torrentLink == "" || storeCode != store.StoreCodeTorBox) {
 					continue
 				}
 
@@ -804,7 +811,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				steamUrl := streamBaseUrl.JoinPath(string(storeCode), hash, strconv.Itoa(wStream.R.File.Idx), "/")
+				identifier := hash
+				if wStream.R.IsPrivate {
+					identifier += "-" + core.Base64Encode(wStream.torrentLink)
+				}
+				steamUrl := streamBaseUrl.JoinPath(string(storeCode), identifier, strconv.Itoa(wStream.R.File.Idx), "/")
 				if wStream.R.File.Name != "" {
 					steamUrl = steamUrl.JoinPath(url.PathEscape(wStream.R.File.Name))
 				}
