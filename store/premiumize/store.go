@@ -16,6 +16,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -501,7 +502,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		if err != nil {
 			return nil, err
 		}
-		isPrivate = *mii.Private
+		isPrivate = util.PtrToBool(mii.Private, false)
 		m, err := core.ParseMagnetLink(mi.HashInfoBytes().HexString())
 		if err != nil {
 			return nil, err

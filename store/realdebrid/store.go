@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -225,7 +226,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		if err != nil {
 			return nil, err
 		}
-		isPrivate = *mii.Private
+		isPrivate = util.PtrToBool(mii.Private, false)
 		magnet = &m
 	}
 
