@@ -110,6 +110,12 @@
       {{end}}
     </div>
 
+    {{if gt (.Indexers | len) 0}}
+    <div class="">
+      {{template "configure_config.html" .UncachedPrivate}}
+    </div>
+    {{end}}
+
     <div class="absolute" style="bottom: -0.75rem; right: 1rem;">
       <small>
         <button

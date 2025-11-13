@@ -15,6 +15,7 @@ import (
 
 type UserData struct {
 	stremio_userdata.UserDataIndexers
+	IncludeUncachedPrivate bool `json:"unc_prvt,omitempty"`
 	stremio_userdata.UserDataStores
 	CachedOnly bool `json:"cached,omitempty"`
 
@@ -227,6 +228,8 @@ func getUserData(r *http.Request) (*UserData, error) {
 				APIKey: apiKey,
 			})
 		}
+
+		data.IncludeUncachedPrivate = r.Form.Get("uncached_private") == "on"
 	}
 
 	if IsPublicInstance && len(data.Stores) > MaxPublicInstanceStoreCount {

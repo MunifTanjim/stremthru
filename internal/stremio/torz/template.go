@@ -36,6 +36,7 @@ type TemplateData struct {
 	Indexers         []TemplateDataIndexer
 	CanAddIndexer    bool
 	CanRemoveIndexer bool
+	UncachedPrivate  configure.Config
 
 	Stores           []StoreConfig
 	StoreCodeOptions []configure.ConfigOption
@@ -131,7 +132,13 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Stremio Addon to access crowdsourced Torz",
 			NavTitle:    "Torz",
 		},
-		Indexers:         []TemplateDataIndexer{},
+		Indexers: []TemplateDataIndexer{},
+		UncachedPrivate: configure.Config{
+			Key:     "uncached_private",
+			Type:    configure.ConfigTypeCheckbox,
+			Default: configure.ToCheckboxDefault(ud.IncludeUncachedPrivate),
+			Title:   "Show Uncached Private (only for TorBox)",
+		},
 		Stores:           []StoreConfig{},
 		StoreCodeOptions: stremio_shared.GetStoreCodeOptions(true),
 		Configs: []configure.Config{
