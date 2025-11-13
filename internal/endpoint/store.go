@@ -36,7 +36,8 @@ func handleStoreUser(w http.ResponseWriter, r *http.Request) {
 }
 
 type AddMagnetPayload struct {
-	Magnet string `json:"magnet"`
+	Magnet  string `json:"magnet"`
+	Torrent string `json:"torrent"`
 }
 
 func checkMagnet(ctx *context.StoreContext, magnets []string, sid string, localOnly bool) (*store.CheckMagnetData, error) {
@@ -233,13 +234,23 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if payload.Magnet == "" {
+		if payload.Magnet == "" && payload.Torrent == "" {
 			shared.ErrorBadRequest(r, "missing magnet link").Send(w, r)
 			return
 		}
 
 		ctx := context.GetStoreContext(r)
-		data, err = addMagnet(ctx, payload.Magnet, nil)
+
+		if payload.Magnet != "" {
+			data, err = addMagnet(ctx, payload.Magnet, nil)
+		} else if payload.Torrent != "" {
+			fileHeader, err := shared.FetchTorrentFile(payload.Torrent, 1024*1024)
+			if err != nil {
+				shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(err).Send(w, r)
+				return
+			}
+			data, err = addMagnet(ctx, "", fileHeader)
+		}
 
 	case strings.Contains(contentType, "multipart/form-data"):
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
