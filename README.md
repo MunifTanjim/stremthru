@@ -419,13 +419,25 @@ Add magnet link for download.
 
 **Request**:
 
+Magnet Link:
+
 ```json
 {
   "magnet": "string"
 }
 ```
 
-or `multipart/form-data` request with a torrent file in `torrent` field.
+Torrent File Link:
+
+```json
+{
+  "torrent": "string"
+}
+```
+
+Torrent File:
+
+`multipart/form-data` request with a torrent file in `torrent` field.
 
 **Response**:
 
