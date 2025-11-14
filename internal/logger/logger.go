@@ -12,6 +12,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger/log"
+	"github.com/MunifTanjim/stremthru/internal/posthog"
 )
 
 type Logger = log.Logger
@@ -40,6 +41,7 @@ var _ = func() *struct{} {
 		)
 	}
 
+	handler = posthog.WrapLogHandler(handler)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 	slog.SetLogLoggerLevel(slog.LevelInfo)
