@@ -13,7 +13,7 @@ import (
 func commonMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := dash_api.GetReqCtx(r)
-		ctx.Log = log.With("request_id", ctx.RequestId)
+		ctx.Log = log.WithCtx(r.Context(), "req.id", ctx.RequestId)
 		next.ServeHTTP(w, r)
 	})
 }

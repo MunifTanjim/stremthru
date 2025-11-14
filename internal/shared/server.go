@@ -38,7 +38,7 @@ var reqLog = logger.Scoped("http")
 func RootServerContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rw := &responseWriter{ResponseWriter: w}
-		ctx := &server.ReqCtx{StartTime: time.Now(), ReqPath: r.URL.Path, ReqQuery: r.URL.Query()}
+		ctx := &server.ReqCtx{StartTime: time.Now(), ReqMethod: r.Method, ReqPath: r.URL.Path, ReqQuery: r.URL.Query()}
 		r = server.SetReqCtx(r, ctx)
 
 		defer func() {
@@ -47,7 +47,7 @@ func RootServerContext(next http.Handler) http.Handler {
 				n := runtime.Stack(buf, false)
 				buf = buf[:n]
 
-				reqLog.Error("panic recovered", "error", err, "stack", string(buf), "request_id", ctx.RequestId)
+				reqLog.Error("panic recovered", "error", err, "stack", string(buf), "req.id", ctx.RequestId)
 				ErrorInternalServerError(r, "").Send(rw, r)
 				logRequest(rw, r)
 			}
@@ -60,7 +60,7 @@ func RootServerContext(next http.Handler) http.Handler {
 		}
 		w.Header().Set("Request-ID", ctx.RequestId)
 
-		ctx.Log = logger.With("request_id", ctx.RequestId)
+		ctx.Log = logger.New(r.Context(), "req.id", ctx.RequestId)
 
 		next.ServeHTTP(rw, r)
 		logRequest(rw, r)
@@ -95,17 +95,26 @@ func logRequest(w *responseWriter, r *http.Request) {
 	}
 
 	status := w.getStatusCode()
-	req := slog.GroupValue(
-		slog.String("id", ctx.RequestId),
-		slog.String("method", r.Method),
-		slog.String("path", ctx.ReqPath),
-		slog.String("query", ctx.ReqQuery.Encode()),
-	)
+
+	level := slog.LevelError
 	if status < 400 {
-		reqLog.Debug("HTTP Request", "req", req, "status", w.getStatusCode(), "latency", time.Since(ctx.StartTime))
+		level = slog.LevelDebug
 	} else if status < 500 {
-		reqLog.Warn("HTTP Request", "req", req, "status", w.getStatusCode(), "latency", time.Since(ctx.StartTime), "error", ctx.Error)
-	} else {
-		reqLog.Error("HTTP Request", "req", req, "status", w.getStatusCode(), "latency", time.Since(ctx.StartTime), "error", ctx.Error)
+		level = slog.LevelWarn
 	}
+	attrs := []slog.Attr{
+		slog.Group(
+			"req",
+			slog.String("id", ctx.RequestId),
+			slog.String("method", ctx.ReqMethod),
+			slog.String("path", ctx.ReqPath),
+			slog.String("query", ctx.ReqQuery.Encode()),
+		),
+		slog.Int("status", w.getStatusCode()),
+		slog.String("latency", time.Since(ctx.StartTime).String()),
+	}
+	if ctx.Error != nil {
+		attrs = append(attrs, slog.Any("error", ctx.Error))
+	}
+	reqLog.L.LogAttrs(r.Context(), level, "HTTP Request", attrs...)
 }

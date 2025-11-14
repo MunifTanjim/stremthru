@@ -47,19 +47,48 @@ func (l *Level) UnmarshalText(data []byte) error {
 }
 
 type Logger struct {
-	*slog.Logger
+	L   *slog.Logger
+	ctx context.Context
+}
+
+func New(ctx context.Context, args ...any) *Logger {
+	return &Logger{L: slog.With(args...), ctx: ctx}
 }
 
 func (l *Logger) With(args ...any) *Logger {
-	return &Logger{Logger: l.Logger.With(args...)}
+	return &Logger{L: l.L.With(args...), ctx: l.ctx}
+}
+
+func (l *Logger) WithCtx(ctx context.Context, args ...any) *Logger {
+	return &Logger{L: l.L.With(args...), ctx: ctx}
+}
+
+func (l *Logger) Log(level slog.Level, msg string, args ...any) {
+	l.L.Log(l.ctx, level, msg, args...)
 }
 
 func (l *Logger) Trace(msg string, args ...any) {
-	l.Log(context.Background(), LevelTrace, msg, args...)
+	l.Log(LevelTrace, msg, args...)
+}
+
+func (l *Logger) Debug(msg string, args ...any) {
+	l.Log(slog.LevelDebug, msg, args...)
+}
+
+func (l *Logger) Info(msg string, args ...any) {
+	l.Log(slog.LevelInfo, msg, args...)
+}
+
+func (l *Logger) Warn(msg string, args ...any) {
+	l.Log(slog.LevelWarn, msg, args...)
+}
+
+func (l *Logger) Error(msg string, args ...any) {
+	l.Log(slog.LevelError, msg, args...)
 }
 
 func (l *Logger) Fatal(msg string, args ...any) {
-	l.Log(context.Background(), LevelFatal, msg, args...)
+	l.Log(LevelFatal, msg, args...)
 	os.Exit(1)
 }
 

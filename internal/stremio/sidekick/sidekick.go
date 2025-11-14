@@ -1184,7 +1184,7 @@ func handleLibraryReset(w http.ResponseWriter, r *http.Request) {
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := server.GetReqCtx(r)
-		ctx.Log = log.With("request_id", ctx.RequestId)
+		ctx.Log = log.WithCtx(r.Context(), "req.id", ctx.RequestId)
 		next.ServeHTTP(w, r)
 		ctx.RedactURLPathValues(r, "transportUrl")
 	})
