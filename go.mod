@@ -8,6 +8,7 @@ require (
 	github.com/elastic/go-freelru v0.15.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hasura/go-graphql-client v0.14.3
+	github.com/posthog/posthog-go v1.6.12
 	github.com/redis/go-redis/v9 v9.0.0-rc.4
 	github.com/zeebo/xxh3 v1.0.2
 	golang.org/x/sync v0.16.0
@@ -23,6 +24,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
@@ -68,3 +70,5 @@ require (
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.30.0
 )
+
+replace github.com/posthog/posthog-go => github.com/MunifTanjim/posthog-go v1.6.13-0.20251115073058-2d57c45d7610

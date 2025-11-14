@@ -7,6 +7,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
+	"github.com/MunifTanjim/stremthru/internal/posthog"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
@@ -25,6 +26,9 @@ func main() {
 			string(store.StoreNameTorBox),
 		},
 	})
+
+	posthog.Init()
+	defer posthog.Close()
 
 	database := db.Open()
 	defer db.Close()
