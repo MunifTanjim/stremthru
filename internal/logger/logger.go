@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"time"
@@ -46,10 +47,10 @@ var _ = func() *struct{} {
 	return nil
 }()
 
-func With(args ...any) *Logger {
-	return &Logger{Logger: slog.With(args...)}
+func New(ctx context.Context, args ...any) *Logger {
+	return log.New(ctx, args...)
 }
 
 func Scoped(scope string) *Logger {
-	return With("scope", scope)
+	return New(context.Background(), "scope", scope)
 }

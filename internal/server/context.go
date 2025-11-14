@@ -16,6 +16,7 @@ type ReqCtx struct {
 	StartTime    time.Time
 	RequestId    string
 	Error        error
+	ReqMethod    string
 	ReqPath      string
 	ReqQuery     url.Values
 	Log          *log.Logger
@@ -45,4 +46,12 @@ func SetReqCtx(r *http.Request, reqCtx *ReqCtx) *http.Request {
 
 func GetReqCtx(r *http.Request) *ReqCtx {
 	return r.Context().Value(reqCtxKey{}).(*ReqCtx)
+}
+
+func GetReqCtxFromContext(ctx context.Context) *ReqCtx {
+	reqCtx, ok := ctx.Value(reqCtxKey{}).(*ReqCtx)
+	if !ok {
+		return nil
+	}
+	return reqCtx
 }
