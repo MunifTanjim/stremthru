@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.1](https://github.com/MunifTanjim/stremthru/compare/0.92.0...0.92.1) (2025-11-15)
+
+
+### Bug Fixes
+
+* **job_log:** fix queries for postgresql ([0dcb257](https://github.com/MunifTanjim/stremthru/commit/0dcb257f66d8f0d38353cbf46149cb8885464d42))
+
 ## [0.92.0](https://github.com/MunifTanjim/stremthru/compare/0.91.8...0.92.0) (2025-11-15)
 
 
