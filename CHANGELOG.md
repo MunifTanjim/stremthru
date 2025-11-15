@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.3](https://github.com/MunifTanjim/stremthru/compare/0.92.2...0.92.3) (2025-11-15)
+
+
+### Bug Fixes
+
+* **stremio/list:** show export/import on public instance ([6a10afd](https://github.com/MunifTanjim/stremthru/commit/6a10afde92e03fd567dccdf9f862377ae5bba3c2))
+
 ## [0.92.2](https://github.com/MunifTanjim/stremthru/compare/0.92.1...0.92.2) (2025-11-15)
 
 
