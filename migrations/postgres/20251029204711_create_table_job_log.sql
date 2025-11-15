@@ -14,14 +14,14 @@ CREATE TABLE IF NOT EXISTS "public"."job_log" (
 );
 
 INSERT INTO job_log (name, id, status, data, error, created_at, updated_at, expires_at)
-SELECT ltrim(t, 'job:') AS name,
-       k                AS id,
-       v ->> 'status'   AS status,
-       null             AS data,
-       v ->> 'err'      AS error,
-       cat              AS created_at,
-       uat              AS updated_at,
-       eat              AS expires_at
+SELECT ltrim(t, 'job:')     AS name,
+       k                    AS id,
+       v::json ->> 'status' AS status,
+       null                 AS data,
+       v::json ->> 'err'    AS error,
+       cat                  AS created_at,
+       uat                  AS updated_at,
+       eat                  AS expires_at
 FROM kv
 WHERE t LIKE 'job:%'
   AND t NOT LIKE 'job:%:%';

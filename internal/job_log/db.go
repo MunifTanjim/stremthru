@@ -303,12 +303,17 @@ func SaveJobLog[T any](name string, id string, status string, data *T, errorMsg 
 		expiresAt.Time = time.Now().Add(expiresIn)
 	}
 
+	jsonString := string(dataBlob)
+	if jsonString == "" {
+		jsonString = "null"
+	}
+
 	_, err = db.Exec(
 		query_save_job_log,
 		name,
 		id,
 		status,
-		string(dataBlob),
+		jsonString,
 		errorMsg,
 		expiresAt,
 	)
