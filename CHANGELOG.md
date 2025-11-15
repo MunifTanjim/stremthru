@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.2](https://github.com/MunifTanjim/stremthru/compare/0.92.1...0.92.2) (2025-11-15)
+
+
+### Bug Fixes
+
+* **db:** fix scan for NullString ([45b954c](https://github.com/MunifTanjim/stremthru/commit/45b954c2a6236048e584dfcd85503e462f2a7a31))
+
 ## [0.92.1](https://github.com/MunifTanjim/stremthru/compare/0.92.0...0.92.1) (2025-11-15)
 
 
