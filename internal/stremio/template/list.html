@@ -14,10 +14,11 @@
 
 {{define "main"}}
 
-{{if .CanAuthorize}}
 <div class="flex flex-row flex-wrap align-center justify-between mb-8">
   <div class="flex flex-row gap-4">
+    {{if .CanAuthorize}}
     {{template "saved_userdata_field.html" .}}
+    {{end}}
 
     <div class="{{if .IsRedacted}}hidden{{end}}">
       <div role="group" class="mb-0">
@@ -96,6 +97,7 @@
       </dialog>
     </div>
   </div>
+  {{if .CanAuthorize}}
   <div>
     <button
       class="secondary mb-0"
@@ -114,8 +116,8 @@
       {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
     </button>
   </div>
+  {{end}}
 </div>
-{{end}}
 
 <div class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
   <p class="mb-2">
