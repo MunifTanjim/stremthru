@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.92.0](https://github.com/MunifTanjim/stremthru/compare/0.91.8...0.92.0) (2025-11-15)
+
+
+### Features
+
+* **dash:** show worker job logs ([b7514c2](https://github.com/MunifTanjim/stremthru/commit/b7514c2679eebad4710b0c3721423d3fb7c8e7f7))
+* **job_log:** add dedicated table for job logs ([51ecbb7](https://github.com/MunifTanjim/stremthru/commit/51ecbb72a31c7214a32eed68b41027cd560b3e05))
+* **logger:** add levels - trace, fatal ([9b3a344](https://github.com/MunifTanjim/stremthru/commit/9b3a34458abc6fd611e979f753358b0e22d5aca6))
+* **logger:** add support for context ([2f3db0f](https://github.com/MunifTanjim/stremthru/commit/2f3db0fc52fb712b7afdbbec33a4a268fda8f3a1))
+* **posthog:** add posthog integration ([4bb1cfb](https://github.com/MunifTanjim/stremthru/commit/4bb1cfb3b05016c4476c09c5245fd65b2c2222c5))
+* **store:** support add magnet using torrent link ([1c64d07](https://github.com/MunifTanjim/stremthru/commit/1c64d07d1560b316258687eeafc7d0a9dbaf4138))
+* **stremio/list:** support export/import config w/o secrets ([45bbd36](https://github.com/MunifTanjim/stremthru/commit/45bbd360ef3b0206bd885f697711984b8c5b55c5))
+* **stremio/sidekick:** add library reset ([fe86e48](https://github.com/MunifTanjim/stremthru/commit/fe86e4846094d278a1682f40fb0a1bb97c2a5da9))
+* **stremio/torz:** add support for jackett indexers ([94020bb](https://github.com/MunifTanjim/stremthru/commit/94020bbdfed98adfbb4e7808e499fc249f9342bd))
+* **stremio/torz:** support uncached private torrents for torbox ([bc13acc](https://github.com/MunifTanjim/stremthru/commit/bc13acc02e65eb6db2873b38ef52fbe89c3594f5))
+
+
+### Bug Fixes
+
+* **store:** fix nil pointer dereference ([4769d9f](https://github.com/MunifTanjim/stremthru/commit/4769d9f209d622609cf6eed2270fcef3f3f44697))
+
 ## [0.91.8](https://github.com/MunifTanjim/stremthru/compare/0.91.7...0.91.8) (2025-11-11)
 
 
