@@ -104,6 +104,8 @@ func (nv NullString) Value() (driver.Value, error) {
 
 func (nv *NullString) Scan(value any) error {
 	switch v := value.(type) {
+	case []byte:
+		nv.String = string(v)
 	case string:
 		nv.String = v
 	case nil:
