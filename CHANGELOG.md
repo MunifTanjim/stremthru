@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.6](https://github.com/MunifTanjim/stremthru/compare/0.92.5...0.92.6) (2025-11-17)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** fix nil pointer dereference ([dfccc16](https://github.com/MunifTanjim/stremthru/commit/dfccc16eb1c738ed19389113080de1a3e50a132e))
+
 ## [0.92.5](https://github.com/MunifTanjim/stremthru/compare/0.92.4...0.92.5) (2025-11-17)
 
 
