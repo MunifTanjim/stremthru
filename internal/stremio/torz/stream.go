@@ -127,6 +127,9 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 		if err != nil {
 			return nil, nil, err
 		}
+		if it == nil {
+			return nil, nil, errors.New("imdb title not found: " + nsid.Id)
+		}
 		queryMeta.titles = append(queryMeta.titles, it.Title)
 		if it.Year > 0 {
 			queryMeta.year = it.Year
