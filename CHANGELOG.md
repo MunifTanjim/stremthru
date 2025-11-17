@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.92.5](https://github.com/MunifTanjim/stremthru/compare/0.92.4...0.92.5) (2025-11-17)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** hide uncached private torrent ([34e69a4](https://github.com/MunifTanjim/stremthru/commit/34e69a4dd54c2760515dae9e8dc7f9aa5b825586))
+* **torrent_info:** enabled push/pull for private torrents ([250cdc4](https://github.com/MunifTanjim/stremthru/commit/250cdc404cf09b1a770cd423c2c7456f7621c91b))
+
 ## [0.92.4](https://github.com/MunifTanjim/stremthru/compare/0.92.3...0.92.4) (2025-11-17)
 
 
