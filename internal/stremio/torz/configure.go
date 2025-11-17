@@ -84,20 +84,20 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			s := ud.GetUser()
 			if s.HasErr {
 				for i, err := range s.Err {
-					LogError(r, "failed to access store", err)
 					if err == nil {
 						continue
 					}
+					log.Warn("failed to access store", "error", err)
 					var ts *StoreConfig
 					if ud.IsStremThruStore() {
 						ts = &td.Stores[0]
 						if ts.Error.Token != "" {
 							ts.Error.Token += "\n"
 						}
-						ts.Error.Token += string(ud.GetStoreByIdx(i).Store.GetName()) + ": Failed to access store"
+						ts.Error.Token += string(ud.GetStoreByIdx(i).Store.GetName()) + ": Failed to access store (" + err.Error() + ")"
 					} else {
 						ts = &td.Stores[i]
-						ts.Error.Token = "Failed to access store"
+						ts.Error.Token = "Failed to access store (" + err.Error() + ")"
 					}
 				}
 			}
