@@ -12,7 +12,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
-	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
@@ -332,7 +331,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 					if idToMatch != "" {
 						for i := range files {
 							f := &files[i]
-							if core.HasVideoExtension(f.Name) {
+							if f.IsVideo() {
 								if f.SId == idToMatch || f.ASId == idToMatch {
 									file = f
 								}
@@ -467,7 +466,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 					if idToMatch != "" {
 						for i := range files {
 							f := &files[i]
-							if core.HasVideoExtension(f.Name) {
+							if f.IsVideo() {
 								if f.SId == idToMatch || f.ASId == idToMatch {
 									file = f
 								}
@@ -497,11 +496,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 	return wrappedStreams, hashes, nil
 }
 
-func GetStreamsForHashes(stremType, stremId string, hashes []string) ([]WrappedStream, error) {
-	isKitsuId := strings.HasPrefix(stremId, "kitsu:")
-	isMALId := strings.HasPrefix(stremId, "mal:")
-	isAnime := isKitsuId || isMALId
-
+func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torrent_stream.NormalizedStremId) ([]WrappedStream, error) {
 	tInfoByHash, err := torrent_info.GetByHashes(hashes)
 	if err != nil {
 		return nil, err
@@ -522,39 +517,46 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string) ([]WrappedS
 		var file *torrent_stream.File
 		if files, ok := filesByHashes[hash]; ok {
 			idToMatch := stremId
-			if isAnime {
-				var anidbId, episode string
-				var err error
-
-				if isKitsuId {
-					kitsuId, kitsuEpisode, _ := strings.Cut(strings.TrimPrefix(stremId, "kitsu:"), ":")
-					anidbId, _, err = anime.GetAniDBIdByKitsuId(kitsuId)
-					episode = kitsuEpisode
-				} else if isMALId {
-					malId, malEpisode, _ := strings.Cut(strings.TrimPrefix(stremId, "mal:"), ":")
-					anidbId, _, err = anime.GetAniDBIdByMALId(malId)
-					episode = malEpisode
-				}
-				if err != nil || anidbId == "" {
-					if err != nil {
-						log.Error("failed to get anidb id for anime", "id", stremId, "error", err)
-					}
+			if nsid.IsAnime {
+				if nsid.Id == "" {
 					idToMatch = ""
 				} else {
-					idToMatch = anidbId + ":" + episode
+					idToMatch = nsid.Id + ":" + nsid.Episode
 				}
 			}
 			if idToMatch != "" {
 				for i := range files {
 					f := &files[i]
-					if core.HasVideoExtension(f.Name) {
+					if f.IsVideo() {
 						if f.SId == idToMatch || f.ASId == idToMatch {
 							file = f
+							break
 						}
 					}
 				}
 			}
+			if file == nil && !nsid.IsAnime && nsid.IsSeries() && nsid.Episode != "" {
+				for i := range files {
+					f := &files[i]
+					if f.IsVideo() {
+						data := stremio_shared.ParseSeasonEpisodeFromName(f.Name, false)
+						if data.Season != -1 && strconv.Itoa(data.Season) != nsid.Season {
+							continue
+						}
+						if data.Episode == -1 || strconv.Itoa(data.Episode) != nsid.Episode {
+							continue
+						}
+						file = f
+						break
+					}
+				}
+				if file == nil {
+					log.Trace("skipping torrent: no matching file found", "hash", tInfo.Hash, "sid", stremId)
+					continue
+				}
+			}
 		}
+
 		fName := ""
 		fIdx := -1
 		fSize := int64(0)
@@ -655,7 +657,8 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	eud := ud.GetEncoded()
 
-	if nsid, err := torrent_stream.NormalizeStreamId(id); err == nil {
+	nsid, err := torrent_stream.NormalizeStreamId(id)
+	if err == nil {
 		cleanSId := nsid.ToClean()
 		if torzLazyPull {
 			go buddy.PullTorrentsByStremId(cleanSId, "")
@@ -664,6 +667,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)
+		shared.ErrorInternalServerError(r, "failed to normalize strem id").WithCause(err).Send(w, r)
+		return
+	} else {
+		shared.ErrorBadRequest(r, "unsupported strem id: "+id).Send(w, r)
+		return
 	}
 
 	hashes, err := torrent_info.ListHashesByStremId(id)
@@ -679,7 +687,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		wrappedStreams, getStreamsError = GetStreamsForHashes(contentType, id, hashes)
+		wrappedStreams, getStreamsError = GetStreamsForHashes(contentType, id, hashes, nsid)
 	}()
 
 	var wrappedStreamsFromIndexers []WrappedStream

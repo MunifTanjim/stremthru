@@ -28,6 +28,17 @@ type File struct {
 	ASId      string `json:"asid,omitempty"`
 	Source    string `json:"src,omitempty"`
 	VideoHash string `json:"vhash,omitempty"`
+
+	is_video *bool `json:"-"`
+}
+
+func (f File) IsVideo() bool {
+	if f.is_video != nil {
+		return *f.is_video
+	}
+	isVideo := core.HasVideoExtension(f.Name)
+	f.is_video = &isVideo
+	return isVideo
 }
 
 func (f *File) Normalize() {

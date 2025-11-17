@@ -24,25 +24,25 @@ func CleanStremId(sid string) string {
 }
 
 // imdb or anidb
-type normalizedStremId struct {
+type NormalizedStremId struct {
 	IsAnime bool   // when `true`, `Id` is AniDB id.
 	Id      string // imdb or anidb
 	Episode string
 	Season  string
 }
 
-func (nsid normalizedStremId) IsSeries() bool {
+func (nsid NormalizedStremId) IsSeries() bool {
 	return nsid.Season != "" || nsid.Episode != ""
 }
 
-func (nsid normalizedStremId) ToClean() string {
+func (nsid NormalizedStremId) ToClean() string {
 	if nsid.IsAnime && nsid.Id != "" {
 		return "anidb:" + nsid.Id
 	}
 	return nsid.Id
 }
 
-var normalizedStremIdCache = cache.NewLRUCache[normalizedStremId](&cache.CacheConfig{
+var normalizedStremIdCache = cache.NewLRUCache[NormalizedStremId](&cache.CacheConfig{
 	Lifetime: 60 * time.Second,
 	Name:     "normalized_strem_id",
 })
@@ -50,8 +50,8 @@ var normalizedStremIdCache = cache.NewLRUCache[normalizedStremId](&cache.CacheCo
 var ErrUnsupportedStremId = errors.New("unsupported strem id")
 
 // to imdb or anidb
-func NormalizeStreamId(sid string) (*normalizedStremId, error) {
-	result := normalizedStremId{}
+func NormalizeStreamId(sid string) (*NormalizedStremId, error) {
+	result := NormalizedStremId{}
 
 	if normalizedStremIdCache.Get(sid, &result) {
 		return &result, nil

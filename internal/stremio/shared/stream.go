@@ -7,7 +7,6 @@ import (
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
-	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -68,12 +67,12 @@ var parse_season_episode = ptt.GetPartialParser([]string{"releaseTypes", "season
 var digits_regex = regexp.MustCompile(`\b(\d+)\b`)
 
 type seasonEpisodeData struct {
-	season      int
-	episode     int
-	releaseType string
+	Season      int
+	Episode     int
+	ReleaseType string
 }
 
-func getSeasonEpisode(title string, extractDigitsAsEpisodeAgressively bool) seasonEpisodeData {
+func ParseSeasonEpisodeFromName(title string, extractDigitsAsEpisodeAgressively bool) seasonEpisodeData {
 	data := seasonEpisodeData{-1, -1, ""}
 	r := parse_season_episode(title)
 	if err := r.Error(); err != nil {
@@ -81,21 +80,48 @@ func getSeasonEpisode(title string, extractDigitsAsEpisodeAgressively bool) seas
 		return data
 	}
 	if len(r.Seasons) > 0 {
-		data.season = r.Seasons[0]
+		data.Season = r.Seasons[0]
 	}
 	if len(r.Episodes) > 0 {
-		data.episode = r.Episodes[0]
+		data.Episode = r.Episodes[0]
 	}
-	if extractDigitsAsEpisodeAgressively && data.season == -1 && data.episode == -1 {
+	if extractDigitsAsEpisodeAgressively && data.Season == -1 && data.Episode == -1 {
 		matches := digits_regex.FindAllString(title, 2)
 		if len(matches) == 1 {
-			data.episode, _ = strconv.Atoi(matches[0])
+			data.Episode, _ = strconv.Atoi(matches[0])
 		}
 	}
 	if len(r.ReleaseTypes) > 0 {
-		data.releaseType = r.ReleaseTypes[0]
+		data.ReleaseType = r.ReleaseTypes[0]
 	}
 	return data
+}
+
+func matchFileByIMDBStremId(files []store.MagnetFile, sid string) *store.MagnetFile {
+	parts := strings.SplitN(sid, ":", 3)
+	if len(parts) != 3 {
+		return nil
+	}
+	expectedSeason, err := strconv.Atoi(parts[1])
+	if err != nil {
+		log.Warn("failed to parse season from imdb strem id", "error", err, "sid", sid)
+		return nil
+	}
+	expectedEpisode := -1
+	if len(parts) == 3 {
+		expectedEpisode, err = strconv.Atoi(parts[2])
+		if err != nil {
+			log.Warn("failed to parse episode from imdb strem id", "error", err, "sid", sid)
+			return nil
+		}
+	}
+	for i := range files {
+		f := &files[i]
+		if d := ParseSeasonEpisodeFromName(f.Name, false); d.Season == expectedSeason && d.Episode == expectedEpisode {
+			return f
+		}
+	}
+	return nil
 }
 
 func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string, storeCode store.StoreCode) *store.MagnetFile {
@@ -112,25 +138,14 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 		}
 	}
 
-	isKitsuId := strings.HasPrefix(sid, "kitsu:")
-	isMALId := strings.HasPrefix(sid, "mal:")
-	isAnimeId := isKitsuId || isMALId
-	if isAnimeId {
-		var anidbId, season, episode string
-		var err error
-		if isKitsuId {
-			kitsuId, kitsuEpisode, _ := strings.Cut(strings.TrimPrefix(sid, "kitsu:"), ":")
-			anidbId, season, err = anime.GetAniDBIdByKitsuId(kitsuId)
-			episode = kitsuEpisode
-		} else if isMALId {
-			malId, malEpisode, _ := strings.Cut(strings.TrimPrefix(sid, "mal:"), ":")
-			anidbId, season, err = anime.GetAniDBIdByMALId(malId)
-			episode = malEpisode
-		}
-		if err != nil {
-			log.Error("failed to get anidb id for anime", "error", err, "sid", sid)
-			return nil
-		}
+	nsid, err := torrent_stream.NormalizeStreamId(sid)
+	if err != nil {
+		log.Error("failed to normalize strem id", "error", err, "sid", sid)
+		return nil
+	}
+
+	if nsid.IsAnime {
+		anidbId, season, episode := nsid.Id, nsid.Season, nsid.Episode
 
 		tInfo, err := torrent_info.GetByHash(magnetHash)
 		if err != nil {
@@ -146,12 +161,12 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 		minEpisode := 99999
 		for i := range files {
 			f := &files[i]
-			d := getSeasonEpisode(f.Name, true)
+			d := ParseSeasonEpisodeFromName(f.Name, true)
 			dataByName[f.Name] = d
-			if d.releaseType == "" && (d.episode != -1) && ((d.season == -1 && expectedSeason == 1) || d.season == expectedSeason) {
+			if d.ReleaseType == "" && (d.Episode != -1) && ((d.Season == -1 && expectedSeason == 1) || d.Season == expectedSeason) {
 				filesForSeason = append(filesForSeason, f)
-				if d.episode < minEpisode {
-					minEpisode = d.episode
+				if d.Episode < minEpisode {
+					minEpisode = d.Episode
 				}
 			}
 		}
@@ -169,7 +184,7 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 				for i := range files {
 					f := &files[i]
 					d := dataByName[f.Name]
-					if d.episode == expectedEpisode {
+					if d.Episode == expectedEpisode {
 						return f
 					}
 				}
@@ -177,7 +192,7 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 		} else {
 			for _, f := range filesForSeason {
 				d := dataByName[f.Name]
-				if d.episode == expectedEpisode || (len(tInfo.Episodes) == 0 && minEpisode > 1 && d.episode-minEpisode+1 == expectedEpisode) {
+				if d.Episode == expectedEpisode || (len(tInfo.Episodes) == 0 && minEpisode > 1 && d.Episode-minEpisode+1 == expectedEpisode) {
 					return f
 				}
 			}
@@ -185,23 +200,6 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 
 		return nil
 	}
-	if parts := strings.SplitN(sid, ":", 3); len(parts) == 3 {
-		expectedSeason, err := strconv.Atoi(parts[1])
-		if err != nil {
-			log.Warn("failed to parse season from strem id", "sid", sid, "error", err)
-			return nil
-		}
-		expectedEpisode, err := strconv.Atoi(parts[2])
-		if err != nil {
-			log.Warn("failed to parse episode from strem id", "sid", sid, "error", err)
-			return nil
-		}
-		for i := range files {
-			f := &files[i]
-			if d := getSeasonEpisode(f.Name, false); d.season == expectedSeason && d.episode == expectedEpisode {
-				return f
-			}
-		}
-	}
-	return nil
+
+	return matchFileByIMDBStremId(files, sid)
 }

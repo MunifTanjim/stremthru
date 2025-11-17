@@ -55,7 +55,8 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	isImdbStremId := strings.HasPrefix(stremId, "tt")
 	torrentInfoCategory := torrent_info.GetCategoryFromStremId(stremId, rType)
 
-	if nsid, err := torrent_stream.NormalizeStreamId(stremId); err == nil {
+	nsid, err := torrent_stream.NormalizeStreamId(stremId)
+	if err == nil {
 		cleanSId := nsid.ToClean()
 		if !ud.IncludeTorz || lazyPullTorz {
 			go buddy.PullTorrentsByStremId(cleanSId, "")
@@ -64,6 +65,8 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 		}
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "strem_id", stremId, "error", err)
+	} else {
+		log.Warn("unsupported strem id for normalization", "strem_id", stremId)
 	}
 
 	chunkIdxOffset := 0
@@ -84,7 +87,11 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				return
 			}
 
-			streams, err := stremio_torz.GetStreamsForHashes(rType, stremId, hashes)
+			if nsid == nil {
+				return
+			}
+
+			streams, err := stremio_torz.GetStreamsForHashes(rType, stremId, hashes, nsid)
 			if err != nil {
 				errs[0] = err
 				return
