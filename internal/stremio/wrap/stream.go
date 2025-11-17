@@ -259,7 +259,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 
 				cachedStreams = append(cachedStreams, *stream.Stream)
-			} else if !ud.CachedOnly && !stream.r.IsPrivate {
+			} else if !ud.CachedOnly && (stream.r == nil || !stream.r.IsPrivate) {
 				surlRawQuery := surl.RawQuery
 				stores := ud.GetStores()
 				for i := range stores {
