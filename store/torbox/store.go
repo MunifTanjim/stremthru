@@ -93,7 +93,7 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 		Email: res.Data.Email,
 	}
 	if res.Data.Plan == PlanFree {
-		data.SubscriptionStatus = store.UserSubscriptionStatusTrial
+		data.SubscriptionStatus = store.UserSubscriptionStatusExpired
 	} else {
 		data.SubscriptionStatus = store.UserSubscriptionStatusPremium
 	}
