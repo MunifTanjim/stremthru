@@ -1213,8 +1213,18 @@ type ListTorrentsData struct {
 
 var list_query_columns = strings.Join(
 	func() []string {
-		columns := []string{Column.Hash, Column.TorrentTitle, Column.Size, Column.Indexer, Column.Source, Column.Category, Column.Seeders, Column.Leechers}
-		cols := make([]string, 8)
+		columns := []string{
+			Column.Hash,
+			Column.TorrentTitle,
+			Column.Size,
+			Column.Indexer,
+			Column.Source,
+			Column.Category,
+			Column.Seeders,
+			Column.Leechers,
+			Column.Private,
+		}
+		cols := make([]string, len(columns))
 		for i := range columns {
 			cols[i] = `ti."` + columns[i] + `"`
 		}
@@ -1262,9 +1272,7 @@ var query_list_by_stremid_cond_no_missing_size = fmt.Sprintf(
 	Column.Size,
 )
 var query_list_by_stremid_after_cond = fmt.Sprintf(
-	" AND %s = %s GROUP BY %s",
-	Column.Private,
-	db.BooleanFalse,
+	" GROUP BY %s",
 	Column.Hash,
 )
 
@@ -1335,7 +1343,7 @@ func ListByStremId(stremId string, excludeMissingSize bool) (*ListTorrentsData, 
 	items := []TorrentItem{}
 	for rows.Next() {
 		var item TorrentItem
-		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Indexer, &item.Source, &item.Category, &item.Seeders, &item.Leechers, &item.Files); err != nil {
+		if err := rows.Scan(&item.Hash, &item.TorrentTitle, &item.Size, &item.Indexer, &item.Source, &item.Category, &item.Seeders, &item.Leechers, &item.Private, &item.Files); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

@@ -64,6 +64,7 @@ func PullTorrentsByStremId(sid string, originInstanceId string) {
 			Hash:         data.Hash,
 			TorrentTitle: data.TorrentTitle,
 			Size:         data.Size,
+			Indexer:      data.Indexer,
 			Source:       ti.TorrentInfoSource(data.Source),
 			Category:     ti.TorrentInfoCategory(data.Category),
 			Files:        data.Files,
