@@ -103,11 +103,11 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 		log.Error("failed to get file by strem id", "hash", magnetHash, "sid", sid, "error", err)
 	} else if f != nil {
 		if file := MatchFileByIdx(files, f.Idx, storeCode); file != nil {
-			log.Debug("matched file by strem id - fileidx", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store", storeCode)
+			log.Debug("matched file by strem id - fileidx", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store.name", storeCode.Name())
 			return file
 		}
 		if file := MatchFileByName(files, f.Name); file != nil {
-			log.Debug("matched file by strem id - filename", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store", storeCode)
+			log.Debug("matched file by strem id - filename", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store.name", storeCode.Name())
 			return file
 		}
 	}

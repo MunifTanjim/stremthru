@@ -22,7 +22,7 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 
 			s := shared.GetStoreByCode(storeCode)
 			if s == nil {
-				w.Log.Error("invalid store code", "store_code", storeCode)
+				w.Log.Error("invalid store code", "store.code", storeCode)
 				return nil
 			}
 
@@ -69,9 +69,9 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 					Peer.HaltCheckMagnet()
 				}
 				if err != nil {
-					w.Log.Error("failed partially to check magnet", "store", s.GetName(), "error", core.PackError(err), "duration", duration)
+					w.Log.Error("failed partially to check magnet", "store.name", s.GetName(), "error", core.PackError(err), "duration", duration)
 				} else {
-					w.Log.Info("check magnet", "store", s.GetName(), "hash_count", len(cHashes), "duration", duration)
+					w.Log.Info("check magnet", "store.name", s.GetName(), "hash_count", len(cHashes), "duration", duration)
 					for _, item := range res.Data.Items {
 						files := torrent_stream.Files{}
 						if item.Status == store.MagnetStatusCached {

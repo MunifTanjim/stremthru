@@ -64,7 +64,7 @@ func (ds TSVDataset[T]) nextRow(r *csv.Reader) []string {
 			}
 			return record
 		} else {
-			ds.log.Debug("failed to read row", "error", err)
+			ds.log.Trace("failed to read row", "error", err)
 		}
 	}
 }

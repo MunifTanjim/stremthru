@@ -661,10 +661,11 @@ func getIdMapUniqueConstraintErrorColumn(err error) string {
 func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 	err := tryBulkRecordIdMaps(items, anchorColumnName)
 	if err != nil {
-		log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 		if !isUniqueConstraintError(err) {
+			log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 			return err
 		}
+		log.Warn("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 		anchorColumnName = getIdMapUniqueConstraintErrorColumn(err)
 		log.Info("retrying bulk record idMaps", "anchor_column", anchorColumnName)
 		err = tryBulkRecordIdMaps(items, anchorColumnName)
@@ -673,10 +674,11 @@ func BulkRecordIdMaps(items []AnimeIdMap, anchorColumnName string) error {
 		return nil
 	}
 
-	log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 	if !isUniqueConstraintError(err) {
+		log.Error("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 		return err
 	}
+	log.Warn("bulk record idMaps failed", "error", err, "anchor_column", anchorColumnName)
 	log.Info("retrying bulk record idMaps individually")
 	for i := range items {
 		item := &items[i]

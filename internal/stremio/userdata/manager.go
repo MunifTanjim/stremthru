@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/google/uuid"
 )
 
@@ -61,10 +62,7 @@ func (m iManager[T]) Load(id string, ud UserData[T]) (err error) {
 		sud, err = Get[T](m.addon, id)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				e := core.NewAPIError("invalid userdata id")
-				e.Code = core.ErrorCodeBadRequest
-				e.Cause = err
-				return e
+				return shared.ErrorBadRequest(nil, "invalid userdata id").WithCause(err)
 			}
 			return err
 		}

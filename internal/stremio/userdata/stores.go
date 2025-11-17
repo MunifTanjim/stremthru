@@ -228,7 +228,7 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 	cmParams.APIKey = firstStore.AuthToken
 	storeCode := strings.ToUpper(string(firstStore.Store.GetName().Code()))
 	if cmRes, err := firstStore.Store.CheckMagnet(cmParams); err != nil {
-		log.Error("Failed to check magnet", "store", firstStore.Store.GetName(), "error", err)
+		log.Warn("failed to check magnet", "error", err, "store.name", firstStore.Store.GetName())
 		res.Err[0] = err
 		res.HasErr = true
 		res.HasErrByStoreCode[storeCode] = struct{}{}
@@ -273,7 +273,7 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 			cmRes, err := s.Store.CheckMagnet(cmParams)
 			storeCode := strings.ToUpper(string(s.Store.GetName().Code()))
 			if err != nil {
-				log.Warn("Failed to check magnet", "store", s.Store.GetName(), "error", err)
+				log.Warn("failed to check magnet", "error", err, "store.name", s.Store.GetName())
 				res.Err[idx] = err
 				res.HasErr = true
 				res.HasErrByStoreCode[storeCode] = struct{}{}

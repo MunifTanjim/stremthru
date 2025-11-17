@@ -67,9 +67,9 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 		}
 		start := time.Now()
 		if _, err := Buddy.TrackMagnetCache(params); err != nil {
-			buddyLog.Error("failed to track magnet cache", "store", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
+			buddyLog.Error("failed to track magnet cache", "store.name", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
 		} else {
-			buddyLog.Info("track magnet cache", "store", s.GetName(), "hash", hash, "duration", time.Since(start))
+			buddyLog.Info("track magnet cache", "store.name", s.GetName(), "hash", hash, "duration", time.Since(start))
 		}
 	}
 
@@ -92,9 +92,9 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 		go func() {
 			start := time.Now()
 			if _, err := Peer.TrackMagnet(params); err != nil {
-				peerLog.Error("failed to track magnet cache", "store", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
+				peerLog.Error("failed to track magnet cache", "store.name", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
 			} else {
-				peerLog.Info("track magnet cache", "store", s.GetName(), "hash", hash, "duration", time.Since(start))
+				peerLog.Info("track magnet cache", "store.name", s.GetName(), "hash", hash, "duration", time.Since(start))
 			}
 		}()
 	}
@@ -127,9 +127,9 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, cached map[string
 		}
 		start := time.Now()
 		if _, err := Buddy.TrackMagnetCache(params); err != nil {
-			buddyLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
+			buddyLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store.name", s.GetName(), "duration", time.Since(start))
 		} else {
-			buddyLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
+			buddyLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store.name", s.GetName(), "duration", time.Since(start))
 		}
 	}
 
@@ -144,9 +144,9 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, cached map[string
 		go func() {
 			start := time.Now()
 			if _, err := Peer.TrackMagnet(params); err != nil {
-				peerLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
+				peerLog.Error("failed to bulk track magnet cache", "error", core.PackError(err), "hash_count", len(tInfos), "store.name", s.GetName(), "duration", time.Since(start))
 			} else {
-				peerLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store", s.GetName(), "duration", time.Since(start))
+				peerLog.Info("bulk track magnet cache", "hash_count", len(tInfos), "store.name", s.GetName(), "duration", time.Since(start))
 			}
 		}()
 	}
@@ -211,10 +211,10 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		res, err := Buddy.CheckMagnetCache(params)
 		duration := time.Since(start)
 		if err != nil {
-			buddyLog.Error("failed to check magnet", "store", s.GetName(), "error", core.PackError(err), "duration", duration)
+			buddyLog.Error("failed to check magnet", "store.name", s.GetName(), "error", core.PackError(err), "duration", duration)
 			return data, nil
 		} else {
-			buddyLog.Info("check magnet", "store", s.GetName(), "hash_count", len(staleOrMissingHashes), "duration", duration)
+			buddyLog.Info("check magnet", "store.name", s.GetName(), "hash_count", len(staleOrMissingHashes), "duration", duration)
 			filesByHash := map[string]torrent_stream.Files{}
 			cached := map[string]bool{}
 			for _, item := range res.Data.Items {
@@ -305,12 +305,12 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 					Peer.HaltCheckMagnet()
 				}
 				if err != nil {
-					peerLog.Error("failed partially to check magnet", "store", s.GetName(), "error", core.PackError(err), "duration", duration)
+					peerLog.Error("failed partially to check magnet", "store.name", s.GetName(), "error", core.PackError(err), "duration", duration)
 				} else {
 					mu.Lock()
 					defer mu.Unlock()
 
-					peerLog.Info("check magnet", "store", s.GetName(), "hash_count", len(cHashes), "duration", duration)
+					peerLog.Info("check magnet", "store.name", s.GetName(), "hash_count", len(cHashes), "duration", duration)
 					for _, item := range res.Data.Items {
 						files := torrent_stream.Files{}
 						if item.Status == store.MagnetStatusCached {

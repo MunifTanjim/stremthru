@@ -111,7 +111,7 @@ func logRequest(w *responseWriter, r *http.Request) {
 			slog.String("query", ctx.ReqQuery.Encode()),
 		),
 		slog.Int("status", w.getStatusCode()),
-		slog.String("latency", time.Since(ctx.StartTime).String()),
+		slog.Duration("latency", time.Since(ctx.StartTime)),
 	}
 	if ctx.Error != nil {
 		attrs = append(attrs, slog.Any("error", ctx.Error))

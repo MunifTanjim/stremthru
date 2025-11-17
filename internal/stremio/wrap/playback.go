@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
@@ -34,6 +35,7 @@ var stremGroup singleflight.Group
 
 type stremResult struct {
 	link        string
+	error_level logger.Level
 	error_log   string
 	error_video string
 }
@@ -91,6 +93,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		amRes, err := ctx.Store.AddMagnet(amParams)
 		if err != nil {
 			return &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed to add magnet",
 				error_video: "download_failed",
 			}, err
@@ -108,12 +111,15 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		magnet, err = stremio_shared.WaitForMagnetStatus(ctx, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {
 			strem := &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed wait for magnet status",
 				error_video: "500",
 			}
 			if magnet.Status == store.MagnetStatusQueued || magnet.Status == store.MagnetStatusDownloading || magnet.Status == store.MagnetStatusProcessing {
+				strem.error_level = logger.LevelWarn
 				strem.error_video = "downloading"
 			} else if magnet.Status == store.MagnetStatusFailed || magnet.Status == store.MagnetStatusInvalid || magnet.Status == store.MagnetStatusUnknown {
+				strem.error_level = logger.LevelWarn
 				strem.error_video = "download_failed"
 			}
 			return strem, err
@@ -177,6 +183,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 		if link == "" {
 			return &stremResult{
+				error_level: logger.LevelWarn,
 				error_log:   "no matching file found for (" + sid + " - " + magnet.Hash + ")",
 				error_video: "no_matching_file",
 			}, nil
@@ -189,6 +196,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		glRes, err := shared.GenerateStremThruLink(r, ctx, link)
 		if err != nil {
 			return &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed to generate stremthru link",
 				error_video: "500",
 			}, err
@@ -204,10 +212,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	strem := result.(*stremResult)
 
 	if strem.error_log != "" {
-		if err != nil {
+		if err != nil || strem.error_level >= logger.LevelError {
 			LogError(r, strem.error_log, err)
 		} else {
-			log.Error(strem.error_log)
+			log.Warn(strem.error_log)
 		}
 		redirectToStaticVideo(w, r, cacheKey, strem.error_video)
 		return

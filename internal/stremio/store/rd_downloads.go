@@ -30,6 +30,8 @@ func getRDDownloadsCacheKey(idPrefix, storeToken string) string {
 func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) stremio.Meta {
 	released := time.Now().UTC()
 
+	log := ctx.Log
+
 	meta := stremio.Meta{
 		Id:          getWebDLsMetaId(idr.getStoreCode()),
 		Type:        ContentTypeOther,
@@ -40,6 +42,8 @@ func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) 
 	}
 	cacheKey := getRDDownloadsCacheKey(getIdPrefix(idr.getStoreCode()), ctx.StoreAuthToken)
 	if !rdDownloadsCache.Get(cacheKey, &meta.Videos) {
+		storeName := ctx.Store.GetName()
+
 		offset := 0
 		hasMore := true
 		for hasMore && offset < max_fetch_list_items {
@@ -50,11 +54,10 @@ func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) 
 			params.APIKey = ctx.StoreAuthToken
 			res, err := rdClient.ListDownloads(params)
 			if err != nil {
-				log.Error("failed to list downloads", "error", err, "store", "rd")
+				log.Error("failed to list downloads", "error", err, "store.name", storeName)
 				break
 			}
 
-			storeName := ctx.Store.GetName()
 			shouldCreateProxyLink := config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) && ctx.IsProxyAuthorized
 			tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
 			idPrefix := getWebDLsMetaIdPrefix(idr.getStoreCode())
@@ -77,7 +80,7 @@ func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) 
 						stream.URL = proxyLink
 						videoTitle = "✨ " + videoTitle
 					} else {
-						log.Error("failed to create proxy link, skipping file", "error", err, "store", storeName.Code(), "filename", dl.Filename)
+						log.Error("failed to create proxy link, skipping file", "error", err, "store.name", storeName, "filename", dl.Filename)
 						continue
 					}
 				}

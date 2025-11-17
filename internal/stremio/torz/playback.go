@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
@@ -34,6 +35,7 @@ var stremGroup singleflight.Group
 
 type stremResult struct {
 	link        string
+	error_level logger.Level
 	error_log   string
 	error_video string
 }
@@ -93,6 +95,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			link, err := core.Base64Decode(encodedLink)
 			if err != nil {
 				return &stremResult{
+					error_level: logger.LevelError,
 					error_log:   "failed to decode torrent link",
 					error_video: store_video.StoreVideoName500,
 				}, err
@@ -100,6 +103,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			fileHeader, err := shared.FetchTorrentFile(link, 1024*1024)
 			if err != nil {
 				return &stremResult{
+					error_level: logger.LevelError,
 					error_log:   "failed to fetch torrent file",
 					error_video: store_video.StoreVideoName500,
 				}, err
@@ -107,6 +111,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			amParams.Torrent = fileHeader
 			if _, _, err := amParams.GetTorrentMeta(); err != nil {
 				return &stremResult{
+					error_level: logger.LevelError,
 					error_log:   "invalid torrent file",
 					error_video: store_video.StoreVideoName500,
 				}, err
@@ -115,6 +120,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		amRes, err := ctx.Store.AddMagnet(amParams)
 		if err != nil {
 			result := &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed to add magnet",
 				error_video: store_video.StoreVideoNameDownloadFailed,
 			}
@@ -122,12 +128,15 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			if errors.As(err, &uerr) {
 				switch uerr.Code {
 				case core.ErrorCodeUnauthorized:
+					result.error_level = logger.LevelWarn
 					result.error_log = "unauthorized"
 					result.error_video = store_video.StoreVideoName401
 				case core.ErrorCodeTooManyRequests:
+					result.error_level = logger.LevelWarn
 					result.error_log = "too many requests"
 					result.error_video = store_video.StoreVideoName429
 				case core.ErrorCodePaymentRequired:
+					result.error_level = logger.LevelWarn
 					result.error_log = "payment required"
 					result.error_video = store_video.StoreVideoNamePaymentRequired
 				case core.ErrorCodeStoreLimitExceeded:
@@ -156,13 +165,16 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		magnet, err = stremio_shared.WaitForMagnetStatus(ctx.StoreContext, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {
 			strem := &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed wait for magnet status",
 				error_video: store_video.StoreVideoName500,
 			}
 			switch magnet.Status {
 			case store.MagnetStatusQueued, store.MagnetStatusDownloading, store.MagnetStatusProcessing:
+				strem.error_level = logger.LevelWarn
 				strem.error_video = store_video.StoreVideoNameDownloading
 			case store.MagnetStatusFailed, store.MagnetStatusInvalid, store.MagnetStatusUnknown:
+				strem.error_level = logger.LevelWarn
 				strem.error_video = store_video.StoreVideoNameDownloadFailed
 			}
 			return strem, err
@@ -207,6 +219,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 		if link == "" {
 			return &stremResult{
+				error_level: logger.LevelWarn,
 				error_log:   "no matching file found for (" + sid + " - " + magnet.Hash + ")",
 				error_video: store_video.StoreVideoNameNoMatchingFile,
 			}, nil
@@ -223,6 +236,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		glRes, err := shared.GenerateStremThruLink(r, ctx.StoreContext, link)
 		if err != nil {
 			return &stremResult{
+				error_level: logger.LevelError,
 				error_log:   "failed to generate stremthru link",
 				error_video: store_video.StoreVideoName500,
 			}, err
@@ -238,10 +252,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	strem := result.(*stremResult)
 
 	if strem.error_log != "" {
-		if err != nil {
+		if err != nil || strem.error_level >= logger.LevelError {
 			LogError(r, strem.error_log, err)
 		} else {
-			log.Error(strem.error_log)
+			log.Warn(strem.error_log)
 		}
 		redirectToStaticVideo(w, r, cacheKey, strem.error_video)
 		return

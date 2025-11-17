@@ -13,6 +13,18 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger/log"
 	"github.com/MunifTanjim/stremthru/internal/posthog"
+	"github.com/MunifTanjim/stremthru/internal/util"
+)
+
+type Level = slog.Level
+
+const (
+	LevelTrace = log.LevelTrace
+	LevelDebug = slog.LevelDebug
+	LevelInfo  = slog.LevelInfo
+	LevelWarn  = slog.LevelWarn
+	LevelError = slog.LevelError
+	LevelFatal = log.LevelFatal
 )
 
 type Logger = log.Logger
@@ -41,7 +53,10 @@ var _ = func() *struct{} {
 		)
 	}
 
-	handler = posthog.WrapLogHandler(handler)
+	logProps := util.NewSet[string]()
+	logProps.Add("store.name")
+
+	handler = posthog.WrapLogHandler(handler, logProps)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 	slog.SetLogLoggerLevel(slog.LevelInfo)

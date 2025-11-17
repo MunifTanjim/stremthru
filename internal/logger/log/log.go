@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lmittmann/tint"
 )
@@ -106,6 +107,9 @@ func getReplaceAttr(isPretty bool) func(groups []string, a slog.Attr) slog.Attr 
 						return tintedAttr
 					}
 				}
+			}
+			if duration, ok := a.Value.Any().(time.Duration); ok {
+				a.Value = slog.StringValue(duration.String())
 			}
 			return a
 		}

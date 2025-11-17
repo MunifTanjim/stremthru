@@ -24,6 +24,8 @@ func getADLinksCacheKey(idPrefix, storeToken string) string {
 }
 
 func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) stremio.Meta {
+	log := ctx.Log
+
 	released := time.Now().UTC()
 
 	meta := stremio.Meta{
@@ -40,7 +42,7 @@ func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, 
 		params.APIKey = ctx.StoreAuthToken
 		res, err := stremio_store_webdl.ListWebDLs(params, idr.storeName)
 		if err != nil {
-			log.Error("failed to list webdls", "error", err, "store", idr.storeCode)
+			log.Error("failed to list webdls", "error", err, "store.name", idr.storeName)
 			return meta
 		}
 
@@ -83,7 +85,7 @@ func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, 
 					if proxyLink, err := shared.CreateProxyLink(r, stream.URL, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, stream.BehaviorHints.Filename); err == nil {
 						stream.URL = proxyLink
 					} else {
-						log.Error("failed to create proxy link, skipping file", "error", err, "store", storeName.Code(), "filename", stream.BehaviorHints.Filename)
+						log.Error("failed to create proxy link, skipping file", "error", err, "store.name", storeName, "filename", stream.BehaviorHints.Filename)
 						continue
 					}
 				}

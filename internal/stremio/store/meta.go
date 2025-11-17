@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
@@ -41,7 +42,7 @@ var metaCache = cache.NewCache[stremio.MetaHandlerResponse](&cache.CacheConfig{
 
 var fetchMetaGroup singleflight.Group
 
-func fetchMeta(sType, imdbId, clientIp string) (stremio.MetaHandlerResponse, error) {
+func fetchMeta(sType, imdbId, clientIp string, log *logger.Logger) (stremio.MetaHandlerResponse, error) {
 	var meta stremio.MetaHandlerResponse
 
 	cacheKey := sType + ":" + imdbId
@@ -391,6 +392,8 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := ctx.Log
+
 	eud, err := ud.GetEncoded()
 	if err != nil {
 		SendError(w, r, err)
@@ -426,7 +429,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storeCode := ctx.Store.GetName().Code()
+	storeName := ctx.Store.GetName()
 
 	start := time.Now()
 	cInfo, err := getStoreContentInfo(ctx.Store, ctx.StoreAuthToken, strings.TrimPrefix(id, idPrefix), ctx.ClientIP, idr)
@@ -434,7 +437,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	}
-	log.Debug("fetched store content info", "duration", time.Since(start).String(), "store_code", storeCode)
+	log.Debug("fetched store content info", "duration", time.Since(start).String(), "store.name", storeName)
 
 	meta := stremio.Meta{
 		Id:       id,
@@ -473,7 +476,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 	metaVideoByKey := map[string]*stremio.MetaVideo{}
 	if sId != "" {
 		start = time.Now()
-		if r, err := fetchMeta(sType, sId, core.GetRequestIP(r)); err != nil {
+		if r, err := fetchMeta(sType, sId, core.GetRequestIP(r), log); err != nil {
 			log.Error("failed to fetch meta", "error", err)
 		} else {
 			log.Debug("fetched meta", "duration", time.Since(start).String(), "type", sType, "id", sId)

@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -55,6 +56,8 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	}
+
+	log := server.GetReqCtx(r).Log
 
 	videoIdWithLink := getId(r)
 	contentType := r.PathValue("contentType")
@@ -145,7 +148,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	if isImdbId {
 		sType, sId := "", ""
 		sType, sId, season, episode = parseStremId(videoIdWithLink)
-		mres, err := fetchMeta(sType, sId, core.GetRequestIP(r))
+		mres, err := fetchMeta(sType, sId, core.GetRequestIP(r), log)
 		if err != nil {
 			SendError(w, r, err)
 			return
@@ -177,7 +180,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr)
+				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr, log)
 				if meta.Name != "" {
 					normalizer := util.NewStringNormalizer()
 					filteredItems := []CachedCatalogItem{}
@@ -291,7 +294,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr)
+				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr, log)
 
 				addedItemIdx := map[int]struct{}{}
 				filteredItems := []CachedCatalogItem{}
@@ -367,7 +370,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					if !isStremThruStoreId {
 						season, episode = sSeason, sEpisode
 					}
-					if mRes, err := fetchMeta(sType, sId, core.GetRequestIP(r)); err == nil {
+					if mRes, err := fetchMeta(sType, sId, core.GetRequestIP(r), log); err == nil {
 						meta = &mRes.Meta
 					} else {
 						log.Error("failed to fetch meta", "error", err)

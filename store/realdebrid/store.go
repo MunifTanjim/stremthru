@@ -353,6 +353,7 @@ func (c *StoreClient) assertValidSubscription(apiKey string) error {
 	err := core.NewAPIError("forbidden")
 	err.Code = core.ErrorCodeForbidden
 	err.StatusCode = http.StatusForbidden
+	err.StatusCode = http.StatusForbidden
 	return err
 }
 

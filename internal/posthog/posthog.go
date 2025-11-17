@@ -9,13 +9,14 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/posthog/posthog-go"
 )
 
 var IsEnabled = config.Posthog.IsEnabled()
 
 var exceptionLastSentAt = cache.NewLRUCache[time.Time](&cache.CacheConfig{
-	Lifetime:      30 * time.Second,
+	Lifetime:      5 * time.Minute,
 	Name:          "posthog:excepiton-last-sent-at",
 	LocalCapacity: 2048,
 })
@@ -40,7 +41,7 @@ var client = func() posthog.Client {
 			key := m.ExceptionList[0].Type
 			var lastSentAt time.Time
 			if exceptionLastSentAt.Get(key, &lastSentAt) {
-				if time.Since(lastSentAt) < 30*time.Second {
+				if time.Since(lastSentAt) < 5*time.Minute {
 					return nil
 				}
 			}
@@ -62,7 +63,7 @@ func Close() error {
 	return client.Close()
 }
 
-func WrapLogHandler(handler slog.Handler) slog.Handler {
+func WrapLogHandler(handler slog.Handler, logProperties *util.Set[string]) slog.Handler {
 	if !IsEnabled {
 		return handler
 	}
@@ -77,6 +78,14 @@ func WrapLogHandler(handler slog.Handler) slog.Handler {
 				prop.Set("req.id", rCtx.RequestId)
 				prop.Set("req.method", rCtx.ReqMethod)
 				prop.Set("req.path", rCtx.ReqPath)
+			}
+			if logProperties != nil {
+				r.Attrs(func(a slog.Attr) bool {
+					if logProperties.Has(a.Key) {
+						prop.Set(a.Key, a.Value.Any())
+					}
+					return true
+				})
 			}
 			return prop
 		}),

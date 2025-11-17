@@ -10,6 +10,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
@@ -37,12 +38,12 @@ var max_fetch_list_items = config.Stremio.Store.CatalogItemLimit
 
 const fetch_list_limit = 500
 
-func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string) []CachedCatalogItem {
+func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, log *logger.Logger) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
 	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
-		storeCode := s.GetName().Code()
+		storeName := s.GetName()
 
 		offset := 0
 		hasMore := true
@@ -54,13 +55,13 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 				ClientIP: clientIp,
 			}
 			params.APIKey = storeToken
-			res, err := stremio_store_usenet.ListNews(params, s.GetName())
+			res, err := stremio_store_usenet.ListNews(params, storeName)
 			if err != nil {
-				log.Error("failed to list news", "error", err, "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset)
+				log.Error("failed to list news", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
 				break
 			}
 			count := len(res.Items)
-			log.Debug("fetched news", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("fetched news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			start = time.Now()
 			for i := range res.Items {
@@ -76,7 +77,7 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 					items = append(items, cItem)
 				}
 			}
-			log.Debug("processed news", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("processed news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			offset += fetch_list_limit
 			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
@@ -89,12 +90,12 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 	return items
 }
 
-func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string) []CachedCatalogItem {
+func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, log *logger.Logger) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
 	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
-		storeCode := s.GetName().Code()
+		storeName := s.GetName()
 
 		offset := 0
 		hasMore := true
@@ -106,13 +107,13 @@ func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idP
 				ClientIP: clientIp,
 			}
 			params.APIKey = storeToken
-			res, err := stremio_store_webdl.ListWebDLs(params, s.GetName())
+			res, err := stremio_store_webdl.ListWebDLs(params, storeName)
 			if err != nil {
-				log.Error("failed to list webdls", "error", err, "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset)
+				log.Error("failed to list webdls", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
 				break
 			}
 			count := len(res.Items)
-			log.Debug("fetched webdls", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("fetched webdls", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			start = time.Now()
 			for i := range res.Items {
@@ -128,7 +129,7 @@ func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idP
 					items = append(items, cItem)
 				}
 			}
-			log.Debug("processed webdls", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("processed webdls", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			offset += fetch_list_limit
 			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
@@ -141,20 +142,21 @@ func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idP
 	return items
 }
 
-func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, idr *ParsedId) []CachedCatalogItem {
+func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, idr *ParsedId, log *logger.Logger) []CachedCatalogItem {
 	if idr.isUsenet {
-		return getUsenetCatalogItems(s, storeToken, clientIp, idPrefix)
+		return getUsenetCatalogItems(s, storeToken, clientIp, idPrefix, log)
 	}
 
 	if idr.isWebDL {
-		return getWebDLCatalogItems(s, storeToken, clientIp, idPrefix)
+		return getWebDLCatalogItems(s, storeToken, clientIp, idPrefix, log)
 	}
 
 	items := []CachedCatalogItem{}
 
 	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
-		storeCode := s.GetName().Code()
+		storeName := s.GetName()
+		storeCode := storeName.Code()
 
 		tInfoItems := []torrent_info.TorrentInfoInsertData{}
 		tInfoSource := torrent_info.TorrentInfoSource(storeCode)
@@ -171,11 +173,11 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix
 			params.APIKey = storeToken
 			res, err := s.ListMagnets(params)
 			if err != nil {
-				log.Error("failed to list magnets", "error", err, "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset)
+				log.Error("failed to list magnets", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
 				break
 			}
 			count := len(res.Items)
-			log.Debug("fetched magnets", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("fetched magnets", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			start = time.Now()
 			for i := range res.Items {
@@ -197,7 +199,7 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix
 					Private:      item.Private,
 				})
 			}
-			log.Debug("processed magnets", "duration", time.Since(start).String(), "store_code", storeCode, "offset", offset, "count", count)
+			log.Debug("processed magnets", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
 			offset += fetch_list_limit
 			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
@@ -298,6 +300,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := ctx.Log
+
 	extra := getExtra(r)
 
 	res := stremio.CatalogHandlerResponse{
@@ -312,7 +316,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, getIdPrefix(idStoreCode), idr)
+	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, getIdPrefix(idStoreCode), idr, log)
 
 	if extra.Search != "" {
 		start := time.Now()

@@ -733,7 +733,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			Magnets:  hashes,
 			ClientIP: ctx.ClientIP,
 			SId:      id,
-		}, log)
+		}, ctx.Log)
 		if cmRes.HasErr && len(cmRes.ByHash) == 0 {
 			checkMagnetError = errors.Join(cmRes.Err...)
 		} else {

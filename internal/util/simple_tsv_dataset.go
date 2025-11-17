@@ -74,7 +74,7 @@ func (ds *SimpleTSVDataset[T]) nextRow(r *bufio.Scanner) []string {
 		} else {
 			err := r.Err()
 			if err != nil {
-				ds.log.Debug("failed to read row", "error", err)
+				ds.log.Trace("failed to read row", "error", err)
 			}
 			return nil
 		}

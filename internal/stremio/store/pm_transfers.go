@@ -26,6 +26,8 @@ func getPMItemsCacheKey(idPrefix, storeToken string) string {
 func getPMWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) (stremio.Meta, error) {
 	released := time.Now().UTC()
 
+	log := ctx.Log
+
 	meta := stremio.Meta{
 		Id:          getWebDLsMetaId(idr.getStoreCode()),
 		Type:        ContentTypeOther,
@@ -40,7 +42,7 @@ func getPMWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, 
 		params.APIKey = ctx.StoreAuthToken
 		res, err := stremio_store_webdl.ListWebDLs(params, idr.storeName)
 		if err != nil {
-			log.Error("failed to list webdls", "error", err, "store", "pm")
+			log.Error("failed to list webdls", "error", err, "store.name", idr.storeName)
 			return meta, err
 		}
 

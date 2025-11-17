@@ -268,6 +268,9 @@ func NewUpstreamError(msg string) *UpstreamError {
 }
 
 func PackError(err error) error {
+	if err == nil {
+		return nil
+	}
 	var e StremThruError
 	if sterr, ok := err.(StremThruError); ok {
 		e = sterr
