@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.92.7](https://github.com/MunifTanjim/stremthru/compare/0.92.6...0.92.7) (2025-11-17)
+
+
+### Bug Fixes
+
+* **stremio/torz:** filter out known fake season packs for imdb ids ([ee4ea01](https://github.com/MunifTanjim/stremthru/commit/ee4ea016d126a924909f7bd649308e238cd6d3df))
+* **stremio/torz:** fix nil pointer dereference ([6c9c18b](https://github.com/MunifTanjim/stremthru/commit/6c9c18b377213e489aa3059123e3d5afbbf5698e))
+
 ## [0.92.6](https://github.com/MunifTanjim/stremthru/compare/0.92.5...0.92.6) (2025-11-17)
 
 
