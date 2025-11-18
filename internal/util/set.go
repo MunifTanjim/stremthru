@@ -17,6 +17,14 @@ func (s *Set[T]) Del(v T) {
 	delete(s.m, v)
 }
 
+func (s *Set[T]) ToSlice() []T {
+	result := make([]T, 0, len(s.m))
+	for key := range s.m {
+		result = append(result, key)
+	}
+	return result
+}
+
 func NewSet[T comparable]() *Set[T] {
 	return &Set[T]{m: make(map[T]struct{})}
 }

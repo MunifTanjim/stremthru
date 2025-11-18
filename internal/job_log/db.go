@@ -182,10 +182,11 @@ func GetLastJobLog[T any](name string) (*ParsedJobLog[T], error) {
 }
 
 var query_list_job_logs = fmt.Sprintf(
-	`SELECT %s FROM %s WHERE %s = ?`,
+	`SELECT %s FROM %s WHERE %s = ? ORDER BY %s DESC`,
 	strings.Join(columns, ", "),
 	TableName,
 	Column.Name,
+	Column.CreatedAt,
 )
 
 var query_delete_job_logs_by_id = fmt.Sprintf(
@@ -375,4 +376,34 @@ func GetUniqueJobNames() ([]string, error) {
 	}
 
 	return names, nil
+}
+
+var query_get_worker_names_with_failed_jobs = fmt.Sprintf(
+	`SELECT DISTINCT %s FROM %s WHERE %s = 'failed'`,
+	Column.Name,
+	TableName,
+	Column.Status,
+)
+
+func GetWorkerNamesWithFailedJobs() ([]string, error) {
+	rows, err := db.Query(query_get_worker_names_with_failed_jobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	namesSet := util.NewSet[string]()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		namesSet.Add(name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return namesSet.ToSlice(), nil
 }

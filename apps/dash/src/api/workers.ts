@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 export type WorkerDetails = Record<
   string,
   {
+    has_failed_job: boolean;
+    id: string;
     interval: number;
     title: string;
   }
