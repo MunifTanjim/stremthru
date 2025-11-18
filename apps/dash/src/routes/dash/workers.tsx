@@ -86,8 +86,16 @@ function RouteComponent() {
 
   const workerOptions = useMemo(() => {
     return Object.entries(workerDetails.data ?? {})
-      .map(([value, details]) => ({ label: details.title, value }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .map(([value, details]) => ({
+        indicator: details.has_failed_job ? `❗` : "",
+        label: details.title,
+        value,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .map((o) => ({
+        ...o,
+        label: `${o.indicator ? `${o.indicator} ` : ""}${o.label}`,
+      }));
   }, [workerDetails.data]);
 
   useEffect(() => {
