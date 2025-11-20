@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.8](https://github.com/MunifTanjim/stremthru/compare/0.92.7...0.92.8) (2025-11-20)
+
+
+### Bug Fixes
+
+* **stremio/torz:** fix condition for including uncached streams ([8728451](https://github.com/MunifTanjim/stremthru/commit/872845131c9e782a11cc897ba23d384c0f61df6a))
+
 ## [0.92.7](https://github.com/MunifTanjim/stremthru/compare/0.92.6...0.92.7) (2025-11-17)
 
 
