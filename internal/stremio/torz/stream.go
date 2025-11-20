@@ -799,7 +799,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			stream.InfoHash = ""
 			stream.FileIndex = 0
 			cachedStreams = append(cachedStreams, *stream)
-		} else if !ud.CachedOnly && ud.IncludeUncachedPrivate {
+		} else if !ud.CachedOnly {
 			stores := ud.GetStores()
 			for i := range stores {
 				s := &stores[i]
@@ -808,7 +808,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				if _, hasErr := hasErrByStoreCode[strings.ToUpper(string(storeCode))]; hasErr || storeCode == store.StoreCodeEasyDebrid {
 					continue
 				}
-				if wStream.R.IsPrivate && (wStream.torrentLink == "" || storeCode != store.StoreCodeTorBox) {
+				if wStream.R.IsPrivate && (!ud.IncludeUncachedPrivate || wStream.torrentLink == "" || storeCode != store.StoreCodeTorBox) {
 					continue
 				}
 
