@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.92.9](https://github.com/MunifTanjim/stremthru/compare/0.92.8...0.92.9) (2025-11-21)
+
+
+### Bug Fixes
+
+* **torrent_info:** gracefully handle invalid parsed title ([46e8601](https://github.com/MunifTanjim/stremthru/commit/46e8601a277945d45307a6fccd913e7e4e974295))
+* **torrent_info:** upgrade go-ptt ([1625b57](https://github.com/MunifTanjim/stremthru/commit/1625b57185f99d76daf0507c0471e94e8351a16a))
+
 ## [0.92.8](https://github.com/MunifTanjim/stremthru/compare/0.92.7...0.92.8) (2025-11-20)
 
 
