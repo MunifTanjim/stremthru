@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -35,6 +35,23 @@ export function useWorkerJobLogs(workerId: string) {
     queryFn: () => getWorkerJobLogs(workerId),
     queryKey: ["/workers/{id}/job-logs", workerId],
   });
+}
+
+export function useWorkerJobLogsMutation(workerId: string) {
+  const queryClient = useQueryClient();
+
+  const purge = useMutation({
+    mutationFn: async () => {
+      await api(`/workers/${workerId}/job-logs`, { method: "DELETE" });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["/workers/{id}/job-logs", workerId],
+      });
+    },
+  });
+
+  return { purge };
 }
 
 async function getWorkerDetails() {
