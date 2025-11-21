@@ -1,6 +1,8 @@
 package imdb_title
 
 import (
+	"errors"
+	"os"
 	"path"
 	"slices"
 	"sync"
@@ -13,6 +15,23 @@ import (
 )
 
 var datasetSyncMutex sync.Mutex
+
+var datasetDownloadDir = path.Join(config.DataDir, "imdb")
+
+var ErrDatasetSyncInProgress = errors.New("dataset sync in progress")
+
+func PurgeDatasetTemporaryFiles() error {
+	if !datasetSyncMutex.TryLock() {
+		return ErrDatasetSyncInProgress
+	}
+	defer datasetSyncMutex.Unlock()
+
+	return os.RemoveAll(datasetDownloadDir)
+}
+
+func GetDatasetTemporaryDir() string {
+	return datasetDownloadDir
+}
 
 func SyncDataset() error {
 	log = logger.Scoped("imdb_title/dataset")
@@ -48,7 +67,7 @@ func SyncDataset() error {
 	ds := util.NewTSVDataset(&util.TSVDatasetConfig[IMDBTitle]{
 		DatasetConfig: util.DatasetConfig{
 			Archive:     "gz",
-			DownloadDir: path.Join(config.DataDir, "imdb"),
+			DownloadDir: datasetDownloadDir,
 			IsStale: func(t time.Time) bool {
 				return t.Before(time.Now().Add(-24 * time.Hour))
 			},

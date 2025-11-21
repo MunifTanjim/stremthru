@@ -96,6 +96,15 @@ func ErrorForbidden(r *http.Request, msg string) *APIError {
 	return err
 }
 
+func ErrorLocked(r *http.Request, msg string) *APIError {
+	if msg == "" {
+		msg = "Locked"
+	}
+	err := NewAPIError(http.StatusLocked, msg)
+	err.InjectRequest(r)
+	return err
+}
+
 func ErrorNotFound(r *http.Request, msg string) *APIError {
 	if msg == "" {
 		msg = "Not Found"
