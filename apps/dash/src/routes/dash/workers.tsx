@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import {
   useWorkerDetails,
   useWorkerJobLogs,
-  useWorkerJobLogsMutation,
+  useWorkerMutation,
+  useWorkerTemporaryFiles,
   WorkerJobLog,
 } from "@/api/workers";
 import { DataTable } from "@/components/data-table";
@@ -23,7 +24,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
 import { Label } from "@/components/ui/label";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -92,13 +102,102 @@ const jobLogsColumns: ColumnDef<WorkerJobLog>[] = [
   },
 ];
 
+const canPurgeTemporaryDataByWorkerId: Record<string, boolean> = {
+  "sync-imdb": true,
+};
+
+function PurgeWorkerTemporaryDataButton({
+  mutation,
+  workerId,
+}: {
+  mutation: ReturnType<typeof useWorkerMutation>["purgeTemporaryFiles"];
+  workerId: string;
+}) {
+  workerId = canPurgeTemporaryDataByWorkerId[workerId] ? workerId : "";
+
+  const files = useWorkerTemporaryFiles(workerId);
+
+  if (!workerId) {
+    return null;
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button disabled={mutation.isPending} size="sm" variant="destructive">
+          Purge Temporary Files
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will delete all the temporary files for this worker.
+            <ScrollArea className="max-h-52">
+              <ItemGroup className="mt-2 gap-2">
+                {files.data?.map((item) => (
+                  <Item key={item.path} size="sm" variant="muted">
+                    <ItemContent>
+                      <ItemTitle>
+                        <strong>{item.path}</strong>
+                      </ItemTitle>
+                      <ItemDescription className="flex justify-between">
+                        <em>Size:</em> {item.size}
+                      </ItemDescription>
+                      <ItemFooter>
+                        <em>Modified At:</em>{" "}
+                        {DateTime.fromISO(item.modified_at).toLocaleString(
+                          DateTime.DATETIME_MED_WITH_SECONDS,
+                        )}
+                      </ItemFooter>
+                    </ItemContent>
+                  </Item>
+                ))}
+              </ItemGroup>
+              <ScrollBar orientation="vertical" />
+            </ScrollArea>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button
+              disabled={mutation.isPending}
+              onClick={async () => {
+                toast.promise(mutation.mutateAsync(), {
+                  error(err: APIError) {
+                    console.error(err);
+                    return {
+                      closeButton: true,
+                      message: err.message,
+                    };
+                  },
+                  loading: "Purging Temporary Files...",
+                  success: {
+                    closeButton: true,
+                    message: "Temporary Files Purged!",
+                  },
+                });
+              }}
+              variant="destructive"
+            >
+              Purge
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function RouteComponent() {
   const workerDetails = useWorkerDetails();
 
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
 
   const jobLogs = useWorkerJobLogs(selectedWorkerId);
-  const mutateJobLogs = useWorkerJobLogsMutation(selectedWorkerId);
+  const { purgeJobLogs, purgeTemporaryFiles } =
+    useWorkerMutation(selectedWorkerId);
 
   const workerOptions = useMemo(() => {
     return Object.entries(workerDetails.data ?? {})
@@ -168,13 +267,17 @@ function RouteComponent() {
       </div>
 
       <div>
-        <div className="mb-4 flex flex-row items-center justify-between">
+        <div className="mb-4 flex flex-row flex-wrap items-center justify-between">
           <h3 className="font-semibold">Job Logs</h3>
-          <div>
+          <div className="flex flex-row flex-wrap gap-2">
+            <PurgeWorkerTemporaryDataButton
+              mutation={purgeTemporaryFiles}
+              workerId={selectedWorkerId}
+            />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
-                  disabled={mutateJobLogs.purge.isPending}
+                  disabled={purgeJobLogs.isPending}
                   size="sm"
                   variant="destructive"
                 >
@@ -193,7 +296,7 @@ function RouteComponent() {
                   <AlertDialogAction asChild>
                     <Button
                       onClick={() => {
-                        toast.promise(mutateJobLogs.purge.mutateAsync(), {
+                        toast.promise(purgeJobLogs.mutateAsync(), {
                           error(err: APIError) {
                             console.error(err);
                             return {

@@ -22,6 +22,12 @@ export type WorkerJobLog = {
   updated_at: string;
 };
 
+export type WorkerTemporaryFile = {
+  modified_at: string;
+  path: string;
+  size: string;
+};
+
 export function useWorkerDetails() {
   return useQuery({
     queryFn: getWorkerDetails,
@@ -37,10 +43,10 @@ export function useWorkerJobLogs(workerId: string) {
   });
 }
 
-export function useWorkerJobLogsMutation(workerId: string) {
+export function useWorkerMutation(workerId: string) {
   const queryClient = useQueryClient();
 
-  const purge = useMutation({
+  const purgeJobLogs = useMutation({
     mutationFn: async () => {
       await api(`/workers/${workerId}/job-logs`, { method: "DELETE" });
     },
@@ -51,7 +57,26 @@ export function useWorkerJobLogsMutation(workerId: string) {
     },
   });
 
-  return { purge };
+  const purgeTemporaryFiles = useMutation({
+    mutationFn: async () => {
+      await api(`/workers/${workerId}/temporary-files`, { method: "DELETE" });
+    },
+  });
+
+  return { purgeJobLogs, purgeTemporaryFiles };
+}
+
+export function useWorkerTemporaryFiles(workerId: string) {
+  return useQuery({
+    enabled: Boolean(workerId),
+    queryFn: async () => {
+      const { data } = await api<WorkerTemporaryFile[]>(
+        `/workers/${workerId}/temporary-files`,
+      );
+      return data;
+    },
+    queryKey: ["/workers/{id}/temporary-files", workerId],
+  });
 }
 
 async function getWorkerDetails() {
