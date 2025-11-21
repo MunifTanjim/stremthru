@@ -28,6 +28,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/auth/user", authed(dash_api.HandleGetUser))
 
 	router.HandleFunc("/stats/lists", authed(dash_api.HandleGetListsStats))
+	router.HandleFunc("/stats/imdb-titles", authed(dash_api.HandleGetIMDBTitleStats))
 	router.HandleFunc("/stats/torrents", authed(dash_api.HandleGetTorrentsStats))
 	router.HandleFunc("/stats/server", authed(dash_api.HandleGetServerStats))
 

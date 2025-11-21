@@ -4,7 +4,12 @@ import { useMemo, useState } from "react";
 import { useInterval } from "react-use";
 import { Pie, PieChart } from "recharts";
 
-import { useListsStats, useServerStats, useTorrentsStats } from "@/api/stats";
+import {
+  useIMDBTitleStats,
+  useListsStats,
+  useServerStats,
+  useTorrentsStats,
+} from "@/api/stats";
 import {
   Card,
   CardContent,
@@ -62,6 +67,7 @@ const listsChartConfig = {
 
 function RouteComponent() {
   const torzStats = useTorrentsStats();
+  const imdbTitleStats = useIMDBTitleStats();
 
   const serverStats = useServerStats();
   const [uptime, setUptime] = useState("");
@@ -194,6 +200,30 @@ function RouteComponent() {
                   <Skeleton className="h-8 w-24" />
                 ) : (
                   (torzStats.data?.files.total_count.toLocaleString() ?? 0)
+                )}
+              </span>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+      <Card className="py-4 sm:py-0">
+        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
+            <CardTitle>IMDB Titles</CardTitle>
+            <CardDescription>
+              Overview of IMDB titles in database
+            </CardDescription>
+          </div>
+          <div className="flex">
+            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+              <span className="text-muted-foreground text-xs">
+                Total Titles
+              </span>
+              <span className="text-lg font-bold leading-none sm:text-3xl">
+                {imdbTitleStats.isLoading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  (imdbTitleStats.data?.total_count.toLocaleString() ?? 0)
                 )}
               </span>
             </div>

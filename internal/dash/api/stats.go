@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/shared"
@@ -46,6 +47,39 @@ func HandleGetTorrentsStats(w http.ResponseWriter, r *http.Request) {
 	data.TotalCount = stats.TotalCount
 	data.Files.TotalCount = stats.Streams.TotalCount
 	SendData(w, r, 200, data)
+}
+
+type IMDBTitleStats struct {
+	TotalCount int `json:"total_count"`
+}
+
+var cachedIMDBTitleStats = cache.NewCachedValue(cache.CachedValueConfig[*IMDBTitleStats]{
+	Get: func() (*IMDBTitleStats, error) {
+		var count int
+		err := db.QueryRow(fmt.Sprintf(`SELECT COUNT(1) FROM %s`, imdb_title.TableName)).Scan(&count)
+		if err != nil {
+			return nil, err
+		}
+		return &IMDBTitleStats{
+			TotalCount: count,
+		}, nil
+	},
+	TTL: 6 * time.Hour,
+})
+
+func HandleGetIMDBTitleStats(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) {
+		ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	stats, err := cachedIMDBTitleStats.Get()
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	SendData(w, r, 200, stats)
 }
 
 type ServerStats struct {
