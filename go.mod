@@ -3,7 +3,7 @@ module github.com/MunifTanjim/stremthru
 go 1.24.1
 
 require (
-	github.com/alitto/pond/v2 v2.3.4
+	github.com/alitto/pond/v2 v2.5.0
 	github.com/anacrolix/torrent v1.59.1
 	github.com/elastic/go-freelru v0.15.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -51,7 +51,7 @@ require (
 )
 
 require (
-	github.com/MunifTanjim/go-ptt v0.9.1
+	github.com/MunifTanjim/go-ptt v0.13.0
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/dpotapov/slogpfx v0.0.0-20230917063348-41a73c95c536
 	github.com/dustin/go-humanize v1.0.1
