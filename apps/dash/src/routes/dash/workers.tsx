@@ -2,13 +2,27 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import { DateTime, Duration } from "luxon";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
   useWorkerDetails,
   useWorkerJobLogs,
+  useWorkerJobLogsMutation,
   WorkerJobLog,
 } from "@/api/workers";
 import { DataTable } from "@/components/data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { APIError } from "@/lib/api";
 
 export const Route = createFileRoute("/dash/workers")({
   component: RouteComponent,
@@ -83,6 +98,7 @@ function RouteComponent() {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
 
   const jobLogs = useWorkerJobLogs(selectedWorkerId);
+  const mutateJobLogs = useWorkerJobLogsMutation(selectedWorkerId);
 
   const workerOptions = useMemo(() => {
     return Object.entries(workerDetails.data ?? {})
@@ -152,7 +168,56 @@ function RouteComponent() {
       </div>
 
       <div>
-        <h3 className="text-md mb-4 font-semibold">Job Logs</h3>
+        <div className="mb-4 flex flex-row items-center justify-between">
+          <h3 className="font-semibold">Job Logs</h3>
+          <div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  disabled={mutateJobLogs.purge.isPending}
+                  size="sm"
+                  variant="destructive"
+                >
+                  Purge Job Logs
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will delete all the job logs below.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <Button
+                      onClick={() => {
+                        toast.promise(mutateJobLogs.purge.mutateAsync(), {
+                          error(err: APIError) {
+                            console.error(err);
+                            return {
+                              closeButton: true,
+                              message: err.message,
+                            };
+                          },
+                          loading: "Purging Job Logs...",
+                          success: {
+                            closeButton: true,
+                            message: "Job Logs Purged!",
+                          },
+                        });
+                      }}
+                      variant="destructive"
+                    >
+                      Purge
+                    </Button>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
         {selectedWorkerId &&
           (jobLogs.isLoading ? (
             <div className="text-muted-foreground text-sm">

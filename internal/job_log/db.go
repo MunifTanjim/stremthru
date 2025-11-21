@@ -407,3 +407,15 @@ func GetWorkerNamesWithFailedJobs() ([]string, error) {
 
 	return namesSet.ToSlice(), nil
 }
+
+var query_purge_job_logs = fmt.Sprintf(
+	`DELETE FROM %s WHERE %s = ? AND %s != 'started'`,
+	TableName,
+	Column.Name,
+	Column.Status,
+)
+
+func PurgeJobLogs(name string) error {
+	_, err := db.Exec(query_purge_job_logs, name)
+	return err
+}
