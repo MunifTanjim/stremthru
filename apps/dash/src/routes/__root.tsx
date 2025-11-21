@@ -12,6 +12,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import { queryClient } from "@/api";
 import { ThemeProvider } from "@/components/theme";
+import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/auth/provider";
 import appCss from "@/styles/app.css?url";
 
@@ -62,6 +63,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         {children}
         <Scripts />
+        <Toaster position="top-right" richColors />
         <TanStackRouterDevtools position="bottom-right" />
       </body>
     </html>

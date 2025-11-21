@@ -16,7 +16,7 @@ type WorkerDetails struct {
 	HasFailedJob bool          `json:"has_failed_job"`
 }
 
-func HandleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
+func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 	if !shared.IsMethod(r, http.MethodGet) {
 		ErrorMethodNotAllowed(r).Send(w, r)
 		return
@@ -47,12 +47,7 @@ func HandleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, data)
 }
 
-func HandleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
-	if !shared.IsMethod(r, http.MethodGet) {
-		ErrorMethodNotAllowed(r).Send(w, r)
-		return
-	}
-
+func handleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
 		ErrorBadRequest(r, "invalid worker id").Send(w, r)
@@ -66,4 +61,38 @@ func HandleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendData(w, r, 200, jobLogs)
+}
+
+func handlePurgeWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("id")
+	if _, ok := worker.WorkerDetailsById[name]; !ok {
+		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		return
+	}
+
+	err := job_log.PurgeJobLogs(name)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	SendData(w, r, 204, nil)
+}
+
+func handleWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		handleGetWorkerJobLogs(w, r)
+	case http.MethodDelete:
+		handlePurgeWorkerJobLogs(w, r)
+	default:
+		ErrorMethodNotAllowed(r).Send(w, r)
+	}
+}
+
+func AddWorkerEndpoints(router *http.ServeMux) {
+	authed := EnsureAuthed
+
+	router.HandleFunc("/workers/details", authed(handleGetWorkersDetails))
+	router.HandleFunc("/workers/{id}/job-logs", authed(handleWorkerJobLogs))
 }
