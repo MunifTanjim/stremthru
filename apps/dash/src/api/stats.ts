@@ -2,6 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
+type IMDBTitleStats = {
+  total_count: number;
+};
+
 type ListsStats = Record<
   "anilist" | "letterboxd" | "mdblist" | "tmdb" | "trakt" | "tvdb",
   {
@@ -22,11 +26,24 @@ type TorrentsStats = {
   total_count: number;
 };
 
+const HOUR = 60 * 60 * 1000;
+
+export function useIMDBTitleStats() {
+  return useQuery({
+    queryFn: async () => {
+      const { data } = await api<IMDBTitleStats>("/stats/imdb-titles");
+      return data;
+    },
+    queryKey: ["/stats/imdb-titles"],
+    staleTime: 2 * HOUR,
+  });
+}
+
 export function useListsStats() {
   return useQuery({
     queryFn: getListsStats,
     queryKey: ["/stats/lists"],
-    staleTime: 2 * 60 * 60 * 1000,
+    staleTime: 2 * HOUR,
   });
 }
 
@@ -34,7 +51,7 @@ export function useServerStats() {
   return useQuery({
     queryFn: getServerStats,
     queryKey: ["/stats/server"],
-    staleTime: 2 * 60 * 60 * 1000,
+    staleTime: 2 * HOUR,
   });
 }
 
@@ -43,7 +60,7 @@ export function useTorrentsStats() {
     queryFn: getTorrentsStats,
     queryKey: ["/stats/torrents"],
     retry: false,
-    staleTime: 2 * 60 * 60 * 1000,
+    staleTime: 2 * HOUR,
   });
 }
 
