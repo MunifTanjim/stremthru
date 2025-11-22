@@ -409,6 +409,7 @@ Get information about authenticated user.
     "id": "string",
     "email": "string",
     "subscription_status": "UserSubscriptionStatus"
+    "has_usenet": "boolean"
   }
 }
 ```

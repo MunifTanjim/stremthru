@@ -101,6 +101,7 @@ type User struct {
 	Id                 string                 `json:"id"`
 	Email              string                 `json:"email"`
 	SubscriptionStatus UserSubscriptionStatus `json:"subscription_status"`
+	HasUsenet          bool                   `json:"has_usenet"`
 }
 
 type GetUserParams struct {
