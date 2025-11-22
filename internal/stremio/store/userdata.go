@@ -14,12 +14,13 @@ import (
 )
 
 type UserData struct {
-	StoreName   string `json:"store_name"`
-	StoreToken  string `json:"store_token"`
-	HideCatalog bool   `json:"hide_catalog,omitempty"`
-	HideStream  bool   `json:"hide_stream,omitempty"`
-	EnableWebDL bool   `json:"webdl,omitempty"`
-	encoded     string `json:"-"`
+	StoreName    string `json:"store_name"`
+	StoreToken   string `json:"store_token"`
+	HideCatalog  bool   `json:"hide_catalog,omitempty"`
+	HideStream   bool   `json:"hide_stream,omitempty"`
+	EnableWebDL  bool   `json:"webdl,omitempty"`
+	EnableUsenet bool   `json:"usenet,omitempty"`
+	encoded      string `json:"-"`
 
 	idPrefixes []string `json:"-"`
 }
@@ -159,6 +160,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		data.HideCatalog = r.FormValue("hide_catalog") == "on"
 		data.HideStream = r.FormValue("hide_stream") == "on"
 		data.EnableWebDL = r.FormValue("enable_webdl") == "on"
+		data.EnableUsenet = r.FormValue("enable_usenet") == "on"
 		encoded, err := data.GetEncoded()
 		if err != nil {
 			return nil, err
