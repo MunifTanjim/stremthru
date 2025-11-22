@@ -43,17 +43,17 @@ func handleAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idPrefix := getIdPrefix(idr.getStoreCode())
+	idStoreCode := idr.getStoreCode()
 	switch strings.TrimPrefix(actionId, storeActionIdPrefix) {
 	case "clear_cache":
-		catalogCache.Remove(getCatalogCacheKey(idPrefix, ctx.StoreAuthToken))
+		catalogCache.Remove(getCatalogCacheKey(idStoreCode, ctx.StoreAuthToken))
 		switch ctx.Store.GetName() {
 		case store.StoreNameAlldebrid:
-			adLinksCache.Remove(getADLinksCacheKey(idPrefix, ctx.StoreAuthToken))
+			adLinksCache.Remove(getADLinksCacheKey(idStoreCode, ctx.StoreAuthToken))
 		case store.StoreNamePremiumize:
-			pmItemsCache.Remove(getPMItemsCacheKey(idPrefix, ctx.StoreAuthToken))
+			pmItemsCache.Remove(getPMItemsCacheKey(idStoreCode, ctx.StoreAuthToken))
 		case store.StoreNameRealDebrid:
-			rdDownloadsCache.Remove(getRDDownloadsCacheKey(idPrefix, ctx.StoreAuthToken))
+			rdDownloadsCache.Remove(getRDDownloadsCacheKey(idStoreCode, ctx.StoreAuthToken))
 		}
 	}
 
