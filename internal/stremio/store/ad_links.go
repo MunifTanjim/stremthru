@@ -19,8 +19,8 @@ var adLinksCache = cache.NewCache[[]stremio.MetaVideo](&cache.CacheConfig{
 	Name:     "stremio:store:ad:links",
 })
 
-func getADLinksCacheKey(idPrefix, storeToken string) string {
-	return idPrefix + storeToken
+func getADLinksCacheKey(idStoreCode, storeToken string) string {
+	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
 func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) stremio.Meta {
@@ -36,7 +36,7 @@ func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, 
 		Released:    &released,
 		Videos:      []stremio.MetaVideo{},
 	}
-	cacheKey := getADLinksCacheKey(getIdPrefix(idr.getStoreCode()), ctx.StoreAuthToken)
+	cacheKey := getADLinksCacheKey(idr.getStoreCode(), ctx.StoreAuthToken)
 	if !adLinksCache.Get(cacheKey, &meta.Videos) {
 		params := &stremio_store_webdl.ListWebDLsParams{}
 		params.APIKey = ctx.StoreAuthToken
