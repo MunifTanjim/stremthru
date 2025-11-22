@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -44,14 +44,30 @@ export function useWorkerJobLogs(workerId: string) {
 }
 
 export function useWorkerMutation(workerId: string) {
-  const queryClient = useQueryClient();
+  const deleteJobLog = useMutation({
+    mutationFn: async (jobLogId: string) => {
+      await api(`/workers/${workerId}/job-logs/${jobLogId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: async (_, jobLogId, __, ctx) => {
+      const queryKey = ["/workers/{id}/job-logs", workerId];
+      const jobLogs = ctx.client.getQueryData<WorkerJobLog[]>(queryKey);
+      if (jobLogs) {
+        ctx.client.setQueryData(
+          queryKey,
+          jobLogs.filter((jobLog) => jobLog.id != jobLogId),
+        );
+      }
+    },
+  });
 
   const purgeJobLogs = useMutation({
     mutationFn: async () => {
       await api(`/workers/${workerId}/job-logs`, { method: "DELETE" });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
+    onSuccess: async (_, __, ___, ctx) => {
+      await ctx.client.invalidateQueries({
         queryKey: ["/workers/{id}/job-logs", workerId],
       });
     },
@@ -63,7 +79,7 @@ export function useWorkerMutation(workerId: string) {
     },
   });
 
-  return { purgeJobLogs, purgeTemporaryFiles };
+  return { deleteJobLog, purgeJobLogs, purgeTemporaryFiles };
 }
 
 export function useWorkerTemporaryFiles(workerId: string) {

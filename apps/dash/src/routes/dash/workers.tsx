@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
+import { Trash2 } from "lucide-react";
 import { DateTime, Duration } from "luxon";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -41,14 +42,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { APIError } from "@/lib/api";
 
-export const Route = createFileRoute("/dash/workers")({
-  component: RouteComponent,
-  staticData: {
-    crumb: "Workers",
-  },
-});
+declare module "@/components/data-table" {
+  export interface DataTableMetaCtx {
+    WorkerJobLog: {
+      deleteJobLog: ReturnType<typeof useWorkerMutation>["deleteJobLog"];
+    };
+  }
+
+  export interface DataTableMetaCtxKey {
+    WorkerJobLog: WorkerJobLog;
+  }
+}
 
 const jobLogsColumns: ColumnDef<WorkerJobLog>[] = [
   {
@@ -99,6 +110,45 @@ const jobLogsColumns: ColumnDef<WorkerJobLog>[] = [
       );
     },
     header: "Error",
+  },
+  {
+    cell: (c) => {
+      const { deleteJobLog } = c.table.options.meta!.ctx;
+      return (
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={deleteJobLog.isPending}
+                onClick={() => {
+                  toast.promise(deleteJobLog.mutateAsync(c.row.original.id), {
+                    error(err: APIError) {
+                      console.error(err);
+                      return {
+                        closeButton: true,
+                        message: err.message,
+                      };
+                    },
+                    loading: "Deleting Job Log...",
+                    success: {
+                      closeButton: true,
+                      message: "Job Log Deleted!",
+                    },
+                  });
+                }}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <Trash2 />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete Job Log</TooltipContent>
+          </Tooltip>
+        </>
+      );
+    },
+    header: "",
+    id: "actions",
   },
 ];
 
@@ -190,13 +240,20 @@ function PurgeWorkerTemporaryDataButton({
   );
 }
 
+export const Route = createFileRoute("/dash/workers")({
+  component: RouteComponent,
+  staticData: {
+    crumb: "Workers",
+  },
+});
+
 function RouteComponent() {
   const workerDetails = useWorkerDetails();
 
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
 
   const jobLogs = useWorkerJobLogs(selectedWorkerId);
-  const { purgeJobLogs, purgeTemporaryFiles } =
+  const { deleteJobLog, purgeJobLogs, purgeTemporaryFiles } =
     useWorkerMutation(selectedWorkerId);
 
   const workerOptions = useMemo(() => {
@@ -329,7 +386,12 @@ function RouteComponent() {
           ) : jobLogs.isError ? (
             <div className="text-sm text-red-600">Error loading job logs</div>
           ) : (
-            <DataTable columns={jobLogsColumns} data={jobLogs.data || []} />
+            <DataTable
+              columnPinning={{ left: ["id"], right: ["actions"] }}
+              columns={jobLogsColumns}
+              data={jobLogs.data || []}
+              meta={{ ctx: { deleteJobLog } }}
+            />
           ))}
       </div>
     </div>
