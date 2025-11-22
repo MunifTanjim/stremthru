@@ -15,6 +15,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
+	stremio_store "github.com/MunifTanjim/stremthru/internal/stremio/store"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
@@ -98,6 +99,8 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 				error_video: "download_failed",
 			}, err
 		}
+
+		stremio_store.InvalidateCatalogCache(storeCode, ctx.StoreAuthToken)
 
 		magnet := &store.GetMagnetData{
 			Id:      amRes.Id,
