@@ -18,6 +18,15 @@ var tbClient = torbox.NewAPIClient(&torbox.APIClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 })
 
+func IsSupported(storeCode store.StoreCode) bool {
+	switch storeCode {
+	case store.StoreCodeTorBox:
+		return true
+	default:
+		return false
+	}
+}
+
 type NewsFile struct {
 	Idx       int    `json:"index"`
 	Link      string `json:"link,omitempty"`

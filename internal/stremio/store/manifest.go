@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
+	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -54,7 +55,7 @@ func getManifestCatalog(code string, hideCatalog bool) stremio.Catalog {
 	}
 }
 
-func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
+func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 	isConfigured := ud.HasRequiredValues()
 
 	id := shared.GetReversedHostname(r) + ".store"
@@ -72,16 +73,32 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 					for _, name := range config.StoreAuthToken.ListStores(user.Username) {
 						storeName := store.StoreName(name)
 						storeCode := storeName.Code()
+
+						s := shared.GetStoreByCode(string(storeCode))
+						if s == nil {
+							return nil, core.NewError("invalid store code: " + string(storeCode))
+						}
+						storeToken := config.StoreAuthToken.GetToken(user.Username, string(storeName))
+						getUserParams := &store.GetUserParams{}
+						getUserParams.APIKey = storeToken
+						user, err := s.GetUser(getUserParams)
+						if err != nil {
+							return nil, err
+						}
+
 						names = append(names, string(storeName))
 
 						code := "st-" + string(storeCode)
 						idPrefixes = append(idPrefixes, getIdPrefix(code))
 						catalogs = append(catalogs, getManifestCatalog(code, ud.HideCatalog))
-						if storeName == store.StoreNameTorBox {
+
+						if ud.EnableUsenet && stremio_store_usenet.IsSupported(storeCode) && user.HasUsenet {
 							usenetCode := code + "-usenet"
 							idPrefixes = append(idPrefixes, getIdPrefix(usenetCode))
 							catalogs = append(catalogs, getManifestCatalog(usenetCode, ud.HideCatalog))
+						}
 
+						if storeName == store.StoreNameTorBox {
 							if ud.EnableWebDL {
 								webdlCode := code + "-webdl"
 								idPrefixes = append(idPrefixes, getIdPrefix(webdlCode))
@@ -98,6 +115,19 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 		default:
 			storeName := store.StoreName(ud.StoreName)
 			storeCode := string(storeName.Code())
+
+			s := shared.GetStoreByCode(string(storeCode))
+			if s == nil {
+				return nil, core.NewError("invalid store code: " + string(storeCode))
+			}
+			storeToken := ud.StoreToken
+			getUserParams := &store.GetUserParams{}
+			getUserParams.APIKey = storeToken
+			user, err := s.GetUser(getUserParams)
+			if err != nil {
+				return nil, err
+			}
+
 			id += "." + storeCode
 			name = name + " | " + strings.ToUpper(storeCode)
 			description = description + " - " + string(storeName)
@@ -107,11 +137,14 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 
 			idPrefixes = append(idPrefixes, getIdPrefix(storeCode))
 			catalogs = append(catalogs, getManifestCatalog(storeCode, ud.HideCatalog))
-			if storeName == store.StoreNameTorBox {
+
+			if ud.EnableUsenet && stremio_store_usenet.IsSupported(storeName.Code()) && user.HasUsenet {
 				usenetCode := storeCode + "-usenet"
 				idPrefixes = append(idPrefixes, getIdPrefix(usenetCode))
 				catalogs = append(catalogs, getManifestCatalog(usenetCode, ud.HideCatalog))
+			}
 
+			if storeName == store.StoreNameTorBox {
 				if ud.EnableWebDL {
 					webdlCode := storeCode + "-webdl"
 					idPrefixes = append(idPrefixes, getIdPrefix(webdlCode))
@@ -159,7 +192,7 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 		},
 	}
 
-	return manifest
+	return manifest, nil
 }
 
 func handleManifest(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +207,11 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	manifest := GetManifest(r, ud)
+	manifest, err := GetManifest(r, ud)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
 
 	stremio_shared.ClaimAddonOnStremioAddonsDotNet(manifest, "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..9hY0hRGJ_MmMb5g39-Y_pg.shmFmHHoqoxyAv42csODUejG7r65_pLIfv6LxFNakQ1ed_OcyTDU3He79vWCYk42__uCclJZ4ZbpqZO-Oo2khmndQlwQmgTfpwGzPBxqz1oOq0GOn2R3KDyzHln6Lie0.se53UR-KR8hCCZgO4b3daA")
 

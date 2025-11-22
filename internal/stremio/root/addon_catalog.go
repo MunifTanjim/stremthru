@@ -32,8 +32,9 @@ func getAddonCatalog(r *http.Request) *stremio.AddonCatalogHandlerResponse {
 		})
 	}
 	if config.Feature.IsEnabled(config.FeatureStremioStore) {
+		manifest, _ := stremio_store.GetManifest(r, &stremio_store.UserData{})
 		addons = append(addons, stremio.Addon{
-			Manifest:      *stremio_store.GetManifest(r, &stremio_store.UserData{}),
+			Manifest:      *manifest,
 			TransportName: "http",
 			TransportUrl:  shared.ExtractRequestBaseURL(r).JoinPath("stremio/store/manifest.json").String(),
 		})
