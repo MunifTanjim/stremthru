@@ -3,12 +3,9 @@ import { Duration } from "luxon";
 import { useState } from "react";
 import { useInterval } from "react-use";
 
-import {
-  useIMDBTitleStats,
-  useServerStats,
-  useTorrentsStats,
-} from "@/api/stats";
+import { useIMDBTitleStats, useServerStats } from "@/api/stats";
 import { ListStatsCard } from "@/components/lists-stats-card";
+import { TorrentsStatsCard } from "@/components/torrents-stats-card";
 import {
   Card,
   CardDescription,
@@ -25,7 +22,6 @@ export const Route = createFileRoute("/dash/")({
 });
 
 function RouteComponent() {
-  const torzStats = useTorrentsStats();
   const imdbTitleStats = useIMDBTitleStats();
 
   const serverStats = useServerStats();
@@ -62,38 +58,9 @@ function RouteComponent() {
           </CardTitle>
         </CardHeader>
       </Card>
-      <Card className="py-4 sm:py-0">
-        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
-            <CardTitle>Torrents Statistics</CardTitle>
-            <CardDescription>Overview of torrents in database</CardDescription>
-          </div>
-          <div className="flex">
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-muted-foreground text-xs">
-                Total Torrents
-              </span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {torzStats.isLoading ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  (torzStats.data?.total_count.toLocaleString() ?? 0)
-                )}
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-muted-foreground text-xs">Total Files</span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {torzStats.isLoading ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  (torzStats.data?.files.total_count.toLocaleString() ?? 0)
-                )}
-              </span>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+
+      <TorrentsStatsCard />
+
       <Card className="py-4 sm:py-0">
         <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
           <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">

@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashRouteImport } from './routes/dash'
 import { Route as DashIndexRouteImport } from './routes/dash/index'
 import { Route as DashWorkersRouteImport } from './routes/dash/workers'
+import { Route as DashTorrentsRouteImport } from './routes/dash/torrents'
 import { Route as DashLoginRouteImport } from './routes/dash/login'
 import { Route as DashListsRouteImport } from './routes/dash/lists'
+import { Route as DashTorrentsIndexRouteImport } from './routes/dash/torrents/index'
 import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 
 const DashRoute = DashRouteImport.update({
@@ -31,6 +33,11 @@ const DashWorkersRoute = DashWorkersRouteImport.update({
   path: '/workers',
   getParentRoute: () => DashRoute,
 } as any)
+const DashTorrentsRoute = DashTorrentsRouteImport.update({
+  id: '/torrents',
+  path: '/torrents',
+  getParentRoute: () => DashRoute,
+} as any)
 const DashLoginRoute = DashLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -40,6 +47,11 @@ const DashListsRoute = DashListsRouteImport.update({
   id: '/lists',
   path: '/lists',
   getParentRoute: () => DashRoute,
+} as any)
+const DashTorrentsIndexRoute = DashTorrentsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashTorrentsRoute,
 } as any)
 const DashListsIndexRoute = DashListsIndexRouteImport.update({
   id: '/',
@@ -51,24 +63,29 @@ export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/torrents': typeof DashTorrentsRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
   '/dash/lists/': typeof DashListsIndexRoute
+  '/dash/torrents/': typeof DashTorrentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/dash/login': typeof DashLoginRoute
   '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
   '/dash/lists': typeof DashListsIndexRoute
+  '/dash/torrents': typeof DashTorrentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/torrents': typeof DashTorrentsRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
   '/dash/lists/': typeof DashListsIndexRoute
+  '/dash/torrents/': typeof DashTorrentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -76,19 +93,28 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/torrents'
     | '/dash/workers'
     | '/dash/'
     | '/dash/lists/'
+    | '/dash/torrents/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/dash/login' | '/dash/workers' | '/dash' | '/dash/lists'
+  to:
+    | '/dash/login'
+    | '/dash/workers'
+    | '/dash'
+    | '/dash/lists'
+    | '/dash/torrents'
   id:
     | '__root__'
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/torrents'
     | '/dash/workers'
     | '/dash/'
     | '/dash/lists/'
+    | '/dash/torrents/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashWorkersRouteImport
       parentRoute: typeof DashRoute
     }
+    '/dash/torrents': {
+      id: '/dash/torrents'
+      path: '/torrents'
+      fullPath: '/dash/torrents'
+      preLoaderRoute: typeof DashTorrentsRouteImport
+      parentRoute: typeof DashRoute
+    }
     '/dash/login': {
       id: '/dash/login'
       path: '/login'
@@ -131,6 +164,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dash/lists'
       preLoaderRoute: typeof DashListsRouteImport
       parentRoute: typeof DashRoute
+    }
+    '/dash/torrents/': {
+      id: '/dash/torrents/'
+      path: '/'
+      fullPath: '/dash/torrents/'
+      preLoaderRoute: typeof DashTorrentsIndexRouteImport
+      parentRoute: typeof DashTorrentsRoute
     }
     '/dash/lists/': {
       id: '/dash/lists/'
@@ -154,9 +194,22 @@ const DashListsRouteWithChildren = DashListsRoute._addFileChildren(
   DashListsRouteChildren,
 )
 
+interface DashTorrentsRouteChildren {
+  DashTorrentsIndexRoute: typeof DashTorrentsIndexRoute
+}
+
+const DashTorrentsRouteChildren: DashTorrentsRouteChildren = {
+  DashTorrentsIndexRoute: DashTorrentsIndexRoute,
+}
+
+const DashTorrentsRouteWithChildren = DashTorrentsRoute._addFileChildren(
+  DashTorrentsRouteChildren,
+)
+
 interface DashRouteChildren {
   DashListsRoute: typeof DashListsRouteWithChildren
   DashLoginRoute: typeof DashLoginRoute
+  DashTorrentsRoute: typeof DashTorrentsRouteWithChildren
   DashWorkersRoute: typeof DashWorkersRoute
   DashIndexRoute: typeof DashIndexRoute
 }
@@ -164,6 +217,7 @@ interface DashRouteChildren {
 const DashRouteChildren: DashRouteChildren = {
   DashListsRoute: DashListsRouteWithChildren,
   DashLoginRoute: DashLoginRoute,
+  DashTorrentsRoute: DashTorrentsRouteWithChildren,
   DashWorkersRoute: DashWorkersRoute,
   DashIndexRoute: DashIndexRoute,
 }
