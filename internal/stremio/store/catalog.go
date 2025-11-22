@@ -34,14 +34,25 @@ var catalogCache = cache.NewCache[[]CachedCatalogItem](&cache.CacheConfig{
 	LocalCapacity: 2048,
 })
 
+func InvalidateCatalogCache(storeCode store.StoreCode, storeToken string) {
+	codes := []string{
+		string(storeCode),
+	}
+	for _, code := range codes {
+		catalogCache.Remove(getCatalogCacheKey(code, storeToken))
+	}
+}
+
 var max_fetch_list_items = config.Stremio.Store.CatalogItemLimit
 
 const fetch_list_limit = 500
 
-func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, log *logger.Logger) []CachedCatalogItem {
+func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, idStoreCode string, log *logger.Logger) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
-	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
+	idPrefix := getIdPrefix(idStoreCode)
+
+	cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
 		storeName := s.GetName()
 
@@ -90,10 +101,12 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 	return items
 }
 
-func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, log *logger.Logger) []CachedCatalogItem {
+func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idStoreCode string, log *logger.Logger) []CachedCatalogItem {
 	items := []CachedCatalogItem{}
 
-	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
+	idPrefix := getIdPrefix(idStoreCode)
+
+	cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
 		storeName := s.GetName()
 
@@ -142,19 +155,23 @@ func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idP
 	return items
 }
 
-func getCatalogItems(s store.Store, storeToken string, clientIp string, idPrefix string, idr *ParsedId, log *logger.Logger) []CachedCatalogItem {
+func getCatalogItems(s store.Store, storeToken string, clientIp string, idr *ParsedId, log *logger.Logger) []CachedCatalogItem {
+	idStoreCode := idr.getStoreCode()
+
 	if idr.isUsenet {
-		return getUsenetCatalogItems(s, storeToken, clientIp, idPrefix, log)
+		return getUsenetCatalogItems(s, storeToken, clientIp, idStoreCode, log)
 	}
 
 	if idr.isWebDL {
-		return getWebDLCatalogItems(s, storeToken, clientIp, idPrefix, log)
+		return getWebDLCatalogItems(s, storeToken, clientIp, idStoreCode, log)
 	}
 
 	items := []CachedCatalogItem{}
 
-	cacheKey := getCatalogCacheKey(idPrefix, storeToken)
+	cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
 	if !catalogCache.Get(cacheKey, &items) {
+		idPrefix := getIdPrefix(idStoreCode)
+
 		storeName := s.GetName()
 		storeCode := storeName.Code()
 
@@ -256,8 +273,11 @@ func getStoreActionMetaPreview(storeCode string) stremio.MetaPreview {
 	return meta
 }
 
-func getCatalogCacheKey(idPrefix, storeToken string) string {
-	return idPrefix + storeToken
+func getCatalogCacheKey(idStoreCode, storeToken string) string {
+	idStoreCode = strings.TrimPrefix(idStoreCode, "st")
+	idStoreCode = strings.TrimPrefix(idStoreCode, "-")
+	idStoreCode = strings.TrimPrefix(idStoreCode, ":")
+	return idStoreCode + ":" + storeToken
 }
 
 var whitespacesRegex = regexp.MustCompile(`\s+`)
@@ -316,7 +336,7 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, getIdPrefix(idStoreCode), idr, log)
+	items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idr, log)
 
 	if extra.Search != "" {
 		start := time.Now()

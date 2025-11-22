@@ -180,7 +180,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr, log)
+				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idr, log)
 				if meta.Name != "" {
 					normalizer := util.NewStringNormalizer()
 					filteredItems := []CachedCatalogItem{}
@@ -294,7 +294,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idPrefix, idr, log)
+				items := getCatalogItems(ctx.Store, ctx.StoreAuthToken, ctx.ClientIP, idr, log)
 
 				addedItemIdx := map[int]struct{}{}
 				filteredItems := []CachedCatalogItem{}
