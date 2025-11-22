@@ -19,8 +19,8 @@ var pmItemsCache = cache.NewCache[[]stremio.MetaVideo](&cache.CacheConfig{
 	Name:     "stremio:store:pm:items",
 })
 
-func getPMItemsCacheKey(idPrefix, storeToken string) string {
-	return idPrefix + storeToken
+func getPMItemsCacheKey(idStoreCode, storeToken string) string {
+	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
 func getPMWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) (stremio.Meta, error) {
@@ -36,7 +36,7 @@ func getPMWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, 
 		Released:    &released,
 		Videos:      []stremio.MetaVideo{},
 	}
-	cacheKey := getPMItemsCacheKey(getIdPrefix(idr.getStoreCode()), ctx.StoreAuthToken)
+	cacheKey := getPMItemsCacheKey(idr.getStoreCode(), ctx.StoreAuthToken)
 	if !pmItemsCache.Get(cacheKey, &meta.Videos) {
 		params := &stremio_store_webdl.ListWebDLsParams{}
 		params.APIKey = ctx.StoreAuthToken

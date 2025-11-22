@@ -23,8 +23,8 @@ var rdDownloadsCache = cache.NewCache[[]stremio.MetaVideo](&cache.CacheConfig{
 	Name:     "stremio:store:rd:downloads",
 })
 
-func getRDDownloadsCacheKey(idPrefix, storeToken string) string {
-	return idPrefix + storeToken
+func getRDDownloadsCacheKey(idStoreCode, storeToken string) string {
+	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
 func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) stremio.Meta {
@@ -40,7 +40,7 @@ func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) 
 		Released:    &released,
 		Videos:      []stremio.MetaVideo{},
 	}
-	cacheKey := getRDDownloadsCacheKey(getIdPrefix(idr.getStoreCode()), ctx.StoreAuthToken)
+	cacheKey := getRDDownloadsCacheKey(idr.getStoreCode(), ctx.StoreAuthToken)
 	if !rdDownloadsCache.Get(cacheKey, &meta.Videos) {
 		storeName := ctx.Store.GetName()
 
