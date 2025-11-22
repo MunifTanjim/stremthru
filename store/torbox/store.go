@@ -92,10 +92,14 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 		Id:    strconv.Itoa(res.Data.Id),
 		Email: res.Data.Email,
 	}
-	if res.Data.Plan == PlanFree {
+	switch res.Data.Plan {
+	case PlanFree:
 		data.SubscriptionStatus = store.UserSubscriptionStatusExpired
-	} else {
+	case PlanEssential, PlanStandard:
 		data.SubscriptionStatus = store.UserSubscriptionStatusPremium
+	case PlanPro:
+		data.SubscriptionStatus = store.UserSubscriptionStatusPremium
+		data.HasUsenet = true
 	}
 	c.setCachedGetUser(params, data)
 	return data, nil
