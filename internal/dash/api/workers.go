@@ -144,6 +144,32 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleDeleteWorkerJobLog(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("id")
+	if _, ok := worker.WorkerDetailsById[name]; !ok {
+		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		return
+	}
+
+	jobId := r.PathValue("jobId")
+	err := job_log.DeleteJobLog(name, jobId)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	SendData(w, r, 204, nil)
+}
+
+func handleWorkerJobLog(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		handleDeleteWorkerJobLog(w, r)
+	default:
+		ErrorMethodNotAllowed(r).Send(w, r)
+	}
+}
+
 func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
@@ -167,7 +193,6 @@ func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		ErrorBadRequest(r, "worker does not support temporary file purge").Send(w, r)
 		return
 	}
-
 }
 
 func handleWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
@@ -186,5 +211,6 @@ func AddWorkerEndpoints(router *http.ServeMux) {
 
 	router.HandleFunc("/workers/details", authed(handleGetWorkersDetails))
 	router.HandleFunc("/workers/{id}/job-logs", authed(handleWorkerJobLogs))
+	router.HandleFunc("/workers/{id}/job-logs/{jobId}", authed(handleWorkerJobLog))
 	router.HandleFunc("/workers/{id}/temporary-files", authed(handleWorkerTemporaryFiles))
 }
