@@ -6,6 +6,7 @@ import {
   ChevronsUpDown,
   LayoutList,
   LogOut,
+  MagnetIcon,
   Moon,
   Sparkles,
   Sun,
@@ -84,6 +85,17 @@ const navItems: NavItem[] = [
     ],
     path: "/dash/lists",
     title: "Lists",
+  },
+  {
+    icon: MagnetIcon,
+    items: [
+      {
+        path: "/dash/torrents",
+        title: "Stats",
+      },
+    ],
+    path: "/dash/torrents",
+    title: "Torrents",
   },
 ];
 
