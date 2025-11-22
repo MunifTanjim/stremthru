@@ -4,6 +4,7 @@ import { capitalize } from "es-toolkit";
 import {
   ChevronRight,
   ChevronsUpDown,
+  LayoutList,
   LogOut,
   Moon,
   Sparkles,
@@ -72,6 +73,17 @@ const navItems: NavItem[] = [
     ],
     path: "/dash",
     title: "Dashboard",
+  },
+  {
+    icon: LayoutList,
+    items: [
+      {
+        path: "/dash/lists",
+        title: "Stats",
+      },
+    ],
+    path: "/dash/lists",
+    title: "Lists",
   },
 ];
 
