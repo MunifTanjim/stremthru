@@ -27,7 +27,8 @@ type UserData struct {
 	list_urls    []string `json:"-"`
 	MDBListLists []int    `json:"mdblist_lists,omitempty"` // deprecated
 
-	MDBListAPIkey string `json:"mdblist_api_key,omitempty"`
+	MDBListAPIkey string                   `json:"mdblist_api_key,omitempty"`
+	mdblistUser   *mdblist.GetMyLimitsData `json:"-"`
 
 	TMDBTokenId string            `json:"tmdb_token_id,omitempty"`
 	tmdbToken   *oauth.OAuthToken `json:"-"`
@@ -185,10 +186,8 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		isTVDBConfigured := TVDBEnabled
 
 		if isMDBListEnabled {
-			userParams := mdblist.GetMyLimitsParams{}
-			userParams.APIKey = ud.MDBListAPIkey
-			if _, userErr := mdblistClient.GetMyLimits(&userParams); userErr != nil {
-				udErr.mdblist.api_key = "Invalid API Key: " + userErr.Error()
+			if _, err := ud.getMDBListUser(); err != nil {
+				udErr.mdblist.api_key = "Invalid API Key: " + err.Error()
 			}
 		}
 
@@ -364,6 +363,15 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					}
 				} else if strings.HasPrefix(listUrl.Path, "/watchlist/") {
 					username := strings.TrimPrefix(listUrl.Path, "/watchlist/")
+					if user, err := ud.getMDBListUser(); err != nil {
+						udErr.list_urls[idx] = "Failed to fetch user: " + err.Error()
+						continue
+					} else {
+						if !strings.EqualFold(username, user.Username) {
+							udErr.list_urls[idx] = "Invalid URL: not own list"
+							continue
+						}
+					}
 					list.Id = "~:watchlist:" + username
 					list.UserName = username
 					list.Slug = "watchlist/" + username
@@ -659,6 +667,19 @@ func (ud *UserData) FetchLetterboxdList(list *letterboxd.LetterboxdList) error {
 
 	ud.letterboxdById[list.Id] = *list
 	return nil
+}
+
+func (ud *UserData) getMDBListUser() (*mdblist.GetMyLimitsData, error) {
+	if ud.mdblistUser == nil {
+		userParams := mdblist.GetMyLimitsParams{}
+		userParams.APIKey = ud.MDBListAPIkey
+		res, err := mdblistClient.GetMyLimits(&userParams)
+		if err != nil {
+			return nil, err
+		}
+		ud.mdblistUser = &res.Data
+	}
+	return ud.mdblistUser, nil
 }
 
 func (ud *UserData) FetchMDBListList(list *mdblist.MDBListList) error {
