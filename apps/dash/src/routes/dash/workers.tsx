@@ -117,7 +117,7 @@ const jobLogsColumns: ColumnDef<WorkerJobLog>[] = [
       return (
         <>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
                 disabled={deleteJobLog.isPending}
                 onClick={() => {
