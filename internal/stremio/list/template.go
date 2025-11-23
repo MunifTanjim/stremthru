@@ -453,7 +453,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 					},
 				},
 				{
-					Pattern: "/watchlist/{user_name}",
+					Pattern: "/watchlist/{own_user_name}",
 					Examples: []string{
 						"/watchlist/garycrawfordgc",
 					},
