@@ -13,6 +13,7 @@ import {
   WorkerJobLog,
 } from "@/api/workers";
 import { DataTable } from "@/components/data-table";
+import { useDataTable } from "@/components/data-table/use-data-table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -290,6 +291,15 @@ function RouteComponent() {
       .toHuman({ maximumFractionDigits: 0 });
   }, [selectedWorkerId, workerDetails.data]);
 
+  const table = useDataTable({
+    columns: jobLogsColumns,
+    data: jobLogs.data ?? [],
+    initialState: {
+      columnPinning: { left: ["id"], right: ["actions"] },
+    },
+    meta: { ctx: { deleteJobLog } },
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
@@ -386,12 +396,7 @@ function RouteComponent() {
           ) : jobLogs.isError ? (
             <div className="text-sm text-red-600">Error loading job logs</div>
           ) : (
-            <DataTable
-              columnPinning={{ left: ["id"], right: ["actions"] }}
-              columns={jobLogsColumns}
-              data={jobLogs.data || []}
-              meta={{ ctx: { deleteJobLog } }}
-            />
+            <DataTable table={table} />
           ))}
       </div>
     </div>

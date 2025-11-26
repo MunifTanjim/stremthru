@@ -1,17 +1,5 @@
-import {
-  Cell,
-  Header,
-  RowData,
-  TableMeta,
-  TableState,
-} from "@tanstack/react-table";
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  TableOptions,
-  useReactTable,
-} from "@tanstack/react-table";
+import { Cell, Header, RowData, Table as TTable } from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
 import { CSSProperties } from "react";
 
 import {
@@ -42,34 +30,7 @@ declare module "@tanstack/react-table" {
   }
 }
 
-interface DataTableProps<TData, TValue> {
-  columnPinning?: NonNullable<TableOptions<TData>["state"]>["columnPinning"];
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  meta?: TableMeta<TData>;
-  onColumnPinningChange?: TableOptions<TData>["onColumnPinningChange"];
-}
-
-export function DataTable<TData, TValue>({
-  columnPinning,
-  columns,
-  data,
-  meta,
-  onColumnPinningChange,
-}: DataTableProps<TData, TValue>) {
-  const state: Partial<TableState> = {};
-  if (columnPinning) {
-    state.columnPinning = columnPinning;
-  }
-  const table = useReactTable({
-    columns,
-    data,
-    getCoreRowModel: getCoreRowModel(),
-    meta,
-    onColumnPinningChange,
-    state,
-  });
-
+export function DataTable<TData>({ table }: { table: TTable<TData> }) {
   return (
     <div className="overflow-hidden rounded-md border">
       <Table className="border-separate">
@@ -141,7 +102,10 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell className="h-24 text-center" colSpan={columns.length}>
+              <TableCell
+                className="h-24 text-center"
+                colSpan={table.options.columns.length}
+              >
                 No results.
               </TableCell>
             </TableRow>
