@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.92.10](https://github.com/MunifTanjim/stremthru/compare/0.92.9...0.92.10) (2025-11-26)
+
+
+### Bug Fixes
+
+* **store:** stop repeated upserts for torrent info ([2716c88](https://github.com/MunifTanjim/stremthru/commit/2716c889445179ab4b2b4e35ba08c8119789a2f7))
+* **stremio/store:** fix playback for premiumize cached magnet ([27d387b](https://github.com/MunifTanjim/stremthru/commit/27d387b7d152ccd1e8b7372bf370a339f263b8c7))
+* **stremio/torz:** handle 451 status gracefully ([c640438](https://github.com/MunifTanjim/stremthru/commit/c640438cc14adc663bec9c7c88715db11400daeb))
+
 ## [0.92.9](https://github.com/MunifTanjim/stremthru/compare/0.92.8...0.92.9) (2025-11-21)
 
 
