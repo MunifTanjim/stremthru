@@ -55,7 +55,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	log := ctx.Log
 
 	videoId := strings.TrimPrefix(videoIdWithLink, idPrefix)
-	videoId, link, _ := strings.Cut(videoId, ":")
+	videoId, link, _ := strings.Cut(videoId, "::")
 
 	url := link
 

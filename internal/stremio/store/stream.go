@@ -482,7 +482,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			streamId := matcher.IdPrefix + matcher.MagnetId + ":" + file.Link
+			streamId := matcher.IdPrefix + matcher.MagnetId + "::" + file.Link
 			streamUrl := streamBaseUrl.JoinPath(url.PathEscape(streamId), "/")
 			if file.Name != "" {
 				streamUrl = streamUrl.JoinPath(url.PathEscape(file.Name))
