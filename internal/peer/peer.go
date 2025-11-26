@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_review"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -289,5 +290,20 @@ type FetchLetterboxdUserWatchlistParams struct {
 func (c APIClient) FetchLetterboxdUserWatchlist(params *FetchLetterboxdUserWatchlistParams) (request.APIResponse[meta_type.List], error) {
 	response := &Response[meta_type.List]{}
 	res, err := c.Request("GET", "/v0/meta/letterboxd/users/"+params.UserId+"/lists/watchlist", params, response)
+	return request.NewAPIResponse(res, response.Data), err
+}
+
+type RequestTorrentReviewParams struct {
+	request.Ctx
+	Items []torrent_review.InsertItem `json:"items"`
+}
+
+type RequestTorrentReviewData struct{}
+
+func (c APIClient) RequestTorrentReview(params *RequestTorrentReviewParams) (request.APIResponse[RequestTorrentReviewData], error) {
+	params.JSON = params
+
+	response := &Response[RequestTorrentReviewData]{}
+	res, err := c.Request("POST", "/v0/torrents/review", params, response)
 	return request.NewAPIResponse(res, response.Data), err
 }

@@ -8,7 +8,7 @@ export function FormInput({
   label,
   ...props
 }: Omit<ComponentProps<typeof Input>, "id" | "name"> & {
-  label: string;
+  label: React.ReactNode;
 }) {
   const field = useFieldContext<string>();
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;

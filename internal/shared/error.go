@@ -89,3 +89,15 @@ var ErrorBadGateway = func(r *http.Request, msg string) *core.APIError {
 	err.StatusCode = http.StatusBadGateway
 	return err
 }
+
+var ErrorTooManyRequests = func(r *http.Request, msg string) *core.APIError {
+	if msg == "" {
+		msg = "too many requests"
+	}
+
+	err := core.NewAPIError(msg)
+	err.InjectReq(r)
+	err.Code = core.ErrorCodeTooManyRequests
+	err.StatusCode = http.StatusTooManyRequests
+	return err
+}

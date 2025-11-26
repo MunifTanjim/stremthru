@@ -32,6 +32,8 @@ func AddEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/stats/torrents", authed(dash_api.HandleGetTorrentsStats))
 	router.HandleFunc("/stats/server", authed(dash_api.HandleGetServerStats))
 
+	dash_api.AddIMDBEndpoints(router)
+	dash_api.AddTorrentsEndpoints(router)
 	dash_api.AddWorkerEndpoints(router)
 
 	mux.Handle("/dash/api/", http.StripPrefix("/dash/api", dash_api.WithMiddleware(commonMiddleware)(router.ServeHTTP)))

@@ -93,6 +93,10 @@ const navItems: NavItem[] = [
         path: "/dash/torrents",
         title: "Stats",
       },
+      {
+        path: "/dash/torrents/imdb",
+        title: "IMDB",
+      },
     ],
     path: "/dash/torrents",
     title: "Torrents",
