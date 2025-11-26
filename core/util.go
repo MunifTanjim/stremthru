@@ -22,8 +22,8 @@ func UnmarshalJSON(statusCode int, body []byte, v any) error {
 	}
 
 	bodySample := string(body)
-	if len(bodySample) > 500 {
-		bodySample = bodySample[0:500] + " ..."
+	if len(bodySample) > 1000 {
+		bodySample = bodySample[0:1000] + " ..."
 	}
 
 	bodySample = strings.Replace(bodySample, "\n", "\\n", -1)
