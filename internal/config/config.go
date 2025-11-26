@@ -639,10 +639,11 @@ var ContentProxyConnectionLimit = config.ContentProxyConnectionLimit
 var InstanceId = strings.ReplaceAll(uuid.NewString(), "-", "")
 var IP = config.IP
 
+var RootHost = util.MustDecodeBase64("c3RyZW10aHJ1LjEzMzc3MDAxLnh5eg==")
+
 var IsTrusted = func() bool {
-	rootHost := util.MustDecodeBase64("c3RyZW10aHJ1LjEzMzc3MDAxLnh5eg==")
 	switch BaseURL.Hostname() {
-	case rootHost:
+	case RootHost:
 		return true
 	}
 	if config.PeerURL == "" || config.PeerAuthToken == "" {
@@ -650,7 +651,7 @@ var IsTrusted = func() bool {
 	}
 	u := util.MustParseURL(config.PeerURL)
 	switch u.Hostname() {
-	case rootHost, "localhost":
+	case RootHost, "localhost":
 		return true
 	}
 	return false
