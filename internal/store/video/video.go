@@ -46,6 +46,7 @@ const (
 	StoreVideoName401                      StoreVideoName = "401"
 	StoreVideoName403                      StoreVideoName = "403"
 	StoreVideoName429                      StoreVideoName = "429"
+	StoreVideoName451                      StoreVideoName = "451"
 	StoreVideoName500                      StoreVideoName = "500"
 	StoreVideoNameContentProxyLimitReached StoreVideoName = "content_proxy_limit_reached"
 	StoreVideoNameDownloadFailed           StoreVideoName = "download_failed"

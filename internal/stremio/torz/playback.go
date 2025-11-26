@@ -135,6 +135,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 					result.error_level = logger.LevelWarn
 					result.error_log = "too many requests"
 					result.error_video = store_video.StoreVideoName429
+				case core.ErrorCodeUnavailableForLegalReasons:
+					result.error_level = logger.LevelWarn
+					result.error_log = "unavaiable for legal reason"
+					result.error_video = store_video.StoreVideoName451
 				case core.ErrorCodePaymentRequired:
 					result.error_level = logger.LevelWarn
 					result.error_log = "payment required"
