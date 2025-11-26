@@ -1,13 +1,17 @@
 package dash_api
 
 import (
+	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/google/uuid"
 )
 
@@ -16,11 +20,60 @@ type Session struct {
 	User string
 }
 
-var sessionStorage = cache.NewCache[Session](&cache.CacheConfig{
-	Lifetime:      7 * 24 * time.Hour,
-	Name:          "dash:session",
-	LocalCapacity: 8,
-})
+type SessionStorage interface {
+	Add(id string, session Session) error
+	Remove(id string)
+	Get(id string, session *Session) bool
+}
+
+type TemporaryFileSessionStorage struct {
+	directory string
+}
+
+func (t TemporaryFileSessionStorage) Add(id string, session Session) error {
+	data, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+	filePath := filepath.Join(t.directory, id+".json")
+	return os.WriteFile(filePath, data, 0600)
+}
+
+func (t TemporaryFileSessionStorage) Get(id string, session *Session) bool {
+	filePath := filepath.Join(t.directory, id+".json")
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return false
+	}
+	if err := json.Unmarshal(data, session); err != nil {
+		return false
+	}
+	return true
+}
+
+func (t TemporaryFileSessionStorage) Remove(id string) {
+	filePath := filepath.Join(t.directory, id+".json")
+	os.Remove(filePath)
+}
+
+var sessionStorage = func() SessionStorage {
+	if config.Environment == config.EnvDev {
+		directory := filepath.Join(config.DataDir, "dash-session")
+		err := util.EnsureDir(directory)
+		if err != nil {
+			panic(err)
+		}
+		return TemporaryFileSessionStorage{
+			directory: directory,
+		}
+	}
+
+	return cache.NewCache[Session](&cache.CacheConfig{
+		Lifetime:      7 * 24 * time.Hour,
+		Name:          "dash:session",
+		LocalCapacity: 8,
+	})
+}()
 
 const SESSION_COOKIE_NAME = "stremthru.dash.session"
 const SESSION_COOKIE_PATH = "/dash/"
