@@ -165,7 +165,7 @@ type Torrent struct {
 	Hash             string               `json:"hash"`
 	CreatedAt        string               `json:"created_at"`
 	UpdatedAt        string               `json:"updated_at"`
-	Magnet           string               `json:"magnet"`
+	Magnet           string               `json:"magnet,omitempty"`
 	Size             int64                `json:"size"`
 	Active           bool                 `json:"active"`
 	AuthId           string               `json:"auth_id"`
