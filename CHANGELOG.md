@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.11](https://github.com/MunifTanjim/stremthru/compare/0.92.10...0.92.11) (2025-11-29)
+
+
+### Bug Fixes
+
+* **core:** ignore loopback ip as client ip ([2b0e9de](https://github.com/MunifTanjim/stremthru/commit/2b0e9ded83b76554ffd0ef888df09d3df9011b46))
+
 ## [0.92.10](https://github.com/MunifTanjim/stremthru/compare/0.92.9...0.92.10) (2025-11-26)
 
 
