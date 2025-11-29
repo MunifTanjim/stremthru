@@ -24,7 +24,7 @@ var ipRequestHeaders = []string{
 
 func isCorrectIP(input string) bool {
 	ip := net.ParseIP(input)
-	return ip != nil && !ip.IsPrivate()
+	return ip != nil && !ip.IsPrivate() && !ip.IsLoopback()
 }
 
 func getClientIPFromXForwardedFor(headers string) (string, bool) {
