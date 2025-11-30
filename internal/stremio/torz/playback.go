@@ -256,11 +256,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	strem := result.(*stremResult)
 
 	if strem.error_log != "" {
-		if err != nil || strem.error_level >= logger.LevelError {
-			LogError(r, strem.error_log, err)
-		} else {
-			log.Warn(strem.error_log)
-		}
+		log.Log(strem.error_level, strem.error_log, "error", err)
 		redirectToStaticVideo(w, r, cacheKey, strem.error_video)
 		return
 	}
