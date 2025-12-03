@@ -90,13 +90,12 @@ Possible Detail values:
   - Found Cached Torrent. Using Cached Torrent.
 */
 func (c APIClient) CreateTorrent(params *CreateTorrentParams) (APIResponse[CreateTorrentData], error) {
-	if params.Seed == 0 {
-		params.Seed = int(CreateTorrentParamsSeedAuto)
-	}
 	if params.Magnet != "" {
 		form := &url.Values{}
 		form.Add("magnet", params.Magnet)
-		form.Add("seed", strconv.Itoa(int(params.Seed)))
+		if params.Seed != 0 {
+			form.Add("seed", strconv.Itoa(int(params.Seed)))
+		}
 		form.Add("allow_zip", strconv.FormatBool(params.AllowZip))
 		if params.Name != "" {
 			form.Add("name", params.Name)
@@ -108,8 +107,10 @@ func (c APIClient) CreateTorrent(params *CreateTorrentParams) (APIResponse[Creat
 			"file": {params.File},
 		}
 		form.Value = map[string][]string{
-			"seed":      {strconv.Itoa(int(params.Seed))},
 			"allow_zip": {strconv.FormatBool(params.AllowZip)},
+		}
+		if params.Seed != 0 {
+			form.Value["seed"] = []string{strconv.Itoa(int(params.Seed))}
 		}
 		if params.Name != "" {
 			form.Value["name"] = []string{params.Name}
