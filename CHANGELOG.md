@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.92.12](https://github.com/MunifTanjim/stremthru/compare/0.92.11...0.92.12) (2025-12-03)
+
+
+### Bug Fixes
+
+* **stremio/list:** validate username for mdblist watchlist ([29ff231](https://github.com/MunifTanjim/stremthru/commit/29ff2314512b4cf189a555eecd2e70b710a3ff79))
+
 ## [0.92.11](https://github.com/MunifTanjim/stremthru/compare/0.92.10...0.92.11) (2025-12-03)
 
 
