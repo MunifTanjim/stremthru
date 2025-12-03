@@ -8,5 +8,5 @@ func RemoveRootFolderFromPath(path string) (newPath string, rootFolder string) {
 	if ok {
 		return "/" + newPath, rootFolder
 	}
-	return newPath, ""
+	return "/" + rootFolder, ""
 }
