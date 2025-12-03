@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.92.11](https://github.com/MunifTanjim/stremthru/compare/0.92.10...0.92.11) (2025-12-03)
+
+
+### Bug Fixes
+
+* **core:** ignore loopback ip as client ip ([2b0e9de](https://github.com/MunifTanjim/stremthru/commit/2b0e9ded83b76554ffd0ef888df09d3df9011b46))
+* **store/torbox:** do not set default seed value ([f5d1a9b](https://github.com/MunifTanjim/stremthru/commit/f5d1a9b77beb595c9ba760e2d51a1a629655bf4b))
+* **stremio/torz:** fix level for playback error log ([6269905](https://github.com/MunifTanjim/stremthru/commit/626990557cad84eb7e642027fad93c5a7f658b29))
+* **stremio/wrap:** fix level for playback error log ([0cdd00b](https://github.com/MunifTanjim/stremthru/commit/0cdd00b462f761e8019a7a94ce42d5a4d527b19f))
+* **torznab:** exclude unsupported sub-categories ([437258c](https://github.com/MunifTanjim/stremthru/commit/437258c796568536a0d84c4dfa2b1c0e05f13ffa))
+* **trakt:** update integration for progress list ([fb639eb](https://github.com/MunifTanjim/stremthru/commit/fb639ebf270740ab95eeb7dfbb574c9f73adfd1a))
+
 ## [0.92.10](https://github.com/MunifTanjim/stremthru/compare/0.92.9...0.92.10) (2025-11-26)
 
 
