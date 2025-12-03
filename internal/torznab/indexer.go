@@ -316,29 +316,9 @@ var StremThruIndexer = stremThruIndexer{
 		Categories: []CapsCategory{
 			{
 				Category: CategoryMovies,
-				Subcat: []Category{
-					CategoryMovies_Foreign,
-					CategoryMovies_Other,
-					CategoryMovies_SD,
-					CategoryMovies_HD,
-					CategoryMovies_3D,
-					CategoryMovies_BluRay,
-					CategoryMovies_DVD,
-					CategoryMovies_WEBDL,
-				},
 			},
 			{
 				Category: CategoryTV,
-				Subcat: []Category{
-					CategoryTV_WEBDL,
-					CategoryTV_FOREIGN,
-					CategoryTV_SD,
-					CategoryTV_HD,
-					CategoryTV_Other,
-					CategoryTV_Sport,
-					CategoryTV_Anime,
-					CategoryTV_Documentary,
-				},
 			},
 		},
 	},
