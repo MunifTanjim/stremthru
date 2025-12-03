@@ -323,7 +323,7 @@ var dynamicListMetaById = map[string]dynamicListMeta{
 	"progress": {
 		Endpoint: "/sync/progress/up_next_nitro",
 		BeforeRequest: func(req *http.Request) error {
-			req.URL.Host = util.MustDecodeBase64("aGQudHJha3QudHY=")
+			req.URL.Host = util.MustDecodeBase64("YXBpei50cmFrdC50dg==")
 			req.Host = req.URL.Host
 			req.Header.Set("Origin", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHY="))
 			req.Header.Set("Referer", util.MustDecodeBase64("aHR0cHM6Ly9hcHAudHJha3QudHYv"))
@@ -541,6 +541,7 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 		case dynamicListMetaById["progress"].Endpoint:
 			p.Query.Del("extended")
 			p.Query.Set("marker", marker)
+			p.Query.Set("intent", "continue")
 
 			response := listResponseData[SyncProgressUpNextNitroItem]{}
 			res, err = c.Request("GET", path, p, &response)
