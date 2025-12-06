@@ -205,6 +205,7 @@ const (
 	FeatureStremioStore    string = "stremio_store"
 	FeatureStremioTorz     string = "stremio_torz"
 	FeatureStremioWrap     string = "stremio_wrap"
+	FeatureVault           string = "vault"
 )
 
 var features = []string{
@@ -217,6 +218,7 @@ var features = []string{
 	FeatureStremioStore,
 	FeatureStremioTorz,
 	FeatureStremioWrap,
+	FeatureVault,
 }
 
 type FeatureConfig struct {
@@ -254,6 +256,10 @@ func (f FeatureConfig) HasDMMHashlist() bool {
 
 func (f FeatureConfig) HasIMDBTitle() bool {
 	return !f.IsDisabled(FeatureIMDBTitle) && f.HasTorrentInfo()
+}
+
+func (f FeatureConfig) HasVault() bool {
+	return !f.IsDisabled(FeatureVault) && VaultSecret != ""
 }
 
 type StoreContentProxyMap map[string]bool
@@ -381,7 +387,8 @@ type Config struct {
 	ContentProxyConnectionLimit ContentProxyConnectionLimitMap
 	IP                          *IPResolver
 
-	DataDir string
+	DataDir     string
+	VaultSecret string
 }
 
 func parseUri(uri string) (parsedUrl, parsedToken string) {
@@ -557,6 +564,8 @@ var config = func() Config {
 		log.Fatalf("failed to parse store content cached stale time: %v", err)
 	}
 
+	vaultSecret := getEnv("STREMTHRU_VAULT_SECRET")
+
 	// @deprecated
 	lazyPeer := strings.ToLower(getEnv("STREMTHRU_LAZY_PEER"))
 
@@ -607,7 +616,8 @@ var config = func() Config {
 			checker: getEnv("STREMTHRU_IP_CHECKER"),
 		},
 
-		DataDir: dataDir,
+		DataDir:     dataDir,
+		VaultSecret: vaultSecret,
 	}
 }()
 
@@ -657,6 +667,7 @@ var IsTrusted = func() bool {
 }()
 
 var DataDir = config.DataDir
+var VaultSecret = config.VaultSecret
 
 var IsPublicInstance = len(ProxyAuthPassword) == 0
 
@@ -877,6 +888,10 @@ func PrintConfig(state *AppState) {
 			if !Feature.HasIMDBTitle() {
 				disabled = " (disabled)"
 			}
+		case FeatureVault:
+			if !Feature.HasVault() {
+				disabled = " (disabled)"
+			}
 		default:
 			if !Feature.IsEnabled(feature) {
 				disabled = " (disabled)"
@@ -896,15 +911,17 @@ func PrintConfig(state *AppState) {
 			if disabled != "" {
 				break
 			}
-			l.Println("          indexer max timeout: " + Stremio.Torz.IndexerMaxTimeout.String())
-			l.Println("     public max indexer count: " + strconv.Itoa(Stremio.Torz.PublicMaxIndexerCount))
-			l.Println("       public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
+			l.Println("            indexer max timeout: " + Stremio.Torz.IndexerMaxTimeout.String())
+			l.Println("       public max indexer count: " + strconv.Itoa(Stremio.Torz.PublicMaxIndexerCount))
+			l.Println("         public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
 			if Stremio.Torz.LazyPull {
-				l.Println("       [lazy pull]")
+				l.Println("                    [lazy pull]")
 			}
 		case FeatureStremioWrap:
 			l.Println("       public max upstream count: " + strconv.Itoa(Stremio.Wrap.PublicMaxUpstreamCount))
 			l.Println("          public max store count: " + strconv.Itoa(Stremio.Wrap.PublicMaxStoreCount))
+		case FeatureVault:
+			l.Println("       secret: " + strings.Repeat("*", len(VaultSecret)))
 		}
 	}
 	l.Println()

@@ -39,8 +39,7 @@ export const Form = withForm({
                 }
 
                 form.setErrorMap({
-                  // @ts-expect-error ...
-                  onServer: {
+                  onSubmit: {
                     fields: fieldsError,
                     form: formError,
                   },

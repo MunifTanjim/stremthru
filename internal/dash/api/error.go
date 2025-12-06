@@ -57,8 +57,8 @@ func (e *APIError) Send(w http.ResponseWriter, r *http.Request) {
 	SendError(w, r, e)
 }
 
-func (e *APIError) Append(err Error) *APIError {
-	e.Errors = append(e.Errors, err)
+func (e *APIError) Append(errs ...Error) *APIError {
+	e.Errors = append(e.Errors, errs...)
 	return e
 }
 

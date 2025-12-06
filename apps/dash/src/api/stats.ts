@@ -15,6 +15,9 @@ type ListsStats = Record<
 >;
 
 type ServerStats = {
+  feature: {
+    vault: boolean;
+  };
   started_at: string;
   version: string;
 };

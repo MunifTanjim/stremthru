@@ -82,9 +82,14 @@ func HandleGetIMDBTitleStats(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, stats)
 }
 
+type ServerStatsFeature struct {
+	Vault bool `json:"vault"`
+}
+
 type ServerStats struct {
-	Version   string    `json:"version"`
-	StartedAt time.Time `json:"started_at"`
+	Version   string             `json:"version"`
+	StartedAt time.Time          `json:"started_at"`
+	Feature   ServerStatsFeature `json:"feature"`
 }
 
 func HandleGetServerStats(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +101,9 @@ func HandleGetServerStats(w http.ResponseWriter, r *http.Request) {
 	data := ServerStats{
 		Version:   config.Version,
 		StartedAt: config.ServerStartTime,
+		Feature: ServerStatsFeature{
+			Vault: config.Feature.HasVault(),
+		},
 	}
 	SendData(w, r, 200, data)
 }
