@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   LayoutList,
+  Lock,
   LogOut,
   MagnetIcon,
   Moon,
@@ -13,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { LayoutDashboard, type LucideIcon } from "lucide-react";
-import * as React from "react";
+import { ComponentProps, useMemo } from "react";
 
 import { useSignOut } from "@/api/auth";
 import { useServerStats } from "@/api/stats";
@@ -59,49 +60,7 @@ type NavItem = {
   title: string;
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: LayoutDashboard,
-    items: [
-      {
-        path: "/dash",
-        title: "Stats",
-      },
-      {
-        path: "/dash/workers",
-        title: "Workers",
-      },
-    ],
-    path: "/dash",
-    title: "Dashboard",
-  },
-  {
-    icon: LayoutList,
-    items: [
-      {
-        path: "/dash/lists",
-        title: "Stats",
-      },
-    ],
-    path: "/dash/lists",
-    title: "Lists",
-  },
-  {
-    icon: MagnetIcon,
-    items: [
-      {
-        path: "/dash/torrents",
-        title: "Stats",
-      },
-    ],
-    path: "/dash/torrents",
-    title: "Torrents",
-  },
-];
-
-export function DashSidebar({
-  ...props
-}: React.ComponentProps<typeof Sidebar>) {
+export function DashSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const serverStats = useServerStats();
 
   return (
@@ -136,6 +95,7 @@ export function DashSidebar({
 
 function NavGroup() {
   const matchRoute = useMatchRoute();
+  const navItems = useNavItems();
 
   return (
     <SidebarGroup>
@@ -265,4 +225,69 @@ function NavUser() {
       </SidebarMenuItem>
     </SidebarMenu>
   );
+}
+
+function useNavItems(): NavItem[] {
+  const { data: server } = useServerStats();
+  return useMemo(() => {
+    const items: NavItem[] = [
+      {
+        icon: LayoutDashboard,
+        items: [
+          {
+            path: "/dash",
+            title: "Stats",
+          },
+          {
+            path: "/dash/workers",
+            title: "Workers",
+          },
+        ],
+        path: "/dash",
+        title: "Dashboard",
+      },
+      {
+        icon: LayoutList,
+        items: [
+          {
+            path: "/dash/lists",
+            title: "Stats",
+          },
+        ],
+        path: "/dash/lists",
+        title: "Lists",
+      },
+      {
+        icon: MagnetIcon,
+        items: [
+          {
+            path: "/dash/torrents",
+            title: "Stats",
+          },
+        ],
+        path: "/dash/torrents",
+        title: "Torrents",
+      },
+    ];
+
+    if (server?.feature.vault) {
+      items.push({
+        icon: Lock,
+        items: [
+          {
+            path: "/dash/vault",
+            title: "Overview",
+          },
+          {
+            path: "/dash/vault/stremio-accounts",
+            title: "Stremio Accounts",
+          },
+        ],
+        path: "/dash/vault",
+        title: "Vault",
+      });
+    }
+
+    return items;
+  }, [server?.feature.vault]);
 }

@@ -1,3 +1,7 @@
+type Endpoint = `${Method} /${string}` | `/${string}`;
+
+type Method = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
+
 type Response<
   Data extends null | unknown,
   Params extends null | Record<string, string> = Record<string, string>,
@@ -35,7 +39,7 @@ export async function api<
   Params extends null | Record<string, string> = null,
   Meta extends Record<string, unknown> = Record<string, unknown>,
 >(
-  endpoint: string,
+  endpoint: Endpoint,
   {
     body,
     ...options
@@ -43,11 +47,15 @@ export async function api<
     body?: FormData | Record<string, unknown> | string;
   } = {},
 ): Promise<Response<Data, Params, Meta & { status: number }>> {
-  const url = `/dash/api${endpoint}`;
+  const [method, path] = endpoint.includes(" /")
+    ? endpoint.split(" ", 2)
+    : [options.method ?? "GET", endpoint];
+
+  const url = `/dash/api${path}`;
 
   const request: RequestInit = {
     credentials: "include",
-    method: "GET",
+    method,
     ...options,
   };
   request.method = request.method!.toUpperCase();

@@ -320,6 +320,10 @@ API Key for TVDB.
 
 Stale time for list. e.g. `12h`.
 
+#### `STREMTHRU_VAULT_SECRET`
+
+Secret for encrypting sensitive data.
+
 ## Endpoints
 
 ### Authentication
