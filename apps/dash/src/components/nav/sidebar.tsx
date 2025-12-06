@@ -271,23 +271,30 @@ function useNavItems(): NavItem[] {
     ];
 
     if (server?.feature.vault) {
-      items.push({
+      const vault: NavItem = {
         icon: Lock,
         items: [
           {
             path: "/dash/vault",
             title: "Overview",
           },
-          {
-            path: "/dash/vault/stremio-accounts",
-            title: "Stremio Accounts",
-          },
         ],
         path: "/dash/vault",
         title: "Vault",
+      };
+      vault.items!.push({
+        path: "/dash/vault/stremio-accounts",
+        title: "Stremio Accounts",
       });
+      if (server.integration.trakt) {
+        vault.items!.push({
+          path: "/dash/vault/trakt-accounts",
+          title: "Trakt Accounts",
+        });
+      }
+      items.push(vault);
     }
 
     return items;
-  }, [server?.feature.vault]);
+  }, [server?.feature.vault, server?.integration.trakt]);
 }

@@ -18,6 +18,9 @@ type ServerStats = {
   feature: {
     vault: boolean;
   };
+  integration: {
+    trakt: boolean;
+  };
   started_at: string;
   version: string;
 };

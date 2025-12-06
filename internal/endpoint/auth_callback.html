@@ -52,6 +52,16 @@
       <button type="button" onclick="navigator.clipboard.writeText(document.querySelector('code#auth_code').innerText);">
         Copy
       </button>
+      <script>
+        (function() {
+          setTimeout(() => {
+            if (!window.opener) {
+              return;
+            }
+            window.opener.postMessage({ type: 'oauth_callback', state: '{{.State}}', code: '{{.Code}}' });
+          }, 500);
+        })();
+      </script>
       {{else}}
       <span style="color: var(--pico-del-color);">
         {{.Error}}

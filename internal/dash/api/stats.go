@@ -86,10 +86,15 @@ type ServerStatsFeature struct {
 	Vault bool `json:"vault"`
 }
 
+type ServerStatsIntegration struct {
+	Trakt bool `json:"trakt"`
+}
+
 type ServerStats struct {
-	Version   string             `json:"version"`
-	StartedAt time.Time          `json:"started_at"`
-	Feature   ServerStatsFeature `json:"feature"`
+	Version     string                 `json:"version"`
+	StartedAt   time.Time              `json:"started_at"`
+	Feature     ServerStatsFeature     `json:"feature"`
+	Integration ServerStatsIntegration `json:"integration"`
 }
 
 func HandleGetServerStats(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +108,9 @@ func HandleGetServerStats(w http.ResponseWriter, r *http.Request) {
 		StartedAt: config.ServerStartTime,
 		Feature: ServerStatsFeature{
 			Vault: config.Feature.HasVault(),
+		},
+		Integration: ServerStatsIntegration{
+			Trakt: config.Integration.Trakt.IsEnabled(),
 		},
 	}
 	SendData(w, r, 200, data)
