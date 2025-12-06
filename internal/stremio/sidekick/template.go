@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	stremio_account "github.com/MunifTanjim/stremthru/internal/stremio/account"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -29,9 +30,10 @@ type TemplateData struct {
 		Password string
 		Token    string
 		Error    struct {
-			Email    string
-			Password string
-			Token    string
+			Email        string
+			Password     string
+			Token        string
+			VaultAccount string
 		}
 	}
 	BackupRestore struct {
@@ -55,6 +57,13 @@ type TemplateData struct {
 	CanAuthAdmin   bool
 	HasAuthAdmin   bool
 	AuthAdminError string
+
+	VaultAccounts []VaultAccount
+}
+
+type VaultAccount struct {
+	Id    string
+	Email string
 }
 
 func getTemplateData(cookie *CookieValue, w http.ResponseWriter, r *http.Request) *TemplateData {
@@ -88,6 +97,9 @@ func getTemplateData(cookie *CookieValue, w http.ResponseWriter, r *http.Request
 			}
 		}
 	}
+	if !td.HasAuthAdmin && td.LoginMethod == "vault" {
+		td.LoginMethod = ""
+	}
 	if td.LoginMethod == "" {
 		td.LoginMethod = "password"
 	}
@@ -120,6 +132,17 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			td.AddonOperation = "move"
 		}
 		td.LastAddonIndex = len(td.Addons) - 1
+
+		if td.HasAuthAdmin {
+			if accounts, err := stremio_account.GetAll(); err == nil {
+				td.VaultAccounts = make([]VaultAccount, len(accounts))
+				for i, account := range accounts {
+					td.VaultAccounts[i] = VaultAccount{Id: account.Id, Email: account.Email}
+				}
+			} else {
+				log.Error("failed to get vault accounts", "error", err)
+			}
+		}
 		return td
 	}, template.FuncMap{
 		"url_path_escape": func(value string) string {
