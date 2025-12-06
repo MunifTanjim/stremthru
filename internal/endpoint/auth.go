@@ -27,6 +27,7 @@ type AuthCallbackTemplateData struct {
 	Title   string
 	Version string
 	Code    string
+	State   string
 	Error   string
 
 	Provider string
@@ -54,6 +55,7 @@ func handleTraktAuthCallback(w http.ResponseWriter, r *http.Request) {
 		Title:    "StremThru",
 		Version:  config.Version,
 		Provider: "Trakt.tv",
+		State:    state,
 	}
 
 	tok, err := oauth.TraktOAuthConfig.Exchange(code, state)
@@ -101,6 +103,7 @@ func handleTMDBAuthCallback(w http.ResponseWriter, r *http.Request) {
 		Title:    "StremThru",
 		Version:  config.Version,
 		Provider: "TMDB",
+		State:    state,
 	}
 
 	tok, err := oauth.TMDBOAuthConfig.Exchange(code, state)

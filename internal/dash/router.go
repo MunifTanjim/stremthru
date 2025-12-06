@@ -35,6 +35,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	dash_api.AddWorkerEndpoints(router)
 	if config.Feature.HasVault() {
 		dash_api.AddVaultStremioEndpoints(router)
+		dash_api.AddVaultTraktEndpoints(router)
 	}
 
 	mux.Handle("/dash/api/", http.StripPrefix("/dash/api", dash_api.WithMiddleware(commonMiddleware)(router.ServeHTTP)))
