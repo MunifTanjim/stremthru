@@ -256,9 +256,7 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 		idx := i + 1
 		s := &ms[idx]
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if s.Store == nil {
 				res.Err[idx] = errors.New("invalid userdata, invalid store")
 				res.HasErr = true
@@ -287,7 +285,7 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 					}
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 

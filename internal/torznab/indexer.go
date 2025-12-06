@@ -89,11 +89,9 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 
 	var wg sync.WaitGroup
 	for _, imdbId := range imdbIds {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			buddy.PullTorrentsByStremId(imdbId, "")
-		}()
+		})
 	}
 	wg.Wait()
 

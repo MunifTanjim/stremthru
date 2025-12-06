@@ -649,9 +649,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 			var wg sync.WaitGroup
 			for cHashes := range slices.Chunk(hashes, chunk_size) {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 
 					panicHints := []string{}
 					defer func() {
@@ -772,7 +770,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 					}
 
 					log.Info("mapped anidb torrent", "count", len(items))
-				}()
+				})
 			}
 			wg.Wait()
 

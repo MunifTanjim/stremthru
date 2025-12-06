@@ -73,9 +73,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	var wg sync.WaitGroup
 	if ud.IncludeTorz {
 		chunkIdxOffset = 1
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			hashes, err := torrent_info.ListHashesByStremId(stremId)
 			if err != nil {
@@ -116,13 +114,11 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				}
 			}
 			chunks[0] = wstreams
-		}()
+		})
 	}
 	for i := range upstreams {
 		idx := i + chunkIdxOffset
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			up := &upstreams[i]
 			res, err := addon.FetchStream(&stremio_addon.FetchStreamParams{
 				BaseURL:  up.baseUrl,
@@ -169,7 +165,7 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 				go torrent_info.Upsert(tInfos, torrentInfoCategory, false)
 			}
 			chunks[idx] = wstreams
-		}()
+		})
 	}
 	wg.Wait()
 

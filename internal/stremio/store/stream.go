@@ -162,9 +162,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		matcherResults := make([][]StreamFileMatcher, len(idPrefixes))
 
 		for idx, idPrefix := range idPrefixes {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 
 				idr, err := parseId(idPrefix)
 				if err != nil {
@@ -221,7 +219,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 						})
 					}
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		for _, err := range errs {
@@ -276,9 +274,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		matcherResults := make([][]StreamFileMatcher, len(idPrefixes))
 
 		for idx, idPrefix := range idPrefixes {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 
 				idr, err := parseId(idPrefix)
 				if err != nil {
@@ -331,7 +327,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 						ClientIP:   ctx.ClientIP,
 					})
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		for _, err := range errs {
@@ -350,9 +346,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	errs := make([]error, len(matchers))
 	streams := make([]*stremio.Stream, len(matchers))
 	for i, matcher := range matchers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			cInfo, err := getStoreContentInfo(matcher.Store, matcher.StoreToken, matcher.MagnetId, matcher.ClientIP, matcher.IdR)
 			if err != nil {
@@ -579,7 +573,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			}
 
 			streams[i] = &stream
-		}()
+		})
 	}
 	wg.Wait()
 

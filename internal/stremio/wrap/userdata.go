@@ -236,9 +236,7 @@ func (ud UserData) getUpstreamManifests(ctx *context.StoreContext, useCache bool
 			cacheKey := up.baseUrl.String()
 			hasCached := useCache && upstreamManifestCache.Get(cacheKey, &manifests[i])
 			if !hasCached {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					res, err := addon.GetManifest(&stremio_addon.GetManifestParams{BaseURL: up.baseUrl, ClientIP: ctx.ClientIP})
 					manifests[i] = res.Data
 					errs[i] = err
@@ -252,7 +250,7 @@ func (ud UserData) getUpstreamManifests(ctx *context.StoreContext, useCache bool
 							log.Warn("failed to cache upstream manifest", "error", err, "host", up.baseUrl.Host)
 						}
 					}
-				}()
+				})
 			} else if manifests[i].ID == "" {
 				hasError = true
 				errs[i] = errors.New("failed to fetch manifest: " + up.baseUrl.Host)

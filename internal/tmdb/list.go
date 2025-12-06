@@ -431,9 +431,7 @@ func (m dynamicListMeta) Fetch(client *APIClient) (*List, error) {
 		var wg sync.WaitGroup
 		var wgErr error
 		for _, page := range cPageNumbers {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				items, _, _, err := m.fetchPage(client, page, pageSize)
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -446,7 +444,7 @@ func (m dynamicListMeta) Fetch(client *APIClient) (*List, error) {
 				for i := range items {
 					l.Results[startIndex+i] = items[i]
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		if wgErr != nil {
