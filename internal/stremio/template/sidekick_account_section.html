@@ -11,6 +11,10 @@
     form#login:not([data-method="token"]) #login_method_token_help {
       display: none;
     }
+    form#login:not([data-method="vault"]) select[name="account_id"],
+    form#login:not([data-method="vault"]) select[name="account_id"] + small {
+      display: none;
+    }
   </style>
 
 {{if .IsAuthed}}
@@ -19,72 +23,9 @@
       <p>Welcome, <em>{{.Email}}</em>!</p>
     </div>
     <div>
-      {{if .CanAuthAdmin}}
-      <button
-        class="secondary"
-        type="button"
-        hx-ext="htmx-modal"
-        data-modal="#auth_modal"
-        data-modal-on-open="onOpenAuthorize"
-        hx-target="body"
-        hx-post=""
-        hx-headers='{"x-addon-configure-action":"{{if .HasAuthAdmin}}de{{end}}authorize"}'
-        hx-trigger="confirmed"
-        data-tooltip="Features Restricted to Admin"
-      >
-        {{if .HasAuthAdmin}}Deauthorize{{else}}Authorize{{end}}
-      </button>
-      {{end}}
       <button hx-post="logout" hx-target="body">Logout</button>
     </div>
   </div>
-
-  {{if .CanAuthAdmin}}
-  <dialog id="auth_modal">
-    <article>
-      <header>
-        <button aria-label="Close" rel="prev" data-modal-close></button>
-        <h3>
-          <span>{{if .HasAuthAdmin}}Deauthorize{{else}}Authorize{{end}}</span>
-        </h3>
-      </header>
-      <form>
-        {{if not .HasAuthAdmin}}
-        <label for="user">User *</label>
-        <input type="text" name="user" required {{if ne .AuthAdminError ""}}aria-invalid="true"{{end}}>
-        <label for="user">Password *</label>
-        <input type="password" name="pass" required {{if ne .AuthAdminError ""}}aria-invalid="true"{{end}}>
-        {{if ne .AuthAdminError ""}}
-        <small>{{.AuthAdminError}}</small>
-        {{end}}
-        {{end}}
-        <button type="submit">Go</button>
-      </form>
-    </article>
-  </dialog>
-  {{end}}
-
-  <script>
-  {{if and .CanAuthAdmin (ne .AuthAdminError "")}}
-  htmx.on("htmx:load", function(evt) {
-    document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
-  });
-  {{end}}
-
-  function onOpenAuthorize(e, { modal, onClose, trigger }) {
-    modal.querySelector("form").addEventListener("submit", function(e) {
-      e.preventDefault();
-      {{if not .HasAuthAdmin}}
-      trigger.setAttribute("hx-vals", JSON.stringify({
-        user: modal.querySelector("[name='user']").value,
-        pass: modal.querySelector("[name='pass']").value,
-      }));
-      {{end}}
-      onClose();
-      htmx.trigger(trigger, "confirmed");
-    }, { once: true });
-  }
-  </script>
 {{else}}
   <form id="login" action="login" method="post" hx-boost="true" hx-post="login" hx-target="#account_section" hx-swap="outerHTML" data-method="{{.LoginMethod}}">
     <input name="method" type="hidden" value="{{.LoginMethod}}" />
@@ -125,6 +66,23 @@
     />
     <small>{{if ne .Login.Error.Password ""}}<span class="error">{{.Login.Error.Password}}</span>{{end}}</small>
 
+    <select
+      name="account_id"
+      aria-label="Vault Account"
+      {{if ne .LoginMethod "vault"}}disabled{{else}}required{{end}}
+      {{if ne .Login.Error.VaultAccount ""}}aria-invalid="true"{{end}}
+      {{if eq (len .VaultAccounts) 0}}disabled{{end}}
+    >
+      {{if eq (len .VaultAccounts) 0}}
+      <option value="">No accounts in Vault</option>
+      {{else}}
+      <option value="">Select account from Vault</option>
+      {{range .VaultAccounts}}
+      <option value="{{.Id}}">{{.Email}}</option>
+      {{end}}
+      {{end}}
+    </select>
+    <small>{{if ne .Login.Error.VaultAccount ""}}<span class="error">{{.Login.Error.VaultAccount}}</span>{{end}}</small>
 
     <div role="group">
       <button class="secondary grow-0" onclick="onLoginMethodChange()">Switch Method</button>
@@ -153,26 +111,40 @@
       email: form.querySelector("input[name='email']"),
       password: form.querySelector("input[name='password']"),
       token: form.querySelector("input[name='token']"),
+      accountId: form.querySelector("select[name='account_id']"),
     };
+    const hasVault = {{if .HasAuthAdmin}}true{{else}}false{{end}} && field.accountId.options.length > 1;
     const currMethod = form.dataset.method;
     let nextMethod;
 
-    if (currMethod == "token") {
+    if (currMethod == "password") {
+      nextMethod = "token";
+    } else if (currMethod == "token") {
+      nextMethod = hasVault ? "vault" : "password";
+    } else {
       nextMethod = "password";
+    }
+
+    field.email.disabled = true;
+    field.email.required = false;
+    field.password.disabled = true;
+    field.password.required = false;
+    field.token.disabled = true;
+    field.token.required = false;
+    field.accountId.disabled = true;
+    field.accountId.required = false;
+
+    if (nextMethod == "password") {
       field.email.disabled = false;
       field.email.required = true;
       field.password.disabled = false;
       field.password.required = true;
-      field.token.disabled = true;
-      field.token.required = false;
-    } else {
-      nextMethod = "token";
-      field.email.disabled = true;
-      field.email.required = false;
-      field.password.disabled = true;
-      field.password.required = false;
+    } else if (nextMethod == "token") {
       field.token.disabled = false;
       field.token.required = true;
+    } else if (nextMethod == "vault") {
+      field.accountId.disabled = false;
+      field.accountId.required = true;
     }
 
     field.method.value = nextMethod;

@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_account "github.com/MunifTanjim/stremthru/internal/stremio/account"
 	"github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/internal/stremio/api"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
@@ -238,6 +239,61 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			SendHTML(w, 200, buf)
 		} else {
 			SendError(w, r, err)
+		}
+	} else if method == "vault" {
+		td := getTemplateData(nil, w, r)
+		if !td.HasAuthAdmin {
+			shared.ErrorForbidden(r).Send(w, r)
+			return
+		}
+
+		accountId := r.FormValue("account_id")
+		if accountId == "" {
+			td.Login.Error.VaultAccount = "Select an account"
+			buf, err := executeTemplate(td, "sidekick_account_section.html")
+			if err != nil {
+				SendError(w, r, err)
+				return
+			}
+			SendHTML(w, 200, buf)
+			return
+		}
+
+		account, err := stremio_account.GetById(accountId)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		if account == nil {
+			td.Login.Error.VaultAccount = "Account not found"
+			buf, err := executeTemplate(td, "sidekick_account_section.html")
+			if err != nil {
+				SendError(w, r, err)
+				return
+			}
+			SendHTML(w, 200, buf)
+			return
+		}
+
+		token, err := account.GetValidToken()
+		if err != nil {
+			td.Login.Error.VaultAccount = "Failed to get token: " + err.Error()
+			buf, err := executeTemplate(td, "sidekick_account_section.html")
+			if err != nil {
+				SendError(w, r, err)
+				return
+			}
+			SendHTML(w, 200, buf)
+			return
+		}
+
+		setCookie(w, token, account.Email)
+		if r.Header.Get("hx-request") == "true" {
+			w.Header().Add("hx-refresh", "true")
+			w.Header().Add("hx-redirect", "/stremio/sidekick")
+			w.WriteHeader(200)
+		} else {
+			http.Redirect(w, r, "/stremio/sidekick", http.StatusFound)
 		}
 	} else {
 		shared.ErrorBadRequest(r, "invalid login method").Send(w, r)

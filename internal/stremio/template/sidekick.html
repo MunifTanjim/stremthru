@@ -19,13 +19,85 @@
 {{end}}
 
 {{define "header"}}
-<h1>
-  {{.Title}}
-</h1>
-<div>
-  <p>{{.Description}}</p>
+<div class="flex flex-row flex-wrap items-center justify-between">
+  <div>
+    <h1>
+      {{.Title}}
+    </h1>
+    <div>
+      <p>{{.Description}}</p>
+    </div>
+  </div>
+  <div>
+    {{if .CanAuthAdmin}}
+    <button
+      class="secondary mb-0"
+      style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+      type="button"
+      hx-ext="htmx-modal"
+      data-modal="#auth_modal"
+      data-modal-on-open="onOpenAuthorize"
+      hx-target="body"
+      hx-post=""
+      hx-headers='{"x-addon-configure-action":"{{if .HasAuthAdmin}}de{{end}}authorize"}'
+      hx-trigger="confirmed"
+      data-tooltip="Features Restricted to Admin"
+    >
+      {{if .HasAuthAdmin}}Deauthorize{{else}}Authorize{{end}}
+    </button>
+    {{end}}
+  </div>
 </div>
+
+{{if .CanAuthAdmin}}
+<dialog id="auth_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>{{if .HasAuthAdmin}}Deauthorize{{else}}Authorize{{end}}</span>
+      </h3>
+    </header>
+    <form>
+      {{if not .HasAuthAdmin}}
+      <label for="user">User *</label>
+      <input type="text" name="user" required {{if ne .AuthAdminError ""}}aria-invalid="true"{{end}}>
+      <label for="user">Password *</label>
+      <input type="password" name="pass" required {{if ne .AuthAdminError ""}}aria-invalid="true"{{end}}>
+      {{if ne .AuthAdminError ""}}
+      <small>{{.AuthAdminError}}</small>
+      {{end}}
+      {{end}}
+      <button type="submit">Go</button>
+    </form>
+  </article>
+</dialog>
+
+<script>
+  {{if ne .AuthAdminError ""}}
+  htmx.on("htmx:load", function(evt) {
+    document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+  });
+  {{end}}
+
+  function onOpenAuthorize(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      {{if not .HasAuthAdmin}}
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        user: modal.querySelector("[name='user']").value,
+        pass: modal.querySelector("[name='pass']").value,
+      }));
+      {{end}}
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+</script>
 {{end}}
+
+{{end}}
+
 
 {{define "main"}}
   <header>
