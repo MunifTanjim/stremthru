@@ -78,8 +78,8 @@ func extractInputFromMediaFusionStream(data *TorrentInfoInsertData, sid string, 
 	}
 
 	torrentTitle, descriptionRest, _ := strings.Cut(stream.Description, "\n")
-	if strings.HasPrefix(torrentTitle, "📂 ") {
-		torrentTitle = strings.TrimPrefix(torrentTitle, "📂 ")
+	if folderName, ok := strings.CutPrefix(torrentTitle, "📂 "); ok {
+		torrentTitle = folderName
 		data.TorrentTitle, file.Name, _ = strings.Cut(torrentTitle, " ┈➤ ")
 	}
 

@@ -287,9 +287,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		var wg sync.WaitGroup
 		filesByHash := map[string]torrent_stream.Files{}
 		for cHashes := range slices.Chunk(staleOrMissingHashes, 500) {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 
 				params := &peer.CheckMagnetParams{
 					StoreName:  s.GetName(),
@@ -339,7 +337,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 						data.Items = append(data.Items, item)
 					}
 				}
-			}()
+			})
 		}
 		wg.Wait()
 		go magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, nil, false)

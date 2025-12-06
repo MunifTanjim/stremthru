@@ -687,18 +687,14 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	var wrappedStreams []WrappedStream
 	var getStreamsError error
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		wrappedStreams, getStreamsError = GetStreamsForHashes(contentType, id, hashes, nsid)
-	}()
+	})
 
 	var wrappedStreamsFromIndexers []WrappedStream
 	var hashesFromIndexers []string
 	var getStreamsFromIndexersError error
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		var streams []WrappedStream
 		var hashes []string
@@ -718,7 +714,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		case <-time.After(config.Stremio.Torz.IndexerMaxTimeout):
 			log.Warn("fetching streams from indexers timed out")
 		}
-	}()
+	})
 
 	wg.Wait()
 

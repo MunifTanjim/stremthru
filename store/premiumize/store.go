@@ -271,9 +271,7 @@ func (c *StoreClient) checkMagnet(params *store.CheckMagnetParams, includeLinkAn
 
 		var wg sync.WaitGroup
 		for i, cMissingHashes := range slices.Collect(slices.Chunk(missingHashes, 100)) {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				ccParams := &CheckCacheParams{
 					Items: cMissingHashes,
 				}
@@ -322,7 +320,7 @@ func (c *StoreClient) checkMagnet(params *store.CheckMagnetParams, includeLinkAn
 				}
 
 				cItems[i] = items
-			}()
+			})
 		}
 		wg.Wait()
 

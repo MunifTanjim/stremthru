@@ -1605,9 +1605,7 @@ func SetMissingCategory(hashesByCategory map[TorrentInfoCategory][]string) {
 			continue
 		}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 
 			query := query_set_missing_category + "(" + util.RepeatJoin("?", count, ",") + ")"
 			args := make([]any, count+1)
@@ -1620,7 +1618,7 @@ func SetMissingCategory(hashesByCategory map[TorrentInfoCategory][]string) {
 			} else {
 				log.Info("updated missing category", "category", category, "count", count)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

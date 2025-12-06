@@ -34,7 +34,7 @@ func getBaseValue(char byte) int {
 func readBits(nb int, data *dataStruct) int {
 	result := 0
 	power := 1
-	for i := 0; i < nb; i++ {
+	for range nb {
 		respB := data.val & data.position
 		data.position = data.position / 2
 		if data.position == 0 {

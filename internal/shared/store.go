@@ -246,8 +246,8 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 		return proxyLink.User, proxyLink.Value, proxyLink.Headers, proxyLink.TunT, nil
 	}
 
-	if strings.HasPrefix(encodedToken, "base64.") {
-		blob, err := core.Base64DecodeToByte(strings.TrimPrefix(encodedToken, "base64."))
+	if encodedBlob, ok := strings.CutPrefix(encodedToken, "base64."); ok {
+		blob, err := core.Base64DecodeToByte(encodedBlob)
 		if err != nil {
 			return "", "", nil, "", err
 		}
@@ -303,7 +303,7 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 
 		if hasHeaders {
 			proxyLink.Headers = map[string]string{}
-			for _, header := range strings.Split(headersBlob, "\n") {
+			for header := range strings.SplitSeq(headersBlob, "\n") {
 				if k, v, ok := strings.Cut(header, ": "); ok {
 					proxyLink.Headers[k] = v
 				}

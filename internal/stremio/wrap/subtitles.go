@@ -24,9 +24,7 @@ func (ud UserData) fetchSubtitles(ctx *context.StoreContext, rType, id, extra st
 
 	var wg sync.WaitGroup
 	for i := range upstreams {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			res, err := addon.FetchSubtitles(&stremio_addon.FetchSubtitlesParams{
 				BaseURL:  upstreams[i].baseUrl,
 				Type:     rType,
@@ -36,7 +34,7 @@ func (ud UserData) fetchSubtitles(ctx *context.StoreContext, rType, id, extra st
 			})
 			chunks[i] = res.Data.Subtitles
 			errs[i] = err
-		}()
+		})
 	}
 	wg.Wait()
 

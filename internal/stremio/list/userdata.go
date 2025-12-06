@@ -255,8 +255,8 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				}
 
 				list := anilist.AniListList{}
-				if strings.HasPrefix(listUrl.Path, "/user/") {
-					parts := strings.SplitN(strings.TrimPrefix(listUrl.Path, "/user/"), "/", 3)
+				if restPath, ok := strings.CutPrefix(listUrl.Path, "/user/"); ok {
+					parts := strings.SplitN(restPath, "/", 3)
 					if len(parts) != 3 || parts[1] != "animelist" {
 						udErr.list_urls[idx] = "Invalid AniList URL"
 						continue
@@ -267,8 +267,8 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 						continue
 					}
 					list.Id = userName + ":" + listName
-				} else if strings.HasPrefix(listUrl.Path, "/search/anime/") {
-					name := strings.TrimPrefix(listUrl.Path, "/search/anime/")
+				} else if restPath, ok := strings.CutPrefix(listUrl.Path, "/search/anime/"); ok {
+					name := restPath
 					if !anilist.IsValidSearchList(name) {
 						udErr.list_urls[idx] = "Unsupported AniList URL"
 						continue
@@ -352,8 +352,8 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				list := mdblist.MDBListList{}
 				if idStr := query.Get("list"); idStr != "" {
 					list.Id = idStr
-				} else if strings.HasPrefix(listUrl.Path, "/lists/") {
-					username, slug, _ := strings.Cut(strings.TrimPrefix(listUrl.Path, "/lists/"), "/")
+				} else if restPath, ok := strings.CutPrefix(listUrl.Path, "/lists/"); ok {
+					username, slug, _ := strings.Cut(restPath, "/")
 					if username != "" && slug != "" && !strings.Contains(slug, "/") {
 						list.UserName = username
 						list.Slug = slug
@@ -361,8 +361,8 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 						udErr.list_urls[idx] = "Invalid List URL"
 						continue
 					}
-				} else if strings.HasPrefix(listUrl.Path, "/watchlist/") {
-					username := strings.TrimPrefix(listUrl.Path, "/watchlist/")
+				} else if restPath, ok := strings.CutPrefix(listUrl.Path, "/watchlist/"); ok {
+					username := restPath
 					if user, err := ud.getMDBListUser(); err != nil {
 						udErr.list_urls[idx] = "Failed to fetch user: " + err.Error()
 						continue

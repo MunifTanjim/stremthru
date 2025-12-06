@@ -22,11 +22,10 @@ func parseCredential(token string) (email string, password string) {
 }
 
 func extractSessionCookieValue(setCookieHeader string) (string, bool) {
-	cookies := strings.Split(setCookieHeader, ";")
-	for _, cookie := range cookies {
+	for cookie := range strings.SplitSeq(setCookieHeader, ";") {
 		cookie = strings.TrimSpace(cookie)
-		if strings.HasPrefix(cookie, SESSION_COOKIE_NAME+"=") {
-			return strings.TrimPrefix(cookie, SESSION_COOKIE_NAME+"="), true
+		if value, ok := strings.CutPrefix(cookie, SESSION_COOKIE_NAME+"="); ok {
+			return value, true
 		}
 	}
 	return "", false
