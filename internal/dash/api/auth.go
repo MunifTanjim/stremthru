@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/google/uuid"
 )
@@ -168,6 +169,8 @@ func HandleSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	stremio_shared.SetAdminCookie(w, request.User, request.Password)
+
 	SendData(w, r, 200, GetUserResponse{
 		Id: ctx.Session.User,
 	})
@@ -184,6 +187,8 @@ func HandleSignOut(w http.ResponseWriter, r *http.Request) {
 	if ctx.Session != nil {
 		ctx.Session.Destroy(w)
 	}
+
+	stremio_shared.UnsetAdminCookie(w)
 
 	SendData(w, r, 204, nil)
 }

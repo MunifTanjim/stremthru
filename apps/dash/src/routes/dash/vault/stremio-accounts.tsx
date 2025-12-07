@@ -5,6 +5,7 @@ import {
   Pencil,
   Plus,
   RefreshCwIcon,
+  RocketIcon,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -98,6 +99,24 @@ const columns: ColumnDef<StremioAccount>[] = [
       const item = c.row.original;
       return (
         <div className="flex gap-1">
+          {item.is_valid && (
+            <form
+              action="/stremio/sidekick/login"
+              method="POST"
+              target="_blank"
+            >
+              <input name="method" type="hidden" value="vault" />
+              <input name="account_id" type="hidden" value={item.id} />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon-sm" type="submit" variant="ghost">
+                    <RocketIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Open Sidekick</TooltipContent>
+              </Tooltip>
+            </form>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

@@ -114,10 +114,8 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 			if !IsPublicInstance {
 				user := r.FormValue("user")
 				pass := r.FormValue("pass")
-				if pass == "" || config.ProxyAuthPassword.GetPassword(user) != pass {
+				if pass == "" || config.AdminPassword.GetPassword(user) != pass {
 					td.AuthAdminError = "Wrong Credential!"
-				} else if !config.AuthAdmin.IsAdmin(user) {
-					td.AuthAdminError = "Not Authorized!"
 				} else {
 					stremio_shared.SetAdminCookie(w, user, pass)
 					td.HasAuthAdmin = true
