@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import {
   CheckCircle,
+  ExternalLinkIcon,
+  Info,
   Pencil,
   Plus,
   RefreshCwIcon,
@@ -17,6 +19,7 @@ import {
   StremioAccount,
   useStremioAccountMutation,
   useStremioAccounts,
+  useStremioAccountUserdata,
 } from "@/api/vault-stremio-account";
 import { DataTable } from "@/components/data-table";
 import { useDataTable } from "@/components/data-table/use-data-table";
@@ -34,6 +37,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemFooter,
+  ItemGroup,
+  ItemHeader,
+  ItemTitle,
+} from "@/components/ui/item";
 import {
   Sheet,
   SheetContent,
@@ -54,6 +66,7 @@ declare module "@/components/data-table" {
     StremioAccount: {
       getAccount: ReturnType<typeof useStremioAccountMutation>["get"];
       onEdit: (item: StremioAccount) => void;
+      onOpenAccount: (item: StremioAccount) => void;
       removeAccount: ReturnType<typeof useStremioAccountMutation>["remove"];
     };
   }
@@ -95,10 +108,23 @@ const columns: ColumnDef<StremioAccount>[] = [
   }),
   col.display({
     cell: (c) => {
-      const { getAccount, onEdit, removeAccount } = c.table.options.meta!.ctx;
+      const { getAccount, onEdit, onOpenAccount, removeAccount } =
+        c.table.options.meta!.ctx;
       const item = c.row.original;
       return (
         <div className="flex gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => onOpenAccount(item)}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <Info />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>View Details</TooltipContent>
+          </Tooltip>
           {item.is_valid && (
             <form
               action="/stremio/sidekick/login"
@@ -212,6 +238,116 @@ const columns: ColumnDef<StremioAccount>[] = [
   }),
 ];
 
+const addonNameByKey = {
+  list: "StremThru List",
+  store: "StremThru Store",
+  torz: "StremThru Torz",
+  wrap: "StremThru Wrap",
+};
+
+function StremioAccountDetailSheet({
+  account,
+  onClose,
+}: {
+  account: null | StremioAccount;
+  onClose: (open: boolean) => void;
+}) {
+  const userdata = useStremioAccountUserdata(account?.id ?? "");
+  const { syncUserdata } = useStremioAccountMutation();
+
+  if (!account) {
+    return null;
+  }
+
+  return (
+    <Sheet onOpenChange={onClose} open>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Account Details</SheetTitle>
+          <SheetDescription>{account.email}</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-col gap-4 p-4">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-medium">Linked Userdata</h3>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    disabled={syncUserdata.isPending}
+                    onClick={() => {
+                      toast.promise(syncUserdata.mutateAsync(account.id), {
+                        error(err: APIError) {
+                          console.error(err);
+                          return {
+                            closeButton: true,
+                            message: err.message,
+                          };
+                        },
+                        loading: "Syncing linked saved userdata...",
+                        success(data) {
+                          return {
+                            closeButton: true,
+                            message:
+                              data.length > 0
+                                ? `Linked ${data.length} saved userdata`
+                                : "No saved userdata found",
+                          };
+                        },
+                      });
+                    }}
+                    size="icon-sm"
+                    variant="outline"
+                  >
+                    <RefreshCwIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Sync userdata from installed StremThru addons
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            {userdata.isLoading ? (
+              <div className="text-muted-foreground text-sm">Loading...</div>
+            ) : userdata.isError ? (
+              <div className="text-sm text-red-600">Error loading userdata</div>
+            ) : userdata.data?.length === 0 ? (
+              <div className="text-muted-foreground text-sm">
+                No linked userdata
+              </div>
+            ) : (
+              <ItemGroup className="gap-2">
+                {userdata.data?.map((item) => (
+                  <Item key={item.key} size="sm" variant="muted">
+                    <ItemHeader>
+                      <small>{addonNameByKey[item.addon] ?? item.addon}</small>
+                    </ItemHeader>
+                    <ItemContent>
+                      <ItemTitle>{item.name || item.key}</ItemTitle>
+                    </ItemContent>
+                    <ItemActions>
+                      <Button asChild size="icon-sm" variant="outline">
+                        <a
+                          href={`/stremio/${item.addon}/k.${item.key}/configure`}
+                          target="_blank"
+                        >
+                          <ExternalLinkIcon />
+                        </a>
+                      </Button>
+                    </ItemActions>
+                    <ItemFooter className="text-muted-foreground">
+                      <small>{item.key}</small>
+                    </ItemFooter>
+                  </Item>
+                ))}
+              </ItemGroup>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function StremioAccountForm({
   editItem,
   onClose,
@@ -280,6 +416,8 @@ function RouteComponent() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editItem, setEditItem] = useState<null | StremioAccount>(null);
 
+  const [openAccount, setOpenAccount] = useState<null | StremioAccount>(null);
+
   const handleEdit = (item: StremioAccount) => {
     setEditItem(item);
     setSheetOpen(true);
@@ -300,6 +438,7 @@ function RouteComponent() {
       ctx: {
         getAccount,
         onEdit: handleEdit,
+        onOpenAccount: setOpenAccount,
         removeAccount,
       },
     },
@@ -348,6 +487,11 @@ function RouteComponent() {
       ) : (
         <DataTable table={table} />
       )}
+
+      <StremioAccountDetailSheet
+        account={openAccount}
+        onClose={() => setOpenAccount(null)}
+      />
     </div>
   );
 }

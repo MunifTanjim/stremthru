@@ -15,6 +15,13 @@ export type StremioAccount = {
   updated_at: string;
 };
 
+export type StremioAccountUserdata = {
+  addon: "list" | "store" | "torz" | "wrap";
+  created_at: string;
+  key: string;
+  name: string;
+};
+
 export type UpdateStremioAccountParams = {
   password: string;
 };
@@ -69,13 +76,31 @@ export function useStremioAccountMutation() {
     },
   });
 
-  return { create, get, remove, update };
+  const syncUserdata = useMutation({
+    mutationFn: syncStremioAccountUserdata,
+    onSuccess: async (items, id, __, ctx) => {
+      ctx.client.setQueryData<StremioAccountUserdata[]>(
+        ["/vault/stremio/accounts/{id}/userdata", id],
+        items,
+      );
+    },
+  });
+
+  return { create, get, remove, syncUserdata, update };
 }
 
 export function useStremioAccounts() {
   return useQuery({
     queryFn: getStremioAccounts,
     queryKey: ["/vault/stremio/accounts"],
+  });
+}
+
+export function useStremioAccountUserdata(id: string) {
+  return useQuery({
+    enabled: Boolean(id),
+    queryFn: () => getStremioAccountUserdata(id),
+    queryKey: ["/vault/stremio/accounts/{id}/userdata", id],
   });
 }
 
@@ -105,6 +130,20 @@ async function getStremioAccount({
 
 async function getStremioAccounts() {
   const { data } = await api<StremioAccount[]>("/vault/stremio/accounts");
+  return data;
+}
+
+async function getStremioAccountUserdata(id: string) {
+  const { data } = await api<StremioAccountUserdata[]>(
+    `GET /vault/stremio/accounts/${id}/userdata`,
+  );
+  return data;
+}
+
+async function syncStremioAccountUserdata(id: string) {
+  const { data } = await api<StremioAccountUserdata[]>(
+    `POST /vault/stremio/accounts/${id}/userdata/sync`,
+  );
   return data;
 }
 

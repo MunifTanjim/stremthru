@@ -184,7 +184,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			td.SavedUserDataOptions = options
 		}
 	} else if td.SavedUserDataKey != "" {
-		if sud, err := stremio_userdata.Get[UserData]("wrap", td.SavedUserDataKey); err != nil {
+		if sud, err := stremio_userdata.Get[UserData]("wrap", td.SavedUserDataKey); err != nil || sud == nil {
 			LogError(r, "failed to get saved userdata", err)
 		} else {
 			td.SavedUserDataOptions = []configure.ConfigOption{{Label: sud.Name, Value: td.SavedUserDataKey}}
