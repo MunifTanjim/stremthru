@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef } from "@tanstack/react-table";
 import { Trash2 } from "lucide-react";
 import { DateTime, Duration } from "luxon";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useLocalStorage } from "react-use";
 import { toast } from "sonner";
 
 import {
@@ -251,7 +252,10 @@ export const Route = createFileRoute("/dash/workers")({
 function RouteComponent() {
   const workerDetails = useWorkerDetails();
 
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerId = "", setSelectedWorkerId] = useLocalStorage(
+    "dash/workers:selected-worker-id",
+    "",
+  );
 
   const jobLogs = useWorkerJobLogs(selectedWorkerId);
   const { deleteJobLog, purgeJobLogs, purgeTemporaryFiles } =
@@ -278,7 +282,7 @@ function RouteComponent() {
       }
       return workerOptions[0].value;
     });
-  }, [workerOptions]);
+  }, [setSelectedWorkerId, workerOptions]);
 
   const selectedWorkerInterval = useMemo(() => {
     const worker = workerDetails.data?.[selectedWorkerId];
