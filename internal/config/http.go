@@ -71,6 +71,9 @@ func (tm TunnelMap) autoProxy(r *http.Request) (*url.URL, error) {
 
 // Use the default tunnel, ignore `NO_PROXY`
 func (tm TunnelMap) forcedProxy(r *http.Request) (*url.URL, error) {
+	if proxy := tm.getProxy(r.URL.Hostname()); proxy != nil && proxy.Host != "" {
+		return proxy, nil
+	}
 	if proxy := tm.getProxy("*"); proxy != nil && proxy.Host != "" {
 		return proxy, nil
 	}

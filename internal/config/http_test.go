@@ -15,7 +15,7 @@ type TunnelTestSuite struct {
 
 func (s *TunnelTestSuite) TestDefaultOff() {
 	httpProxy := "http://127.0.0.1:1080"
-	tunnel := parseTunnel(httpProxy, httpProxy, "*:false,x.y:true")
+	tunnel := parseTunnel(httpProxy, httpProxy, "*:false,x.y:true,j.k:http://warp:1080")
 
 	proxy := tunnel.getProxy("*")
 	s.NotNil(proxy)
@@ -30,6 +30,13 @@ func (s *TunnelTestSuite) TestDefaultOff() {
 	s.Nil(err)
 	s.NotNil(proxy)
 	s.Equal(proxy.String(), httpProxy)
+
+	proxy, err = tunnel.forcedProxy(&http.Request{
+		URL: &url.URL{Host: "abc.j.k", Scheme: "https"},
+	})
+	s.Nil(err)
+	s.NotNil(proxy)
+	s.Equal(proxy.String(), "http://warp:1080")
 
 	s.Nil(tunnel.getProxy("x.y.z"))
 
@@ -46,7 +53,7 @@ func (s *TunnelTestSuite) TestDefaultOff() {
 
 func (s *TunnelTestSuite) TestDefaultOn() {
 	httpProxy := "http://127.0.0.1:1080"
-	tunnel := parseTunnel(httpProxy, httpProxy, "*:true,x.y:false")
+	tunnel := parseTunnel(httpProxy, httpProxy, "*:true,x.y:false,j.k:http://warp:1080")
 
 	proxy := tunnel.getProxy("*")
 	s.NotNil(proxy)
@@ -68,6 +75,13 @@ func (s *TunnelTestSuite) TestDefaultOn() {
 	s.Nil(err)
 	s.NotNil(proxy)
 	s.Equal(proxy.String(), httpProxy)
+
+	proxy, err = tunnel.autoProxy(&http.Request{
+		URL: &url.URL{Host: "j.k", Scheme: "https"},
+	})
+	s.Nil(err)
+	s.NotNil(proxy)
+	s.Equal(proxy.String(), "http://warp:1080")
 
 	s.Equal(tunnel.getProxy("x.y"), &url.URL{})
 
