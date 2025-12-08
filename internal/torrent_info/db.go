@@ -283,7 +283,7 @@ func (ti *TorrentInfo) parse() error {
 	ti.Retail = r.Retail
 	ti.Seasons = r.Seasons
 	ti.Site = r.Site
-	if r.Size != "" {
+	if ti.Size < 1 && r.Size != "" {
 		ti.Size = util.ToBytes(r.Size)
 	}
 	ti.Subbed = r.Subbed
@@ -689,7 +689,7 @@ var query_upsert_on_conflict = fmt.Sprintf(
 		Column.TorrentTitle,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s = -1 THEN EXCLUDED.%s ELSE ti.%s END",
+		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s < 1 THEN EXCLUDED.%s ELSE ti.%s END",
 		Column.Size,
 		Column.Source,
 		Column.Size,
@@ -928,7 +928,7 @@ var upsert_parsed_on_conflict_columns = append([]string{
 	Column.ParserInput,
 }, Columns[slices.Index(Columns, Column.Audio):]...)
 var query_upsert_parsed_before_values = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES `,
+	`INSERT INTO %s AS ti (%s) VALUES `,
 	TableName,
 	db.JoinColumnNames(Columns...),
 )
@@ -941,7 +941,19 @@ var query_upsert_parsed_on_confict = fmt.Sprintf(
 		func() []string {
 			cols := make([]string, len(upsert_parsed_on_conflict_columns))
 			for i := range upsert_parsed_on_conflict_columns {
-				cols[i] = `EXCLUDED."` + upsert_parsed_on_conflict_columns[i] + `"`
+				column := upsert_parsed_on_conflict_columns[i]
+				switch column {
+				case Column.Size:
+					cols[i] = fmt.Sprintf(
+						`CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s < 1 THEN EXCLUDED.%s ELSE ti.%s END`,
+						Column.Source,
+						Column.Size,
+						Column.Size,
+						Column.Size,
+					)
+				default:
+					cols[i] = `EXCLUDED."` + column + `"`
+				}
 			}
 			return cols
 		}(),
