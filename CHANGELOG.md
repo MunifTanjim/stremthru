@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.93.0](https://github.com/MunifTanjim/stremthru/compare/0.92.11...0.93.0) (2025-12-08)
+
+
+### Features
+
+* **dash/lists:** add separate section ([5a34157](https://github.com/MunifTanjim/stremthru/commit/5a34157c9ae30a36f2f9a14feeee911902366bf7))
+* **dash/stats:** add stats for imdb titles ([eeb1f38](https://github.com/MunifTanjim/stremthru/commit/eeb1f38d1423b0e9da53de6ec1e5f0a8395d3a39))
+* **dash/torrents:** add separate section ([bc180d7](https://github.com/MunifTanjim/stremthru/commit/bc180d7e0b348a5953607d48019f4b46ba996f88))
+* **dash/vault:** link between stremio account and saved userdata ([2bdf298](https://github.com/MunifTanjim/stremthru/commit/2bdf2989ff104f0ce726c74f41bf8e6210017963))
+* **dash/vault:** support direct login to sidekick ([f39c664](https://github.com/MunifTanjim/stremthru/commit/f39c664bcb6f37fead43abc84d766089809ac259))
+* **dash/workers:** add failure indicator in dropdown ([ac9877c](https://github.com/MunifTanjim/stremthru/commit/ac9877c8b7d4bfcd46c733b90add3068a9e2c398))
+* **dash/workers:** remember worker selection ([ce983b3](https://github.com/MunifTanjim/stremthru/commit/ce983b3db406b0bf19886cf5ae935be3b245886f))
+* **dash/workers:** support deleting job log ([f1335f9](https://github.com/MunifTanjim/stremthru/commit/f1335f971ddc095d5bc32ab618551984b8a4871d))
+* **dash/workers:** support purging job logs ([0e9a8a7](https://github.com/MunifTanjim/stremthru/commit/0e9a8a7b5a26e102ea0dfd24bc76595946ccfc20))
+* **dash/workers:** support purging temp files for sync-imdb ([f5c1470](https://github.com/MunifTanjim/stremthru/commit/f5c1470750fe81ea412d884d6941a6e683ead284))
+* **dash:** make auth session stick on dev ([1ec2f5c](https://github.com/MunifTanjim/stremthru/commit/1ec2f5c38954065919f47988162e9edd725ae916))
+* **store:** add has_usenet field for get user ([15de4ee](https://github.com/MunifTanjim/stremthru/commit/15de4ee1acddf2f20dd97a4b308330c4287f394a))
+* **stremio/sidekick:** support login with accounts in vault ([fbf70ef](https://github.com/MunifTanjim/stremthru/commit/fbf70efaffac392e99413d360e29e5d6cf4e5994))
+* **stremio/store:** add toggle for usenet ([41bdc97](https://github.com/MunifTanjim/stremthru/commit/41bdc97615b011d4e872d66d928bc14bad64e7c0))
+* **stremio/store:** unify catalog cache key ([e18dc3a](https://github.com/MunifTanjim/stremthru/commit/e18dc3ac59bd7caed6203debccf4e2ddede08f2f))
+* **stremio/torz:** invalidate store catalog cache on playback ([52bcde3](https://github.com/MunifTanjim/stremthru/commit/52bcde311a8dd4c1e54a8e84d65753cdcfd4755a))
+* **stremio/userdata:** auto reload linked userdata addons ([250c92a](https://github.com/MunifTanjim/stremthru/commit/250c92ab292f69c3cb0bc3a019cbc708ba45eb6d))
+* **stremio/watched_bitfield:** port to golang ([b6a03bc](https://github.com/MunifTanjim/stremthru/commit/b6a03bc9c6d36498ba18e9d81fee3219958a1d65))
+* **stremio/wrap:** invalidate store catalog cache on playback ([30d90c4](https://github.com/MunifTanjim/stremthru/commit/30d90c476633c2ca659d48d513fe8bdee0f40d76))
+* upgrade to golang 1.25 ([503d5ec](https://github.com/MunifTanjim/stremthru/commit/503d5ec668e87da9221a2596d89dc3fdfcc32e60))
+* **vault:** add trakt account ([99b77a5](https://github.com/MunifTanjim/stremthru/commit/99b77a5762f86d57fb8ed4ffa6845d0f5ad59302))
+* **vault:** introduce vault for stremio account ([d3b2b96](https://github.com/MunifTanjim/stremthru/commit/d3b2b963dd0b2afa97ac04bbbb81623503a97b8b))
+* **worker:** add should skip condition ([f72718e](https://github.com/MunifTanjim/stremthru/commit/f72718e3ccedc204f24d7eaf5e4b5a2bfda27ca4))
+
+
+### Bug Fixes
+
+* **stremio/list:** validate username for mdblist watchlist ([29ff231](https://github.com/MunifTanjim/stremthru/commit/29ff2314512b4cf189a555eecd2e70b710a3ff79))
+
 ## [0.92.11](https://github.com/MunifTanjim/stremthru/compare/0.92.10...0.92.11) (2025-12-03)
 
 
