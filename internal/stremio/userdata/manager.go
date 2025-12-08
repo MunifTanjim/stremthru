@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/google/uuid"
 )
 
@@ -134,6 +135,10 @@ func (m iManager[T]) Sync(ud UserData[T]) error {
 		return err
 	}
 	m.cache.Remove(id)
+	worker_queue.LinkedUserdataAddonReloaderQueue.Queue(worker_queue.UserdataAddonReloaderQueueItem{
+		Addon: m.addon,
+		Key:   id,
+	})
 	return nil
 }
 

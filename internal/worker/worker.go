@@ -107,6 +107,9 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	"sync-animetosho": {
 		Title: "Sync AnimeTosho",
 	},
+	"reload-linked-userdata-addon": {
+		Title: "Reload Linked Userdata Addon",
+	},
 }
 
 func NewWorker(conf *WorkerConfig) *Worker {
@@ -780,6 +783,22 @@ func InitWorkers() func() {
 
 			running_worker.sync_animetosho = false
 		},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitLinkedUserdataAddonReloaderWorker(&WorkerConfig{
+		Disabled: worker_queue.LinkedUserdataAddonReloaderQueue.Disabled,
+		Name:     "reload-linked-userdata-addon",
+		Interval: 5 * time.Minute,
+		ShouldSkip: func() bool {
+			return worker_queue.LinkedUserdataAddonReloaderQueue.IsEmpty()
+		},
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
 	}); worker != nil {
 		workers = append(workers, worker)
 	}
