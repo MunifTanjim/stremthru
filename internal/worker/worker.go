@@ -29,6 +29,7 @@ var running_worker struct {
 
 type Worker struct {
 	scheduler  *tasks.Scheduler
+	shouldSkip func() bool
 	shouldWait func() (bool, string)
 	onStart    func()
 	onEnd      func()
@@ -47,6 +48,7 @@ type WorkerConfig struct {
 	OnStart           func()
 	RunAtStartupAfter time.Duration
 	RunExclusive      bool
+	ShouldSkip        func() bool
 	ShouldWait        func() (bool, string)
 }
 
@@ -136,6 +138,7 @@ func NewWorker(conf *WorkerConfig) *Worker {
 
 	worker := &Worker{
 		scheduler:  tasks.New(),
+		shouldSkip: conf.ShouldSkip,
 		shouldWait: conf.ShouldWait,
 		onStart:    conf.OnStart,
 		onEnd:      conf.OnEnd,
@@ -161,6 +164,11 @@ func NewWorker(conf *WorkerConfig) *Worker {
 				}
 				worker.onEnd()
 			}()
+
+			if worker.shouldSkip != nil && worker.shouldSkip() {
+				log.Info("skipping")
+				return nil
+			}
 
 			for {
 				wait, reason := worker.shouldWait()
@@ -358,6 +366,9 @@ func InitWorkers() func() {
 		Disabled: worker_queue.StoreCrawlerQueue.Disabled,
 		Name:     "crawl-store",
 		Interval: 30 * time.Minute,
+		ShouldSkip: func() bool {
+			return worker_queue.StoreCrawlerQueue.IsEmpty()
+		},
 		ShouldWait: func() (bool, string) {
 			mutex.Lock()
 			defer mutex.Unlock()
@@ -478,6 +489,9 @@ func InitWorkers() func() {
 		Disabled: worker_queue.MagnetCachePullerQueue.Disabled,
 		Name:     "pull-magnet-cache",
 		Interval: 5 * time.Minute,
+		ShouldSkip: func() bool {
+			return worker_queue.MagnetCachePullerQueue.IsEmpty()
+		},
 		ShouldWait: func() (bool, string) {
 			return false, ""
 		},
@@ -492,6 +506,9 @@ func InitWorkers() func() {
 		Name:         "map-anime-id",
 		Interval:     10 * time.Minute,
 		RunExclusive: true,
+		ShouldSkip: func() bool {
+			return worker_queue.AnimeIdMapperQueue.IsEmpty()
+		},
 		ShouldWait: func() (bool, string) {
 			return false, ""
 		},
@@ -684,6 +701,9 @@ func InitWorkers() func() {
 		OnEnd:        func() {},
 		OnStart:      func() {},
 		RunExclusive: true,
+		ShouldSkip: func() bool {
+			return worker_queue.LetterboxdListSyncerQueue.IsEmpty()
+		},
 		ShouldWait: func() (bool, string) {
 			return false, ""
 		},

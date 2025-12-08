@@ -37,6 +37,15 @@ func (q *WorkerQueue[T]) delete(item T) {
 	q.m.Delete(q.getKey(item))
 }
 
+func (q *WorkerQueue[T]) IsEmpty() bool {
+	isEmpty := true
+	q.m.Range(func(k, v any) bool {
+		isEmpty = false
+		return false
+	})
+	return isEmpty
+}
+
 func (q *WorkerQueue[T]) Process(f func(item T) error) {
 	q.m.Range(func(k, v any) bool {
 		_, keyOk := k.(string)
