@@ -81,6 +81,12 @@ func (ids ListItemIds) ToIdMap(itemType ItemType) meta.IdMap {
 	}
 }
 
+type minimalItem struct {
+	Title string      `json:"title"`
+	Year  int         `json:"year"`
+	Ids   ListItemIds `json:"ids"`
+}
+
 type listItemCommon struct {
 	Title                 string      `json:"title"`
 	Year                  int         `json:"year"`

@@ -1,6 +1,8 @@
 package stremio_api
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -73,7 +75,7 @@ type LibraryItem struct {
 	MTime       time.Time               `json:"_mtime"`
 	State       LibraryItemState        `json:"state"`
 	Name        string                  `json:"name"`
-	Type        string                  `json:"type"`
+	Type        string                  `json:"type"` // series / movie
 	Poster      string                  `json:"poster"`
 	PosterShape stremio.MetaPosterShape `json:"posterShape,omitempty"`
 	Background  string                  `json:"background,omitempty"`
@@ -87,4 +89,27 @@ type GetAllLibraryItemsData []LibraryItem
 
 type UpdateLibraryItemsData struct {
 	Success bool `json:"success"`
+}
+
+type LibraryItemTimestamp struct {
+	Id         string
+	ModifiedAt time.Time
+}
+
+func (lit *LibraryItemTimestamp) UnmarshalJSON(data []byte) error {
+	var raw []any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	id, ok := raw[0].(string)
+	if !ok {
+		return errors.New("[0] not string")
+	}
+	modifiedAt, ok := raw[1].(float64)
+	if !ok {
+		return errors.New("[1] not number")
+	}
+	lit.Id = id
+	lit.ModifiedAt = time.UnixMilli(int64(modifiedAt))
+	return nil
 }

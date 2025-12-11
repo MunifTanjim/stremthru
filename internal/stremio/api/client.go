@@ -231,14 +231,38 @@ func (c Client) SetAddons(params *SetAddonsParams) (request.APIResponse[SetAddon
 	return request.NewAPIResponse(res, response.Result), err
 }
 
-type getLibraryItemsPayload struct {
+type getAllLibraryItemTimestampsPayload struct {
 	requestPayload
 	Collection string `json:"collection"`
-	All        bool   `json:"all"`
+}
+
+type GetAllLibraryItemTimestampsParams struct {
+	Ctx
+}
+
+func (c Client) GetAllLibraryItemTimestamps(params *GetAllLibraryItemTimestampsParams) (request.APIResponse[[]LibraryItemTimestamp], error) {
+	params.JSON = getAllLibraryItemTimestampsPayload{
+		requestPayload: requestPayload{
+			AuthKey: params.APIKey,
+		},
+		Collection: "libraryItem",
+	}
+
+	response := &Response[[]LibraryItemTimestamp]{}
+	res, err := c.Request("POST", "/api/datastoreMeta", params, response)
+	return request.NewAPIResponse(res, response.Result), err
+}
+
+type getLibraryItemsPayload struct {
+	requestPayload
+	Collection string   `json:"collection"`
+	Ids        []string `json:"ids,omitempty"`
+	All        bool     `json:"all"`
 }
 
 type GetAllLibraryItemsParams struct {
 	Ctx
+	Ids []string
 }
 
 func (c Client) GetAllLibraryItems(params *GetAllLibraryItemsParams) (request.APIResponse[GetAllLibraryItemsData], error) {
@@ -247,7 +271,8 @@ func (c Client) GetAllLibraryItems(params *GetAllLibraryItemsParams) (request.AP
 			AuthKey: params.APIKey,
 		},
 		Collection: "libraryItem",
-		All:        true,
+		Ids:        params.Ids,
+		All:        len(params.Ids) == 0,
 	}
 
 	response := &Response[GetAllLibraryItemsData]{}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
+	"github.com/MunifTanjim/stremthru/internal/sync/stremio_trakt"
 )
 
 const TableName = "trakt_account"
@@ -158,6 +159,11 @@ var query_delete = fmt.Sprintf(
 )
 
 func Delete(id string) error {
-	_, err := db.Exec(query_delete, id)
-	return err
+	if _, err := db.Exec(query_delete, id); err != nil {
+		return err
+	}
+	if err := sync_stremio_trakt.UnlinkByTraktAccount(id); err != nil {
+		return err
+	}
+	return nil
 }

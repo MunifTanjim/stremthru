@@ -173,6 +173,23 @@ func (csi *CommaSeperatedInt) Scan(value any) error {
 	return nil
 }
 
+func JSONValue(o any) (driver.Value, error) {
+	return json.Marshal(o)
+}
+
+func JSONScan(value any, o any) error {
+	var bytes []byte
+	switch v := value.(type) {
+	case string:
+		bytes = []byte(v)
+	case []byte:
+		bytes = v
+	default:
+		return errors.New("failed to convert value to []byte")
+	}
+	return json.Unmarshal(bytes, &o)
+}
+
 type JSONStringList []string
 
 func (list JSONStringList) Value() (driver.Value, error) {

@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	stremio_api "github.com/MunifTanjim/stremthru/internal/stremio/api"
 	stremio_userdata_account "github.com/MunifTanjim/stremthru/internal/stremio/userdata/account"
+	"github.com/MunifTanjim/stremthru/internal/sync/stremio_trakt"
 )
 
 var stremioClient = stremio_api.NewClient(&stremio_api.ClientConfig{})
@@ -292,9 +293,14 @@ var query_delete = fmt.Sprintf(
 )
 
 func Delete(id string) error {
-	_, err := db.Exec(query_delete, id)
-	if err != nil {
+	if _, err := db.Exec(query_delete, id); err != nil {
 		return err
 	}
-	return stremio_userdata_account.UnlinkAllByAccount(id)
+	if err := stremio_userdata_account.UnlinkAllByAccount(id); err != nil {
+		return err
+	}
+	if err := sync_stremio_trakt.UnlinkByStremioAccount(id); err != nil {
+		return err
+	}
+	return nil
 }

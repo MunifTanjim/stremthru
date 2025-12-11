@@ -110,6 +110,9 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	"reload-linked-userdata-addon": {
 		Title: "Reload Linked Userdata Addon",
 	},
+	"sync-stremio-trakt": {
+		Title: "Sync Stremio-Trakt",
+	},
 }
 
 func NewWorker(conf *WorkerConfig) *Worker {
@@ -794,6 +797,21 @@ func InitWorkers() func() {
 		ShouldSkip: func() bool {
 			return worker_queue.LinkedUserdataAddonReloaderQueue.IsEmpty()
 		},
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitSyncStremioTraktWorker(&WorkerConfig{
+		Disabled:          !config.Feature.HasVault() || !config.Integration.Trakt.IsEnabled(),
+		Name:              "sync-stremio-trakt",
+		Interval:          30 * time.Minute,
+		RunAtStartupAfter: 5 * time.Minute,
+		RunExclusive:      true,
 		ShouldWait: func() (bool, string) {
 			return false, ""
 		},

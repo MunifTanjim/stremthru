@@ -2,6 +2,7 @@ import { DropdownMenuGroup } from "@radix-ui/react-dropdown-menu";
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { capitalize } from "es-toolkit";
 import {
+  CalendarSyncIcon,
   ChevronRight,
   ChevronsUpDown,
   LayoutList,
@@ -293,6 +294,25 @@ function useNavItems(): NavItem[] {
         });
       }
       items.push(vault);
+
+      const sync: NavItem = {
+        icon: CalendarSyncIcon,
+        items: [
+          {
+            path: "/dash/sync",
+            title: "Overview",
+          },
+        ],
+        path: "/dash/sync",
+        title: "Sync",
+      };
+      if (server.integration.trakt) {
+        sync.items!.push({
+          path: "/dash/sync/stremio-trakt",
+          title: "Stremio ↔ Trakt",
+        });
+      }
+      items.push(sync);
     }
 
     return items;
