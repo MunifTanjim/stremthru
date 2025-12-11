@@ -775,3 +775,105 @@ func GetIdMapsByLetterboxdId(letterboxdIds []string) (map[string]IMDBTitleMap, e
 	}
 	return idMapById, nil
 }
+
+var query_get_id_maps_by_trakt_id_cond_movie = fmt.Sprintf(
+	`it.%s IN (%s) AND itm.%s IN `,
+	Column.Type,
+	func() string {
+		args := make([]any, len(movieTypes))
+		for i, movieType := range movieTypes {
+			args[i] = movieType
+		}
+		return fmt.Sprintf(
+			util.RepeatJoin("'%s'", len(movieTypes), ","),
+			args...,
+		)
+	}(),
+	MapColumn.TraktId,
+)
+
+var query_get_id_maps_by_trakt_id_cond_show = fmt.Sprintf(
+	`it.%s IN (%s) AND itm.%s IN `,
+	Column.Type,
+	func() string {
+		args := make([]any, len(showTypes))
+		for i, showType := range showTypes {
+			args[i] = showType
+		}
+		return fmt.Sprintf(
+			util.RepeatJoin("'%s'", len(showTypes), ","),
+			args...,
+		)
+	}(),
+	MapColumn.TraktId,
+)
+
+var query_get_id_maps_by_trakt_id_before_cond = fmt.Sprintf(
+	`SELECT %s, coalesce(it.%s, '') AS item_type FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE `,
+	db.JoinPrefixedColumnNames(
+		"itm.",
+		MapColumn.IMDBId,
+		MapColumn.TMDBId,
+		MapColumn.TVDBId,
+		MapColumn.TraktId,
+		MapColumn.LetterboxdId,
+		MapColumn.MALId,
+	),
+	Column.Type,
+	MapTableName,
+	TableName,
+	MapColumn.IMDBId,
+	Column.TId,
+)
+
+var query_get_id_maps_by_trakt_id_for_movie = query_get_id_maps_by_trakt_id_before_cond + query_get_id_maps_by_trakt_id_cond_movie
+
+var query_get_id_maps_by_trakt_id_for_show = query_get_id_maps_by_trakt_id_before_cond + query_get_id_maps_by_trakt_id_cond_show
+
+func GetIdMapsByTraktIds(titleType IMDBTitleSimpleType, traktIds []string) (map[string]IMDBTitleMap, error) {
+	count := len(traktIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	var query string
+	switch titleType {
+	case IMDBTitleSimpleTypeMovie:
+		query = query_get_id_maps_by_trakt_id_for_movie + "(" + util.RepeatJoin("?", count, ",") + ")"
+	case IMDBTitleSimpleTypeShow:
+		query = query_get_id_maps_by_trakt_id_for_show + "(" + util.RepeatJoin("?", count, ",") + ")"
+	default:
+		return nil, ErrUnexpectedTitleType
+	}
+	args := make([]any, count)
+	for i, id := range traktIds {
+		args[i] = id
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	idMapById := make(map[string]IMDBTitleMap, count)
+	for rows.Next() {
+		idMap := IMDBTitleMap{}
+		if err := rows.Scan(
+			&idMap.IMDBId,
+			&idMap.TMDBId,
+			&idMap.TVDBId,
+			&idMap.TraktId,
+			&idMap.LetterboxdId,
+			&idMap.MALId,
+			&idMap.Type,
+		); err != nil {
+			return nil, err
+		}
+
+		idMapById[idMap.TraktId] = idMap
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return idMapById, nil
+}

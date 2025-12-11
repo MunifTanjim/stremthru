@@ -42,7 +42,7 @@ func GetIdProviderCacheKey(idProvider IdProvider, idType IdType, id string) stri
 	switch idProvider {
 	case IdProviderIMDB:
 		return id
-	case IdProviderTVDB:
+	case IdProviderTrakt, IdProviderTVDB:
 		return string(idProvider) + ":" + string(idType) + ":" + id
 	default:
 		panic("unsupported id provider: " + string(idProvider))

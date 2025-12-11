@@ -45,6 +45,9 @@ func ParseId(idStr string) (provider IdProvider, id string) {
 	if strings.HasPrefix(idStr, "tt") {
 		return IdProviderIMDB, idStr
 	}
+	if traktId, ok := strings.CutPrefix(idStr, "trakt:"); ok {
+		return IdProviderTrakt, traktId
+	}
 	if tvdbId, ok := strings.CutPrefix(idStr, "tvdb:"); ok {
 		return IdProviderTVDB, tvdbId
 	}
@@ -89,6 +92,18 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			idMap.TMDB = idm.TMDBId
 			idMap.TVDB = id
 			idMap.Trakt = idm.TraktId
+			idMap.Letterboxd = idm.LetterboxdId
+		case IdProviderTrakt:
+			idMaps, err := imdb_title.GetIdMapsByTraktIds(imdb_title.IMDBTitleSimpleType(idType), []string{id})
+			if err != nil {
+				return &idMap, err
+			}
+			idm := idMaps[id]
+			idMap.Type = IdType(idm.Type.ToSimple())
+			idMap.IMDB = idm.IMDBId
+			idMap.TMDB = idm.TMDBId
+			idMap.TVDB = idm.TVDBId
+			idMap.Trakt = id
 			idMap.Letterboxd = idm.LetterboxdId
 		default:
 			return nil, ErrorUnsupportedId
