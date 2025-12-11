@@ -2,25 +2,21 @@ package worker
 
 import (
 	"fmt"
-	"net/url"
-	"slices"
 	"strings"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/meta"
 	stremio_account "github.com/MunifTanjim/stremthru/internal/stremio/account"
-	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	stremio_api "github.com/MunifTanjim/stremthru/internal/stremio/api"
+	"github.com/MunifTanjim/stremthru/internal/stremio/cinemeta"
 	"github.com/MunifTanjim/stremthru/internal/sync/stremio_trakt"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	trakt_account "github.com/MunifTanjim/stremthru/internal/trakt/account"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 	stremio_watched_bitfield "github.com/MunifTanjim/stremthru/stremio/watched_bitfield"
-	"golang.org/x/sync/singleflight"
 )
 
 func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
@@ -40,41 +36,6 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 		traktClient   *trakt.APIClient
 		traktMovies   []trakt.HistoryItem
 		traktEpisodes []trakt.HistoryItem
-	}
-
-	cinemetaClient := stremio_addon.NewClient(&stremio_addon.ClientConfig{})
-	cinemetaBaseUrl, _ := url.Parse("https://v3-cinemeta.strem.io/")
-	metaCache := cache.NewCache[stremio.Meta](&cache.CacheConfig{
-		Lifetime: 2 * time.Hour,
-		Name:     "worker:sync-stremio-trakt:meta",
-	})
-	var fetchMetaGroup singleflight.Group
-
-	fetchMeta := func(sType, imdbId string) (stremio.Meta, error) {
-		var meta stremio.Meta
-		cacheKey := sType + ":" + imdbId
-		if !metaCache.Get(cacheKey, &meta) {
-			m, err, _ := fetchMetaGroup.Do(cacheKey, func() (any, error) {
-				r, err := cinemetaClient.FetchMeta(&stremio_addon.FetchMetaParams{
-					BaseURL: cinemetaBaseUrl,
-					Type:    sType,
-					Id:      imdbId + ".json",
-				})
-				return r.Data.Meta, err
-			})
-			if err != nil {
-				return meta, err
-			}
-			meta = m.(stremio.Meta)
-			slices.SortFunc(meta.Videos, func(a, b stremio.MetaVideo) int {
-				if a.Season != b.Season {
-					return int(a.Season) - int(b.Season)
-				}
-				return int(a.Episode) - int(b.Episode)
-			})
-			metaCache.Add(cacheKey, meta)
-		}
-		return meta, nil
 	}
 
 	createLibraryItem := func(ctx *Ctx, meta stremio.Meta, state stremio_api.LibraryItemState) stremio_api.LibraryItem {
@@ -234,7 +195,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				continue
 			}
 
-			meta, err := fetchMeta("series", item.Id)
+			meta, err := cinemeta.FetchMeta("series", item.Id)
 			if err != nil {
 				return err
 			}
@@ -386,7 +347,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				}
 				libraryItem.MTime = ctx.now
 			} else {
-				meta, err := fetchMeta("movie", imdbId)
+				meta, err := cinemeta.FetchMeta("movie", imdbId)
 				if err != nil {
 					return err
 				}
@@ -452,7 +413,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 		}
 
 		for imdbId, traktItems := range traktItemsByImdbId {
-			meta, err := fetchMeta("series", imdbId)
+			meta, err := cinemeta.FetchMeta("series", imdbId)
 			if err != nil {
 				return err
 			}

@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	stremio_api "github.com/MunifTanjim/stremthru/internal/stremio/api"
 	stremio_userdata_account "github.com/MunifTanjim/stremthru/internal/stremio/userdata/account"
+	"github.com/MunifTanjim/stremthru/internal/sync/stremio_stremio"
 	"github.com/MunifTanjim/stremthru/internal/sync/stremio_trakt"
 )
 
@@ -300,6 +301,9 @@ func Delete(id string) error {
 		return err
 	}
 	if err := sync_stremio_trakt.UnlinkByStremioAccount(id); err != nil {
+		return err
+	}
+	if err := sync_stremio_stremio.UnlinkByStremioAccount(id); err != nil {
 		return err
 	}
 	return nil

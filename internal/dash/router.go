@@ -32,10 +32,13 @@ func AddEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/stats/torrents", authed(dash_api.HandleGetTorrentsStats))
 	router.HandleFunc("/stats/server", authed(dash_api.HandleGetServerStats))
 
+	dash_api.AddIMDBEndpoints(router)
 	dash_api.AddWorkerEndpoints(router)
+
 	if config.Feature.HasVault() {
 		dash_api.AddVaultStremioEndpoints(router)
 		dash_api.AddVaultTraktEndpoints(router)
+		dash_api.AddSyncStremioStremioEndpoints(router)
 		if config.Integration.Trakt.IsEnabled() {
 			dash_api.AddSyncStremioTraktEndpoints(router)
 		}

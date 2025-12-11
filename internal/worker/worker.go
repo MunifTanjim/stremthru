@@ -113,6 +113,9 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	"sync-stremio-trakt": {
 		Title: "Sync Stremio-Trakt",
 	},
+	"sync-stremio-stremio": {
+		Title: "Sync Stremio-Stremio",
+	},
 }
 
 func NewWorker(conf *WorkerConfig) *Worker {
@@ -809,6 +812,21 @@ func InitWorkers() func() {
 	if worker := InitSyncStremioTraktWorker(&WorkerConfig{
 		Disabled:          !config.Feature.HasVault() || !config.Integration.Trakt.IsEnabled(),
 		Name:              "sync-stremio-trakt",
+		Interval:          30 * time.Minute,
+		RunAtStartupAfter: 5 * time.Minute,
+		RunExclusive:      true,
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitSyncStremioStremioWorker(&WorkerConfig{
+		Disabled:          !config.Feature.HasVault(),
+		Name:              "sync-stremio-stremio",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 5 * time.Minute,
 		RunExclusive:      true,

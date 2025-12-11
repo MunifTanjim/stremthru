@@ -306,6 +306,10 @@ function useNavItems(): NavItem[] {
         path: "/dash/sync",
         title: "Sync",
       };
+      sync.items!.push({
+        path: "/dash/sync/stremio-stremio",
+        title: "Stremio ↔ Stremio",
+      });
       if (server.integration.trakt) {
         sync.items!.push({
           path: "/dash/sync/stremio-trakt",

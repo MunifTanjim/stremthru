@@ -24,6 +24,7 @@ import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
+import { Route as DashSyncStremioStremioRouteImport } from './routes/dash/sync/stremio-stremio'
 
 const DashRoute = DashRouteImport.update({
   id: '/dash',
@@ -101,6 +102,11 @@ const DashSyncStremioTraktRoute = DashSyncStremioTraktRouteImport.update({
   path: '/stremio-trakt',
   getParentRoute: () => DashSyncRoute,
 } as any)
+const DashSyncStremioStremioRoute = DashSyncStremioStremioRouteImport.update({
+  id: '/stremio-stremio',
+  path: '/stremio-stremio',
+  getParentRoute: () => DashSyncRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/dash/login': typeof DashLoginRoute
   '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
+  '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/dash/login'
     | '/dash/workers'
     | '/dash'
+    | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
@@ -309,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashSyncStremioTraktRouteImport
       parentRoute: typeof DashSyncRoute
     }
+    '/dash/sync/stremio-stremio': {
+      id: '/dash/sync/stremio-stremio'
+      path: '/stremio-stremio'
+      fullPath: '/dash/sync/stremio-stremio'
+      preLoaderRoute: typeof DashSyncStremioStremioRouteImport
+      parentRoute: typeof DashSyncRoute
+    }
   }
 }
 
@@ -325,11 +344,13 @@ const DashListsRouteWithChildren = DashListsRoute._addFileChildren(
 )
 
 interface DashSyncRouteChildren {
+  DashSyncStremioStremioRoute: typeof DashSyncStremioStremioRoute
   DashSyncStremioTraktRoute: typeof DashSyncStremioTraktRoute
   DashSyncIndexRoute: typeof DashSyncIndexRoute
 }
 
 const DashSyncRouteChildren: DashSyncRouteChildren = {
+  DashSyncStremioStremioRoute: DashSyncStremioStremioRoute,
   DashSyncStremioTraktRoute: DashSyncStremioTraktRoute,
   DashSyncIndexRoute: DashSyncIndexRoute,
 }
