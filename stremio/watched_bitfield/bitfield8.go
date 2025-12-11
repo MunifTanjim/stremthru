@@ -40,6 +40,15 @@ func (bf *BitField8) Set(i int, val bool) {
 	}
 }
 
+func (bf *BitField8) FirstIndexOf(val bool) int {
+	for i := 0; i < bf.Length; i++ {
+		if bf.Get(i) == val {
+			return i
+		}
+	}
+	return -1
+}
+
 func (bf *BitField8) LastIndexOf(val bool) int {
 	for i := bf.Length - 1; i >= 0; i-- {
 		if bf.Get(i) == val {

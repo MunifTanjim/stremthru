@@ -197,6 +197,14 @@ func (wbf *WatchedBitField) SetVideo(video_id string, v bool) {
 	wbf.bitfield.Set(pos, v)
 }
 
+func (wbf *WatchedBitField) GetFirstUnwatchedVideoId() string {
+	idx := wbf.bitfield.FirstIndexOf(false)
+	if idx == -1 || idx >= len(wbf.video_ids) {
+		idx = len(wbf.video_ids) - 1
+	}
+	return wbf.video_ids[idx]
+}
+
 func NewWatchedBitField(bitfield *BitField8, video_ids []string) *WatchedBitField {
 	return &WatchedBitField{
 		bitfield:  bitfield,
