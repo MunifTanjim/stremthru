@@ -1,5 +1,7 @@
 package util
 
+import "iter"
+
 type Set[T comparable] struct {
 	m map[T]struct{}
 }
@@ -15,6 +17,16 @@ func (s *Set[T]) Has(v T) bool {
 
 func (s *Set[T]) Del(v T) {
 	delete(s.m, v)
+}
+
+func (s *Set[T]) Seq() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for key := range s.m {
+			if !yield(key) {
+				return
+			}
+		}
+	}
 }
 
 func (s *Set[T]) ToSlice() []T {

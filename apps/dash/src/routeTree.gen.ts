@@ -14,13 +14,16 @@ import { Route as DashIndexRouteImport } from './routes/dash/index'
 import { Route as DashWorkersRouteImport } from './routes/dash/workers'
 import { Route as DashVaultRouteImport } from './routes/dash/vault'
 import { Route as DashTorrentsRouteImport } from './routes/dash/torrents'
+import { Route as DashSyncRouteImport } from './routes/dash/sync'
 import { Route as DashLoginRouteImport } from './routes/dash/login'
 import { Route as DashListsRouteImport } from './routes/dash/lists'
 import { Route as DashVaultIndexRouteImport } from './routes/dash/vault/index'
 import { Route as DashTorrentsIndexRouteImport } from './routes/dash/torrents/index'
+import { Route as DashSyncIndexRouteImport } from './routes/dash/sync/index'
 import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
+import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
 
 const DashRoute = DashRouteImport.update({
   id: '/dash',
@@ -47,6 +50,11 @@ const DashTorrentsRoute = DashTorrentsRouteImport.update({
   path: '/torrents',
   getParentRoute: () => DashRoute,
 } as any)
+const DashSyncRoute = DashSyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => DashRoute,
+} as any)
 const DashLoginRoute = DashLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -67,6 +75,11 @@ const DashTorrentsIndexRoute = DashTorrentsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashTorrentsRoute,
 } as any)
+const DashSyncIndexRoute = DashSyncIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashSyncRoute,
+} as any)
 const DashListsIndexRoute = DashListsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -83,18 +96,26 @@ const DashVaultStremioAccountsRoute =
     path: '/stremio-accounts',
     getParentRoute: () => DashVaultRoute,
   } as any)
+const DashSyncStremioTraktRoute = DashSyncStremioTraktRouteImport.update({
+  id: '/stremio-trakt',
+  path: '/stremio-trakt',
+  getParentRoute: () => DashSyncRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/sync': typeof DashSyncRouteWithChildren
   '/dash/torrents': typeof DashTorrentsRouteWithChildren
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
+  '/dash/sync/': typeof DashSyncIndexRoute
   '/dash/torrents/': typeof DashTorrentsIndexRoute
   '/dash/vault/': typeof DashVaultIndexRoute
 }
@@ -102,9 +123,11 @@ export interface FileRoutesByTo {
   '/dash/login': typeof DashLoginRoute
   '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
+  '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists': typeof DashListsIndexRoute
+  '/dash/sync': typeof DashSyncIndexRoute
   '/dash/torrents': typeof DashTorrentsIndexRoute
   '/dash/vault': typeof DashVaultIndexRoute
 }
@@ -113,13 +136,16 @@ export interface FileRoutesById {
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/sync': typeof DashSyncRouteWithChildren
   '/dash/torrents': typeof DashTorrentsRouteWithChildren
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
+  '/dash/sync/': typeof DashSyncIndexRoute
   '/dash/torrents/': typeof DashTorrentsIndexRoute
   '/dash/vault/': typeof DashVaultIndexRoute
 }
@@ -129,13 +155,16 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/sync'
     | '/dash/torrents'
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
+    | '/dash/sync/'
     | '/dash/torrents/'
     | '/dash/vault/'
   fileRoutesByTo: FileRoutesByTo
@@ -143,9 +172,11 @@ export interface FileRouteTypes {
     | '/dash/login'
     | '/dash/workers'
     | '/dash'
+    | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists'
+    | '/dash/sync'
     | '/dash/torrents'
     | '/dash/vault'
   id:
@@ -153,13 +184,16 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/sync'
     | '/dash/torrents'
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/sync/stremio-trakt'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
+    | '/dash/sync/'
     | '/dash/torrents/'
     | '/dash/vault/'
   fileRoutesById: FileRoutesById
@@ -205,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashTorrentsRouteImport
       parentRoute: typeof DashRoute
     }
+    '/dash/sync': {
+      id: '/dash/sync'
+      path: '/sync'
+      fullPath: '/dash/sync'
+      preLoaderRoute: typeof DashSyncRouteImport
+      parentRoute: typeof DashRoute
+    }
     '/dash/login': {
       id: '/dash/login'
       path: '/login'
@@ -233,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashTorrentsIndexRouteImport
       parentRoute: typeof DashTorrentsRoute
     }
+    '/dash/sync/': {
+      id: '/dash/sync/'
+      path: '/'
+      fullPath: '/dash/sync/'
+      preLoaderRoute: typeof DashSyncIndexRouteImport
+      parentRoute: typeof DashSyncRoute
+    }
     '/dash/lists/': {
       id: '/dash/lists/'
       path: '/'
@@ -254,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashVaultStremioAccountsRouteImport
       parentRoute: typeof DashVaultRoute
     }
+    '/dash/sync/stremio-trakt': {
+      id: '/dash/sync/stremio-trakt'
+      path: '/stremio-trakt'
+      fullPath: '/dash/sync/stremio-trakt'
+      preLoaderRoute: typeof DashSyncStremioTraktRouteImport
+      parentRoute: typeof DashSyncRoute
+    }
   }
 }
 
@@ -267,6 +322,20 @@ const DashListsRouteChildren: DashListsRouteChildren = {
 
 const DashListsRouteWithChildren = DashListsRoute._addFileChildren(
   DashListsRouteChildren,
+)
+
+interface DashSyncRouteChildren {
+  DashSyncStremioTraktRoute: typeof DashSyncStremioTraktRoute
+  DashSyncIndexRoute: typeof DashSyncIndexRoute
+}
+
+const DashSyncRouteChildren: DashSyncRouteChildren = {
+  DashSyncStremioTraktRoute: DashSyncStremioTraktRoute,
+  DashSyncIndexRoute: DashSyncIndexRoute,
+}
+
+const DashSyncRouteWithChildren = DashSyncRoute._addFileChildren(
+  DashSyncRouteChildren,
 )
 
 interface DashTorrentsRouteChildren {
@@ -300,6 +369,7 @@ const DashVaultRouteWithChildren = DashVaultRoute._addFileChildren(
 interface DashRouteChildren {
   DashListsRoute: typeof DashListsRouteWithChildren
   DashLoginRoute: typeof DashLoginRoute
+  DashSyncRoute: typeof DashSyncRouteWithChildren
   DashTorrentsRoute: typeof DashTorrentsRouteWithChildren
   DashVaultRoute: typeof DashVaultRouteWithChildren
   DashWorkersRoute: typeof DashWorkersRoute
@@ -309,6 +379,7 @@ interface DashRouteChildren {
 const DashRouteChildren: DashRouteChildren = {
   DashListsRoute: DashListsRouteWithChildren,
   DashLoginRoute: DashLoginRoute,
+  DashSyncRoute: DashSyncRouteWithChildren,
   DashTorrentsRoute: DashTorrentsRouteWithChildren,
   DashVaultRoute: DashVaultRouteWithChildren,
   DashWorkersRoute: DashWorkersRoute,
