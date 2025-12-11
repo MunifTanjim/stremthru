@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -532,21 +531,7 @@ func upsertItems(tx db.Executor, items []TraktItem) error {
 			}
 
 			if item.Ids.IMDB != "" {
-				idMapType := meta.IdTypeUnknown
-				switch item.Type {
-				case ItemTypeMovie:
-					idMapType = meta.IdTypeMovie
-				case ItemTypeShow:
-					idMapType = meta.IdTypeShow
-				}
-
-				idMaps = append(idMaps, meta.IdMap{
-					Type:  idMapType,
-					IMDB:  item.Ids.IMDB,
-					TMDB:  strconv.Itoa(item.Ids.TMDB),
-					TVDB:  strconv.Itoa(item.Ids.TVDB),
-					Trakt: strconv.Itoa(item.Ids.Trakt),
-				})
+				idMaps = append(idMaps, item.Ids.ToIdMap(item.Type))
 			}
 		}
 		util.LogError(log, meta.SetIdMapsInTrx(tx, idMaps, meta.IdProviderIMDB), "failed to set id maps")

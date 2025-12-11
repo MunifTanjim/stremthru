@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/meta"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -60,6 +61,24 @@ type ListItemIds struct {
 	TMDB   int    `json:"tmdb,omitempty"`
 	TVDB   int    `json:"tvdb,omitempty"`
 	TVRage any    `json:"tv_rage,omitempty"`
+}
+
+func (ids ListItemIds) ToIdMap(itemType ItemType) meta.IdMap {
+	idMapType := meta.IdTypeUnknown
+	switch itemType {
+	case ItemTypeMovie:
+		idMapType = meta.IdTypeMovie
+	case ItemTypeShow:
+		idMapType = meta.IdTypeShow
+	}
+
+	return meta.IdMap{
+		Type:  idMapType,
+		IMDB:  ids.IMDB,
+		TMDB:  strconv.Itoa(ids.TMDB),
+		TVDB:  strconv.Itoa(ids.TVDB),
+		Trakt: strconv.Itoa(ids.Trakt),
+	}
 }
 
 type listItemCommon struct {
