@@ -2,6 +2,7 @@ package imdb_title
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -558,8 +559,8 @@ func BulkRecordMapping(tx db.Executor, items []BulkRecordMappingInputItem) error
 	return err
 }
 
-var query_get_id_map_by_imdb_id = fmt.Sprintf(
-	`SELECT %s, it.%s FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s = ?`,
+var query_get_id_maps_by_imdb_id = fmt.Sprintf(
+	`SELECT %s, coalesce(it.%s, '') FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s IN `,
 	db.JoinPrefixedColumnNames(
 		"itm.",
 		MapColumn.IMDBId,
@@ -577,22 +578,55 @@ var query_get_id_map_by_imdb_id = fmt.Sprintf(
 	MapColumn.IMDBId,
 )
 
-func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
-	var idMap IMDBTitleMap
-	err := db.QueryRow(query_get_id_map_by_imdb_id, imdbId).Scan(
-		&idMap.IMDBId,
-		&idMap.TMDBId,
-		&idMap.TVDBId,
-		&idMap.TraktId,
-		&idMap.LetterboxdId,
-		&idMap.MALId,
-		&idMap.Type,
-	)
+func GetIdMapsByIMDBId(imdbIds []string) (map[string]IMDBTitleMap, error) {
+	count := len(imdbIds)
+	if count == 0 {
+		return nil, nil
+	}
+
+	args := make([]any, count)
+	for i, id := range imdbIds {
+		args[i] = id
+	}
+
+	query := query_get_id_maps_by_imdb_id + "(" + util.RepeatJoin("?", count, ",") + ")"
+	rows, err := db.Query(query, args...)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
+	}
+	defer rows.Close()
+
+	idMapById := make(map[string]IMDBTitleMap, count)
+	for rows.Next() {
+		idMap := IMDBTitleMap{}
+		if err := rows.Scan(
+			&idMap.IMDBId,
+			&idMap.TMDBId,
+			&idMap.TVDBId,
+			&idMap.TraktId,
+			&idMap.LetterboxdId,
+			&idMap.MALId,
+			&idMap.Type,
+		); err != nil {
+			return nil, err
+		}
+
+		idMapById[idMap.IMDBId] = idMap
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return idMapById, nil
+}
+
+func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
+	idMapById, err := GetIdMapsByIMDBId([]string{imdbId})
+	if err != nil {
+		return nil, err
+	}
+	idMap, ok := idMapById[imdbId]
+	if !ok {
+		return nil, nil
 	}
 	return &idMap, nil
 }
