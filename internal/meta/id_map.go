@@ -73,7 +73,6 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			if err != nil || idm == nil {
 				return &idMap, err
 			}
-
 			idMap.Type = IdType(idm.Type.ToSimple())
 			idMap.IMDB = id
 			idMap.TMDB = idm.TMDBId
@@ -81,7 +80,7 @@ func GetIdMap(idType IdType, idStr string) (*IdMap, error) {
 			idMap.Trakt = idm.TraktId
 			idMap.Letterboxd = idm.LetterboxdId
 		case IdProviderTVDB:
-			idm, err := imdb_title.GetIdMapByTVDBId(id)
+			idm, err := imdb_title.GetIdMapByTVDBId(imdb_title.IMDBTitleSimpleType(idType), id)
 			if err != nil || idm == nil {
 				return &idMap, err
 			}

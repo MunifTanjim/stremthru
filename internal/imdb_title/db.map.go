@@ -10,6 +10,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
+var ErrUnexpectedTitleType = errors.New("unexpected title type")
+
 const MapTableName = "imdb_title_map"
 
 type IMDBTitleMap struct {
@@ -631,8 +633,40 @@ func GetIdMapByIMDBId(imdbId string) (*IMDBTitleMap, error) {
 	return &idMap, nil
 }
 
-var query_get_id_map_by_tvdb_id = fmt.Sprintf(
-	`SELECT %s, it.%s FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE itm.%s = ?`,
+var query_get_id_map_by_tvdb_id_cond_movie = fmt.Sprintf(
+	`it.%s IN (%s) AND itm.%s = ?`,
+	Column.Type,
+	func() string {
+		args := make([]any, len(movieTypes))
+		for i, movieType := range movieTypes {
+			args[i] = movieType
+		}
+		return fmt.Sprintf(
+			util.RepeatJoin("'%s'", len(movieTypes), ","),
+			args...,
+		)
+	}(),
+	MapColumn.TVDBId,
+)
+
+var query_get_id_map_by_tvdb_id_cond_show = fmt.Sprintf(
+	`it.%s IN (%s) AND itm.%s = ?`,
+	Column.Type,
+	func() string {
+		args := make([]any, len(showTypes))
+		for i, showType := range showTypes {
+			args[i] = showType
+		}
+		return fmt.Sprintf(
+			util.RepeatJoin("'%s'", len(showTypes), ","),
+			args...,
+		)
+	}(),
+	MapColumn.TVDBId,
+)
+
+var query_get_id_map_by_tvdb_id_before_cond = fmt.Sprintf(
+	`SELECT %s, coalesce(it.%s, '') AS item_type FROM %s itm LEFT JOIN %s it ON itm.%s = it.%s WHERE `,
 	db.JoinPrefixedColumnNames(
 		"itm.",
 		MapColumn.IMDBId,
@@ -647,12 +681,24 @@ var query_get_id_map_by_tvdb_id = fmt.Sprintf(
 	TableName,
 	MapColumn.IMDBId,
 	Column.TId,
-	MapColumn.TVDBId,
 )
 
-func GetIdMapByTVDBId(tvdbId string) (*IMDBTitleMap, error) {
+var query_get_id_map_by_tvdb_id_for_movie = query_get_id_map_by_tvdb_id_before_cond + query_get_id_map_by_tvdb_id_cond_movie
+
+var query_get_id_map_by_tvdb_id_for_show = query_get_id_map_by_tvdb_id_before_cond + query_get_id_map_by_tvdb_id_cond_show
+
+func GetIdMapByTVDBId(titleType IMDBTitleSimpleType, tvdbId string) (*IMDBTitleMap, error) {
+	var query string
+	switch titleType {
+	case IMDBTitleSimpleTypeMovie:
+		query = query_get_id_map_by_tvdb_id_for_movie
+	case IMDBTitleSimpleTypeShow:
+		query = query_get_id_map_by_tvdb_id_for_show
+	default:
+		return nil, ErrUnexpectedTitleType
+	}
 	var idMap IMDBTitleMap
-	err := db.QueryRow(query_get_id_map_by_tvdb_id, tvdbId).Scan(
+	err := db.QueryRow(query, tvdbId).Scan(
 		&idMap.IMDBId,
 		&idMap.TMDBId,
 		&idMap.TVDBId,
