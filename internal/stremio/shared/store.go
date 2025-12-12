@@ -16,9 +16,9 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 	options := []configure.ConfigOption{
 		{Value: "", Label: "StremThru"},
 		{Value: "ad", Label: "AllDebrid"},
-		{Value: "dr", Label: "Debrider 🧪"},
+		{Value: "dr", Label: "⚠️ Debrider"},
 		{Value: "dl", Label: "DebridLink"},
-		{Value: "ed", Label: "EasyDebrid"},
+		{Value: "ed", Label: "⚠️ EasyDebrid"},
 		{Value: "oc", Label: "Offcloud"},
 		{Value: "pm", Label: "Premiumize"},
 		{Value: "pp", Label: "PikPak"},
@@ -32,7 +32,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 	if P2PEnabled && includeP2P {
 		options = append(options, configure.ConfigOption{
 			Value: "p2p",
-			Label: "⚠️ P2P 🧪",
+			Label: "P2P 🧪",
 		})
 	}
 	return options
