@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.94.0](https://github.com/MunifTanjim/stremthru/compare/0.93.0...0.94.0) (2025-12-12)
+
+
+### Features
+
+* **imdb_title:** add GetIdMapsByIMDBId ([d0f1a6c](https://github.com/MunifTanjim/stremthru/commit/d0f1a6cd4ab37e14ca1f001f0c0cc1428f4386af))
+* **meta/id-map:** add support for trakt ids ([110e894](https://github.com/MunifTanjim/stremthru/commit/110e8945439e22c2f408e487209f53e5ebf7ed3a))
+* **stremio/watched_bitfield:** add GetFirstUnwatchedVideoId method ([f417f7f](https://github.com/MunifTanjim/stremthru/commit/f417f7f250acc4bb6d81ffc27e30dbfb8f681a1e))
+* **sync/stremio-stremio:** add watched history sync ([c7c8014](https://github.com/MunifTanjim/stremthru/commit/c7c8014e6bcffd6a9120c4ebfcdbe6dd592567bc))
+* **sync/stremio-trakt:** add watched history sync ([a6aef89](https://github.com/MunifTanjim/stremthru/commit/a6aef89dc9d398e5893569271713df45c3db17bc))
+
+
+### Bug Fixes
+
+* **config:** make url for forced proxy overridable ([89a12e8](https://github.com/MunifTanjim/stremthru/commit/89a12e8124e481d7171a3e0de993e705b86c5ab5))
+* **mdblist:** adjust watchlist params for new ordering ([34384ec](https://github.com/MunifTanjim/stremthru/commit/34384ec3c19aae40eec8060089036c2c56a77333))
+* **meta/id-map:** query correct title type for tvdb ([fe26e7e](https://github.com/MunifTanjim/stremthru/commit/fe26e7e1df956d1e850f7d4eb6a4f9cc95d5c487))
+* **torrent_info:** ignore parsed size if already present ([db443f1](https://github.com/MunifTanjim/stremthru/commit/db443f15f3e79415daa56dcf4274d2eeb2a8db6c))
+
 ## [0.93.0](https://github.com/MunifTanjim/stremthru/compare/0.92.11...0.93.0) (2025-12-08)
 
 
