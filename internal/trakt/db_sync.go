@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/db"
 )
 
 var listCache = cache.NewCache[TraktList](&cache.CacheConfig{
@@ -154,6 +155,7 @@ func syncList(l *TraktList, tokenId string) error {
 			MPARating: data.Certification,
 
 			Idx:         i,
+			AddedAt:     db.Timestamp{Time: item.ListedAt},
 			Genres:      data.Genres,
 			Ids:         data.Ids,
 			NextEpisode: item.NextEpisode,

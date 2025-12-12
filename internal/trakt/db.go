@@ -139,6 +139,7 @@ type TraktItem struct {
 	UpdatedAt db.Timestamp
 
 	Idx         int                  `json:"-"`
+	AddedAt     db.Timestamp         `json:"-"`
 	Genres      db.JSONStringList    `json:"-"`
 	Ids         ListItemIds          `json:"-"`
 	NextEpisode *listItemNextEpisode `json:"-"`
@@ -226,6 +227,7 @@ type TraktListItem struct {
 	ItemId   int
 	ItemType ItemType
 	Idx      int
+	AddedAt  db.Timestamp
 }
 
 var ListItemColumn = struct {
@@ -233,11 +235,13 @@ var ListItemColumn = struct {
 	ItemId   string
 	ItemType string
 	Idx      string
+	AddedAt  string
 }{
 	ListId:   "list_id",
 	ItemId:   "item_id",
 	ItemType: "item_type",
 	Idx:      "idx",
+	AddedAt:  "added_at",
 }
 
 var ListItemColumns = []string{
@@ -245,6 +249,7 @@ var ListItemColumns = []string{
 	ListItemColumn.ItemId,
 	ListItemColumn.ItemType,
 	ListItemColumn.Idx,
+	ListItemColumn.AddedAt,
 }
 
 var query_get_list_by_id = fmt.Sprintf(
@@ -608,21 +613,24 @@ func setItemGenre(tx db.Executor, itemId int, itemType ItemType, genres []string
 }
 
 var query_set_list_item_before_values = fmt.Sprintf(
-	`INSERT INTO %s (%s,%s,%s,%s) VALUES `,
+	`INSERT INTO %s (%s,%s,%s,%s,%s) VALUES `,
 	ListItemTableName,
 	ListItemColumn.ListId,
 	ListItemColumn.ItemId,
 	ListItemColumn.ItemType,
 	ListItemColumn.Idx,
+	ListItemColumn.AddedAt,
 )
-var query_set_list_item_values_placeholder = `(?,?,?,?)`
+var query_set_list_item_values_placeholder = `(?,?,?,?,?)`
 var query_set_list_item_after_values = fmt.Sprintf(
-	` ON CONFLICT (%s,%s,%s) DO UPDATE SET %s = EXCLUDED.%s`,
+	` ON CONFLICT (%s,%s,%s) DO UPDATE SET %s = EXCLUDED.%s, %s = EXCLUDED.%s`,
 	ListItemColumn.ListId,
 	ListItemColumn.ItemId,
 	ListItemColumn.ItemType,
 	ListItemColumn.Idx,
 	ListItemColumn.Idx,
+	ListItemColumn.AddedAt,
+	ListItemColumn.AddedAt,
 )
 var query_cleanup_list_item = fmt.Sprintf(
 	`DELETE FROM %s WHERE %s = ?`,
@@ -646,12 +654,13 @@ func setListItems(tx db.Executor, listId string, items []TraktItem) error {
 	query := query_set_list_item_before_values +
 		util.RepeatJoin(query_set_list_item_values_placeholder, count, ",") +
 		query_set_list_item_after_values
-	args := make([]any, len(items)*4)
+	args := make([]any, len(items)*5)
 	for i, item := range items {
-		args[i*4+0] = listId
-		args[i*4+1] = item.Id
-		args[i*4+2] = item.Type
-		args[i*4+3] = item.Idx
+		args[i*5+0] = listId
+		args[i*5+1] = item.Id
+		args[i*5+2] = item.Type
+		args[i*5+3] = item.Idx
+		args[i*5+4] = item.AddedAt
 	}
 
 	if _, err := tx.Exec(query, args...); err != nil {
