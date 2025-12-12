@@ -93,7 +93,6 @@ func syncList(l *MDBListList, apiKey string) error {
 			params := &FetchWatchlistItemsParams{
 				Limit:  limit,
 				Offset: offset,
-				Order:  "desc",
 			}
 			params.APIKey = apiKey
 			res, err := mdblistClient.FetchWatchlistItems(params)

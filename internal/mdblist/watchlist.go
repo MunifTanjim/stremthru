@@ -16,7 +16,7 @@ type FetchWatchlistItemsParams struct {
 	Limit       int
 	Offset      int
 	FilterGenre Genre
-	Sort        PageSort  // rank / score / usort / score_average / released / releasedigital / imdbrating / imdbvotes / last_air_date / imdbpopular / tmdbpopular / rogerebert / rtomatoes / rtaudience / metacritic / myanimelist / letterrating / lettervotes / budget / revenue / runtime / title / added / random
+	Sort        PageSort  // score / score_average / released / releasedigital / imdbrating / imdbvotes / last_air_date / imdbpopular / tmdbpopular / rogerebert / rtomatoes / rtaudience / metacritic / myanimelist / letterrating / lettervotes / budget / revenue / runtime / title / added / random
 	Order       PageOrder // asc / desc
 }
 
