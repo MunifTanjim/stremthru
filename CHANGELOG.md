@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.94.1](https://github.com/MunifTanjim/stremthru/compare/0.94.0...0.94.1) (2025-12-13)
+
+
+### Bug Fixes
+
+* **stremio/torz:** include non-lazy pulled hashes immediately ([d4fef6c](https://github.com/MunifTanjim/stremthru/commit/d4fef6c4db648d0d33921bf8bc2f7c6ec696200b))
+* **sync/stremio-trakt:** fix checking already watched episode in trakt ([8848d91](https://github.com/MunifTanjim/stremthru/commit/8848d91d65901ee5350afc48bca10b898389af94))
+
 ## [0.94.0](https://github.com/MunifTanjim/stremthru/compare/0.93.0...0.94.0) (2025-12-12)
 
 
