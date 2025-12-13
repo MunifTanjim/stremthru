@@ -31,9 +31,9 @@ var pullPeerLog = logger.Scoped("peer:pull")
 var noTorrentInfo = !config.Feature.HasTorrentInfo()
 
 // supports imdb or anidb
-func PullTorrentsByStremId(sid string, originInstanceId string) {
+func PullTorrentsByStremId(sid string, originInstanceId string) []string {
 	if noTorrentInfo || PullPeer == nil || PullPeer.IsHaltedCheckMagnet() || !tss.ShouldPull(sid) {
-		return
+		return nil
 	}
 
 	cleanSId := ts.CleanStremId(sid)
@@ -51,15 +51,17 @@ func PullTorrentsByStremId(sid string, originInstanceId string) {
 		}
 
 		pullPeerLog.Error("failed to pull torrents", "error", core.PackError(err), "duration", duration, "sid", cleanSId)
-		return
+		return nil
 	}
 
 	count := len(res.Data.Items)
 	pullPeerLog.Info("pulled torrents", "duration", duration, "sid", cleanSId, "count", count)
 
+	hashes := make([]string, count)
 	items := make([]ti.TorrentInfoInsertData, count)
 	for i := range res.Data.Items {
 		data := &res.Data.Items[i]
+		hashes[i] = data.Hash
 		items[i] = ti.TorrentInfoInsertData{
 			Hash:         data.Hash,
 			TorrentTitle: data.TorrentTitle,
@@ -75,6 +77,7 @@ func PullTorrentsByStremId(sid string, originInstanceId string) {
 	}
 	ti.Upsert(items, "", false)
 	go tss.MarkPulled(cleanSId)
+	return hashes
 }
 
 func ListTorrentsByStremId(sid string, localOnly bool, originInstanceId string, noMissingSize bool) (*ti.ListTorrentsData, error) {

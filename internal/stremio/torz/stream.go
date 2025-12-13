@@ -660,13 +660,15 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	eud := ud.GetEncoded()
 
+	pulledHashes := []string{}
 	nsid, err := torrent_stream.NormalizeStreamId(id)
 	if err == nil {
 		cleanSId := nsid.ToClean()
 		if torzLazyPull {
 			go buddy.PullTorrentsByStremId(cleanSId, "")
 		} else {
-			buddy.PullTorrentsByStremId(cleanSId, "")
+			hashes := buddy.PullTorrentsByStremId(cleanSId, "")
+			pulledHashes = append(pulledHashes, hashes...)
 		}
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)
@@ -683,6 +685,20 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hashSet := util.NewSet[string]()
+	for _, hash := range hashes {
+		hashSet.Add(hash)
+	}
+
+	if len(pulledHashes) > 0 {
+		for _, hash := range pulledHashes {
+			if !hashSet.Has(hash) {
+				hashSet.Add(hash)
+				hashes = append(hashes, hash)
+			}
+		}
+	}
+
 	var wg sync.WaitGroup
 
 	var wrappedStreams []WrappedStream
@@ -695,7 +711,6 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	var hashesFromIndexers []string
 	var getStreamsFromIndexersError error
 	wg.Go(func() {
-
 		var streams []WrappedStream
 		var hashes []string
 		var err error
@@ -727,7 +742,12 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		log.Error("failed to get streams from indexers", "error", getStreamsFromIndexersError)
 	} else {
 		wrappedStreams = append(wrappedStreams, wrappedStreamsFromIndexers...)
-		hashes = append(hashes, hashesFromIndexers...)
+		for _, hash := range hashesFromIndexers {
+			if !hashSet.Has(hash) {
+				hashSet.Add(hash)
+				hashes = append(hashes, hash)
+			}
+		}
 	}
 
 	isP2P := ud.IsP2P()
