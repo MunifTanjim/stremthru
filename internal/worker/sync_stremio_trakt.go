@@ -56,6 +56,27 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 		}
 	}
 
+	getAllTraktHistory := func(client *trakt.APIClient, params trakt.GetHistoryParams) ([]trakt.HistoryItem, error) {
+		page := 1
+		limit := 100
+		var allItems []trakt.HistoryItem
+		for {
+			p := params
+			p.Page = page
+			p.Limit = limit
+			res, err := client.GetHistory(&p)
+			if err != nil {
+				return nil, err
+			}
+			allItems = append(allItems, res.Data...)
+			if len(res.Data) < limit {
+				break
+			}
+			page++
+		}
+		return allItems, nil
+	}
+
 	syncMovieFromStremioToTrakt := func(ctx *Ctx) error {
 		traktWatchedImdbIds := util.NewSet[string]()
 		for _, item := range ctx.traktMovies {
@@ -224,14 +245,14 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 					newIdMaps = append(newIdMaps, res.Data[0].Show.Ids.ToIdMap(trakt.ItemTypeShow))
 				}
 
-				res, err := ctx.traktClient.GetHistory(&trakt.GetHistoryParams{
+				episodeHistoryItems, err := getAllTraktHistory(ctx.traktClient, trakt.GetHistoryParams{
 					Type: trakt.HistoryItemTypeShows,
 					Id:   traktId,
 				})
 				if err != nil {
 					return err
 				}
-				for _, item := range res.Data {
+				for _, item := range episodeHistoryItems {
 					if item.Episode == nil {
 						continue
 					}
@@ -570,40 +591,30 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 
 		log.Debug("fetched stremio items", "movies", len(ctx.stremioMovies), "series", len(ctx.stremioSeries))
 
-		traktHistoryPage := 1
-		for {
-			params := &trakt.GetHistoryParams{
-				Page:  traktHistoryPage,
-				Limit: 100,
+		traktHistoryParams := trakt.GetHistoryParams{}
+		if !ctx.isFullSync {
+			traktHistoryParams.StartAt = &startAt
+		}
+		traktHistoryItems, err := getAllTraktHistory(ctx.traktClient, traktHistoryParams)
+		if err != nil {
+			return err
+		}
+		for _, item := range traktHistoryItems {
+			if item.Action != trakt.HistoryItemActionWatch {
+				continue
 			}
-			if !ctx.isFullSync {
-				params.StartAt = &startAt
-			}
-			res, err := ctx.traktClient.GetHistory(params)
-			if err != nil {
-				return err
-			}
-			for _, item := range res.Data {
-				if item.Action != trakt.HistoryItemActionWatch {
+			switch item.Type {
+			case trakt.ItemTypeMovie:
+				if item.Movie == nil || item.Movie.Ids.IMDB == "" {
 					continue
 				}
-				switch item.Type {
-				case trakt.ItemTypeMovie:
-					if item.Movie == nil || item.Movie.Ids.IMDB == "" {
-						continue
-					}
-					ctx.traktMovies = append(ctx.traktMovies, item)
-				case trakt.ItemTypeEpisode:
-					if item.Show == nil || item.Show.Ids.IMDB == "" {
-						continue
-					}
-					ctx.traktEpisodes = append(ctx.traktEpisodes, item)
+				ctx.traktMovies = append(ctx.traktMovies, item)
+			case trakt.ItemTypeEpisode:
+				if item.Show == nil || item.Show.Ids.IMDB == "" {
+					continue
 				}
+				ctx.traktEpisodes = append(ctx.traktEpisodes, item)
 			}
-			if len(res.Data) < params.Limit {
-				break
-			}
-			traktHistoryPage++
 		}
 
 		log.Debug("fetched trakt items", "trakt_movies", len(ctx.traktMovies), "trakt_episodes", len(ctx.traktEpisodes))
