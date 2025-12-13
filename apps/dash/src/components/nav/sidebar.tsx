@@ -293,6 +293,10 @@ function useNavItems(): NavItem[] {
           title: "Trakt Accounts",
         });
       }
+      vault.items!.push({
+        path: "/dash/vault/torznab-indexers",
+        title: "Torznab Indexers",
+      });
       items.push(vault);
 
       const sync: NavItem = {

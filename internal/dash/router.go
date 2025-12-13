@@ -38,6 +38,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	if config.Feature.HasVault() {
 		dash_api.AddVaultStremioEndpoints(router)
 		dash_api.AddVaultTraktEndpoints(router)
+		dash_api.AddVaultTorznabEndpoints(router)
 		dash_api.AddSyncStremioStremioEndpoints(router)
 		if config.Integration.Trakt.IsEnabled() {
 			dash_api.AddSyncStremioTraktEndpoints(router)
