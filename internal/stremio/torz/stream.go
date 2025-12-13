@@ -23,6 +23,7 @@ import (
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/alitto/pond/v2"
@@ -669,6 +670,13 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		} else {
 			hashes := buddy.PullTorrentsByStremId(cleanSId, "")
 			pulledHashes = append(pulledHashes, hashes...)
+		}
+
+		// Queue for background torznab indexer sync
+		if !nsid.IsAnime {
+			worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
+				SId: cleanSId,
+			})
 		}
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)

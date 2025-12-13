@@ -27,3 +27,13 @@ services:
     restart: always
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    volumes:
+      - ./data/jackett/config:/config
+      - ./data/jackett/downloads:/downloads
+    ports:
+      - 9117:9117
+    restart: unless-stopped

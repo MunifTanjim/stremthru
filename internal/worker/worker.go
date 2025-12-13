@@ -8,6 +8,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/job_log"
 	"github.com/MunifTanjim/stremthru/internal/logger"
+	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/madflojo/tasks"
@@ -115,6 +117,12 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	},
 	"sync-stremio-stremio": {
 		Title: "Sync Stremio-Stremio",
+	},
+	"queue-torznab-indexer-sync": {
+		Title: "Queue Torznab Indexer Sync",
+	},
+	"sync-torznab-indexer": {
+		Title: "Sync Torznab Indexer",
 	},
 }
 
@@ -830,6 +838,39 @@ func InitWorkers() func() {
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 5 * time.Minute,
 		RunExclusive:      true,
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitTorznabIndexerSyncerQueueWorker(&WorkerConfig{
+		Disabled: worker_queue.TorznabIndexerSyncerQueue.Disabled,
+		Name:     "queue-torznab-indexer-sync",
+		Interval: 1 * time.Minute,
+		ShouldSkip: func() bool {
+			return worker_queue.TorznabIndexerSyncerQueue.IsEmpty() || !torznab_indexer.Exists()
+		},
+		ShouldWait: func() (bool, string) {
+			return false, ""
+		},
+		OnStart: func() {},
+		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitTorznabIndexerSyncerWorker(&WorkerConfig{
+		Disabled:     !config.Feature.HasVault(),
+		Name:         "sync-torznab-indexer",
+		Interval:     5 * time.Minute,
+		RunExclusive: true,
+		ShouldSkip: func() bool {
+			return !torznab_indexer_syncinfo.HasPending()
+		},
 		ShouldWait: func() (bool, string) {
 			return false, ""
 		},
