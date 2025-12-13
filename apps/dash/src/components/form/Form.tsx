@@ -5,6 +5,8 @@ import { withForm } from "./hook";
 export const Form = withForm({
   props: {
     className: "",
+  } as {
+    className?: string;
   },
   render: function Form({ children, form, ...props }) {
     return (
