@@ -3,6 +3,7 @@ package jackett
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -24,7 +25,7 @@ func (turl *torznabURL) Parse() error {
 	if turl.BaseURL != "" && turl.IndexerId != "" {
 		return nil
 	}
-	if strings.HasPrefix(turl.raw, "http") {
+	if strings.HasPrefix(turl.raw, "http://") || strings.HasPrefix(turl.raw, "https://") {
 		return turl.FromDecoded()
 	}
 	return turl.FromEncoded()
@@ -49,27 +50,42 @@ func (purl *torznabURL) FromDecoded() error {
 }
 
 func (purl *torznabURL) FromEncoded() error {
-	indexerId, baseUrl, ok := strings.Cut(purl.raw, ":::")
+	if strings.Contains(purl.raw, ":::") {
+		indexerId, baseUrl, ok := strings.Cut(purl.raw, ":::")
+		if !ok {
+			return errors.New("invalid encoded torznab url")
+		}
+		purl.BaseURL = baseUrl
+		purl.IndexerId = indexerId
+		return nil
+	}
+
+	schemeHost, indexerId, ok := strings.Cut(purl.raw, "::")
 	if !ok {
 		return errors.New("invalid encoded torznab url")
 	}
-	purl.BaseURL = baseUrl
+	scheme, host, ok := strings.Cut(schemeHost, ":")
+	if !ok {
+		return errors.New("invalid encoded torznab url")
+	}
+	purl.BaseURL = scheme + "://" + host
 	purl.IndexerId = indexerId
 	return nil
 }
 
 func (purl torznabURL) Encode() string {
-	if !strings.HasPrefix(purl.raw, "http") {
-		return purl.raw
-	}
 	if err := purl.Parse(); err != nil {
 		return ""
 	}
-	return purl.IndexerId + ":::" + purl.BaseURL
+	u, err := url.Parse(purl.BaseURL)
+	if err != nil {
+		return ""
+	}
+	return u.Scheme + ":" + u.Host + "::" + purl.IndexerId
 }
 
 func (purl torznabURL) Decode() string {
-	if strings.HasPrefix(purl.raw, "http") {
+	if strings.HasPrefix(purl.raw, "http://") || strings.HasPrefix(purl.raw, "https://") {
 		return purl.raw
 	}
 	if err := purl.Parse(); err != nil {
