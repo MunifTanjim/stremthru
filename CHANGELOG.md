@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.94.2](https://github.com/MunifTanjim/stremthru/compare/0.94.1...0.94.2) (2025-12-14)
+
+
+### Bug Fixes
+
+* **imdb_title:** fix catagorization for movie/show ([dec8597](https://github.com/MunifTanjim/stremthru/commit/dec85974a70e8ccb4444abbdc73207c6212591de))
+* **stremio/api:** make library item timestamp fault tolerant ([fbe1933](https://github.com/MunifTanjim/stremthru/commit/fbe19333e16d1688bd0bae93b837e40f31087b6d))
+
 ## [0.94.1](https://github.com/MunifTanjim/stremthru/compare/0.94.0...0.94.1) (2025-12-13)
 
 
