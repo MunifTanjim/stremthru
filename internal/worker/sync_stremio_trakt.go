@@ -51,8 +51,8 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 			State:       state,
 			Removed:     false,
 			Temp:        false,
-			CTime:       ctx.now,
-			MTime:       ctx.now,
+			CTime:       stremio_api.JSONTime{Time: ctx.now},
+			MTime:       stremio_api.JSONTime{Time: ctx.now},
 		}
 	}
 
@@ -366,7 +366,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				if libraryItem.State.TimesWatched > 0 {
 					continue
 				}
-				libraryItem.MTime = ctx.now
+				libraryItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 			} else {
 				meta, err := cinemeta.FetchMeta("movie", imdbId)
 				if err != nil {
@@ -476,7 +476,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				}
 
 				if exists {
-					libraryItem.MTime = ctx.now
+					libraryItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 				} else {
 					libraryItem = createLibraryItem(ctx, meta, stremio_api.LibraryItemState{})
 				}

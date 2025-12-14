@@ -5,8 +5,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
+
+type JSONTime = util.JSONTime
 
 type UserGDPRConsent struct {
 	Marketing bool   `json:"marketing"`
@@ -71,8 +74,8 @@ type LibraryItem struct {
 	Id          string                  `json:"_id"`
 	Removed     bool                    `json:"removed"`
 	Temp        bool                    `json:"temp"`
-	CTime       time.Time               `json:"_ctime"`
-	MTime       time.Time               `json:"_mtime"`
+	CTime       JSONTime                `json:"_ctime"`
+	MTime       JSONTime                `json:"_mtime"`
 	State       LibraryItemState        `json:"state"`
 	Name        string                  `json:"name"`
 	Type        string                  `json:"type"` // series / movie

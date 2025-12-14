@@ -1111,7 +1111,7 @@ func handleLibraryBackup(w http.ResponseWriter, r *http.Request) {
 	for i := range res.Data {
 		item := res.Data[i]
 		if item.MTime.After(lastModified) {
-			lastModified = item.MTime
+			lastModified = item.MTime.Time
 		}
 	}
 

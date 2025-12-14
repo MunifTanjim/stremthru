@@ -63,14 +63,14 @@ func InitSyncStremioStremioWorker(conf *WorkerConfig) *Worker {
 				if targetItem.State.TimesWatched > 0 {
 					continue
 				}
-				targetItem.MTime = ctx.now
+				targetItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 			} else {
 				targetItem = sourceItem
 				targetItem.State = stremio_api.LibraryItemState{}
 				targetItem.Removed = false
 				targetItem.Temp = false
-				targetItem.CTime = ctx.now
-				targetItem.MTime = ctx.now
+				targetItem.CTime = stremio_api.JSONTime{Time: ctx.now}
+				targetItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 			}
 
 			targetItem.State.TimesWatched = 1
@@ -156,14 +156,14 @@ func InitSyncStremioStremioWorker(conf *WorkerConfig) *Worker {
 				}
 
 				if exists {
-					targetItem.MTime = ctx.now
+					targetItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 				} else {
 					targetItem = sourceItem
 					targetItem.State = stremio_api.LibraryItemState{}
 					targetItem.Removed = false
 					targetItem.Temp = false
-					targetItem.CTime = ctx.now
-					targetItem.MTime = ctx.now
+					targetItem.CTime = stremio_api.JSONTime{Time: ctx.now}
+					targetItem.MTime = stremio_api.JSONTime{Time: ctx.now}
 				}
 				targetItem.State.Watched = watchedStr
 				if lastWatched.After(targetItem.State.LastWatched) {
