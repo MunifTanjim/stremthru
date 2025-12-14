@@ -100,24 +100,13 @@ var query_get_imdb_id_by_trakt_id = fmt.Sprintf(
 var query_get_imdb_id_by_trakt_id_cond_movie = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s,'') AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(movieTypes), ","),
-		movieTypes[0],
-		movieTypes[1],
-		movieTypes[2],
-	),
+	db.ToValues(movieTypes, "'%s'"),
 	MapColumn.TraktId,
 )
 var query_get_imdb_id_by_trakt_id_cond_show = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s) AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(showTypes), ","),
-		showTypes[0],
-		showTypes[1],
-		showTypes[2],
-		showTypes[3],
-	),
+	db.ToValues(showTypes, "'%s'"),
 	MapColumn.TraktId,
 )
 
@@ -170,10 +159,9 @@ func GetIMDBIdByTraktId(traktMovieIds, traktShowIds []string) (map[string]string
 		if err := rows.Scan(&imdbId, &imdbType, &traktId); err != nil {
 			return nil, nil, err
 		}
-		switch imdbType {
-		case movieTypes[0], movieTypes[1], movieTypes[2]:
+		if imdbType.IsMovie() {
 			movieImdbIdByTraktId[traktId] = imdbId
-		case showTypes[0], showTypes[1], showTypes[2], showTypes[3]:
+		} else if imdbType.IsShow() {
 			showImdbIdByTraktId[traktId] = imdbId
 		}
 	}
@@ -198,24 +186,13 @@ var query_get_imdb_id_by_tmdb_id = fmt.Sprintf(
 var query_get_imdb_id_by_tmdb_id_cond_movie = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s,'') AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(movieTypes), ","),
-		movieTypes[0],
-		movieTypes[1],
-		movieTypes[2],
-	),
+	db.ToValues(movieTypes, "'%s'"),
 	MapColumn.TMDBId,
 )
 var query_get_imdb_id_by_tmdb_id_cond_show = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s) AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(showTypes), ","),
-		showTypes[0],
-		showTypes[1],
-		showTypes[2],
-		showTypes[3],
-	),
+	db.ToValues(showTypes, "'%s'"),
 	MapColumn.TMDBId,
 )
 
@@ -268,10 +245,9 @@ func GetIMDBIdByTMDBId(tmdbMovieIds, tmdbShowIds []string) (map[string]string, m
 		if err := rows.Scan(&imdbId, &imdbType, &tmdbId); err != nil {
 			return nil, nil, err
 		}
-		switch imdbType {
-		case movieTypes[0], movieTypes[1], movieTypes[2]:
+		if imdbType.IsMovie() {
 			movieImdbIdByTMDBId[tmdbId] = imdbId
-		case showTypes[0], showTypes[1], showTypes[2], showTypes[3]:
+		} else if imdbType.IsShow() {
 			showImdbIdByTMDBId[tmdbId] = imdbId
 		}
 	}
@@ -296,24 +272,13 @@ var query_get_imdb_id_by_tvdb_id = fmt.Sprintf(
 var query_get_imdb_id_by_tvdb_id_cond_movie = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s,'') AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(movieTypes), ","),
-		movieTypes[0],
-		movieTypes[1],
-		movieTypes[2],
-	),
+	db.ToValues(movieTypes, "'%s'"),
 	MapColumn.TVDBId,
 )
 var query_get_imdb_id_by_tvdb_id_cond_show = fmt.Sprintf(
 	` coalesce(it.%s, '') IN (%s) AND itm.%s IN `,
 	Column.Type,
-	fmt.Sprintf(
-		util.RepeatJoin("'%s'", len(showTypes), ","),
-		showTypes[0],
-		showTypes[1],
-		showTypes[2],
-		showTypes[3],
-	),
+	db.ToValues(showTypes, "'%s'"),
 	MapColumn.TVDBId,
 )
 
@@ -779,32 +744,14 @@ func GetIdMapsByLetterboxdId(letterboxdIds []string) (map[string]IMDBTitleMap, e
 var query_get_id_maps_by_trakt_id_cond_movie = fmt.Sprintf(
 	`it.%s IN (%s) AND itm.%s IN `,
 	Column.Type,
-	func() string {
-		args := make([]any, len(movieTypes))
-		for i, movieType := range movieTypes {
-			args[i] = movieType
-		}
-		return fmt.Sprintf(
-			util.RepeatJoin("'%s'", len(movieTypes), ","),
-			args...,
-		)
-	}(),
+	db.ToValues(movieTypes, "'%s'"),
 	MapColumn.TraktId,
 )
 
 var query_get_id_maps_by_trakt_id_cond_show = fmt.Sprintf(
 	`it.%s IN (%s) AND itm.%s IN `,
 	Column.Type,
-	func() string {
-		args := make([]any, len(showTypes))
-		for i, showType := range showTypes {
-			args[i] = showType
-		}
-		return fmt.Sprintf(
-			util.RepeatJoin("'%s'", len(showTypes), ","),
-			args...,
-		)
-	}(),
+	db.ToValues(showTypes, "'%s'"),
 	MapColumn.TraktId,
 )
 

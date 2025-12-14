@@ -31,12 +31,12 @@ var movieTypes = []IMDBTitleType{
 	IMDBTitleTypeMovie,
 	IMDBTitleTypeShort,
 	IMDBTitleTypeTvMovie,
+	IMDBTitleTypeTvShort,
+	IMDBTitleTypeTvSpecial,
 }
 var showTypes = []IMDBTitleType{
 	IMDBTitleTypeTvMiniSeries,
 	IMDBTitleTypeTvSeries,
-	IMDBTitleTypeTvShort,
-	IMDBTitleTypeTvSpecial,
 }
 
 func (itt IMDBTitleType) IsMovie() bool {
@@ -305,19 +305,14 @@ var RebuildFTS = func() func() error {
 }()
 
 var __sl_query_search_type_movie = fmt.Sprintf(
-	`itf.%s IN ('%s', '%s', '%s')`,
+	`itf.%s IN (%s)`,
 	Column.Type,
-	movieTypes[0],
-	movieTypes[1],
-	movieTypes[2],
+	db.ToValues(movieTypes, "'%s'"),
 )
 var __sl_query_search_type_show = fmt.Sprintf(
-	`itf.%s IN ('%s', '%s', '%s', '%s')`,
+	`itf.%s IN (%s)`,
 	Column.Type,
-	showTypes[0],
-	showTypes[1],
-	showTypes[2],
-	showTypes[3],
+	db.ToValues(showTypes, "'%s'"),
 )
 var __sl_query_search_year_eq = fmt.Sprintf(
 	`itf.%s = ?`,
@@ -427,19 +422,14 @@ func sqliteSearchIds(title string, titleType SearchTitleType, year int, extendYe
 }
 
 var __pg_query_search_type_movie = fmt.Sprintf(
-	`%s IN ('%s', '%s')`,
+	`%s IN (%s)`,
 	Column.Type,
-	IMDBTitleTypeMovie,
-	IMDBTitleTypeTvMovie,
+	db.ToValues(movieTypes, "'%s'"),
 )
 var __pg_query_search_type_show = fmt.Sprintf(
-	`%s IN ('%s', '%s', '%s', '%s', '%s')`,
+	`%s IN (%s)`,
 	Column.Type,
-	IMDBTitleTypeShort,
-	IMDBTitleTypeTvMiniSeries,
-	IMDBTitleTypeTvSeries,
-	IMDBTitleTypeTvShort,
-	IMDBTitleTypeTvSpecial,
+	db.ToValues(showTypes, "'%s'"),
 )
 var __pg_query_search_year_eq = fmt.Sprintf(
 	`%s = ?`,

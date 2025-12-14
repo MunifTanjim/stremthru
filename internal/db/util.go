@@ -2,11 +2,14 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type DBDialect string
@@ -108,6 +111,14 @@ func JoinColumnNames(columns ...string) string {
 
 func JoinPrefixedColumnNames(prefix string, columns ...string) string {
 	return prefix + `"` + strings.Join(columns, `",`+prefix+`"`) + `"`
+}
+
+func ToValues[T any](values []T, format string) string {
+	args := make([]any, len(values))
+	for i, value := range values {
+		args[i] = value
+	}
+	return fmt.Sprintf(util.RepeatJoin(format, len(values), ","), args...)
 }
 
 var nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)

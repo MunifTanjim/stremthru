@@ -43,12 +43,8 @@ func SyncDataset() error {
 	defer datasetSyncMutex.Unlock()
 
 	isAllowedType := func(tType string) bool {
-		switch tType {
-		case "short", "movie", "tvShort", "tvMovie", "tvSeries", "tvMiniSeries", "tvSpecial":
-			return true
-		default:
-			return false
-		}
+		titleType := IMDBTitleType(tType)
+		return titleType.IsMovie() || titleType.IsShow()
 	}
 
 	batch_size := 1000
