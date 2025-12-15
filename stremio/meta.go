@@ -1,6 +1,7 @@
 package stremio
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -67,7 +68,7 @@ func (zii ZeroIndexedInt) Equal(i int) bool {
 
 type MetaVideo struct {
 	Id        string         `json:"id"`
-	Title     string         `json:"title"`
+	Title     string         `json:"title,omitempty"`
 	Released  time.Time      `json:"released"`
 	Thumbnail string         `json:"thumbnail,omitempty"`
 	Streams   []Stream       `json:"streams,omitempty"`
@@ -85,6 +86,31 @@ type MetaVideo struct {
 	Description string     `json:"description,omitempty"`
 	Number      int        `json:"number,omitempty"` // episode
 	FirstAired  *time.Time `json:"firstAired,omitempty"`
+
+	id_only bool `json:"-"`
+}
+
+type metaVideo MetaVideo
+
+func (mv *MetaVideo) UnmarshalJSON(data []byte) error {
+	var id string
+	if err := json.Unmarshal(data, &id); err == nil {
+		mv.Id = id
+		mv.id_only = true
+		return nil
+	}
+	_mv := metaVideo{}
+	err := json.Unmarshal(data, &_mv)
+	*mv = MetaVideo(_mv)
+	return err
+}
+
+func (mv *MetaVideo) MarshalJSON() ([]byte, error) {
+	if mv.id_only || (mv.Name == "" && mv.Description == "" && mv.Title == "" && mv.Overview == "") {
+		return json.Marshal(mv.Id)
+	}
+	rsrc := metaVideo(*mv)
+	return json.Marshal(&rsrc)
 }
 
 type MetaBehaviorHints struct {
