@@ -13,7 +13,8 @@ type AddonCatalogHandlerResponse struct {
 
 type CatalogHandlerResponse struct {
 	cacheControlResponse
-	Metas []MetaPreview `json:"metas"`
+	Metas         []MetaPreview `json:"metas,omitempty"`
+	MetasDetailed []Meta        `json:"metasDetailed,omitempty"` // undocumented
 }
 
 type MetaHandlerResponse struct {
