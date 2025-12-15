@@ -294,7 +294,7 @@ func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsRes
 
 				if r.Name == stremio.ResourceNameCatalog {
 					for _, c := range m.Catalogs {
-						if c.Id == catalog_id_calendar_videos {
+						if c.Id == catalog_id_calendar_videos || c.Id == catalog_id_last_videos {
 							key := string(r.Name) + ":" + c.Type
 							if _, found := resolver[key]; !found {
 								resolver[key] = []upstreamsResolverEntry{}

@@ -48,8 +48,8 @@ func (ud UserData) fetchAddonCatalog(ctx *context.StoreContext, w http.ResponseW
 }
 
 func (ud UserData) fetchCatalog(ctx *context.StoreContext, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
-	if id == catalog_id_calendar_videos {
-		return ud.fetchCalendarVideosCatalog(ctx, rType, id, extra)
+	if id == catalog_id_calendar_videos || id == catalog_id_last_videos {
+		return ud.fetchCatalogWithMetasDetails(ctx, rType, id, extra)
 	}
 
 	idx, catalogId, err := parseCatalogId(id, &ud)
@@ -83,7 +83,7 @@ func (ud UserData) fetchCatalog(ctx *context.StoreContext, rType, id, extra stri
 	return &res.Data, nil
 }
 
-func (ud UserData) fetchCalendarVideosCatalog(ctx *context.StoreContext, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
+func (ud UserData) fetchCatalogWithMetasDetails(ctx *context.StoreContext, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
 	log := ctx.Log
 
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameCatalog, rType, id)
@@ -92,7 +92,7 @@ func (ud UserData) fetchCalendarVideosCatalog(ctx *context.StoreContext, rType, 
 	}
 
 	upstreamsCount := len(upstreams)
-	log.Debug("found addons for calendar videos catalog", "count", upstreamsCount)
+	log.Debug("found addons for catalog", "count", upstreamsCount)
 
 	if upstreamsCount == 0 {
 		return &stremio.CatalogHandlerResponse{}, nil

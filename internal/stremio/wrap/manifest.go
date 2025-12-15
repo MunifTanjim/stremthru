@@ -13,6 +13,7 @@ import (
 )
 
 const catalog_id_calendar_videos = "calendar-videos"
+const catalog_id_last_videos = "last-videos"
 
 func getManifestResourceTypes(manifest *stremio.Manifest, resource stremio.Resource) []stremio.ContentType {
 	if len(resource.Types) == 0 {
@@ -123,6 +124,7 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 	idPrefixesMap := map[stremio.ResourceName]map[string]bool{}
 
 	var calendarVideosCatalog *stremio.Catalog
+	var lastVideosCatalog *stremio.Catalog
 
 	for mIdx := range upstreamManifests {
 		m := upstreamManifests[mIdx]
@@ -157,6 +159,11 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 					case catalog_id_calendar_videos:
 						if calendarVideosCatalog == nil {
 							calendarVideosCatalog = &c
+							manifest.Catalogs = append(manifest.Catalogs, c)
+						}
+					case catalog_id_last_videos:
+						if lastVideosCatalog == nil {
+							lastVideosCatalog = &c
 							manifest.Catalogs = append(manifest.Catalogs, c)
 						}
 					default:
