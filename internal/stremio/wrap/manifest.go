@@ -109,6 +109,10 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 		}
 		manifest.Resources = upstreamManifests[0].Resources
 
+		if upstreamManifests[0].BehaviorHints != nil && upstreamManifests[0].BehaviorHints.NewEpisodeNotifications {
+			manifest.BehaviorHints.NewEpisodeNotifications = true
+		}
+
 		return manifest
 	}
 
@@ -155,6 +159,10 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 					idpMap[p] = true
 				}
 			}
+		}
+
+		if m.BehaviorHints != nil && m.BehaviorHints.NewEpisodeNotifications {
+			manifest.BehaviorHints.NewEpisodeNotifications = true
 		}
 	}
 
