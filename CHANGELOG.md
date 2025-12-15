@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.94.3](https://github.com/MunifTanjim/stremthru/compare/0.94.2...0.94.3) (2025-12-15)
+
+
+### Bug Fixes
+
+* **stremio/api:** add .metasDetailed for catalog response ([5bc3ca3](https://github.com/MunifTanjim/stremthru/commit/5bc3ca3e55fa4708cf79dadf0f6ed191301235c8))
+* **stremio/api:** handle video ids list for .metasDetailed[].videos ([febeb8c](https://github.com/MunifTanjim/stremthru/commit/febeb8ca21667083f883f582c5b86d8d0aa67f12))
+* **stremio/wrap:** fix multi addons with calendar-videos catalog ([87e8049](https://github.com/MunifTanjim/stremthru/commit/87e80498e88bd8db7b5267d46e6935fceda4f0a8))
+* **stremio/wrap:** fix multi addons with last-videos catalog ([bdbc2f0](https://github.com/MunifTanjim/stremthru/commit/bdbc2f09b22a26df7ab4c43b173396e1ed54d7d0))
+* **stremio/wrap:** preserve .behaviorHints.newEpisodeNotifications in manifest ([0d48716](https://github.com/MunifTanjim/stremthru/commit/0d48716d884a471d03144db91e0a83f3a5cc2799))
+
 ## [0.94.2](https://github.com/MunifTanjim/stremthru/compare/0.94.1...0.94.2) (2025-12-14)
 
 
