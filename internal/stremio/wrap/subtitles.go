@@ -41,7 +41,7 @@ func (ud UserData) fetchSubtitles(ctx *context.StoreContext, rType, id, extra st
 	subtitles := []stremio.Subtitle{}
 	for i := range chunks {
 		if errs[i] != nil {
-			log.Error("failed to fetch subtitles", "error", errs[i])
+			log.Error("failed to fetch subtitles", "error", errs[i], "hostname", upstreams[i].baseUrl.Hostname())
 			continue
 		}
 		subtitles = append(subtitles, chunks[i]...)

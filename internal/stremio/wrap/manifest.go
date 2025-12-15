@@ -12,6 +12,8 @@ import (
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
+const catalog_id_calendar_videos = "calendar-videos"
+
 func getManifestResourceTypes(manifest *stremio.Manifest, resource stremio.Resource) []stremio.ContentType {
 	if len(resource.Types) == 0 {
 		return manifest.Types
@@ -120,6 +122,8 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 	typesMap := map[stremio.ResourceName]map[stremio.ContentType]bool{}
 	idPrefixesMap := map[stremio.ResourceName]map[string]bool{}
 
+	var calendarVideosCatalog *stremio.Catalog
+
 	for mIdx := range upstreamManifests {
 		m := upstreamManifests[mIdx]
 		for _, r := range m.Resources {
@@ -149,9 +153,16 @@ func GetManifest(r *http.Request, upstreamManifests []stremio.Manifest, ud *User
 				}
 			case stremio.ResourceNameCatalog:
 				for i := range m.Catalogs {
-					c := m.Catalogs[i]
-					c.Id = strconv.Itoa(mIdx) + "::" + c.Id
-					manifest.Catalogs = append(manifest.Catalogs, c)
+					switch c := m.Catalogs[i]; c.Id {
+					case catalog_id_calendar_videos:
+						if calendarVideosCatalog == nil {
+							calendarVideosCatalog = &c
+							manifest.Catalogs = append(manifest.Catalogs, c)
+						}
+					default:
+						c.Id = strconv.Itoa(mIdx) + "::" + c.Id
+						manifest.Catalogs = append(manifest.Catalogs, c)
+					}
 				}
 			default:
 				idpMap := idPrefixesMap[r.Name]

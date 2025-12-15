@@ -86,7 +86,7 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 	case stremio.ResourceNameAddonCatalog:
 		ud.fetchAddonCatalog(ctx, w, r, contentType, id)
 	case stremio.ResourceNameCatalog:
-		res, err := ud.fetchCatalog(ctx, w, r, contentType, id, extra)
+		res, err := ud.fetchCatalog(ctx, contentType, id, extra)
 		if err != nil {
 			SendError(w, r, err)
 			return

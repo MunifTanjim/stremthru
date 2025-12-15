@@ -288,7 +288,29 @@ func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsRes
 			}
 			manifestCount++
 			for _, r := range m.Resources {
-				if r.Name == stremio.ResourceNameAddonCatalog || r.Name == stremio.ResourceNameCatalog {
+				if r.Name == stremio.ResourceNameAddonCatalog {
+					continue
+				}
+
+				if r.Name == stremio.ResourceNameCatalog {
+					for _, c := range m.Catalogs {
+						if c.Id == catalog_id_calendar_videos {
+							key := string(r.Name) + ":" + c.Type
+							if _, found := resolver[key]; !found {
+								resolver[key] = []upstreamsResolverEntry{}
+							}
+							idPrefixKey := key + ":" + c.Id
+							if idx, found := entryIdxMap[idPrefixKey]; found {
+								resolver[key][idx].Indices = append(resolver[key][idx].Indices, mIdx)
+							} else {
+								resolver[key] = append(resolver[key], upstreamsResolverEntry{
+									Prefix:  c.Id,
+									Indices: []int{mIdx},
+								})
+								entryIdxMap[idPrefixKey] = len(resolver[key]) - 1
+							}
+						}
+					}
 					continue
 				}
 
@@ -339,7 +361,16 @@ func (ud UserData) getUpstreams(ctx *context.StoreContext, rName stremio.Resourc
 	case stremio.ResourceNameAddonCatalog:
 		return []UserDataUpstream{}, nil
 	case stremio.ResourceNameCatalog:
-		return []UserDataUpstream{}, nil
+		upstreamsCount := len(ud.Upstreams)
+		if upstreamsCount == 1 {
+			return ud.Upstreams, nil
+		}
+
+		resolver, err := ud.getUpstreamsResolver(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return resolver.resolve(ud, rName, rType, id), nil
 	default:
 		upstreamsCount := len(ud.Upstreams)
 		if upstreamsCount == 1 {
