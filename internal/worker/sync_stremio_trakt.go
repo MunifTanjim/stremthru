@@ -600,9 +600,6 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 			return err
 		}
 		for _, item := range traktHistoryItems {
-			if item.Action != trakt.HistoryItemActionWatch {
-				continue
-			}
 			switch item.Type {
 			case trakt.ItemTypeMovie:
 				if item.Movie == nil || item.Movie.Ids.IMDB == "" {
