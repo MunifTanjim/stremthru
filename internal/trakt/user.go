@@ -5,6 +5,136 @@ import (
 	"time"
 )
 
+type retrieveSettingsDataBrowsing struct {
+	WatchPopupAction         string `json:"watch_popup_action"`
+	HideWatchingNow          bool   `json:"hide_watching_now"`
+	ListPopupAction          string `json:"list_popup_action"`
+	WeekStartDay             string `json:"week_start_day"`
+	WatchAfterRating         string `json:"watch_after_rating"`
+	WatchOnlyOnce            bool   `json:"watch_only_once"`
+	OtherSiteRatings         bool   `json:"other_site_ratings"`
+	ReleaseDateIgnoreRuntime bool   `json:"release_date_ignore_runtime"`
+	DisplayEarlyRatings      bool   `json:"display_early_ratings"`
+	HideEpisodeTypeTags      bool   `json:"hide_episode_type_tags"`
+	HideUnsavedFiltersPrompt bool   `json:"hide_unsaved_filters_prompt"`
+	Spoilers                 struct {
+		Episodes string `json:"episodes"`
+		Shows    string `json:"shows"`
+		Movies   string `json:"movies"`
+		Comments string `json:"comments"`
+		Ratings  string `json:"ratings"`
+		Actors   string `json:"actors"`
+	} `json:"spoilers"`
+	Calendar struct {
+		Period       string `json:"period"`
+		StartDay     string `json:"start_day"`
+		Layout       string `json:"layout"`
+		ImageType    any    `json:"image_type"`
+		HideSpecials bool   `json:"hide_specials"`
+		Autoscroll   bool   `json:"autoscroll"`
+	} `json:"calendar"`
+	Progress struct {
+		OnDeck struct {
+			Sort           string `json:"sort"`
+			SortHow        string `json:"sort_how"`
+			Refresh        bool   `json:"refresh"`
+			SimpleProgress bool   `json:"simple_progress"`
+			OnlyFavorites  bool   `json:"only_favorites"`
+		} `json:"on_deck"`
+		Watched struct {
+			Refresh            bool   `json:"refresh"`
+			SimpleProgress     bool   `json:"simple_progress"`
+			IncludeSpecials    bool   `json:"include_specials"`
+			IncludeWatchlisted bool   `json:"include_watchlisted"`
+			IncludeCollected   bool   `json:"include_collected"`
+			Sort               string `json:"sort"`
+			SortHow            string `json:"sort_how"`
+			UseLastActivity    bool   `json:"use_last_activity"`
+			GridView           bool   `json:"grid_view"`
+		} `json:"watched"`
+		Collected struct {
+			Refresh            bool   `json:"refresh"`
+			SimpleProgress     bool   `json:"simple_progress"`
+			IncludeSpecials    bool   `json:"include_specials"`
+			IncludeWatchlisted bool   `json:"include_watchlisted"`
+			IncludeWatched     bool   `json:"include_watched"`
+			Sort               string `json:"sort"`
+			SortHow            string `json:"sort_how"`
+			UseLastActivity    bool   `json:"use_last_activity"`
+			GridView           bool   `json:"grid_view"`
+		} `json:"collected"`
+	} `json:"progress"`
+	Watchnow struct {
+		Country       string `json:"country"`
+		Favorites     []any  `json:"favorites"`
+		OnlyFavorites bool   `json:"only_favorites"`
+	} `json:"watchnow"`
+	DarkKnight string `json:"dark_knight"`
+	AppTheme   string `json:"app_theme"`
+	Welcome    struct {
+		CompletedAt time.Time `json:"completed_at"`
+		ExitStep    string    `json:"exit_step"`
+	} `json:"welcome"`
+	Genres struct {
+		Favorites any `json:"favorites"`
+		Disliked  any `json:"disliked"`
+	} `json:"genres"`
+	Comments struct {
+		BlockedUids []any `json:"blocked_uids"`
+	} `json:"comments"`
+	Recommendations struct {
+		IgnoreCollected   bool `json:"ignore_collected"`
+		IgnoreWatchlisted bool `json:"ignore_watchlisted"`
+	} `json:"recommendations"`
+	Rewatching struct {
+		AdjustPercentage bool `json:"adjust_percentage"`
+	} `json:"rewatching"`
+	Profile struct {
+		Favorites struct {
+			SortBy  string `json:"sort_by"`
+			SortHow string `json:"sort_how"`
+		} `json:"favorites"`
+		MostWatchedShows struct {
+			SortBy string `json:"sort_by"`
+			Tab    string `json:"tab"`
+		} `json:"most_watched_shows"`
+		MostWatchedMovies struct {
+			SortBy string `json:"sort_by"`
+			Tab    string `json:"tab"`
+		} `json:"most_watched_movies"`
+	} `json:"profile"`
+	Search struct {
+		ImageType     any   `json:"image_type"`
+		RecentQueries []any `json:"recent_queries"`
+	} `json:"search"`
+	Yir struct {
+		ShowsMostPlayed  string `json:"shows_most_played"`
+		MoviesMostPlayed string `json:"movies_most_played"`
+	} `json:"yir"`
+}
+
+type retrieveSettingsDataSharing struct {
+	Email struct {
+		NewFollower    bool `json:"new_follower"`
+		CommentMention bool `json:"comment_mention"`
+		CommentReply   bool `json:"comment_reply"`
+		CommentLike    bool `json:"comment_like"`
+		ListComment    bool `json:"list_comment"`
+		ListLike       bool `json:"list_like"`
+	} `json:"email"`
+	App struct {
+		NewFollower          bool `json:"new_follower"`
+		CommentMention       bool `json:"comment_mention"`
+		CommentReply         bool `json:"comment_reply"`
+		CommentLike          bool `json:"comment_like"`
+		ListComment          bool `json:"list_comment"`
+		ListLike             bool `json:"list_like"`
+		PendingCollaboration bool `json:"pending_collaboration"`
+		WeeklyDigest         bool `json:"weekly_digest"`
+		Mir                  bool `json:"mir"`
+	} `json:"app"`
+}
+
 type RetrieveSettingsData struct {
 	ResponseError
 	User struct {
@@ -41,6 +171,7 @@ type RetrieveSettingsData struct {
 		Token      struct{} `json:"token"`
 		DisplayAds bool     `json:"display_ads"`
 	}
+	Browsing    *retrieveSettingsDataBrowsing `json:"browsing,omitempty"`
 	Connections struct {
 		Facebook  bool `json:"facebook"`
 		Twitter   bool `json:"twitter"`
@@ -58,7 +189,8 @@ type RetrieveSettingsData struct {
 		Watched  string   `json:"watched"`
 		Rated    struct{} `json:"rated"`
 	} `json:"sharing_text"`
-	Limits struct {
+	Sharing *retrieveSettingsDataSharing `json:"sharing,omitempty"`
+	Limits  struct {
 		List struct {
 			Count     int `json:"count"`
 			ItemCount int `json:"item_count"`
@@ -91,9 +223,14 @@ type RetrieveSettingsData struct {
 
 type RetrieveSettingsParams struct {
 	Ctx
+	Extended string // browsing / sharing
 }
 
 func (c APIClient) RetrieveSettings(params *RetrieveSettingsParams) (APIResponse[RetrieveSettingsData], error) {
+	if params.Extended != "" {
+		params.Query = &url.Values{}
+		params.Query.Set("extended", params.Extended)
+	}
 	response := RetrieveSettingsData{}
 	res, err := c.Request("GET", "/users/settings", params, &response)
 	return newAPIResponse(res, response), err

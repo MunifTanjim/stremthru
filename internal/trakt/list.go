@@ -346,7 +346,7 @@ var dynamicListMetaById = map[string]dynamicListMeta{
 		HasUserId: true,
 	},
 	"progress": {
-		Endpoint: "/sync/progress/up_next_nitro",
+		Endpoint: "/users/me/progress/up_next/{sort_by}/{sort_how}",
 		BeforeRequest: func(req *http.Request) error {
 			req.URL.Host = util.MustDecodeBase64("YXBpei50cmFrdC50dg==")
 			req.Host = req.URL.Host
@@ -366,27 +366,30 @@ const (
 	EpisodeTypeStandard EpisodeType = "standard"
 )
 
-type SyncProgressUpNextNitroItemEpisode struct {
+type ProgressUpNextItemEpisode struct {
+	AfterCredits          bool        `json:"after_credits"`
 	AvailableTranslations []string    `json:"available_translations"`
 	CommentCount          int         `json:"comment_count"`
+	DuringCredits         bool        `json:"during_credits"`
 	EpisodeType           EpisodeType `json:"episode_type"`
 	FirstAired            string      `json:"first_aired"`
 	Ids                   ListItemIds `json:"ids"`
 	Images                struct {
 		Screenshot []string `json:"screenshot"`
 	} `json:"images"`
-	Number    int     `json:"number"`
-	NumberAbs int     `json:"number_abs"`
-	Overview  string  `json:"overview"`
-	Rating    float32 `json:"rating"`
-	Runtime   int     `json:"runtime"`
-	Season    int     `json:"season"`
-	Title     string  `json:"title"`
-	UpdatedAt string  `json:"updated_at"`
-	Votes     int     `json:"votes"`
+	Number        int     `json:"number"`
+	NumberAbs     int     `json:"number_abs"`
+	OriginalTitle string  `json:"original_title"`
+	Overview      string  `json:"overview"`
+	Rating        float32 `json:"rating"`
+	Runtime       int     `json:"runtime"`
+	Season        int     `json:"season"`
+	Title         string  `json:"title"`
+	UpdatedAt     string  `json:"updated_at"`
+	Votes         int     `json:"votes"`
 }
 
-func (ep SyncProgressUpNextNitroItemEpisode) IsAired() bool {
+func (ep ProgressUpNextItemEpisode) IsAired() bool {
 	if ep.FirstAired == "" {
 		return false
 	}
@@ -397,24 +400,22 @@ func (ep SyncProgressUpNextNitroItemEpisode) IsAired() bool {
 	return t.Before(time.Now())
 }
 
-type SyncProgressUpNextNitroItem struct {
+type ProgressUpNextItem struct {
 	Progress struct {
-		Aired         int                                `json:"aired"`
-		Completed     int                                `json:"completed"`
-		Hidden        int                                `json:"hidden"`
-		LastEpisode   SyncProgressUpNextNitroItemEpisode `json:"last_episode"`
-		LastWatchedAt string                             `json:"last_watched_at"`
-		NextEpisode   SyncProgressUpNextNitroItemEpisode `json:"next_episode"`
-		ResetAt       any                                `json:"reset_at"`
+		Aired         int                       `json:"aired"`
+		Completed     int                       `json:"completed"`
+		Hidden        int                       `json:"hidden"`
+		LastEpisode   ProgressUpNextItemEpisode `json:"last_episode"`
+		LastWatchedAt string                    `json:"last_watched_at"`
+		NextEpisode   ProgressUpNextItemEpisode `json:"next_episode"`
+		ResetAt       any                       `json:"reset_at"`
 		Stats         struct {
 			MinutesLeft    int `json:"minutes_left"`
 			MinutesWatched int `json:"minutes_watched"`
 			PlayCount      int `json:"play_count"`
 		} `json:"stats"`
 	} `json:"progress"`
-	Show       ListItemShow `json:"show"`
-	ShowId     int          `json:"show_id"`
-	TotalCount int          `json:"total_count"`
+	Show ListItemShow `json:"show"`
 }
 
 type FetchMovieRecommendationData []ListItemMovie
@@ -491,11 +492,26 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 		path = strings.Replace(path, "{user_id}", meta.UserId, 1)
 	}
 
-	hiddenItemIdsMap := map[int]struct{}{}
-	var marker string
+	hiddenItemIds := util.NewSet[int]()
 	if meta.Endpoint == dynamicListMetaById["progress"].Endpoint {
-		marker = strconv.FormatInt(time.Now().UnixMilli(), 10)
-
+		sRes, err := c.RetrieveSettings(&RetrieveSettingsParams{
+			Extended: "browsing",
+		})
+		if err != nil {
+			response := newAPIResponse(nil, items)
+			response.Header = sRes.Header
+			response.StatusCode = sRes.StatusCode
+			return response, err
+		}
+		if sRes.Data.Browsing != nil {
+			sort_by := sRes.Data.Browsing.Progress.OnDeck.Sort
+			sort_how := sRes.Data.Browsing.Progress.OnDeck.SortHow
+			path = strings.Replace(path, "{sort_by}", sort_by, 1)
+			path = strings.Replace(path, "{sort_how}", sort_how, 1)
+		} else {
+			path = strings.Replace(path, "{sort_by}", "added", 1)
+			path = strings.Replace(path, "{sort_how}", "asc", 1)
+		}
 		res, err := c.FetchHiddenItems(&FetchHiddenItemsParams{
 			Section: "progress_watched",
 			Type:    ItemTypeShow,
@@ -508,7 +524,7 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 		}
 		for _, item := range res.Data {
 			if item.Type == ItemTypeShow && item.Show != nil {
-				hiddenItemIdsMap[item.Show.Ids.Trakt] = struct{}{}
+				hiddenItemIds.Add(item.Show.Ids.Trakt)
 			}
 		}
 	}
@@ -564,17 +580,13 @@ func (c APIClient) fetchDynamicListItems(params *fetchDynamicListItemsParams) (A
 			}
 
 		case dynamicListMetaById["progress"].Endpoint:
-			p.Query.Del("extended")
-			p.Query.Set("marker", marker)
-			p.Query.Set("intent", "continue")
-
-			response := listResponseData[SyncProgressUpNextNitroItem]{}
+			response := listResponseData[ProgressUpNextItem]{}
 			res, err = c.Request("GET", path, p, &response)
 			if err != nil {
 				break
 			}
 			for i := range response.data {
-				if _, hidden := hiddenItemIdsMap[response.data[i].ShowId]; hidden {
+				if hiddenItemIds.Has(response.data[i].Show.Ids.Trakt) {
 					continue
 				}
 				data := &response.data[i]
