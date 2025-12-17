@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.94.5](https://github.com/MunifTanjim/stremthru/compare/0.94.4...0.94.5) (2025-12-17)
+
+
+### Bug Fixes
+
+* **trakt:** fix types for user settings ([30970d0](https://github.com/MunifTanjim/stremthru/commit/30970d0787efce47ee9625291790a487827a0d1b))
+
 ## [0.94.4](https://github.com/MunifTanjim/stremthru/compare/0.94.3...0.94.4) (2025-12-17)
 
 
