@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.94.4](https://github.com/MunifTanjim/stremthru/compare/0.94.3...0.94.4) (2025-12-17)
+
+
+### Bug Fixes
+
+* **stremio/list:** fix sorting for trakt progress list ([9f9c124](https://github.com/MunifTanjim/stremthru/commit/9f9c124e7f3b9be5afc246b64d09ca9e8a9ccd4a))
+* **sync/stremio-trakt:** include trakt scrobble and checkin ([0e81a80](https://github.com/MunifTanjim/stremthru/commit/0e81a803e734bfcf5ef95349564e36a52d72f9dc))
+
 ## [0.94.3](https://github.com/MunifTanjim/stremthru/compare/0.94.2...0.94.3) (2025-12-15)
 
 
