@@ -159,17 +159,17 @@ type RetrieveSettingsData struct {
 				Full string `json:"full"`
 			} `json:"avatar"`
 		} `json:"images"`
-		VipOg         bool     `json:"vip_og"`
-		VipYears      int      `json:"vip_years"`
-		VipCoverImage struct{} `json:"vip_cover_image"`
+		VipOg         bool `json:"vip_og"`
+		VipYears      int  `json:"vip_years"`
+		VipCoverImage any  `json:"vip_cover_image"`
 	} `json:"user"`
 	Account struct {
-		Timezone   string   `json:"timezone"`
-		DateFormat string   `json:"date_format"`
-		Time24Hr   bool     `json:"time_24hr"`
-		CoverImage struct{} `json:"cover_image"`
-		Token      struct{} `json:"token"`
-		DisplayAds bool     `json:"display_ads"`
+		Timezone   string `json:"timezone"`
+		DateFormat string `json:"date_format"`
+		Time24Hr   bool   `json:"time_24hr"`
+		CoverImage any    `json:"cover_image"`
+		Token      any    `json:"token"`
+		DisplayAds bool   `json:"display_ads"`
 	}
 	Browsing    *retrieveSettingsDataBrowsing `json:"browsing,omitempty"`
 	Connections struct {
@@ -185,9 +185,9 @@ type RetrieveSettingsData struct {
 		Microsoft bool `json:"microsoft"`
 	} `json:"connections"`
 	SharingText struct {
-		Watching string   `json:"watching"`
-		Watched  string   `json:"watched"`
-		Rated    struct{} `json:"rated"`
+		Watching string `json:"watching"`
+		Watched  string `json:"watched"`
+		Rated    any    `json:"rated"`
 	} `json:"sharing_text"`
 	Sharing *retrieveSettingsDataSharing `json:"sharing,omitempty"`
 	Limits  struct {
