@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.94.6](https://github.com/MunifTanjim/stremthru/compare/0.94.5...0.94.6) (2025-12-19)
+
+
+### Bug Fixes
+
+* **logger:** include timezone data in compiled binary ([57afc17](https://github.com/MunifTanjim/stremthru/commit/57afc17b870880cce7ed1f4faa48e0a8722a6db7))
+* **stremio/watched_bitfield:** fix index out of range error ([a663d12](https://github.com/MunifTanjim/stremthru/commit/a663d12d92a440abc6f9686dc302b67fb0affb35))
+* **sync/stremio-trakt:** set correct next unwatched video for stremio ([112d2c6](https://github.com/MunifTanjim/stremthru/commit/112d2c6c89e5f791af2c27cb957a339780d6aa4a))
+
 ## [0.94.5](https://github.com/MunifTanjim/stremthru/compare/0.94.4...0.94.5) (2025-12-17)
 
 
