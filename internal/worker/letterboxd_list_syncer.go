@@ -139,6 +139,7 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 			perPage := 100
 			page := 0
 			cursor := ""
+			lastRank := -1
 			for hasMore && len(items) < letterboxd.MAX_LIST_ITEM_COUNT {
 				page++
 				log.Debug("fetching list items", "id", l.Id, "page", page)
@@ -162,7 +163,8 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 					now := time.Now()
 					for i := range res.Data.Items {
 						item := &res.Data.Items[i]
-						rank := i
+						lastRank++
+						rank := lastRank
 						items = append(items, letterboxd.LetterboxdItem{
 							Id:          item.Id,
 							Name:        item.Name,
@@ -204,7 +206,10 @@ func InitSyncLetterboxdList(conf *WorkerConfig) *Worker {
 						item := &res.Data.Items[i]
 						rank := item.Rank
 						if rank == 0 {
-							rank = i
+							lastRank++
+							rank = lastRank
+						} else {
+							lastRank = rank
 						}
 						items = append(items, letterboxd.LetterboxdItem{
 							Id:          item.Film.Id,

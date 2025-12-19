@@ -151,6 +151,7 @@ func syncList(l *LetterboxdList) error {
 	page := 0
 	cursor := ""
 	max_page := 2
+	lastRank := -1
 	for hasMore && page < max_page {
 		page++
 		log.Debug("fetching list items", "id", l.Id, "page", page)
@@ -167,7 +168,8 @@ func syncList(l *LetterboxdList) error {
 			now := time.Now()
 			for i := range res.Data.Items {
 				item := &res.Data.Items[i]
-				rank := i
+				lastRank++
+				rank := lastRank
 				l.Items = append(l.Items, LetterboxdItem{
 					Id:          item.Id,
 					Name:        item.Name,
@@ -211,7 +213,10 @@ func syncList(l *LetterboxdList) error {
 				item := &res.Data.Items[i]
 				rank := item.Rank
 				if rank == 0 {
-					rank = i
+					lastRank++
+					rank = lastRank
+				} else {
+					lastRank = rank
 				}
 				l.Items = append(l.Items, LetterboxdItem{
 					Id:          item.Film.Id,
