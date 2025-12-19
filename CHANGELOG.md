@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.94.8](https://github.com/MunifTanjim/stremthru/compare/0.94.7...0.94.8) (2025-12-19)
+
+
+### Bug Fixes
+
+* **letterboxd:** fix incorrect rank calculation ([ee24b72](https://github.com/MunifTanjim/stremthru/commit/ee24b7249ddc9ccc90a87e8a327f9f900be69d9f))
+
 ## [0.94.7](https://github.com/MunifTanjim/stremthru/compare/0.94.6...0.94.7) (2025-12-19)
 
 
