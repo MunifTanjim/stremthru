@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io"
 	"math"
-	"slices"
 )
 
 type BitField8 struct {
@@ -29,7 +28,7 @@ func (bf *BitField8) Set(i int, val bool) {
 	mask := byte(1 << (i % 8))
 
 	if index >= len(bf.values) {
-		bf.values = slices.Grow(bf.values, index-len(bf.values)+1)
+		bf.values = append(bf.values, make([]byte, index-len(bf.values)+1)...)
 		bf.Length = len(bf.values) * 8
 	}
 
@@ -150,7 +149,7 @@ func NewBitField8WithValues(values []byte, length int) *BitField8 {
 	}
 	bytes := int(math.Ceil(float64(length) / 8))
 	if bytes > len(values) {
-		values = slices.Grow(values, bytes-len(values))
+		values = append(values, make([]byte, bytes-len(values))...)
 	}
 	return &BitField8{
 		Length: length,

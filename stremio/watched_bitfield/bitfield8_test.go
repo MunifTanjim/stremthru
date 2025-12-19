@@ -76,3 +76,28 @@ func TestParseLength(t *testing.T) {
 		assert.Equal(t, 16, bf.Length)
 	})
 }
+
+func TestSetBeyondCurrentLength(t *testing.T) {
+	bf := &BitField8{
+		Length: 8,
+		values: []byte{0},
+	}
+
+	// Setting bit at index 16 should grow the slice from 1 byte to 3 bytes
+	bf.Set(16, true)
+
+	assert.Equal(t, 24, bf.Length)
+	assert.Equal(t, 3, len(bf.values))
+	assert.True(t, bf.Get(16))
+}
+
+func TestNewBitField8WithValuesGrowth(t *testing.T) {
+	values := []byte{0xFF}
+	bf := NewBitField8WithValues(values, 24)
+
+	assert.Equal(t, 24, bf.Length)
+	assert.Equal(t, 3, len(bf.values))
+	assert.Equal(t, byte(0xFF), bf.values[0])
+	assert.Equal(t, byte(0), bf.values[1])
+	assert.Equal(t, byte(0), bf.values[2])
+}
