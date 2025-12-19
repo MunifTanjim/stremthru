@@ -484,7 +484,7 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				if lastWatched.After(libraryItem.State.LastWatched) {
 					libraryItem.State.LastWatched = lastWatched
 				}
-				libraryItem.State.VideoId = wbf.GetFirstUnwatchedVideoId()
+				libraryItem.State.VideoId = wbf.GetNextUnwatchedVideoId()
 				itemsToUpdate = append(itemsToUpdate, libraryItem)
 			}
 		}

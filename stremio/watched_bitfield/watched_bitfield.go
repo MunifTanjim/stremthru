@@ -205,6 +205,14 @@ func (wbf *WatchedBitField) GetFirstUnwatchedVideoId() string {
 	return wbf.video_ids[idx]
 }
 
+func (wbf *WatchedBitField) GetNextUnwatchedVideoId() string {
+	idx := wbf.bitfield.LastIndexOf(true) + 1
+	if idx <= 0 || idx >= len(wbf.video_ids) {
+		return ""
+	}
+	return wbf.video_ids[idx]
+}
+
 func NewWatchedBitField(bitfield *BitField8, video_ids []string) *WatchedBitField {
 	return &WatchedBitField{
 		bitfield:  bitfield,
