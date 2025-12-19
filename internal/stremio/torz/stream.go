@@ -429,11 +429,17 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 			}
 			tInfosToUpsert = append(tInfosToUpsert, tInfo)
 
+			pttr, err := util.ParseTorrentTitle(tInfo.TorrentTitle)
+			if err != nil {
+				return nil, nil, err
+			}
+
 			data := &stremio_transformer.StreamExtractorResult{
 				Hash:      item.Hash,
 				TTitle:    item.Title,
 				Seeders:   item.Seeders,
 				IsPrivate: item.Private,
+				Result:    pttr,
 				Indexer:   jackett.GetIndexerName(item.Indexer),
 				Addon: stremio_transformer.StreamExtractorResultAddon{
 					Name: "Torz",
