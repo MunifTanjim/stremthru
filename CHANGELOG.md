@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.94.7](https://github.com/MunifTanjim/stremthru/compare/0.94.6...0.94.7) (2025-12-19)
+
+
+### Bug Fixes
+
+* **sync/stremio-trakt:** do not mix up time offset for stremio ([7d090c0](https://github.com/MunifTanjim/stremthru/commit/7d090c022d04aa097753a92f52efeb0656018f0a))
+
 ## [0.94.6](https://github.com/MunifTanjim/stremthru/compare/0.94.5...0.94.6) (2025-12-19)
 
 
