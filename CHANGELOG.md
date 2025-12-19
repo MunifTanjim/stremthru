@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.94.9](https://github.com/MunifTanjim/stremthru/compare/0.94.8...0.94.9) (2025-12-19)
+
+
+### Bug Fixes
+
+* **stremio/torz:** add missing parsed result ([e01824c](https://github.com/MunifTanjim/stremthru/commit/e01824c7dd34cde95254044d3993393ac597a121))
+
 ## [0.94.8](https://github.com/MunifTanjim/stremthru/compare/0.94.7...0.94.8) (2025-12-19)
 
 
