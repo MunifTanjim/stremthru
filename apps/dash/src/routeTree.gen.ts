@@ -21,6 +21,7 @@ import { Route as DashVaultIndexRouteImport } from './routes/dash/vault/index'
 import { Route as DashTorrentsIndexRouteImport } from './routes/dash/torrents/index'
 import { Route as DashSyncIndexRouteImport } from './routes/dash/sync/index'
 import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
+import { Route as DashVaultUsenetServersRouteImport } from './routes/dash/vault/usenet-servers'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultTorznabIndexersRouteImport } from './routes/dash/vault/torznab-indexers'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
@@ -88,6 +89,11 @@ const DashListsIndexRoute = DashListsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashListsRoute,
 } as any)
+const DashVaultUsenetServersRoute = DashVaultUsenetServersRouteImport.update({
+  id: '/usenet-servers',
+  path: '/usenet-servers',
+  getParentRoute: () => DashVaultRoute,
+} as any)
 const DashVaultTraktAccountsRoute = DashVaultTraktAccountsRouteImport.update({
   id: '/trakt-accounts',
   path: '/trakt-accounts',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
+  '/dash/vault/usenet-servers': typeof DashVaultUsenetServersRoute
   '/dash/lists/': typeof DashListsIndexRoute
   '/dash/sync/': typeof DashSyncIndexRoute
   '/dash/torrents/': typeof DashTorrentsIndexRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
+  '/dash/vault/usenet-servers': typeof DashVaultUsenetServersRoute
   '/dash/lists': typeof DashListsIndexRoute
   '/dash/sync': typeof DashSyncIndexRoute
   '/dash/torrents': typeof DashTorrentsIndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
+  '/dash/vault/usenet-servers': typeof DashVaultUsenetServersRoute
   '/dash/lists/': typeof DashListsIndexRoute
   '/dash/sync/': typeof DashSyncIndexRoute
   '/dash/torrents/': typeof DashTorrentsIndexRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
+    | '/dash/vault/usenet-servers'
     | '/dash/lists/'
     | '/dash/sync/'
     | '/dash/torrents/'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
+    | '/dash/vault/usenet-servers'
     | '/dash/lists'
     | '/dash/sync'
     | '/dash/torrents'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
+    | '/dash/vault/usenet-servers'
     | '/dash/lists/'
     | '/dash/sync/'
     | '/dash/torrents/'
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashListsIndexRouteImport
       parentRoute: typeof DashListsRoute
     }
+    '/dash/vault/usenet-servers': {
+      id: '/dash/vault/usenet-servers'
+      path: '/usenet-servers'
+      fullPath: '/dash/vault/usenet-servers'
+      preLoaderRoute: typeof DashVaultUsenetServersRouteImport
+      parentRoute: typeof DashVaultRoute
+    }
     '/dash/vault/trakt-accounts': {
       id: '/dash/vault/trakt-accounts'
       path: '/trakt-accounts'
@@ -417,6 +436,7 @@ interface DashVaultRouteChildren {
   DashVaultStremioAccountsRoute: typeof DashVaultStremioAccountsRoute
   DashVaultTorznabIndexersRoute: typeof DashVaultTorznabIndexersRoute
   DashVaultTraktAccountsRoute: typeof DashVaultTraktAccountsRoute
+  DashVaultUsenetServersRoute: typeof DashVaultUsenetServersRoute
   DashVaultIndexRoute: typeof DashVaultIndexRoute
 }
 
@@ -424,6 +444,7 @@ const DashVaultRouteChildren: DashVaultRouteChildren = {
   DashVaultStremioAccountsRoute: DashVaultStremioAccountsRoute,
   DashVaultTorznabIndexersRoute: DashVaultTorznabIndexersRoute,
   DashVaultTraktAccountsRoute: DashVaultTraktAccountsRoute,
+  DashVaultUsenetServersRoute: DashVaultUsenetServersRoute,
   DashVaultIndexRoute: DashVaultIndexRoute,
 }
 
