@@ -28,3 +28,7 @@ func SafeParseInt(str string, fallbackValue int) int {
 func ZeroPadInt(n int, length int) string {
 	return fmt.Sprintf("%0"+strconv.Itoa(length)+"d", n)
 }
+
+func IntToString(i int) string {
+	return strconv.FormatInt(int64(i), 10)
+}

@@ -63,7 +63,11 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         {children}
         <Scripts />
-        <Toaster position="top-right" richColors />
+        <Toaster
+          className="pointer-events-auto"
+          position="bottom-right"
+          richColors
+        />
         <TanStackRouterDevtools position="bottom-right" />
       </body>
     </html>
