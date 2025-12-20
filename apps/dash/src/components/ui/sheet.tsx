@@ -6,6 +6,7 @@ import { Slottable } from "@radix-ui/react-slot";
 import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Slottable } from "@radix-ui/react-slot";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -71,6 +72,16 @@ function SheetContent({
           className,
         )}
         {...props}
+        onPointerDownOutside={(e) => {
+          if (
+            e.target instanceof Element &&
+            e.target.closest("[data-sonner-toast]")
+          ) {
+            e.preventDefault();
+          }
+
+          props.onPointerDownOutside?.(e);
+        }}
       >
         <Slottable>{children}</Slottable>
         <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary rounded-xs focus:outline-hidden absolute right-4 top-4 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none">
