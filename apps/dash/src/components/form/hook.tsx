@@ -1,5 +1,6 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 
+import { FormCheckbox } from "./Checkbox";
 import { FormFilePicker } from "./File";
 import { FormInput } from "./Input";
 import { FormSelect } from "./Select";
@@ -10,6 +11,7 @@ export const { fieldContext, formContext, useFieldContext, useFormContext } =
 
 export const { useAppForm, withForm } = createFormHook({
   fieldComponents: {
+    Checkbox: FormCheckbox,
     FilePicker: FormFilePicker,
     Input: FormInput,
     Select: FormSelect,

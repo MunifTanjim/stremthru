@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
 	"github.com/MunifTanjim/stremthru/internal/posthog"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -37,6 +38,7 @@ func main() {
 	RunSchemaMigration(database.URI, database)
 
 	defer cache.ClosePersistentCaches()
+	defer usenetmanager.Close()
 
 	stopWorkers := worker.InitWorkers()
 	defer stopWorkers()
