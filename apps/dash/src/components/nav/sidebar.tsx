@@ -320,6 +320,10 @@ function useNavItems(): NavItem[] {
         path: "/dash/vault/torznab-indexers",
         title: "Torznab Indexers",
       });
+      vault.items!.push({
+        path: "/dash/vault/usenet-servers",
+        title: "Usenet Servers",
+      });
       items.push(vault);
 
       const sync: NavItem = {
