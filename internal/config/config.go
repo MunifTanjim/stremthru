@@ -85,6 +85,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM":         "8",
 		"STREMTHRU_NEWZ_NZB_CACHE_SIZE":                    "512MB",
 		"STREMTHRU_NEWZ_NZB_CACHE_TTL":                     "24h",
+		"STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE":                "10GB",
 		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
 	},
 }
