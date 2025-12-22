@@ -58,6 +58,10 @@ type File struct {
 	messageIds []string `xml:"-"`
 }
 
+func (f *File) GetName() string {
+	return f.name
+}
+
 type NZB struct {
 	XMLName xml.Name `xml:"nzb"`
 	Head    *Head    `xml:"head"`
