@@ -10,6 +10,7 @@ import {
   LogOut,
   MagnetIcon,
   Moon,
+  NewspaperIcon,
   Settings,
   Sparkles,
   Sun,
@@ -281,6 +282,19 @@ function useNavItems(): NavItem[] {
     items.push(torrents);
 
     if (server?.feature.vault) {
+      const usenet: NavItem = {
+        icon: NewspaperIcon,
+        items: [
+          {
+            path: "/dash/usenet/nzb",
+            title: "NZB",
+          },
+        ],
+        path: "/dash/usenet",
+        title: "Usenet",
+      };
+      items.push(usenet);
+
       const vault: NavItem = {
         icon: Lock,
         items: [
