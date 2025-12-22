@@ -31,3 +31,10 @@ func MustParseTime(layout, value string) time.Time {
 	}
 	return t
 }
+
+func SafeParseTime(layout, value string) time.Time {
+	if t, err := time.Parse(layout, value); err == nil {
+		return t
+	}
+	return time.Time{}
+}

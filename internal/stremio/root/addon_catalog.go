@@ -6,6 +6,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_list "github.com/MunifTanjim/stremthru/internal/stremio/list"
+	stremio_meta "github.com/MunifTanjim/stremthru/internal/stremio/meta"
 	stremio_sidekick "github.com/MunifTanjim/stremthru/internal/stremio/sidekick"
 	stremio_store "github.com/MunifTanjim/stremthru/internal/stremio/store"
 	stremio_torz "github.com/MunifTanjim/stremthru/internal/stremio/torz"
@@ -44,6 +45,14 @@ func getAddonCatalog(r *http.Request) *stremio.AddonCatalogHandlerResponse {
 			Manifest:      *stremio_torz.GetManifest(r, &stremio_torz.UserData{}),
 			TransportName: "http",
 			TransportUrl:  shared.ExtractRequestBaseURL(r).JoinPath("stremio/torz/manifest.json").String(),
+		})
+	}
+	if config.Feature.IsEnabled(config.FeatureStremioMeta) {
+		manifest, _ := stremio_meta.GetManifest(r, &stremio_meta.UserData{})
+		addons = append(addons, stremio.Addon{
+			Manifest:      *manifest,
+			TransportName: "http",
+			TransportUrl:  shared.ExtractRequestBaseURL(r).JoinPath("stremio/meta/manifest.json").String(),
 		})
 	}
 	if config.Feature.IsEnabled(config.FeatureStremioSidekick) {
