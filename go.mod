@@ -6,6 +6,7 @@ require (
 	github.com/alitto/pond/v2 v2.5.0
 	github.com/anacrolix/torrent v1.59.1
 	github.com/elastic/go-freelru v0.15.0
+	github.com/expr-lang/expr v1.17.7
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hasura/go-graphql-client v0.14.3
 	github.com/posthog/posthog-go v1.6.12

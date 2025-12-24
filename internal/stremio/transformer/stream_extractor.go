@@ -133,11 +133,11 @@ type StreamExtractorResult struct {
 	File      StreamExtractorResultFile
 	Hash      string
 	IsPrivate bool
-	Raw       StreamExtractorResultRaw
+	Raw       StreamExtractorResultRaw `expr:"-"`
 	Season    int
 	Seeders   int
 	Store     StreamExtractorResultStore
-	TTitle    string
+	TTitle    string `expr:"-"`
 	Indexer   string
 }
 

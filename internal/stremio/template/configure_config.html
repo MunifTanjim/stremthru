@@ -16,6 +16,8 @@
       <option value="{{.Value}}" {{if eq $Default .Value}}selected{{end}} {{if .Disabled}}disabled{{end}}>{{.Label}}</option>
     {{end}}
   </select>
+{{else if eq .Type "textarea"}}
+  <textarea id="{{.Key}}" name="{{.Key}}" {{if .Disabled}}disabled{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>{{.Default}}</textarea>
 {{else}}
   {{if .Action.Visible}}
   <fieldset role="group" {{if ne .Error ""}}aria-invalid="true"{{end}}>

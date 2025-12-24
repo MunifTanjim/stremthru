@@ -82,7 +82,8 @@ type UserData struct {
 	TemplateId string                                 `json:"template,omitempty"`
 	template   stremio_transformer.StreamTemplateBlob `json:"-"`
 
-	Sort string `json:"sort,omitempty"`
+	Sort   string `json:"sort,omitempty"`
+	Filter string `json:"filter,omitempty"`
 
 	RPDBAPIKey       string `json:"rpdb_akey,omitempty"`
 	TopPostersAPIKey string `json:"top_posters_akey,omitempty"`
@@ -519,6 +520,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 
 		data.IncludeTorz = r.Form.Get("torz") == "on"
 		data.Sort = r.Form.Get("sort")
+		data.Filter = r.Form.Get("filter")
 		data.RPDBAPIKey = r.Form.Get("rpdb_akey")
 		data.TopPostersAPIKey = r.Form.Get("top_posters_akey")
 

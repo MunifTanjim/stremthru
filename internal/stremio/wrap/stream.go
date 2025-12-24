@@ -199,6 +199,15 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 		allStreams = dedupeStreams(allStreams)
 	}
 
+	if ud.Filter != "" {
+		filter, err := stremio_transformer.StreamFilterBlob(ud.Filter).Parse()
+		if err == nil {
+			allStreams = filterStreams(allStreams, filter)
+		} else {
+			log.Warn("failed to parse filter expression", "error", err)
+		}
+	}
+
 	if template != nil {
 		stremio_transformer.SortStreams(allStreams, ud.Sort)
 	}
@@ -329,4 +338,15 @@ func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType
 	return &stremio.StreamHandlerResponse{
 		Streams: streams,
 	}, nil
+}
+
+func filterStreams(streams []WrappedStream, filter *stremio_transformer.StreamFilter) []WrappedStream {
+	result := make([]WrappedStream, 0, len(streams))
+	for i := range streams {
+		stream := &streams[i]
+		if stream.r == nil || filter.Match(stream.r) {
+			result = append(result, *stream)
+		}
+	}
+	return result
 }

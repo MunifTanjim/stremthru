@@ -49,6 +49,14 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Description: "Comma separated fields: <code>resolution</code>, <code>quality</code>, <code>size</code>, <code>hdr</code>. Prefix with <code>-</code> for reverse sort. Default: <code>" + stremio_transformer.StreamDefaultSortConfig + "</code>",
 		},
 
+		FilterConfig: configure.Config{
+			Key:         "filter",
+			Type:        "textarea",
+			Default:     ud.Filter,
+			Title:       "🧪 Stream Filter",
+			Description: `Filter expression using <a href="https://expr-lang.org/docs/language-definition" target="_blank">expr-lang</a> syntax.`,
+		},
+
 		RPDBAPIKey: configure.Config{
 			Key:          "rpdb_akey",
 			Type:         configure.ConfigTypePassword,
@@ -255,6 +263,7 @@ type TemplateData struct {
 	Template         stremio_transformer.StreamTemplateBlob
 	TemplateError    stremio_transformer.StreamTemplateBlob
 	SortConfig       configure.Config
+	FilterConfig     configure.Config
 	RPDBAPIKey       configure.Config
 	TopPostersAPIKey configure.Config
 
