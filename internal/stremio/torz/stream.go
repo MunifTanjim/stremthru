@@ -787,7 +787,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stremio_transformer.SortStreams(wrappedStreams, "")
+	stremio_transformer.SortStreams(wrappedStreams, ud.Sort)
 
 	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/torz", eud, "_/strem", id)
 
