@@ -42,6 +42,26 @@ func (nsid NormalizedStremId) ToClean() string {
 	return nsid.Id
 }
 
+func (nsid NormalizedStremId) String() string {
+	id := nsid.ToClean()
+	if id == "" {
+		return id
+	}
+	if nsid.IsAnime {
+		if nsid.Episode != "" {
+			id += ":" + nsid.Episode
+		}
+		return id
+	}
+	if nsid.Season != "" {
+		id += ":" + nsid.Season
+		if nsid.Episode != "" {
+			id += ":" + nsid.Episode
+		}
+	}
+	return id
+}
+
 var normalizedStremIdCache = cache.NewLRUCache[NormalizedStremId](&cache.CacheConfig{
 	Lifetime: 60 * time.Second,
 	Name:     "normalized_strem_id",

@@ -258,18 +258,26 @@ function useNavItems(): NavItem[] {
         path: "/dash/lists",
         title: "Lists",
       },
-      {
-        icon: MagnetIcon,
-        items: [
-          {
-            path: "/dash/torrents",
-            title: "Stats",
-          },
-        ],
-        path: "/dash/torrents",
-        title: "Torrents",
-      },
     ];
+
+    const torrents: NavItem = {
+      icon: MagnetIcon,
+      items: [
+        {
+          path: "/dash/torrents",
+          title: "Stats",
+        },
+      ],
+      path: "/dash/torrents",
+      title: "Torrents",
+    };
+    if (server?.feature.vault) {
+      torrents.items!.push({
+        path: "/dash/torrents/indexers-sync",
+        title: "Indexers Sync",
+      });
+    }
+    items.push(torrents);
 
     if (server?.feature.vault) {
       const vault: NavItem = {

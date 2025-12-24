@@ -160,6 +160,17 @@ var columns = []string{
 	Column.UAt,
 }
 
+var query_exists = fmt.Sprintf(
+	`SELECT 1 FROM %s`,
+	TableName,
+)
+
+func Exists() bool {
+	var one int
+	err := db.QueryRow(query_exists).Scan(&one)
+	return err == nil
+}
+
 var query_get_all = fmt.Sprintf(
 	`SELECT %s FROM %s`,
 	strings.Join(columns, ", "),

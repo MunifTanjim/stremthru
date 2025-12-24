@@ -132,6 +132,9 @@ func (tc TorznabClient) Search(query *torznab_client.Query) ([]torznab_client.To
 	result := make([]torznab_client.Torz, 0, len(items))
 	for i := range items {
 		item := &items[i]
+		if item.Size == 0 && item.Grabs == 0 && item.Enclosure.Length == 0 {
+			continue
+		}
 		result = append(result, *item.ToTorz())
 	}
 	return result, nil

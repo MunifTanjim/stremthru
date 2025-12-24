@@ -24,6 +24,7 @@ import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultTorznabIndexersRouteImport } from './routes/dash/vault/torznab-indexers'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
+import { Route as DashTorrentsIndexersSyncRouteImport } from './routes/dash/torrents/indexers-sync'
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
 import { Route as DashSyncStremioStremioRouteImport } from './routes/dash/sync/stremio-stremio'
 
@@ -104,6 +105,12 @@ const DashVaultStremioAccountsRoute =
     path: '/stremio-accounts',
     getParentRoute: () => DashVaultRoute,
   } as any)
+const DashTorrentsIndexersSyncRoute =
+  DashTorrentsIndexersSyncRouteImport.update({
+    id: '/indexers-sync',
+    path: '/indexers-sync',
+    getParentRoute: () => DashTorrentsRoute,
+  } as any)
 const DashSyncStremioTraktRoute = DashSyncStremioTraktRouteImport.update({
   id: '/stremio-trakt',
   path: '/stremio-trakt',
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/dash/': typeof DashIndexRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
+  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -140,6 +148,7 @@ export interface FileRoutesByTo {
   '/dash': typeof DashIndexRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
+  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -160,6 +169,7 @@ export interface FileRoutesById {
   '/dash/': typeof DashIndexRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
+  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/dash/'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
+    | '/dash/torrents/indexers-sync'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
+    | '/dash/torrents/indexers-sync'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -214,6 +226,7 @@ export interface FileRouteTypes {
     | '/dash/'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
+    | '/dash/torrents/indexers-sync'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -334,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashVaultStremioAccountsRouteImport
       parentRoute: typeof DashVaultRoute
     }
+    '/dash/torrents/indexers-sync': {
+      id: '/dash/torrents/indexers-sync'
+      path: '/indexers-sync'
+      fullPath: '/dash/torrents/indexers-sync'
+      preLoaderRoute: typeof DashTorrentsIndexersSyncRouteImport
+      parentRoute: typeof DashTorrentsRoute
+    }
     '/dash/sync/stremio-trakt': {
       id: '/dash/sync/stremio-trakt'
       path: '/stremio-trakt'
@@ -380,10 +400,12 @@ const DashSyncRouteWithChildren = DashSyncRoute._addFileChildren(
 )
 
 interface DashTorrentsRouteChildren {
+  DashTorrentsIndexersSyncRoute: typeof DashTorrentsIndexersSyncRoute
   DashTorrentsIndexRoute: typeof DashTorrentsIndexRoute
 }
 
 const DashTorrentsRouteChildren: DashTorrentsRouteChildren = {
+  DashTorrentsIndexersSyncRoute: DashTorrentsIndexersSyncRoute,
   DashTorrentsIndexRoute: DashTorrentsIndexRoute,
 }
 

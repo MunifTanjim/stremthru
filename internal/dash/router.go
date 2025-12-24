@@ -34,6 +34,7 @@ func AddEndpoints(mux *http.ServeMux) {
 
 	dash_api.AddIMDBEndpoints(router)
 	dash_api.AddWorkerEndpoints(router)
+	dash_api.AddTorznabIndexerSyncInfoEndpoints(router)
 
 	if config.Feature.HasVault() {
 		dash_api.AddVaultStremioEndpoints(router)

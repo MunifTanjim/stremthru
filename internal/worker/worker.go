@@ -8,6 +8,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/job_log"
 	"github.com/MunifTanjim/stremthru/internal/logger"
+	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/madflojo/tasks"
@@ -116,6 +118,12 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	"sync-stremio-stremio": {
 		Title: "Sync Stremio-Stremio",
 	},
+	"queue-torznab-indexer-sync": {
+		Title: "Queue Torznab Indexer Sync",
+	},
+	"sync-torznab-indexer": {
+		Title: "Sync Torznab Indexer",
+	},
 }
 
 func NewWorker(conf *WorkerConfig) *Worker {
@@ -142,6 +150,23 @@ func NewWorker(conf *WorkerConfig) *Worker {
 		conf.HeartbeatInterval = 5 * time.Second
 	}
 	heartbeatIntervalTolerance := min(conf.HeartbeatInterval, 10*time.Second)
+
+	if conf.OnStart == nil {
+		conf.OnStart = func() {}
+	}
+	if conf.OnEnd == nil {
+		conf.OnEnd = func() {}
+	}
+	if conf.ShouldSkip == nil {
+		conf.ShouldSkip = func() bool {
+			return false
+		}
+	}
+	if conf.ShouldWait == nil {
+		conf.ShouldWait = func() (bool, string) {
+			return false, ""
+		}
+	}
 
 	log := conf.Log
 
@@ -835,6 +860,30 @@ func InitWorkers() func() {
 		},
 		OnStart: func() {},
 		OnEnd:   func() {},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitTorznabIndexerSyncerQueueWorker(&WorkerConfig{
+		Disabled:     worker_queue.TorznabIndexerSyncerQueue.Disabled,
+		Name:         "queue-torznab-indexer-sync",
+		Interval:     10 * time.Minute,
+		RunExclusive: true,
+		ShouldSkip: func() bool {
+			return worker_queue.TorznabIndexerSyncerQueue.IsEmpty() || !torznab_indexer.Exists()
+		},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitTorznabIndexerSyncerWorker(&WorkerConfig{
+		Disabled:     !config.Feature.HasVault(),
+		Name:         "sync-torznab-indexer",
+		Interval:     30 * time.Minute,
+		RunExclusive: true,
+		ShouldSkip: func() bool {
+			return !torznab_indexer_syncinfo.HasSyncPending()
+		},
 	}); worker != nil {
 		workers = append(workers, worker)
 	}
