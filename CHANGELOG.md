@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.95.0](https://github.com/MunifTanjim/stremthru/compare/0.94.9...0.95.0) (2025-12-24)
+
+
+### Features
+
+* **stremio/list:** support top posters as poster provider ([ca0f1af](https://github.com/MunifTanjim/stremthru/commit/ca0f1af2a4f30b528a639508d047930b66ea2ced))
+* **stremio/torz:** add experimental filter support ([d0a2f5d](https://github.com/MunifTanjim/stremthru/commit/d0a2f5d775fd4a68af1960e4756b89e3b723297f))
+* **stremio/torz:** add sort support ([7fa9271](https://github.com/MunifTanjim/stremthru/commit/7fa927114420c4d03288997e33ac5a2da3c5eb65))
+* **stremio/wrap:** add experimental filter support ([355c1d0](https://github.com/MunifTanjim/stremthru/commit/355c1d0767c883f077d149620065ba36c660648c))
+* **stremio/wrap:** support top posters as poster provider ([a02d2e8](https://github.com/MunifTanjim/stremthru/commit/a02d2e8a7a25303222af0d631c3663e0faa2643c))
+* **torznab/jackett:** support new encoded URL format ([74c9fd3](https://github.com/MunifTanjim/stremthru/commit/74c9fd3e34aaeeaf2719386dbf46ff566c53dbdf))
+* **torznab:** add background indexer syncer ([32aa409](https://github.com/MunifTanjim/stremthru/commit/32aa409e235bd7283cd615ea15ffb32f69ebf7a4))
+* **torznab:** support manual queueing for background indexer sync ([8305390](https://github.com/MunifTanjim/stremthru/commit/8305390d597ea828a38538e73ac74f37e8357414))
+* **vault:** add torznab indexer ([b3f3157](https://github.com/MunifTanjim/stremthru/commit/b3f31572d02d7009bf9cafdf7bf680e0903ba2c1))
+
 ## [0.94.9](https://github.com/MunifTanjim/stremthru/compare/0.94.8...0.94.9) (2025-12-19)
 
 
