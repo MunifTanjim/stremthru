@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/anilist"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
@@ -36,7 +37,8 @@ type UserData struct {
 	TraktTokenId string            `json:"trakt_token_id,omitempty"`
 	traktToken   *oauth.OAuthToken `json:"-"`
 
-	RPDBAPIKey string `json:"rpdb_api_key,omitempty"`
+	RPDBAPIKey       string `json:"rpdb_api_key,omitempty"`
+	TopPostersAPIKey string `json:"top_posters_api_key,omitempty"`
 
 	MetaIdMovie  string `json:"meta_id_movie,omitempty"`
 	MetaIdSeries string `json:"meta_id_series,omitempty"`
@@ -59,6 +61,7 @@ func (ud UserData) StripSecrets() UserData {
 	ud.TMDBTokenId = ""
 	ud.TraktTokenId = ""
 	ud.RPDBAPIKey = ""
+	ud.TopPostersAPIKey = ""
 	return ud
 }
 
@@ -86,12 +89,14 @@ type userDataError struct {
 	mdblist struct {
 		api_key string
 	}
-	list_urls      []string
-	tmdb_token_id  string
-	trakt_token_id string
-	meta_id_movie  string
-	meta_id_series string
-	meta_id_anime  string
+	list_urls           []string
+	tmdb_token_id       string
+	trakt_token_id      string
+	meta_id_movie       string
+	meta_id_series      string
+	meta_id_anime       string
+	rpdb_api_key        string
+	top_posters_api_key string
 }
 
 func (uderr userDataError) HasError() bool {
@@ -102,6 +107,12 @@ func (uderr userDataError) HasError() bool {
 		if uderr.list_urls[i] != "" {
 			return true
 		}
+	}
+	if uderr.rpdb_api_key != "" {
+		return true
+	}
+	if uderr.top_posters_api_key != "" {
+		return true
 	}
 	return false
 }
@@ -159,6 +170,13 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		ud.TraktTokenId = r.Form.Get("trakt_token_id")
 
 		ud.RPDBAPIKey = r.Form.Get("rpdb_api_key")
+		ud.TopPostersAPIKey = r.Form.Get("top_posters_api_key")
+
+		if ud.RPDBAPIKey != "" && ud.TopPostersAPIKey != "" {
+			err := "Only one poster provider can be used at a time"
+			udErr.rpdb_api_key = err
+			udErr.top_posters_api_key = err
+		}
 
 		ud.MetaIdMovie = r.Form.Get("meta_id_movie")
 		ud.MetaIdSeries = r.Form.Get("meta_id_series")
@@ -188,6 +206,12 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 		if isMDBListEnabled {
 			if _, err := ud.getMDBListUser(); err != nil {
 				udErr.mdblist.api_key = "Invalid API Key: " + err.Error()
+			}
+		}
+
+		if ud.TopPostersAPIKey != "" && udErr.top_posters_api_key == "" {
+			if err := verifyTopPostersAPIKey(ud.TopPostersAPIKey); err != nil {
+				udErr.top_posters_api_key = "Failed to Verify: " + err.Error()
 			}
 		}
 
@@ -666,6 +690,18 @@ func (ud *UserData) FetchLetterboxdList(list *letterboxd.LetterboxdList) error {
 	}
 
 	ud.letterboxdById[list.Id] = *list
+	return nil
+}
+
+func verifyTopPostersAPIKey(apiKey string) error {
+	resp, err := config.DefaultHTTPClient.Get("https://api.top-streaming.stream/auth/verify/" + apiKey)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("Invalid API key")
+	}
 	return nil
 }
 

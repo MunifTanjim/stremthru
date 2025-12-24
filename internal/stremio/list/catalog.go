@@ -342,9 +342,13 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 
 	service, id := parseCatalogId(catalogId)
 
-	rpdbPosterBaseUrl := ""
+	posterBaseUrl := ""
+	posterQueryParams := ""
 	if ud.RPDBAPIKey != "" {
-		rpdbPosterBaseUrl = "https://api.ratingposterdb.com/" + ud.RPDBAPIKey + "/imdb/poster-default/"
+		posterBaseUrl = "https://api.ratingposterdb.com/" + ud.RPDBAPIKey + "/imdb/poster-default/"
+		posterQueryParams = "?fallback=true"
+	} else if ud.TopPostersAPIKey != "" {
+		posterBaseUrl = "https://api.top-streaming.stream/" + ud.TopPostersAPIKey + "/imdb/poster-default/"
 	}
 
 	catalogItems := []catalogItem{}
@@ -406,8 +410,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			item := &list.Items[i]
 
 			poster := item.Poster
-			if rpdbPosterBaseUrl != "" {
-				poster = rpdbPosterBaseUrl + item.IMDBId + ".jpg?fallback=true"
+			if posterBaseUrl != "" {
+				poster = posterBaseUrl + item.IMDBId + ".jpg" + posterQueryParams
 			}
 
 			meta := stremio.MetaPreview{
@@ -621,8 +625,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			if rpdbPosterBaseUrl != "" && media.IdMap.IMDB != "" {
-				item.Poster = rpdbPosterBaseUrl + media.IdMap.IMDB + ".jpg?fallback=true"
+			if posterBaseUrl != "" && media.IdMap.IMDB != "" {
+				item.Poster = posterBaseUrl + media.IdMap.IMDB + ".jpg" + posterQueryParams
 			}
 
 			items = append(items, item.MetaPreview)
@@ -658,8 +662,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			if item.MetaPreview.Id == "" {
 				item.MetaPreview.Id = imdbId
 			}
-			if rpdbPosterBaseUrl != "" {
-				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			if posterBaseUrl != "" {
+				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
 			}
 			item.MetaPreview.Background = stremio_shared.GetCinemetaBackgroundURL(imdbId)
 
@@ -736,8 +740,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			if item.MetaPreview.Id == "" {
 				item.MetaPreview.Id = imdbId
 			}
-			if rpdbPosterBaseUrl != "" {
-				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			if posterBaseUrl != "" {
+				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
 			}
 
 			items = append(items, item.MetaPreview)
@@ -787,8 +791,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			}
 
 			item.MetaPreview.Id = imdbId
-			if rpdbPosterBaseUrl != "" {
-				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			if posterBaseUrl != "" {
+				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
 			}
 
 			items = append(items, item.MetaPreview)
@@ -834,8 +838,8 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			if item.MetaPreview.Id == "" {
 				item.MetaPreview.Id = imdbId
 			}
-			if rpdbPosterBaseUrl != "" {
-				item.MetaPreview.Poster = rpdbPosterBaseUrl + imdbId + ".jpg?fallback=true"
+			if posterBaseUrl != "" {
+				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
 			}
 
 			items = append(items, item.MetaPreview)
