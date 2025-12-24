@@ -19,6 +19,7 @@ type UserData struct {
 	stremio_userdata.UserDataStores
 	CachedOnly bool   `json:"cached,omitempty"`
 	Sort       string `json:"sort,omitempty"`
+	Filter     string `json:"filter,omitempty"`
 
 	encoded string `json:"-"` // correctly configured
 }
@@ -231,6 +232,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 
 		data.Sort = r.Form.Get("sort")
+		data.Filter = r.Form.Get("filter")
 		data.IncludeUncachedPrivate = r.Form.Get("uncached_private") == "on"
 	}
 

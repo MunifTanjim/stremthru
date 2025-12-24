@@ -787,6 +787,15 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if ud.Filter != "" {
+		filter, err := stremio_transformer.StreamFilterBlob(ud.Filter).Parse()
+		if err == nil {
+			wrappedStreams = filterStreams(wrappedStreams, filter)
+		} else {
+			log.Warn("failed to parse filter expression", "error", err)
+		}
+	}
+
 	stremio_transformer.SortStreams(wrappedStreams, ud.Sort)
 
 	streamBaseUrl := ExtractRequestBaseURL(r).JoinPath("/stremio/torz", eud, "_/strem", id)
@@ -885,4 +894,15 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, &stremio.StreamHandlerResponse{
 		Streams: streams,
 	})
+}
+
+func filterStreams(streams []WrappedStream, filter *stremio_transformer.StreamFilter) []WrappedStream {
+	result := make([]WrappedStream, 0, len(streams))
+	for i := range streams {
+		stream := &streams[i]
+		if stream.R == nil || filter.Match(stream.R) {
+			result = append(result, *stream)
+		}
+	}
+	return result
 }
