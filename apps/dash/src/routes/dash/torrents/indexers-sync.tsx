@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { AlertCircle, SearchIcon } from "lucide-react";
+import { AlertCircle, Plus, SearchIcon } from "lucide-react";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
   TorznabIndexerSyncInfo,
+  useTorznabIndexerSyncInfoMutation,
   useTorznabIndexerSyncInfos,
 } from "@/api/torznab-indexer-syncinfo";
 import { useTorznabIndexers } from "@/api/vault-torznab-indexer";
@@ -13,12 +15,21 @@ import { DataTable } from "@/components/data-table";
 import { DataTablePagination } from "@/components/data-table/pagination";
 import { useDataTable } from "@/components/data-table/use-data-table";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { APIError } from "@/lib/api";
 
 declare module "@/components/data-table" {
   export interface DataTableMetaCtx {
@@ -118,6 +129,8 @@ const columns: ColumnDef<TorznabIndexerSyncInfo>[] = [
 function RouteComponent() {
   const [searchInput, setSearchInput] = useState("");
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [queueDialogOpen, setQueueDialogOpen] = useState(false);
+  const [queueInput, setQueueInput] = useState("");
 
   const indexers = useTorznabIndexers();
   const indexerNameById = useMemo(() => {
@@ -134,6 +147,8 @@ function RouteComponent() {
     offset: pagination.pageIndex * pagination.pageSize,
     sid: searchSId,
   });
+
+  const { queue: queueMutation } = useTorznabIndexerSyncInfoMutation();
 
   const table = useDataTable({
     columns,
@@ -170,6 +185,27 @@ function RouteComponent() {
     setPagination((p) => ({ ...p, pageIndex: 0 }));
   };
 
+  const onQueue = () => {
+    toast.promise(queueMutation.mutateAsync(queueInput.trim()), {
+      error(err: APIError) {
+        console.error(err);
+        return {
+          closeButton: true,
+          message: err.message,
+        };
+      },
+      loading: "Queueing...",
+      success: () => {
+        setQueueInput("");
+        setQueueDialogOpen(false);
+        return {
+          closeButton: true,
+          message: `Queued Successfully!`,
+        };
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -197,7 +233,35 @@ function RouteComponent() {
             Clear
           </Button>
         )}
+        <Button onClick={() => setQueueDialogOpen(true)} variant="outline">
+          <Plus className="mr-1 size-4" />
+          Queue
+        </Button>
       </div>
+
+      <Dialog onOpenChange={setQueueDialogOpen} open={queueDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Queue Strem ID</DialogTitle>
+            <DialogDescription>
+              Enter an IMDb ID to queue for syncing.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            onChange={(e) => setQueueInput(e.target.value)}
+            placeholder="e.g., tt1234567"
+            value={queueInput}
+          />
+          <DialogFooter>
+            <Button
+              disabled={!queueInput.startsWith("tt") || queueMutation.isPending}
+              onClick={onQueue}
+            >
+              Queue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {syncInfos.isLoading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
