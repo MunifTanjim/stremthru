@@ -1,6 +1,7 @@
 package nntp
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -836,6 +837,42 @@ func TestBody_ByMessageId(t *testing.T) {
 	assert.Equal(t, "<45223423@example.com>", article.MessageId, "article.MessageId")
 	assert.Nil(t, article.Headers, "article.Headers should be nil for BODY")
 	assert.NotNil(t, article.Body, "article.Body")
+}
+
+func TestBody_ReaderContent(t *testing.T) {
+	server := newMockServer(t, "200 NNTP Service Ready")
+	// Test multi-line body content to verify reader handles line breaks correctly
+	server.setMultiLineResponse("BODY <test@example.com>", "222 0 <test@example.com>", []string{
+		"This is the first line.",
+		"This is the second line.",
+		"",
+		"This is the fourth line after a blank line.",
+	})
+	server.start(t)
+	defer server.close()
+
+	client := NewClient(&ClientConfig{
+		Host: server.host(),
+		Port: server.port(),
+	})
+
+	err := client.Connect()
+	assert.NoError(t, err, "Connect()")
+	defer client.Close()
+
+	article, err := client.Body("<test@example.com>")
+	assert.NoError(t, err, "Body()")
+	assert.NotNil(t, article, "article")
+	assert.NotNil(t, article.Body, "article.Body")
+
+	// Read all content from the body reader
+	content, err := io.ReadAll(article.Body)
+	assert.NoError(t, err, "ReadAll()")
+
+	// Verify the content matches expected multi-line body
+	// Note: textproto.DotReader normalizes CRLF to LF
+	expected := "This is the first line.\nThis is the second line.\n\nThis is the fourth line after a blank line.\n"
+	assert.Equal(t, expected, string(content), "body content")
 }
 
 // TestBody_ByNumber uses the example from RFC 3977 Section 6.2.3

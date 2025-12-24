@@ -3,7 +3,6 @@ package nntp
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"math"
 	"net/textproto"
 	"strconv"
@@ -11,13 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/jackc/puddle/v2"
 )
 
 type PoolConfig struct {
 	ConnectionConfig
 
-	Log *slog.Logger
+	Log *logger.Logger
 
 	MinSize int32
 	MaxSize int32
@@ -33,7 +33,7 @@ func (c *PoolConfig) getId() string {
 
 func (c *PoolConfig) setDefaults() {
 	if c.Log == nil {
-		c.Log = slog.Default()
+		c.Log = logger.Scoped("nntp/pool")
 	}
 	if c.MinSize < 0 {
 		c.MinSize = 0
@@ -66,7 +66,7 @@ const (
 )
 
 type Pool struct {
-	Log *slog.Logger
+	Log *logger.Logger
 
 	id     string
 	pool   *puddle.Pool[*Connection]
@@ -292,6 +292,7 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 	conn := &PooledConnection{
 		Connection: res.Value(),
 		resource:   res,
+		pool:       p,
 	}
 
 	if _, err := conn.Date(); err != nil {
@@ -347,6 +348,7 @@ func (p *Pool) Close() {
 type PooledConnection struct {
 	*Connection
 	resource *puddle.Resource[*Connection]
+	pool     *Pool
 	released atomic.Bool
 }
 
@@ -374,4 +376,8 @@ func (pc *PooledConnection) Hijack() *Connection {
 
 func (pc *PooledConnection) CurrentGroup() string {
 	return pc.currentGroup
+}
+
+func (pc *PooledConnection) ProviderId() string {
+	return pc.pool.Id()
 }

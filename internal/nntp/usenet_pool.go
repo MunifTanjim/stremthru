@@ -3,10 +3,11 @@ package nntp
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/logger"
 )
 
 type ProviderConfig = PoolConfig
@@ -17,7 +18,7 @@ type UsenetProviderConfig struct {
 }
 
 type UsenetPoolConfig struct {
-	Log                  *slog.Logger
+	Log                  *logger.Logger
 	Providers            []UsenetProviderConfig
 	RequiredCapabilities []string
 	MinConnections       int
@@ -25,7 +26,7 @@ type UsenetPoolConfig struct {
 
 func (upc *UsenetPoolConfig) setDefaults() {
 	if upc.Log == nil {
-		upc.Log = slog.Default()
+		upc.Log = logger.Scoped("nntp/usenet-pool")
 	}
 	slices.SortStableFunc(upc.Providers, func(a, b UsenetProviderConfig) int {
 		if a.IsBackup && !b.IsBackup {
@@ -44,7 +45,7 @@ type providerPool struct {
 }
 
 type UsenetPool struct {
-	Log                  *slog.Logger
+	Log                  *logger.Logger
 	providers            []*providerPool
 	providersMutex       sync.RWMutex
 	requiredCapabilities []string
@@ -190,4 +191,50 @@ func (up *UsenetPool) Close() {
 	for _, provider := range up.providers {
 		provider.Close()
 	}
+}
+
+func (up *UsenetPool) StreamFile(ctx context.Context, config StreamFileConfig) (*StreamFileResult, error) {
+	if len(config.Segments) == 0 {
+		return nil, errors.New("no segments provided")
+	}
+
+	// Set defaults
+	parallelism := config.ParallelDownloads
+	if parallelism <= 0 {
+		parallelism = defaultParallelDownloads
+	}
+
+	bufferAhead := config.BufferAhead
+	if bufferAhead <= 0 {
+		bufferAhead = defaultBufferAhead
+	}
+
+	up.Log.Trace("initializing file stream", "segments", len(config.Segments), "parallelism", parallelism, "buffer_ahead", bufferAhead)
+
+	// Create cancelable context
+	ctx, cancel := context.WithCancel(ctx)
+
+	reader := &UsenetFileReader{
+		pool:        up,
+		ctx:         ctx,
+		cancel:      cancel,
+		segments:    config.Segments,
+		groups:      config.Groups,
+		parallelism: parallelism,
+		cache:       newSegmentCache(parallelism + bufferAhead),
+		log:         up.Log,
+	}
+
+	// Calculate byte offsets
+	reader.calculateOffsets()
+
+	up.Log.Trace("file stream ready", "total_bytes", reader.totalSize, "cache_size", parallelism+bufferAhead)
+
+	// Start prefetch workers
+	reader.startWorkers()
+
+	return &StreamFileResult{
+		ReadSeekCloser: reader,
+		Size:           reader.totalSize,
+	}, nil
 }

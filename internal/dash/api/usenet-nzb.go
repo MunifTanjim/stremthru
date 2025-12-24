@@ -1,11 +1,17 @@
 package dash_api
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/logger"
+	"github.com/MunifTanjim/stremthru/internal/nntp"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	usenet_server "github.com/MunifTanjim/stremthru/internal/usenet/server"
 )
 
 type NzbSegmentResponse struct {
@@ -113,6 +119,144 @@ func handleParseNzb(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, toNzbParseResponse(parsed))
 }
 
+type NzbDownloadRequest struct {
+	Name     string               `json:"name"`
+	Groups   []string             `json:"groups"`
+	Segments []NzbSegmentResponse `json:"segments"`
+}
+
+func createUsenetPoolFromVault(ctx context.Context, log *logger.Logger) (*nntp.UsenetPool, error) {
+	servers, err := usenet_server.GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get usenet servers: %w", err)
+	}
+
+	if len(servers) == 0 {
+		return nil, fmt.Errorf("no usenet servers configured")
+	}
+
+	providers := make([]nntp.UsenetProviderConfig, len(servers))
+	for i, server := range servers {
+		password, err := server.GetPassword()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get password for server %s: %w", server.Name, err)
+		}
+
+		providers[i] = nntp.UsenetProviderConfig{
+			ProviderConfig: nntp.PoolConfig{
+				ConnectionConfig: nntp.ConnectionConfig{
+					Host:          server.Host,
+					Port:          server.Port,
+					Username:      server.Username,
+					Password:      password,
+					TLS:           server.TLS,
+					TLSSkipVerify: server.TLSSkipVerify,
+					Deadline:      time.Now().Add(30 * time.Second),
+					DialTimeout:   15 * time.Second,
+					KeepAliveTime: 60 * time.Second,
+				},
+				MaxSize: 10, // Max connections per provider
+			},
+			IsBackup: false, // All servers treated as primary for now
+		}
+	}
+
+	poolConfig := &nntp.UsenetPoolConfig{
+		Log:                  log,
+		Providers:            providers,
+		RequiredCapabilities: []string{},
+		MinConnections:       0,
+	}
+
+	pool, err := nntp.NewUsenetPool(poolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create usenet pool: %w", err)
+	}
+
+	return pool, nil
+}
+
+func handleDownloadNzb(w http.ResponseWriter, r *http.Request) {
+	ctx := GetReqCtx(r)
+
+	request := &NzbDownloadRequest{}
+	if err := ReadRequestBodyJSON(r, request); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	if request.Name == "" {
+		ErrorBadRequest(r, "missing name").Send(w, r)
+		return
+	}
+	if len(request.Segments) == 0 {
+		ErrorBadRequest(r, "missing segments").Send(w, r)
+		return
+	}
+
+	ctx.Log.Trace("nzb download request", "name", request.Name, "segments", len(request.Segments))
+
+	// Create UsenetPool from vault servers
+	pool, err := createUsenetPoolFromVault(r.Context(), ctx.Log)
+	if err != nil {
+		if err.Error() == "no usenet servers configured" {
+			ctx.Log.Warn("no usenet servers configured")
+			ErrorBadRequest(r, "no usenet servers configured").Send(w, r)
+			return
+		}
+		ctx.Log.Error("failed to create usenet pool", "error", err)
+		SendError(w, r, err)
+		return
+	}
+	defer pool.Close()
+
+	// Convert segments to nzb.Segment
+	nzbSegments := make([]nzb.Segment, len(request.Segments))
+	var totalSize int64
+	for i, seg := range request.Segments {
+		nzbSegments[i] = nzb.Segment{
+			Bytes:     seg.Bytes,
+			Number:    seg.Number,
+			MessageId: seg.MessageId,
+		}
+		totalSize += seg.Bytes
+	}
+
+	ctx.Log.Trace("starting usenet stream", "total_bytes", totalSize)
+
+	// Stream file from usenet
+	streamResult, err := pool.StreamFile(r.Context(), nntp.StreamFileConfig{
+		Segments:          nzbSegments,
+		Groups:            request.Groups,
+		ParallelDownloads: 4,
+		BufferAhead:       2,
+	})
+	if err != nil {
+		ctx.Log.Error("failed to create stream", "error", err)
+		SendError(w, r, err)
+		return
+	}
+	defer streamResult.Close()
+
+	// Set response headers for file download
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", request.Name))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", streamResult.Size))
+
+	w.WriteHeader(200)
+
+	// Stream the file
+	ctx.Log.Trace("starting io.Copy", "content_length", streamResult.Size)
+	written, err := io.Copy(w, streamResult)
+	ctx.Log.Trace("io.Copy completed", "bytes_written", written, "error", err)
+	if err != nil {
+		ctx.Log.Error("error streaming file", "error", err, "bytes_written", written)
+		return
+	}
+
+	ctx.Log.Info("file download completed", "name", request.Name, "bytes", written)
+}
+
 func AddUsenetNzbEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
@@ -120,6 +264,15 @@ func AddUsenetNzbEndpoints(router *http.ServeMux) {
 		switch r.Method {
 		case http.MethodPost:
 			handleParseNzb(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+
+	router.HandleFunc("/usenet/nzb/download", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleDownloadNzb(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}
