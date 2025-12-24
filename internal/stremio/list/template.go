@@ -112,7 +112,8 @@ type TemplateData struct {
 
 	MDBListAPIKey configure.Config
 
-	RPDBAPIKey configure.Config
+	RPDBAPIKey       configure.Config
+	TopPostersAPIKey configure.Config
 
 	TMDBTokenId configure.Config
 
@@ -149,6 +150,12 @@ func (td *TemplateData) HasListError() bool {
 	if td.MDBListAPIKey.Error != "" {
 		return true
 	}
+	if td.RPDBAPIKey.Error != "" {
+		return true
+	}
+	if td.TopPostersAPIKey.Error != "" {
+		return true
+	}
 	return false
 }
 
@@ -183,6 +190,16 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 			Title:        "API Key",
 			Description:  `Rating Poster Database <a href="https://ratingposterdb.com/api-key/" target="blank">API Key</a>`,
 			Autocomplete: "off",
+			Error:        udError.rpdb_api_key,
+		},
+		TopPostersAPIKey: configure.Config{
+			Key:          "top_posters_api_key",
+			Type:         configure.ConfigTypePassword,
+			Default:      ud.TopPostersAPIKey,
+			Title:        "API Key",
+			Description:  `Top Posters <a href="https://api.top-streaming.stream/user/dashboard" target="_blank">API Key</a>`,
+			Autocomplete: "off",
+			Error:        udError.top_posters_api_key,
 		},
 		TMDBTokenId: configure.Config{
 			Key:          "tmdb_token_id",
@@ -658,6 +675,9 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			}
 			if td.RPDBAPIKey.Default != "" {
 				td.RPDBAPIKey.Default = redacted
+			}
+			if td.TopPostersAPIKey.Default != "" {
+				td.TopPostersAPIKey.Default = redacted
 			}
 			if td.TMDBTokenId.Default != "" {
 				td.TMDBTokenId.Default = redacted
