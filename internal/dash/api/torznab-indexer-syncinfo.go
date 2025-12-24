@@ -2,9 +2,13 @@ package dash_api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -93,8 +97,64 @@ func handleGetTorznabIndexerSyncInfos(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, data)
 }
 
+type QueueTorznabIndexerSyncInfoRequest struct {
+	SId string `json:"sid"`
+}
+
+func handleQueueTorznabIndexerSyncInfo(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodPost) {
+		ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	request := &QueueTorznabIndexerSyncInfoRequest{}
+	if err := ReadRequestBodyJSON(r, request); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	nsid, err := torrent_stream.NormalizeStreamId(request.SId)
+	if !strings.HasPrefix(request.SId, "tt") || err != nil {
+		ErrorBadRequest(r, "Invalid IMDB Id").Send(w, r)
+		return
+	}
+
+	if title, err := imdb_title.Get(nsid.Id); err != nil {
+		SendError(w, r, err)
+		return
+	} else if title == nil {
+		ErrorBadRequest(r, "Unknow IMDB Id").Send(w, r)
+		return
+	}
+
+	indexers, err := torznab_indexer.GetAll()
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	for i := range indexers {
+		indexer := &indexers[i]
+		if err := torznab_indexer_syncinfo.Queue(indexer.Type, indexer.Id, request.SId); err != nil {
+			SendError(w, r, err)
+			return
+		}
+	}
+
+	SendData(w, r, 204, nil)
+}
+
 func AddTorznabIndexerSyncInfoEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
-	router.HandleFunc("/torrents/indexer-syncinfos", authed(handleGetTorznabIndexerSyncInfos))
+	router.HandleFunc("/torrents/indexer-syncinfos", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetTorznabIndexerSyncInfos(w, r)
+		case http.MethodPost:
+			handleQueueTorznabIndexerSyncInfo(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
 }

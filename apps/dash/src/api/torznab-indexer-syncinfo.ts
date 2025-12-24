@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -22,6 +22,23 @@ export type TorznabIndexerSyncInfoParams = {
   offset?: number;
   sid?: string;
 };
+
+export function useTorznabIndexerSyncInfoMutation() {
+  const queue = useMutation({
+    mutationFn: async (sid: string) => {
+      await api(`POST /torrents/indexer-syncinfos`, {
+        body: { sid },
+      });
+    },
+    onSuccess: async (_, __, ___, ctx) => {
+      await ctx.client.invalidateQueries({
+        queryKey: ["/torrents/indexer-syncinfos"],
+      });
+    },
+  });
+
+  return { queue };
+}
 
 export function useTorznabIndexerSyncInfos(
   params: TorznabIndexerSyncInfoParams = {},
