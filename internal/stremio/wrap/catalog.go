@@ -68,15 +68,19 @@ func (ud UserData) fetchCatalog(ctx *context.StoreContext, rType, id, extra stri
 		return nil, err
 	}
 
-	rpdbPosterBaseUrl := ""
+	posterBaseUrl := ""
+	posterQueryParams := ""
 	if ud.RPDBAPIKey != "" {
-		rpdbPosterBaseUrl = "https://api.ratingposterdb.com/" + ud.RPDBAPIKey + "/imdb/poster-default/"
+		posterBaseUrl = "https://api.ratingposterdb.com/" + ud.RPDBAPIKey + "/imdb/poster-default/"
+		posterQueryParams = "?fallback=true"
+	} else if ud.TopPostersAPIKey != "" {
+		posterBaseUrl = "https://api.top-streaming.stream/" + ud.TopPostersAPIKey + "/imdb/poster-default/"
 	}
 
 	for i := range res.Data.Metas {
 		item := &res.Data.Metas[i]
-		if rpdbPosterBaseUrl != "" && strings.HasPrefix(item.Id, "tt") {
-			item.Poster = rpdbPosterBaseUrl + item.Id + ".jpg?fallback=true"
+		if posterBaseUrl != "" && strings.HasPrefix(item.Id, "tt") {
+			item.Poster = posterBaseUrl + item.Id + ".jpg" + posterQueryParams
 		}
 	}
 

@@ -84,7 +84,8 @@ type UserData struct {
 
 	Sort string `json:"sort,omitempty"`
 
-	RPDBAPIKey string `json:"rpdb_akey,omitempty"`
+	RPDBAPIKey       string `json:"rpdb_akey,omitempty"`
+	TopPostersAPIKey string `json:"top_posters_akey,omitempty"`
 
 	encoded   string             `json:"-"` // correctly configured
 	manifests []stremio.Manifest `json:"-"`
@@ -95,6 +96,7 @@ func (ud UserData) StripSecrets() UserData {
 	ud.UserDataStores = ud.UserDataStores.StripSecrets()
 	ud.StoreToken = ""
 	ud.RPDBAPIKey = ""
+	ud.TopPostersAPIKey = ""
 	return ud
 }
 
@@ -138,10 +140,24 @@ func (ud *UserData) Ptr() *UserData {
 	return ud
 }
 
+func verifyTopPostersAPIKey(apiKey string) error {
+	resp, err := config.DefaultHTTPClient.Get("https://api.top-streaming.stream/auth/verify/" + apiKey)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("Invalid API key")
+	}
+	return nil
+}
+
 type userDataError struct {
-	upstreamUrl []string
-	store       []string
-	token       []string
+	upstreamUrl      []string
+	store            []string
+	token            []string
+	rpdb_akey        string
+	top_posters_akey string
 }
 
 func (uderr *userDataError) Error() string {
@@ -193,6 +209,21 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		Log: rCtx.Log,
 	}
 
+	udErr := &userDataError{}
+	if ud.RPDBAPIKey != "" && ud.TopPostersAPIKey != "" {
+		err := "Only one poster provider can be used at a time"
+		udErr.rpdb_akey = err
+		udErr.top_posters_akey = err
+		return ctx, udErr
+	}
+
+	if ud.TopPostersAPIKey != "" && udErr.top_posters_akey == "" {
+		if err := verifyTopPostersAPIKey(ud.TopPostersAPIKey); err != nil {
+			udErr.top_posters_akey = "Failed to Verify: " + err.Error()
+			return ctx, udErr
+		}
+	}
+
 	upstreamUrlErrors := []string{}
 	hasUpstreamUrlErrors := false
 	for i := range ud.Upstreams {
@@ -205,18 +236,20 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		}
 	}
 	if hasUpstreamUrlErrors {
-		return ctx, &userDataError{upstreamUrl: upstreamUrlErrors}
+		udErr.upstreamUrl = upstreamUrlErrors
+		return ctx, udErr
 	}
 
 	if err, errField := ud.UserDataStores.Prepare(ctx); err != nil {
 		switch errField {
 		case "store":
-			return ctx, &userDataError{store: []string{err.Error()}}
+			udErr.store = []string{err.Error()}
 		case "token":
-			return ctx, &userDataError{token: []string{err.Error()}}
+			udErr.token = []string{err.Error()}
 		default:
-			return ctx, &userDataError{store: []string{err.Error()}}
+			udErr.store = []string{err.Error()}
 		}
+		return ctx, udErr
 	}
 
 	ctx.ClientIP = shared.GetClientIP(r, ctx)
@@ -487,6 +520,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		data.IncludeTorz = r.Form.Get("torz") == "on"
 		data.Sort = r.Form.Get("sort")
 		data.RPDBAPIKey = r.Form.Get("rpdb_akey")
+		data.TopPostersAPIKey = r.Form.Get("top_posters_akey")
 
 		data.TemplateId = r.Form.Get("transformer.template_id")
 		data.template = stremio_transformer.StreamTemplateBlob{

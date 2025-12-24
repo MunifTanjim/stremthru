@@ -314,6 +314,8 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				for i, err := range uderr.token {
 					td.Stores[i].Error.Token = err
 				}
+				td.RPDBAPIKey.Error = uderr.rpdb_akey
+				td.TopPostersAPIKey.Error = uderr.top_posters_akey
 			} else {
 				SendError(w, r, err)
 				return

@@ -58,6 +58,15 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Autocomplete: "off",
 		},
 
+		TopPostersAPIKey: configure.Config{
+			Key:          "top_posters_akey",
+			Type:         configure.ConfigTypePassword,
+			Default:      ud.TopPostersAPIKey,
+			Title:        "Top Posters API Key",
+			Description:  `Top Posters <a href="https://api.top-streaming.stream/user/dashboard" target="_blank">API Key</a>`,
+			Autocomplete: "off",
+		},
+
 		ExtractorIds: []string{},
 		TemplateIds:  []string{},
 	}
@@ -240,13 +249,14 @@ type TemplateData struct {
 	IsAuthed     bool
 	AuthError    string
 
-	ExtractorIds  []string
-	TemplateIds   []string
-	TemplateId    string
-	Template      stremio_transformer.StreamTemplateBlob
-	TemplateError stremio_transformer.StreamTemplateBlob
-	SortConfig    configure.Config
-	RPDBAPIKey    configure.Config
+	ExtractorIds     []string
+	TemplateIds      []string
+	TemplateId       string
+	Template         stremio_transformer.StreamTemplateBlob
+	TemplateError    stremio_transformer.StreamTemplateBlob
+	SortConfig       configure.Config
+	RPDBAPIKey       configure.Config
+	TopPostersAPIKey configure.Config
 
 	stremio_userdata.TemplateDataUserData
 }
@@ -283,6 +293,12 @@ func (td *TemplateData) HasFieldError() bool {
 		if td.Configs[i].Error != "" {
 			return true
 		}
+	}
+	if td.RPDBAPIKey.Error != "" {
+		return true
+	}
+	if td.TopPostersAPIKey.Error != "" {
+		return true
 	}
 	return false
 }
@@ -323,6 +339,9 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 			}
 			if td.RPDBAPIKey.Default != "" {
 				td.RPDBAPIKey.Default = redacted
+			}
+			if td.TopPostersAPIKey.Default != "" {
+				td.TopPostersAPIKey.Default = redacted
 			}
 		}
 
