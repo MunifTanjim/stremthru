@@ -13,10 +13,12 @@ var client = func() *stremio_addon.Client {
 }()
 
 func GetDisabledManifest(manifestUrl string) (*stremio.Manifest, error) {
-	baseUrl, err := url.Parse(strings.TrimSuffix(manifestUrl, "/manifest.json"))
+	baseUrl, err := url.Parse(manifestUrl)
 	if err != nil {
 		return nil, err
 	}
+
+	baseUrl.Path = strings.TrimSuffix(baseUrl.Path, "/manifest.json")
 
 	res, err := client.GetManifest(&stremio_addon.GetManifestParams{BaseURL: baseUrl})
 	if err != nil {
