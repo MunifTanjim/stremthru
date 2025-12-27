@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.95.1](https://github.com/MunifTanjim/stremthru/compare/0.95.0...0.95.1) (2025-12-27)
+
+
+### Bug Fixes
+
+* **stremio/disabled:** correctly handle manifest url with query params ([a3e69f6](https://github.com/MunifTanjim/stremthru/commit/a3e69f6b263f418f90cff9cb9129220d528fd554))
+* **stremio/transformer:** fix comparison for file.size ([4835c6b](https://github.com/MunifTanjim/stremthru/commit/4835c6bec0e7752f5f7c5c5c1659271d49c440bf))
+* **stremio/transformer:** fix comparison for resolution/quality/size ([08fe39b](https://github.com/MunifTanjim/stremthru/commit/08fe39b3aeead3bb6fbe3b32aba7ac682bebae2d))
+
 ## [0.95.0](https://github.com/MunifTanjim/stremthru/compare/0.94.9...0.95.0) (2025-12-24)
 
 
