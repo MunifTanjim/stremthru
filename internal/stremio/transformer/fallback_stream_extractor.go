@@ -3,16 +3,21 @@ package stremio_transformer
 import (
 	"regexp"
 	"strings"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var codecPattern = `hevc|avc|mpeg|xvid|av1|x264|x265|h264|h265`
 var qualityPattern = `\b(?:(?:blu.?ray|bd|br)[ .-]?(?:rip|remux)?|(?:web|dvd|sat|vhs|r5|scr)[ .-]?(?:dl|scr)?[ .-]?(?:mux|rip)?|(?:hc|(?:hd|pd)?tv)[ .-]?(?:rip|scr)?|(?:hd)?cam[ .-]?rip|(?:(?:tele)(?:sync|cine))|(?:hd[ .-]?)?(?:tc|ts))\b`
+var flagEmojiPattern = `[\x{1F1E6}-\x{1F1FF}]{2}`
 
 var codecRegex = regexp.MustCompile(`(?i)\b(` + codecPattern + `)\b`)
 var qualityRegex = regexp.MustCompile(`(?i)\b(` + qualityPattern + `)\b`)
 var resolutionRegex = regexp.MustCompile(`(?i)\b(\d{3,4}p|[248]k)\b`)
 var sizeRegex = regexp.MustCompile(`(?i)\b([\d.]+ \w[bB])\b`)
 var storeRegex = regexp.MustCompile(`(?i)\b(ad|dl|ed|oc|pp|pm|rd|tb|pkp|trb)\+?\b`)
+var seedRegex = regexp.MustCompile(`(?i)👤\s*(\d+)\b`)
+var languagesRegex = regexp.MustCompile(`(?i)(?:(?:🌎|🌐|🗣) *(?<language>[^ /]+(?:(?<language_sep>[ /]+)[^ /]+)*))|(?:(?<language>` + flagEmojiPattern + `(?:(?<language_sep>[ /]+)` + flagEmojiPattern + `)*))`)
 
 func fallbackStreamExtractor(r *StreamExtractorResult) *StreamExtractorResult {
 	input := r.Raw.Name
@@ -28,7 +33,7 @@ func fallbackStreamExtractor(r *StreamExtractorResult) *StreamExtractorResult {
 	}
 	if r.Quality == "" {
 		if match := qualityRegex.FindString(input); match != "" {
-			r.Quality = match
+			r.Quality = strings.Trim(match, " .-")
 		}
 	}
 	if r.Resolution == "" {
@@ -39,6 +44,42 @@ func fallbackStreamExtractor(r *StreamExtractorResult) *StreamExtractorResult {
 	if r.Size == "" {
 		if match := sizeRegex.FindString(input); match != "" {
 			r.Size = match
+		}
+	}
+	if r.Seeders == 0 {
+		if matches := seedRegex.FindStringSubmatch(input); len(matches) == 2 {
+			r.Seeders = util.SafeParseInt(matches[1], 0)
+		}
+	}
+	if len(r.Languages) == 0 {
+		var language, language_sep string
+		for _, match := range languagesRegex.FindAllStringSubmatch(input, 1) {
+			for i, name := range languagesRegex.SubexpNames() {
+				value := match[i]
+				if value != "" {
+					switch name {
+					case StreamExtractorFieldLanguage:
+						language = value
+					case StreamExtractorFieldLanguageSep:
+						language_sep = value
+					}
+				}
+			}
+		}
+		if language != "" {
+			if language_sep != "" {
+				for lang := range strings.SplitSeq(language, language_sep) {
+					lang = strings.ToLower(strings.TrimSpace(lang))
+					if code, ok := language_to_code[lang]; ok {
+						lang = code
+					}
+					r.Languages = append(r.Languages, lang)
+				}
+			} else if code, ok := language_to_code[strings.ToLower(language)]; ok {
+				r.Languages = []string{code}
+			} else {
+				r.Languages = []string{strings.ToLower(language)}
+			}
 		}
 	}
 	if r.TTitle == "" {

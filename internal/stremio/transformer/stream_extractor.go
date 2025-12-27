@@ -149,6 +149,7 @@ var language_to_code = map[string]string{
 
 	"english":    "en",
 	"🇬🇧":         "en",
+	"🇺🇸":         "en",
 	"japanese":   "ja",
 	"🇯🇵":         "ja",
 	"russian":    "ru",
@@ -157,6 +158,7 @@ var language_to_code = map[string]string{
 	"🇮🇹":         "it",
 	"portuguese": "pt",
 	"🇵🇹":         "pt",
+	"🇧🇷":         "pt",
 	"spanish":    "es",
 	"🇪🇸":         "es",
 	"latino":     "es-419",
