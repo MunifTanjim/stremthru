@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -89,36 +90,71 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 				for i := range items {
 					item := &items[i]
 
+					queryMeta := indexerQueryMeta{
+						titles: []string{},
+					}
+
 					nsid, err := torrent_stream.NormalizeStreamId(item.SId)
 					if err != nil {
 						log.Error("failed to normalize stream ID", "error", err, "sid", item.SId)
 						continue
 					}
-
-					it, err := imdb_title.Get(nsid.Id)
-					if err != nil {
-						log.Error("failed to get IMDB title", "error", err, "imdb_id", nsid.Id)
-						continue
-					}
-					if it == nil {
-						log.Warn("IMDB title not found", "imdb_id", nsid.Id)
-						continue
-					}
-
-					queryMeta := indexerQueryMeta{
-						titles: []string{},
-					}
-
-					queryMeta.titles = append(queryMeta.titles, it.Title)
-					if it.OrigTitle != "" && it.OrigTitle != it.Title {
-						queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
-					}
-					if it.Year > 0 {
-						queryMeta.year = it.Year
-					}
-					if nsid.IsSeries() {
-						queryMeta.season = util.SafeParseInt(nsid.Season, 0)
-						queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
+					if nsid.IsAnime {
+						if aniEp := util.SafeParseInt(nsid.Episode, -1); aniEp != -1 {
+							tvdbMaps, err := anidb.GetTVDBEpisodeMaps(nsid.Id, false)
+							if err != nil {
+								log.Error("failed to get AniDB-TVDB episode maps", "error", err, "anidb_id", nsid.Id)
+								continue
+							}
+							if epMap := tvdbMaps.GetByAnidbEpisode(aniEp); epMap != nil {
+								ep := epMap.GetTMDBEpisode(aniEp)
+								titles, err := anidb.GetTitlesByIds([]string{nsid.Id})
+								if err != nil {
+									log.Error("failed to get AniDB titles", "error", err, "anidb_id", nsid.Id)
+									continue
+								}
+								if len(titles) == 0 {
+									log.Warn("AniDB title not found", "anidb_id", nsid.Id)
+									continue
+								}
+								queryMeta.titles = make([]string, 0, len(titles))
+								queryMeta.season = epMap.TVDBSeason
+								queryMeta.ep = ep
+								seenTitle := util.NewSet[string]()
+								for i := range titles {
+									title := &titles[i]
+									if seenTitle.Has(title.Value) {
+										continue
+									}
+									seenTitle.Add(title.Value)
+									queryMeta.titles = append(queryMeta.titles, title.Value)
+									if queryMeta.year == 0 && title.Year != "" {
+										queryMeta.year = util.SafeParseInt(title.Year, 0)
+									}
+								}
+							}
+						}
+					} else {
+						it, err := imdb_title.Get(nsid.Id)
+						if err != nil {
+							log.Error("failed to get IMDB title", "error", err, "imdb_id", nsid.Id)
+							continue
+						}
+						if it == nil {
+							log.Warn("IMDB title not found", "imdb_id", nsid.Id)
+							continue
+						}
+						queryMeta.titles = append(queryMeta.titles, it.Title)
+						if it.OrigTitle != "" && it.OrigTitle != it.Title {
+							queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
+						}
+						if it.Year > 0 {
+							queryMeta.year = it.Year
+						}
+						if nsid.IsSeries() {
+							queryMeta.season = util.SafeParseInt(nsid.Season, 0)
+							queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
+						}
 					}
 
 					sQueriesBySId := map[string][]indexerQuery{}
@@ -137,7 +173,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 					}
 
 					query.SetLimit(-1)
-					if query.IsSupported(tznc.SearchParamIMDBId) {
+					if !nsid.IsAnime && query.IsSupported(tznc.SearchParamIMDBId) {
 						query.Set(tznc.SearchParamIMDBId, nsid.Id)
 						sid := nsid.ToClean()
 						sQuery := indexerQuery{
@@ -160,8 +196,8 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 					} else {
 						query.SetT(tznc.FunctionSearch)
 						supportsYear := query.IsSupported(tznc.SearchParamYear)
-						if supportsYear && it.Year != 0 {
-							query.Set(tznc.SearchParamYear, strconv.Itoa(it.Year))
+						if supportsYear && queryMeta.year != 0 {
+							query.Set(tznc.SearchParamYear, strconv.Itoa(queryMeta.year))
 						}
 						for _, title := range queryMeta.titles {
 							var q strings.Builder

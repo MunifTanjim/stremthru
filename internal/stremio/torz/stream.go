@@ -678,11 +678,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			pulledHashes = append(pulledHashes, hashes...)
 		}
 
-		if !nsid.IsAnime {
-			worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
-				SId: nsid.String(),
-			})
-		}
+		worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
+			SId: nsid.String(),
+		})
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)
 		shared.ErrorInternalServerError(r, "failed to normalize strem id").WithCause(err).Send(w, r)
