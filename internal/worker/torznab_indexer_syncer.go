@@ -14,6 +14,7 @@ import (
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/alitto/pond/v2"
 )
 
 func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
@@ -244,6 +245,29 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 					}
 
 					log.Debug("indexer search completed", "indexer", client.GetId(), "sid", item.SId, "count", len(results))
+
+					// TODO: download torrent files in a separate queue
+					seenSourceURL := util.NewSet[string]()
+					torzFetchWg := pond.NewPool(5)
+					for i := range results {
+						item := &results[i]
+						if item.HasMissingData() && item.SourceLink != "" {
+							if seenSourceURL.Has(item.SourceLink) {
+								continue
+							}
+							seenSourceURL.Add(item.SourceLink)
+
+							torzFetchWg.Submit(func() {
+								err := item.EnsureMagnet()
+								if err != nil {
+									log.Warn("failed to ensure magnet link for torrent", "error", err)
+								}
+							})
+						}
+					}
+					if err := torzFetchWg.Stop().Wait(); err != nil {
+						log.Warn("errors occurred while fetching torrent magnets", "error", err)
+					}
 
 					tInfosToUpsert := []torrent_info.TorrentItem{}
 					for i := range results {
