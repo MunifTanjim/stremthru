@@ -42,7 +42,11 @@ func (l *LetterboxdList) StaleIn() time.Duration {
 	if l.HasUnfetchedItems() {
 		return 15 * time.Minute
 	}
-	return time.Until(l.UpdatedAt.Time.Add(config.Integration.Letterboxd.ListStaleTime))
+	staleIn := time.Until(l.UpdatedAt.Time.Add(config.Integration.Letterboxd.ListStaleTime))
+	if staleIn <= 0 {
+		staleIn = 15 * time.Minute
+	}
+	return staleIn
 }
 
 func (l *LetterboxdList) GetURL() string {
