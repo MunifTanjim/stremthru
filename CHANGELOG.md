@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.95.3](https://github.com/MunifTanjim/stremthru/compare/0.95.2...0.95.3) (2025-12-27)
+
+
+### Bug Fixes
+
+* **letterboxd:** handle negative StaleIn duration for list ([aeb3ae2](https://github.com/MunifTanjim/stremthru/commit/aeb3ae2e64d17e60cb769848263169d232e086e8))
+
 ## [0.95.2](https://github.com/MunifTanjim/stremthru/compare/0.95.1...0.95.2) (2025-12-27)
 
 
