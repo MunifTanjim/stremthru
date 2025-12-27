@@ -133,12 +133,12 @@ type StreamExtractorResult struct {
 	File      StreamExtractorResultFile
 	Hash      string
 	IsPrivate bool
-	Raw       StreamExtractorResultRaw `expr:"-"`
+	Raw       StreamExtractorResultRaw
 	Season    int
 	Seeders   int
 	Store     StreamExtractorResultStore
 	TTitle    string `expr:"-"`
-	Indexer   string
+	Indexer   string `expr:"-"`
 }
 
 var language_to_code = map[string]string{
