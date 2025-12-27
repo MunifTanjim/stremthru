@@ -54,7 +54,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 			Type:        "textarea",
 			Default:     ud.Filter,
 			Title:       "🧪 Stream Filter",
-			Description: `Filter expression using <a href="https://expr-lang.org/docs/language-definition" target="_blank">expr-lang</a> syntax.`,
+			Description: `Filter expression, check <a href="https://github.com/MunifTanjim/stremthru/wiki/Stream-Filter" target="_blank">documentation</a>.`,
 		},
 
 		RPDBAPIKey: configure.Config{
