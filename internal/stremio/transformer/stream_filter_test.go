@@ -214,3 +214,41 @@ func TestStreamFilter_Match_Size(t *testing.T) {
 		})
 	}
 }
+
+func TestStreamFilter_Match_FileSize(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		filter   StreamFilterBlob
+		result   *StreamExtractorResult
+		expected bool
+	}{
+		{
+			name:   "greater than",
+			filter: `File.Size > "700 MB"`,
+			result: &StreamExtractorResult{
+				Result: &ptt.Result{},
+				File: StreamExtractorResultFile{
+					Size: "1.5 GB",
+				},
+			},
+			expected: true,
+		},
+		{
+			name:   "less than",
+			filter: `File.Size < "700 MB"`,
+			result: &StreamExtractorResult{
+				Result: &ptt.Result{},
+				File: StreamExtractorResultFile{
+					Size: "1.5 GB",
+				},
+			},
+			expected: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			sf, err := tc.filter.Parse()
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, sf.Match(tc.result))
+		})
+	}
+}

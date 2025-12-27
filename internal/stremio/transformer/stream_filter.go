@@ -60,6 +60,7 @@ var orderableConverter = map[string]string{
 	"Resolution": "__Resolution__",
 	"Quality":    "__Quality__",
 	"Size":       "__Size__",
+	"File.Size":  "__Size__",
 }
 
 func (ValuePatcher) Visit(node *ast.Node) {
@@ -69,8 +70,20 @@ func (ValuePatcher) Visit(node *ast.Node) {
 				ast.Patch(&bin.Left, toOrderable(bin.Left, converter))
 				ast.Patch(&bin.Right, toOrderable(bin.Right, converter))
 			}
-		} else if _, ok := (bin.Right).(*ast.IdentifierNode); ok {
+		} else if m, ok := (bin.Left).(*ast.MemberNode); ok && m.Node.String() == "File" && m.Property.String() == `"Size"` {
+			if converter, exists := orderableConverter["File.Size"]; exists {
+				ast.Patch(&bin.Left, toOrderable(bin.Left, converter))
+				ast.Patch(&bin.Right, toOrderable(bin.Right, converter))
+			}
+		}
+
+		if _, ok := (bin.Right).(*ast.IdentifierNode); ok {
 			if converter, exists := orderableConverter[bin.Right.String()]; exists {
+				ast.Patch(&bin.Left, toOrderable(bin.Left, converter))
+				ast.Patch(&bin.Right, toOrderable(bin.Right, converter))
+			}
+		} else if m, ok := (bin.Right).(*ast.MemberNode); ok && m.Node.String() == "File" && m.Property.String() == `"Size"` {
+			if converter, exists := orderableConverter["File.Size"]; exists {
 				ast.Patch(&bin.Left, toOrderable(bin.Left, converter))
 				ast.Patch(&bin.Right, toOrderable(bin.Right, converter))
 			}
