@@ -106,7 +106,10 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 				if err != nil {
 					return nil, nil, err
 				}
-				queryMeta.titles = make([]string, len(titles))
+				if len(titles) == 0 {
+					return nil, nil, errors.New("no titles found for anidb id: " + nsid.Id)
+				}
+				queryMeta.titles = make([]string, 0, len(titles))
 				queryMeta.season = epMap.TVDBSeason
 				queryMeta.ep = ep
 				seenTitle := util.NewSet[string]()
@@ -116,7 +119,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 						continue
 					}
 					seenTitle.Add(title.Value)
-					queryMeta.titles[i] = title.Value
+					queryMeta.titles = append(queryMeta.titles, title.Value)
 					if queryMeta.year == 0 && title.Year != "" {
 						queryMeta.year = util.SafeParseInt(title.Year, 0)
 					}
@@ -132,15 +135,15 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 			return nil, nil, errors.New("imdb title not found: " + nsid.Id)
 		}
 		queryMeta.titles = append(queryMeta.titles, it.Title)
+		if it.OrigTitle != "" && it.OrigTitle != it.Title {
+			queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
+		}
 		if it.Year > 0 {
 			queryMeta.year = it.Year
 		}
 		if nsid.IsSeries() {
 			queryMeta.season = util.SafeParseInt(nsid.Season, 0)
 			queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
-		}
-		if it.OrigTitle != "" && it.OrigTitle != it.Title {
-			queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
 		}
 	}
 
