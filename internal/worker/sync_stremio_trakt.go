@@ -580,9 +580,6 @@ func InitSyncStremioTraktWorker(conf *WorkerConfig) *Worker {
 				if !strings.HasPrefix(item.Id, "tt") {
 					continue
 				}
-				if item.Removed {
-					continue
-				}
 				switch item.Type {
 				case "movie":
 					ctx.stremioMovies = append(ctx.stremioMovies, item)
