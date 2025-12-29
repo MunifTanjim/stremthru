@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.95.3](https://github.com/MunifTanjim/stremthru/compare/0.95.2...0.95.3) (2025-12-29)
+
+
+### Bug Fixes
+
+* **core:** deprioritize x-forwarded-for for ip detection ([c264334](https://github.com/MunifTanjim/stremthru/commit/c264334b8447ffbf74514031fc6b30fb468d8545))
+* **health:** include client ip for health debugging ([4c611c6](https://github.com/MunifTanjim/stremthru/commit/4c611c629880f8b9a1d87e989e5bfc3a4e18bc13))
+* **health:** include request ip headers for health debugging ([65b55a3](https://github.com/MunifTanjim/stremthru/commit/65b55a3179239c178f6eea81a11a3fe439cec388))
+* **letterboxd:** handle negative StaleIn duration for list ([aeb3ae2](https://github.com/MunifTanjim/stremthru/commit/aeb3ae2e64d17e60cb769848263169d232e086e8))
+
 ## [0.95.2](https://github.com/MunifTanjim/stremthru/compare/0.95.1...0.95.2) (2025-12-27)
 
 
