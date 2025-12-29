@@ -24,10 +24,11 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 type HealthDebugDataIP struct {
-	Client  string            `json:"client"`
-	Exposed map[string]string `json:"exposed"`
-	Machine string            `json:"machine"`
-	Tunnel  map[string]string `json:"tunnel"`
+	Client         string            `json:"client"`
+	Exposed        map[string]string `json:"exposed"`
+	Machine        string            `json:"machine"`
+	Tunnel         map[string]string `json:"tunnel"`
+	RequestHeaders map[string]string `json:"request_headers"`
 }
 
 type HealthDebugDataStore struct {
@@ -64,7 +65,6 @@ func handleHealthDebug(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		clientIp := core.GetClientIP(r)
 		machineIp := config.IP.GetMachineIP()
 
 		ipMapErrs := []error{}
@@ -117,10 +117,11 @@ func handleHealthDebug(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data.IP = &HealthDebugDataIP{
-			Client:  clientIp,
-			Exposed: exposed,
-			Machine: machineIp,
-			Tunnel:  tunnel,
+			Client:         core.GetClientIP(r),
+			Exposed:        exposed,
+			Machine:        machineIp,
+			Tunnel:         tunnel,
+			RequestHeaders: core.GetRequestIPHeaders(r),
 		}
 	}
 

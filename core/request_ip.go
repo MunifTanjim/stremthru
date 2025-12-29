@@ -68,3 +68,13 @@ func GetClientIP(r *http.Request) string {
 	}
 	return GetRequestIP(r)
 }
+
+func GetRequestIPHeaders(r *http.Request) map[string]string {
+	ipHeaders := make(map[string]string)
+	for _, header := range ipRequestHeaders {
+		if values := r.Header.Values(header); len(values) != 0 {
+			ipHeaders[header] = strings.Join(values, " ")
+		}
+	}
+	return ipHeaders
+}
