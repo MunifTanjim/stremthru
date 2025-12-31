@@ -1,0 +1,7 @@
+services:
+  inn:
+    image: greenbender/inn
+    environment:
+      SERVER_NAME: localhost
+    ports:
+      - 119:119

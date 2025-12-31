@@ -39,3 +39,33 @@ async function parseNzbFile(file: File) {
   });
   return data;
 }
+
+type DownloadNzbFileParams = {
+  groups: string[];
+  name: string;
+  segments: ParsedNZBFileSegment[];
+};
+
+export async function downloadNzbFile(params: DownloadNzbFileParams) {
+  const response = await fetch("/dash/api/usenet/nzb/download", {
+    body: JSON.stringify(params),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Download failed");
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = params.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

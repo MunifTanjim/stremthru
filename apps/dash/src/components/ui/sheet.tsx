@@ -6,7 +6,6 @@ import { Slottable } from "@radix-ui/react-slot";
 import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Slottable } from "@radix-ui/react-slot";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;

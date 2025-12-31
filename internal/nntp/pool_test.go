@@ -6,19 +6,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/nntp/nntptest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewPool_DefaultValues(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -28,14 +29,14 @@ func TestNewPool_DefaultValues(t *testing.T) {
 }
 
 func TestNewPool_CustomValues(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 5,
 	})
@@ -52,16 +53,16 @@ func TestNewPool_PanicOnMissingHost(t *testing.T) {
 }
 
 func TestPool_Acquire(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -83,16 +84,16 @@ func TestPool_Acquire(t *testing.T) {
 }
 
 func TestPool_AcquireMultiple(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 3,
 	})
@@ -119,17 +120,17 @@ func TestPool_AcquireMultiple(t *testing.T) {
 }
 
 func TestPool_AcquireForGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("GROUP", "211 100 1 100 alt.test")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("GROUP", "211 100 1 100 alt.test")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -150,18 +151,18 @@ func TestPool_AcquireForGroup(t *testing.T) {
 }
 
 func TestPool_AcquireForGroup_SwitchesGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("GROUP alt.test", "211 100 1 100 alt.test")
-	server.setResponse("GROUP alt.other", "211 50 1 50 alt.other")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("GROUP alt.test", "211 100 1 100 alt.test")
+	server.SetResponse("GROUP alt.other", "211 50 1 50 alt.other")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 1, // Force reuse
 	})
@@ -181,17 +182,17 @@ func TestPool_AcquireForGroup_SwitchesGroup(t *testing.T) {
 }
 
 func TestPool_AcquireForGroup_NoSuchGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("GROUP", "411 No such group")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("GROUP", "411 No such group")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -214,16 +215,16 @@ func TestPool_AcquireForGroup_NoSuchGroup(t *testing.T) {
 }
 
 func TestPooledConnection_Release_Idempotent(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -242,16 +243,16 @@ func TestPooledConnection_Release_Idempotent(t *testing.T) {
 }
 
 func TestPooledConnection_Destroy(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -273,16 +274,16 @@ func TestPooledConnection_Destroy(t *testing.T) {
 }
 
 func TestPooledConnection_Hijack(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -306,16 +307,16 @@ func TestPooledConnection_Hijack(t *testing.T) {
 }
 
 func TestPool_ConcurrentAcquire(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 5,
 	})
@@ -346,16 +347,16 @@ func TestPool_ConcurrentAcquire(t *testing.T) {
 }
 
 func TestPool_AcquireWithCanceledContext(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	poolCtx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 1,
 	})
@@ -377,16 +378,16 @@ func TestPool_AcquireWithCanceledContext(t *testing.T) {
 }
 
 func TestPool_Close(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 	})
 	require.NoError(t, err)
@@ -405,16 +406,16 @@ func TestPool_Close(t *testing.T) {
 }
 
 func TestPool_Stats(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host: server.host(),
-			Port: server.port(),
+			Host: server.Host(),
+			Port: server.Port(),
 		},
 		MaxSize: 5,
 	})
@@ -441,18 +442,18 @@ func TestPool_Stats(t *testing.T) {
 }
 
 func TestPool_WithAuthentication(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("AUTHINFO USER testuser", "381 Password required")
-	server.setResponse("AUTHINFO PASS testpass", "281 Authentication accepted")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("AUTHINFO USER testuser", "381 Password required")
+	server.SetResponse("AUTHINFO PASS testpass", "281 Authentication accepted")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host:     server.host(),
-			Port:     server.port(),
+			Host:     server.Host(),
+			Port:     server.Port(),
 			Username: "testuser",
 			Password: "testpass",
 		},
@@ -467,18 +468,18 @@ func TestPool_WithAuthentication(t *testing.T) {
 }
 
 func TestPool_AuthenticationFailed(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("AUTHINFO USER testuser", "381 Password required")
-	server.setResponse("AUTHINFO PASS wrongpass", "481 Authentication failed")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("AUTHINFO USER testuser", "381 Password required")
+	server.SetResponse("AUTHINFO PASS wrongpass", "481 Authentication failed")
+	server.Start(t)
+	defer server.Close()
 
 	ctx := t.Context()
 
 	pool, err := NewPool(&PoolConfig{
 		ConnectionConfig: ConnectionConfig{
-			Host:     server.host(),
-			Port:     server.port(),
+			Host:     server.Host(),
+			Port:     server.Port(),
 			Username: "testuser",
 			Password: "wrongpass",
 		},

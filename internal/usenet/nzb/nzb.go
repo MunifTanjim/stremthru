@@ -52,8 +52,10 @@ type File struct {
 	Groups   []string  `xml:"groups>group"`
 	Segments []Segment `xml:"segments>segment"`
 
-	name   string `xml:"-"`
-	number int    `xml:"-"`
+	name       string   `xml:"-"`
+	number     int      `xml:"-"`
+	totalSize  int64    `xml:"-"`
+	messageIds []string `xml:"-"`
 }
 
 func (f *File) GetName() string {
@@ -65,7 +67,19 @@ type NZB struct {
 	Head    *Head    `xml:"head"`
 	Files   []File   `xml:"file"`
 
-	subjectParser *subjectParser `xml:"-"`
+	subjectParsed bool `xml:"-"`
+}
+
+func (n *NZB) ParseFileSubject() {
+	if n.subjectParsed {
+		return
+	}
+	n.subjectParsed = true
+	subjectParser := newSubjectParser(len(n.Files))
+	for i := range n.Files {
+		f := &n.Files[i]
+		subjectParser.Parse(f)
+	}
 }
 
 func Parse(r io.Reader) (*NZB, error) {
@@ -80,12 +94,7 @@ func Parse(r io.Reader) (*NZB, error) {
 		}
 	}
 
-	nzb.subjectParser = newSubjectParser(len(nzb.Files))
-
-	for i := range nzb.Files {
-		f := &nzb.Files[i]
-		nzb.subjectParser.Parse(f)
-	}
+	nzb.ParseFileSubject()
 
 	slices.SortStableFunc(nzb.Files, func(a, b File) int {
 		return a.number - b.number
@@ -93,7 +102,7 @@ func Parse(r io.Reader) (*NZB, error) {
 
 	for i := range nzb.Files {
 		f := &nzb.Files[i]
-		slices.SortFunc(f.Segments, func(a, b Segment) int {
+		slices.SortStableFunc(f.Segments, func(a, b Segment) int {
 			return a.Number - b.Number
 		})
 	}
@@ -128,23 +137,39 @@ func (n *NZB) GetMeta(metaType string) string {
 	return ""
 }
 
-func (f *File) TotalSize() (bytes int64) {
-	for i := range f.Segments {
-		bytes += f.Segments[i].Bytes
+func (n *NZB) GetLargestFileIdx() int {
+	largestIdx := -1
+	largestSize := int64(0)
+	for i := range n.Files {
+		size := n.Files[i].TotalSize()
+		if size > largestSize {
+			largestSize = size
+			largestIdx = i
+		}
 	}
-	return bytes
+	return largestIdx
+}
+
+func (f *File) TotalSize() int64 {
+	if f.totalSize == 0 {
+		var bytes int64
+		for i := range f.Segments {
+			bytes += f.Segments[i].Bytes
+		}
+		f.totalSize = bytes
+	}
+	return f.totalSize
 }
 
 func (f *File) MessageIds() []string {
-	slices.SortFunc(f.Segments, func(a, b Segment) int {
-		return a.Number - b.Number
-	})
-
-	ids := make([]string, len(f.Segments))
-	for i := range f.Segments {
-		ids[i] = strings.TrimSpace(f.Segments[i].MessageId)
+	if f.messageIds == nil {
+		ids := make([]string, len(f.Segments))
+		for i := range f.Segments {
+			ids[i] = strings.TrimSpace(f.Segments[i].MessageId)
+		}
+		f.messageIds = ids
 	}
-	return ids
+	return f.messageIds
 }
 
 func (f *File) SegmentCount() int {

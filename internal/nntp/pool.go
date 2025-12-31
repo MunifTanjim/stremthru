@@ -3,7 +3,6 @@ package nntp
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"math"
 	"net/textproto"
 	"strconv"
@@ -11,13 +10,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/jackc/puddle/v2"
 )
 
 type PoolConfig struct {
 	ConnectionConfig
 
-	Log *slog.Logger
+	Log *logger.Logger
 
 	MinSize int32
 	MaxSize int32
@@ -27,13 +27,13 @@ type PoolConfig struct {
 	ReconnectDelay     time.Duration
 }
 
-func (c *PoolConfig) getId() string {
+func (c *PoolConfig) Id() string {
 	return c.Host + ":" + strconv.Itoa(c.Port) + ":" + c.Username
 }
 
 func (c *PoolConfig) setDefaults() {
 	if c.Log == nil {
-		c.Log = slog.Default()
+		c.Log = logger.Scoped("nntp/pool")
 	}
 	if c.MinSize < 0 {
 		c.MinSize = 0
@@ -66,7 +66,7 @@ const (
 )
 
 type Pool struct {
-	Log *slog.Logger
+	Log *logger.Logger
 
 	id     string
 	pool   *puddle.Pool[*Connection]
@@ -84,7 +84,7 @@ type Pool struct {
 
 func (p *Pool) Id() string {
 	if p.id == "" {
-		p.id = p.config.getId()
+		p.id = p.config.Id()
 	}
 	return p.id
 }
@@ -172,10 +172,13 @@ func (p *Pool) ensureMinSize(ctx context.Context) error {
 }
 
 func (p *Pool) handleConnectionFailure(errs ...error) {
+	p.Log.Trace("handleConnectionFailure", "error_count", len(errs))
+
 	for _, err := range errs {
 		var nntpErr *Error
 		if errors.As(err, &nntpErr) {
 			if nntpErr.isAuthError() {
+				p.Log.Trace("handleConnectionFailure auth error", "error", nntpErr)
 				p.SetState(PoolStateAuthFailed)
 				return
 			}
@@ -185,6 +188,7 @@ func (p *Pool) handleConnectionFailure(errs ...error) {
 	currentState := p.GetState()
 
 	if currentState == PoolStateOnline || currentState == PoolStateConnecting {
+		p.Log.Trace("handleConnectionFailure setting offline", "previous_state", currentState)
 		p.SetState(PoolStateOffline)
 		if currentState == PoolStateOnline {
 			p.destroyAllIdles()
@@ -284,6 +288,8 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 		return nil, ErrPoolNotOnline
 	}
 
+	p.Log.Trace("Acquire acquiring connection", "state", currState)
+
 	res, err := p.pool.Acquire(ctx)
 	if err != nil {
 		return nil, err
@@ -292,13 +298,17 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 	conn := &PooledConnection{
 		Connection: res.Value(),
 		resource:   res,
+		pool:       p,
 	}
+
+	p.Log.Trace("Acquire health check", "provider", p.Id())
 
 	if _, err := conn.Date(); err != nil {
 		var tpErr *textproto.Error
 		var nntpErr *Error
 		if !errors.As(err, &tpErr) && !errors.As(err, &nntpErr) {
 			if isConnectionError(err) {
+				p.Log.Trace("Acquire connection error, retrying", "error", err)
 				conn.Destroy()
 				return p.Acquire(ctx)
 			}
@@ -306,6 +316,8 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 			return nil, err
 		}
 	}
+
+	p.Log.Trace("Acquire connection acquired", "provider", p.Id())
 
 	return conn, nil
 }
@@ -347,6 +359,7 @@ func (p *Pool) Close() {
 type PooledConnection struct {
 	*Connection
 	resource *puddle.Resource[*Connection]
+	pool     *Pool
 	released atomic.Bool
 }
 
@@ -374,4 +387,8 @@ func (pc *PooledConnection) Hijack() *Connection {
 
 func (pc *PooledConnection) CurrentGroup() string {
 	return pc.currentGroup
+}
+
+func (pc *PooledConnection) ProviderId() string {
+	return pc.pool.Id()
 }

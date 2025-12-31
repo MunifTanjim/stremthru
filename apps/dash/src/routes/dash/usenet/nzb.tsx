@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, UploadIcon, XIcon } from "lucide-react";
+import { DownloadIcon, FileText, UploadIcon, XIcon } from "lucide-react";
 import { DateTime } from "luxon";
 import prettyBytes from "pretty-bytes";
 import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { ParsedNZB, useNzbParseMutation } from "@/api/usenet";
+import { downloadNzbFile, ParsedNZB, useNzbParseMutation } from "@/api/usenet";
 import { Form, useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {
@@ -249,18 +249,45 @@ function RouteComponent() {
                         )}
                       </div>
                     </div>
-                    {file.groups.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {file.groups.map((group) => (
-                          <span
-                            className="bg-muted text-muted-foreground rounded px-2 py-1 text-xs"
-                            key={group}
-                          >
-                            {group}
-                          </span>
-                        ))}
+                    <div className="flex flex-row justify-between">
+                      <div>
+                        {file.groups.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {file.groups.map((group) => (
+                              <span
+                                className="bg-muted text-muted-foreground rounded px-2 py-1 text-xs"
+                                key={group}
+                              >
+                                {group}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div>
+                        <Button
+                          onClick={async () => {
+                            try {
+                              await downloadNzbFile({
+                                name: file.name,
+                                groups: file.groups,
+                                segments: file.segments,
+                              });
+                              toast.success("Download started");
+                            } catch (error) {
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Download failed",
+                              );
+                            }
+                          }}
+                          size="icon-sm"
+                        >
+                          <DownloadIcon />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

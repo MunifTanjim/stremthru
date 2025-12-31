@@ -1,27 +1,29 @@
 package nntp
 
 import (
+	"io"
 	"testing"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/nntp/nntptest"
 	"github.com/stretchr/testify/assert"
 )
 
 // TestCapabilities uses the example from RFC 3977 Section 5.2
 func TestCapabilities(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 5.2
-	server.setMultiLineResponse("CAPABILITIES", "101 Capability list:", []string{
+	server.SetResponse("CAPABILITIES", "101 Capability list:", []string{
 		"VERSION 2",
 		"READER",
 		"LIST ACTIVE NEWSGROUPS",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -52,14 +54,14 @@ func TestCapabilities_NotConnected(t *testing.T) {
 }
 
 func TestCapabilities_ServerError(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	server.setResponse("CAPABILITIES", "500 Command not recognized")
-	server.start(t)
-	defer server.close()
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	server.SetResponse("CAPABILITIES", "500 Command not recognized")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -77,21 +79,21 @@ func TestCapabilities_ServerError(t *testing.T) {
 
 // TestList uses the example from RFC 3977 Section 7.6.1
 func TestList(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.1
-	server.setMultiLineResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
+	server.SetResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
 		"misc.test 3002322 3000234 y",
 		"comp.risks 442001 441099 m",
 		"alt.rfc-writers.recovery 4 1 y",
 		"tx.natives.recovery 89 56 y",
 		"tx.natives.recovery.d 11 9 n",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -111,21 +113,21 @@ func TestList(t *testing.T) {
 // TestList_DefaultKeyword uses the example from RFC 3977 Section 7.6.1
 // "LIST with no keyword" returns the same as LIST ACTIVE
 func TestList_DefaultKeyword(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.1
-	server.setMultiLineResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
+	server.SetResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
 		"misc.test 3002322 3000234 y",
 		"comp.risks 442001 441099 m",
 		"alt.rfc-writers.recovery 4 1 y",
 		"tx.natives.recovery 89 56 y",
 		"tx.natives.recovery.d 11 9 n",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -140,18 +142,18 @@ func TestList_DefaultKeyword(t *testing.T) {
 
 // TestList_WithArgument uses the example from RFC 3977 Section 7.6.3 (wildmat)
 func TestList_WithArgument(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.3 (wildmat)
-	server.setMultiLineResponse("LIST ACTIVE *.recovery", "215 list of newsgroups follows", []string{
+	server.SetResponse("LIST ACTIVE *.recovery", "215 list of newsgroups follows", []string{
 		"alt.rfc-writers.recovery 4 1 y",
 		"tx.natives.recovery 89 56 y",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -181,21 +183,21 @@ func TestList_NotConnected(t *testing.T) {
 
 // TestListActive uses the example from RFC 3977 Section 7.6.3
 func TestListActive(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.3
-	server.setMultiLineResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
+	server.SetResponse("LIST ACTIVE", "215 list of newsgroups follows", []string{
 		"misc.test 3002322 3000234 y",
 		"comp.risks 442001 441099 m",
 		"alt.rfc-writers.recovery 4 1 y",
 		"tx.natives.recovery 89 56 y",
 		"tx.natives.recovery.d 11 9 n",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -228,18 +230,18 @@ func TestListActive(t *testing.T) {
 
 // TestListActive_WithWildmat uses the example from RFC 3977 Section 7.6.3
 func TestListActive_WithWildmat(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.3 (wildmat)
-	server.setMultiLineResponse("LIST ACTIVE *.recovery", "215 list of newsgroups follows", []string{
+	server.SetResponse("LIST ACTIVE *.recovery", "215 list of newsgroups follows", []string{
 		"alt.rfc-writers.recovery 4 1 y",
 		"tx.natives.recovery 89 56 y",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -262,19 +264,19 @@ func TestListActive_WithWildmat(t *testing.T) {
 
 // TestListActiveTimes uses the example from RFC 3977 Section 7.6.4
 func TestListActiveTimes(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.4
-	server.setMultiLineResponse("LIST ACTIVE.TIMES", "215 information follows", []string{
+	server.SetResponse("LIST ACTIVE.TIMES", "215 information follows", []string{
 		"misc.test 930445408 <creatme@isc.org>",
 		"alt.rfc-writers.recovery 930562309 <m@example.com>",
 		"tx.natives.recovery 930678923 <sob@academ.com>",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -300,17 +302,17 @@ func TestListActiveTimes(t *testing.T) {
 
 // TestListActiveTimes_WithWildmat uses the example from RFC 3977 Section 7.6.4 (wildmat)
 func TestListActiveTimes_WithWildmat(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.4 (wildmat)
-	server.setMultiLineResponse("LIST ACTIVE.TIMES tx.*", "215 information follows", []string{
+	server.SetResponse("LIST ACTIVE.TIMES tx.*", "215 information follows", []string{
 		"tx.natives.recovery 930678923 <sob@academ.com>",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -339,19 +341,19 @@ func TestListActiveTimes_NotConnected(t *testing.T) {
 
 // TestListNewsGroups uses the example from RFC 3977 Section 7.6.6
 func TestListNewsGroups(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.6
-	server.setMultiLineResponse("LIST NEWSGROUPS", "215 information follows", []string{
+	server.SetResponse("LIST NEWSGROUPS", "215 information follows", []string{
 		"misc.test General Usenet testing",
 		"alt.rfc-writers.recovery RFC Writers Recovery",
 		"tx.natives.recovery Texas Natives Recovery",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -374,18 +376,18 @@ func TestListNewsGroups(t *testing.T) {
 
 // TestListNewsGroups_WithWildmat uses the format from RFC 3977 Section 7.6.6 with wildmat
 func TestListNewsGroups_WithWildmat(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Based on RFC 3977 Section 7.6.6 format with wildmat filtering
-	server.setMultiLineResponse("LIST NEWSGROUPS *.recovery", "215 information follows", []string{
+	server.SetResponse("LIST NEWSGROUPS *.recovery", "215 information follows", []string{
 		"alt.rfc-writers.recovery RFC Writers Recovery",
 		"tx.natives.recovery Texas Natives Recovery",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -415,19 +417,19 @@ func TestListNewsGroups_NotConnected(t *testing.T) {
 
 // TestListDistribPats uses the example from RFC 3977 Section 7.6.5
 func TestListDistribPats(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 7.6.5
-	server.setMultiLineResponse("LIST DISTRIB.PATS", "215 information follows", []string{
+	server.SetResponse("LIST DISTRIB.PATS", "215 information follows", []string{
 		"10:local.*:local",
 		"5:*:world",
 		"20:local.here.*:thissite",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -467,15 +469,15 @@ func TestListDistribPats_NotConnected(t *testing.T) {
 
 // TestGroup uses the example from RFC 3977 Section 6.1.1
 func TestGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.1
-	server.setResponse("GROUP misc.test", "211 1234 3000234 3002322 misc.test")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("GROUP misc.test", "211 1234 3000234 3002322 misc.test")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -493,15 +495,15 @@ func TestGroup(t *testing.T) {
 
 // TestGroup_EmptyGroup uses the example from RFC 3977 Section 6.1.1
 func TestGroup_EmptyGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.1 (empty group preferred response)
-	server.setResponse("GROUP example.currently.empty.newsgroup", "211 0 4000 3999 example.currently.empty.newsgroup")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("GROUP example.currently.empty.newsgroup", "211 0 4000 3999 example.currently.empty.newsgroup")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -519,15 +521,15 @@ func TestGroup_EmptyGroup(t *testing.T) {
 
 // TestGroup_UnknownGroup uses the example from RFC 3977 Section 6.1.1
 func TestGroup_UnknownGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.1 (unknown group)
-	server.setResponse("GROUP example.is.sob.bradner.or.barber", "411 example.is.sob.bradner.or.barber is unknown")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("GROUP example.is.sob.bradner.or.barber", "411 example.is.sob.bradner.or.barber is unknown")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -555,9 +557,9 @@ func TestGroup_NotConnected(t *testing.T) {
 
 // TestArticle_ByMessageId uses the example from RFC 3977 Section 6.2.1
 func TestArticle_ByMessageId(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.1
-	server.setMultiLineResponse("ARTICLE <45223423@example.com>", "220 0 <45223423@example.com>", []string{
+	server.SetResponse("ARTICLE <45223423@example.com>", "220 0 <45223423@example.com>", []string{
 		"Path: pathost!demo!whitehouse!not-for-mail",
 		"From: \"Demo User\" <nobody@example.net>",
 		"Newsgroups: misc.test",
@@ -568,12 +570,12 @@ func TestArticle_ByMessageId(t *testing.T) {
 		"",
 		"This is just a test article.",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -592,9 +594,9 @@ func TestArticle_ByMessageId(t *testing.T) {
 
 // TestArticle_ByNumber uses the example from RFC 3977 Section 6.2.1
 func TestArticle_ByNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.1
-	server.setMultiLineResponse("ARTICLE 3000234", "220 3000234 <45223423@example.com>", []string{
+	server.SetResponse("ARTICLE 3000234", "220 3000234 <45223423@example.com>", []string{
 		"Path: pathost!demo!whitehouse!not-for-mail",
 		"From: \"Demo User\" <nobody@example.net>",
 		"Newsgroups: misc.test",
@@ -605,12 +607,12 @@ func TestArticle_ByNumber(t *testing.T) {
 		"",
 		"This is just a test article.",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -627,15 +629,15 @@ func TestArticle_ByNumber(t *testing.T) {
 
 // TestArticle_NotFound uses the example from RFC 3977 Section 6.2.1
 func TestArticle_NotFound(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.1
-	server.setResponse("ARTICLE <i.am.not.there@example.com>", "430 No Such Article Found")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("ARTICLE <i.am.not.there@example.com>", "430 No Such Article Found")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -649,15 +651,15 @@ func TestArticle_NotFound(t *testing.T) {
 
 // TestArticle_NoSuchNumber uses the example from RFC 3977 Section 6.2.1
 func TestArticle_NoSuchNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.1
-	server.setResponse("ARTICLE 300256", "423 No article with that number")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("ARTICLE 300256", "423 No article with that number")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -685,9 +687,9 @@ func TestArticle_NotConnected(t *testing.T) {
 
 // TestHead_ByMessageId uses the example from RFC 3977 Section 6.2.2
 func TestHead_ByMessageId(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.2
-	server.setMultiLineResponse("HEAD <45223423@example.com>", "221 0 <45223423@example.com>", []string{
+	server.SetResponse("HEAD <45223423@example.com>", "221 0 <45223423@example.com>", []string{
 		"Path: pathost!demo!whitehouse!not-for-mail",
 		"From: \"Demo User\" <nobody@example.net>",
 		"Newsgroups: misc.test",
@@ -696,12 +698,12 @@ func TestHead_ByMessageId(t *testing.T) {
 		"Organization: An Example Net, Uncertain, Texas",
 		"Message-ID: <45223423@example.com>",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -721,9 +723,9 @@ func TestHead_ByMessageId(t *testing.T) {
 
 // TestHead_ByNumber uses the example from RFC 3977 Section 6.2.2
 func TestHead_ByNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.2
-	server.setMultiLineResponse("HEAD 3000234", "221 3000234 <45223423@example.com>", []string{
+	server.SetResponse("HEAD 3000234", "221 3000234 <45223423@example.com>", []string{
 		"Path: pathost!demo!whitehouse!not-for-mail",
 		"From: \"Demo User\" <nobody@example.net>",
 		"Newsgroups: misc.test",
@@ -732,12 +734,12 @@ func TestHead_ByNumber(t *testing.T) {
 		"Organization: An Example Net, Uncertain, Texas",
 		"Message-ID: <45223423@example.com>",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -754,15 +756,15 @@ func TestHead_ByNumber(t *testing.T) {
 
 // TestHead_NotFound uses the example from RFC 3977 Section 6.2.2
 func TestHead_NotFound(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.2
-	server.setResponse("HEAD <i.am.not.there@example.com>", "430 No Such Article Found")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("HEAD <i.am.not.there@example.com>", "430 No Such Article Found")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -776,15 +778,15 @@ func TestHead_NotFound(t *testing.T) {
 
 // TestHead_NoSuchNumber uses the example from RFC 3977 Section 6.2.2
 func TestHead_NoSuchNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.2
-	server.setResponse("HEAD 300256", "423 No article with that number")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("HEAD 300256", "423 No article with that number")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -812,17 +814,17 @@ func TestHead_NotConnected(t *testing.T) {
 
 // TestBody_ByMessageId uses the example from RFC 3977 Section 6.2.3
 func TestBody_ByMessageId(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.3
-	server.setMultiLineResponse("BODY <45223423@example.com>", "222 0 <45223423@example.com>", []string{
+	server.SetResponse("BODY <45223423@example.com>", "222 0 <45223423@example.com>", []string{
 		"This is just a test article.",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -838,19 +840,55 @@ func TestBody_ByMessageId(t *testing.T) {
 	assert.NotNil(t, article.Body, "article.Body")
 }
 
-// TestBody_ByNumber uses the example from RFC 3977 Section 6.2.3
-func TestBody_ByNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
-	// Example from RFC 3977 Section 6.2.3
-	server.setMultiLineResponse("BODY 3000234", "222 3000234 <45223423@example.com>", []string{
-		"This is just a test article.",
+func TestBody_ReaderContent(t *testing.T) {
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	// Test multi-line body content to verify reader handles line breaks correctly
+	server.SetResponse("BODY <test@example.com>", "222 0 <test@example.com>", []string{
+		"This is the first line.",
+		"This is the second line.",
+		"",
+		"This is the fourth line after a blank line.",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
+	})
+
+	err := client.Connect()
+	assert.NoError(t, err, "Connect()")
+	defer client.Close()
+
+	article, err := client.Body("<test@example.com>")
+	assert.NoError(t, err, "Body()")
+	assert.NotNil(t, article, "article")
+	assert.NotNil(t, article.Body, "article.Body")
+
+	// Read all content from the body reader
+	content, err := io.ReadAll(article.Body)
+	assert.NoError(t, err, "ReadAll()")
+
+	// Verify the content matches expected multi-line body
+	// Note: textproto.DotReader normalizes CRLF to LF
+	expected := "This is the first line.\nThis is the second line.\n\nThis is the fourth line after a blank line.\n"
+	assert.Equal(t, expected, string(content), "body content")
+}
+
+// TestBody_ByNumber uses the example from RFC 3977 Section 6.2.3
+func TestBody_ByNumber(t *testing.T) {
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
+	// Example from RFC 3977 Section 6.2.3
+	server.SetResponse("BODY 3000234", "222 3000234 <45223423@example.com>", []string{
+		"This is just a test article.",
+	})
+	server.Start(t)
+	defer server.Close()
+
+	client := NewClient(&ClientConfig{
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -866,15 +904,15 @@ func TestBody_ByNumber(t *testing.T) {
 
 // TestBody_NotFound uses the example from RFC 3977 Section 6.2.3
 func TestBody_NotFound(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.3
-	server.setResponse("BODY <i.am.not.there@example.com>", "430 No Such Article Found")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("BODY <i.am.not.there@example.com>", "430 No Such Article Found")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -888,15 +926,15 @@ func TestBody_NotFound(t *testing.T) {
 
 // TestBody_NoSuchNumber uses the example from RFC 3977 Section 6.2.3
 func TestBody_NoSuchNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.3
-	server.setResponse("BODY 300256", "423 No article with that number")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("BODY 300256", "423 No article with that number")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -924,15 +962,15 @@ func TestBody_NotConnected(t *testing.T) {
 
 // TestStat_ByMessageId uses the example from RFC 3977 Section 6.2.4
 func TestStat_ByMessageId(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.4
-	server.setResponse("STAT <45223423@example.com>", "223 0 <45223423@example.com>")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("STAT <45223423@example.com>", "223 0 <45223423@example.com>")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -947,15 +985,15 @@ func TestStat_ByMessageId(t *testing.T) {
 
 // TestStat_ByNumber uses the example from RFC 3977 Section 6.2.4
 func TestStat_ByNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.4
-	server.setResponse("STAT 3000234", "223 3000234 <45223423@example.com>")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("STAT 3000234", "223 3000234 <45223423@example.com>")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -970,15 +1008,15 @@ func TestStat_ByNumber(t *testing.T) {
 
 // TestStat_NotFound uses the example from RFC 3977 Section 6.2.4
 func TestStat_NotFound(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.4
-	server.setResponse("STAT <i.am.not.there@example.com>", "430 No Such Article Found")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("STAT <i.am.not.there@example.com>", "430 No Such Article Found")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -991,15 +1029,15 @@ func TestStat_NotFound(t *testing.T) {
 
 // TestStat_NoSuchNumber uses the example from RFC 3977 Section 6.2.4
 func TestStat_NoSuchNumber(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.2.4
-	server.setResponse("STAT 300256", "423 No article with that number")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("STAT 300256", "423 No article with that number")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1025,17 +1063,17 @@ func TestStat_NotConnected(t *testing.T) {
 
 // TestOver uses the example from RFC 3977 Section 8.3
 func TestOver(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 8.3 (TAB-separated fields)
-	server.setMultiLineResponse("OVER", "224 Overview information follows", []string{
+	server.SetResponse("OVER", "224 Overview information follows", []string{
 		"3000234\tI am just a test article\t\"Demo User\" <nobody@example.com>\t6 Oct 1998 04:38:40 -0500\t<45223423@example.com>\t<45454@example.net>\t1234\t17\tXref: news.example.com misc.test:3000363",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1058,17 +1096,17 @@ func TestOver(t *testing.T) {
 
 // TestOver_ByMessageId uses the example from RFC 3977 Section 8.3
 func TestOver_ByMessageId(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 8.3 (message-id returns 0 as article number)
-	server.setMultiLineResponse("OVER <45223423@example.com>", "224 Overview information follows", []string{
+	server.SetResponse("OVER <45223423@example.com>", "224 Overview information follows", []string{
 		"0\tI am just a test article\t\"Demo User\" <nobody@example.com>\t6 Oct 1998 04:38:40 -0500\t<45223423@example.com>\t<45454@example.net>\t1234\t17\tXref: news.example.com misc.test:3000363",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1084,19 +1122,19 @@ func TestOver_ByMessageId(t *testing.T) {
 
 // TestOver_Range uses the example from RFC 3977 Section 8.3
 func TestOver_Range(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 8.3 (range query)
-	server.setMultiLineResponse("OVER 3000234-3000240", "224 Overview information follows", []string{
+	server.SetResponse("OVER 3000234-3000240", "224 Overview information follows", []string{
 		"3000234\tI am just a test article\t\"Demo User\" <nobody@example.com>\t6 Oct 1998 04:38:40 -0500\t<45223423@example.com>\t<45454@example.net>\t1234\t17\tXref: news.example.com misc.test:3000363",
 		"3000235\tAnother test article\tnobody@nowhere.to (Demo User)\t6 Oct 1998 04:38:45 -0500\t<45223425@to.to>\t\t4818\t37\t\tDistribution: fi",
 		"3000238\tRe: I am just a test article\tsomebody@elsewhere.to\t7 Oct 1998 11:38:40 +1200\t<kfwer3v@elsewhere.to>\t<45223423@to.to>\t9234\t51",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1120,15 +1158,15 @@ func TestOver_Range(t *testing.T) {
 
 // TestOver_NoSuchArticle uses the example from RFC 3977 Section 8.3
 func TestOver_NoSuchArticle(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 8.3
-	server.setResponse("OVER 300256", "423 No such article in this group")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("OVER 300256", "423 No such article in this group")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1154,21 +1192,21 @@ func TestOver_NotConnected(t *testing.T) {
 
 // TestListGroup uses the example from RFC 3977 Section 6.1.2
 func TestListGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.2
-	server.setMultiLineResponse("LISTGROUP misc.test", "211 2000 3000234 3002322 misc.test list follows", []string{
+	server.SetResponse("LISTGROUP misc.test", "211 2000 3000234 3002322 misc.test list follows", []string{
 		"3000234",
 		"3000237",
 		"3000238",
 		"3000239",
 		"3002322",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1187,15 +1225,15 @@ func TestListGroup(t *testing.T) {
 
 // TestListGroup_EmptyGroup uses the example from RFC 3977 Section 6.1.2
 func TestListGroup_EmptyGroup(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.2
-	server.setMultiLineResponse("LISTGROUP example.empty.newsgroup", "211 0 0 0 example.empty.newsgroup list follows", []string{})
-	server.start(t)
-	defer server.close()
+	server.SetResponse("LISTGROUP example.empty.newsgroup", "211 0 0 0 example.empty.newsgroup list follows", []string{})
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1209,18 +1247,18 @@ func TestListGroup_EmptyGroup(t *testing.T) {
 
 // TestListGroup_WithRange uses the example from RFC 3977 Section 6.1.2
 func TestListGroup_WithRange(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.2
-	server.setMultiLineResponse("LISTGROUP misc.test 3000238-3000248", "211 2000 3000234 3002322 misc.test list follows", []string{
+	server.SetResponse("LISTGROUP misc.test 3000238-3000248", "211 2000 3000234 3002322 misc.test list follows", []string{
 		"3000238",
 		"3000239",
 	})
-	server.start(t)
-	defer server.close()
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1236,15 +1274,15 @@ func TestListGroup_WithRange(t *testing.T) {
 
 // TestListGroup_EmptyRange uses the example from RFC 3977 Section 6.1.2
 func TestListGroup_EmptyRange(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.2 (range with no matching articles)
-	server.setMultiLineResponse("LISTGROUP misc.test 12345678-", "211 2000 3000234 3002322 misc.test list follows", []string{})
-	server.start(t)
-	defer server.close()
+	server.SetResponse("LISTGROUP misc.test 12345678-", "211 2000 3000234 3002322 misc.test list follows", []string{})
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1271,15 +1309,15 @@ func TestListGroup_NotConnected(t *testing.T) {
 
 // TestNext uses the example from RFC 3977 Section 6.1.4
 func TestNext(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.4
-	server.setResponse("NEXT", "223 3000237 <668929@example.org> retrieved")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("NEXT", "223 3000237 <668929@example.org> retrieved")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1294,15 +1332,15 @@ func TestNext(t *testing.T) {
 
 // TestNext_NoNextArticle uses the example from RFC 3977 Section 6.1.4
 func TestNext_NoNextArticle(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.4
-	server.setResponse("NEXT", "421 No next article to retrieve")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("NEXT", "421 No next article to retrieve")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1315,15 +1353,15 @@ func TestNext_NoNextArticle(t *testing.T) {
 
 // TestNext_NoCurrentArticle uses the example from RFC 3977 Section 6.1.4
 func TestNext_NoCurrentArticle(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.4
-	server.setResponse("NEXT", "420 No current article selected")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("NEXT", "420 No current article selected")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1349,15 +1387,15 @@ func TestNext_NotConnected(t *testing.T) {
 
 // TestLast uses the example from RFC 3977 Section 6.1.3
 func TestLast(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.3
-	server.setResponse("LAST", "223 3000234 <45223423@example.com> retrieved")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("LAST", "223 3000234 <45223423@example.com> retrieved")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1372,15 +1410,15 @@ func TestLast(t *testing.T) {
 
 // TestLast_NoPreviousArticle uses the example from RFC 3977 Section 6.1.3
 func TestLast_NoPreviousArticle(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.3
-	server.setResponse("LAST", "422 No previous article to retrieve")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("LAST", "422 No previous article to retrieve")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
@@ -1393,15 +1431,15 @@ func TestLast_NoPreviousArticle(t *testing.T) {
 
 // TestLast_NoCurrentArticle uses the example from RFC 3977 Section 6.1.3
 func TestLast_NoCurrentArticle(t *testing.T) {
-	server := newMockServer(t, "200 NNTP Service Ready")
+	server := nntptest.NewServer(t, "200 NNTP Service Ready")
 	// Example from RFC 3977 Section 6.1.3
-	server.setResponse("LAST", "420 No current article selected")
-	server.start(t)
-	defer server.close()
+	server.SetResponse("LAST", "420 No current article selected")
+	server.Start(t)
+	defer server.Close()
 
 	client := NewClient(&ClientConfig{
-		Host: server.host(),
-		Port: server.port(),
+		Host: server.Host(),
+		Port: server.Port(),
 	})
 
 	err := client.Connect()
