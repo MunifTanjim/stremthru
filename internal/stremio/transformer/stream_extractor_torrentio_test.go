@@ -198,7 +198,7 @@ func TestStreamExtractorTorrentioDebrid(t *testing.T) {
 			"movie", stremio.Stream{
 				Name:  "[RD+] Torrentio\n4k DV | HDR",
 				Title: "Deadpool [2016] 2160p Hybrid UHD BDRip DV HDR10 x265 TrueHD Atmos 7.1 Kira [SEV]\n👤 16 💾 22.42 GB ⚙️ 1337x",
-				URL:   "https://torrentio.strem.fun/realdebrid/xxxxxxxxxxxxxxxx/c35ec8ad9f613d73782a898bece969efd6b98e0c/null/0/Deadpool%20%5B2016%5D%202160p%20Hybrid%20UHD%20BDRip%20DV%20HDR10%20x265%20TrueHD%20Atmos%207.1%20Kira%20%5BSEV%5D.mkv",
+				URL:   "https://torrentio.strem.fun/realdebrid=xxxxxxxxxxxxxxxx/c35ec8ad9f613d73782a898bece969efd6b98e0c/null/0/Deadpool%20%5B2016%5D%202160p%20Hybrid%20UHD%20BDRip%20DV%20HDR10%20x265%20TrueHD%20Atmos%207.1%20Kira%20%5BSEV%5D.mkv",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "torrentio|4k|BDRip|x265|10bit|DV|HDR",
 					Filename:   "Deadpool [2016] 2160p Hybrid UHD BDRip DV HDR10 x265 TrueHD Atmos 7.1 Kira [SEV].mkv",
@@ -237,7 +237,7 @@ func TestStreamExtractorTorrentioDebrid(t *testing.T) {
 			"movie", stremio.Stream{
 				Name:  "[RD+] Torrentio\n1080p",
 				Title: "X-Men Complete 13 Movie Collection Sci-Fi 2000 - 2020 Eng Rus Multi-Subs 1080p [H264-mp4]\nX-Men Complete 13 Movie Collection 2000-2020/08 Deadpool - Action 2016 Eng Rus Multi-Subs 1080p [H264-mp4].mp4\n👤 20 💾 3.65 GB ⚙️ TorrentGalaxy\nMulti Subs / 🇬🇧 / 🇷🇺 / 🇫🇮",
-				URL:   "https://torrentio.strem.fun/realdebrid/xxxxxxxxxxxxxxxx/a6a80257d62e53e55c877a7067ea5055129b462c/null/89/08%20Deadpool%20-%20Action%202016%20Eng%20Rus%20Multi-Subs%201080p%20%5BH264-mp4%5D.mp4",
+				URL:   "https://torrentio.strem.fun/realdebrid=xxxxxxxxxxxxxxxx/a6a80257d62e53e55c877a7067ea5055129b462c/null/89/08%20Deadpool%20-%20Action%202016%20Eng%20Rus%20Multi-Subs%201080p%20%5BH264-mp4%5D.mp4",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "torrentio|1080p|h264",
 					Filename:   "08 Deadpool - Action 2016 Eng Rus Multi-Subs 1080p [H264-mp4].mp4",
@@ -274,7 +274,7 @@ func TestStreamExtractorTorrentioDebrid(t *testing.T) {
 			"movie", stremio.Stream{
 				Name:  "[RD download] Torrentio\n720p",
 				Title: "Deadpool (2016) 720p BluRay x264 [Dual Audio] [Hindi (Line Audio) - English] ESubs - Downloadhub\n👤 3 💾 934.8 MB ⚙️ 1337x\nDual Audio / 🇬🇧 / 🇮🇳",
-				URL:   "https://torrentio.strem.fun/realdebrid/xxxxxxxxxxxxxxxx/f5d0ab292f5a244a4b38efac9ae1f8d311179588/null/undefined/Deadpool%20(2016)%20720p%20BluRay%20x264%20%5BDual%20Audio%5D%20%5BHindi%20(Line%20Audio)%20-%20English%5D%20ESubs%20-%20Downloadhub",
+				URL:   "https://torrentio.strem.fun/realdebrid=xxxxxxxxxxxxxxxx/f5d0ab292f5a244a4b38efac9ae1f8d311179588/null/undefined/Deadpool%20(2016)%20720p%20BluRay%20x264%20%5BDual%20Audio%5D%20%5BHindi%20(Line%20Audio)%20-%20English%5D%20ESubs%20-%20Downloadhub",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "torrentio|720p|BluRay|x264",
 				},
