@@ -17,5 +17,5 @@ filename
 (?i)(?<codec>` + codecPattern + `)
 
 url
-\/stream\/(?<hash>[a-f0-9]{40})(?:\/(?<season>\d+)\/(?<episode>\d+)\/?)?
+\/(?:stream|playback)\/(?<hash>[a-f0-9]{40})(?:\/(?<season>\d+)\/(?<episode>\d+)\/?)?
 `)).MustParse()

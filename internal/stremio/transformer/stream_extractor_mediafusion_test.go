@@ -176,7 +176,7 @@ func TestStreamExtractorMediaFusionDebrid(t *testing.T) {
 			"movie", stremio.Stream{
 				Name:        "MediaFusion | ElfHosted RD 2160P ⚡️",
 				Description: "📂 Deadpool 2016 4K HDR DV 2160p BDRemux Ita Eng x265-NAHOM\n💾 35.09 GB\n🌐 English + Italian\n🔗 Torlock",
-				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/stream/a3d11f4d97121a79f3e94b18a43e5b3e2f1853e1/Deadpool.2016.4K.HDR.DV.2160p.BDRemux%20Ita%20Eng%20x265-NAHOM.mkv",
+				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/playback/a3d11f4d97121a79f3e94b18a43e5b3e2f1853e1/Deadpool.2016.4K.HDR.DV.2160p.BDRemux%20Ita%20Eng%20x265-NAHOM.mkv",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "MediaFusion-|-ElfHosted-🎨 DV|HDR 📺 BluRay REMUX 🎞️ hevc-2160P",
 					Filename:   "Deadpool.2016.4K.HDR.DV.2160p.BDRemux Ita Eng x265-NAHOM.mkv",
@@ -215,7 +215,7 @@ func TestStreamExtractorMediaFusionDebrid(t *testing.T) {
 			"series", stremio.Stream{
 				Name:        "MediaFusion | ElfHosted RD 1080P ⚡️",
 				Description: "📂 Sherlock S01-S04 + Extras Complete BluRay 1080p English DD 5 1 x264 ESub - mkvCinemas [Telly] ┈➤ Sherlock S01 E01 BluRay 1080p English DD 5 1 x264 ESub - mkvCinemas mkv\n💾 2.43 GB / 💾 33.48 GB\n🌐 English\n🔗 Zilean DMM",
-				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/stream/ce146cce125215f5e6615d2375ffa6a881c8eedd/1/1/Sherlock%20S01%20E01%20BluRay%201080p%20English%20DD%205.1%20x264%20ESub%20-%20mkvCinemas.mkv",
+				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/playback/ce146cce125215f5e6615d2375ffa6a881c8eedd/1/1/Sherlock%20S01%20E01%20BluRay%201080p%20English%20DD%205.1%20x264%20ESub%20-%20mkvCinemas.mkv",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "MediaFusion-|-ElfHosted-📺 BluRay 🎞️ avc 🎵 Dolby Digital-1080P",
 					Filename:   "Sherlock S01 E01 BluRay 1080p English DD 5.1 x264 ESub - mkvCinemas.mkv",
@@ -255,7 +255,7 @@ func TestStreamExtractorMediaFusionDebrid(t *testing.T) {
 			"series", stremio.Stream{
 				Name:        "MediaFusion | ElfHosted RD 1080P ⚡️",
 				Description: "📺 BluRay 🎞️ avc 🎵 Dolby Digital\n💾 2.43 GB / 💾 33.48 GB\n🌐 English\n🔗 Zilean DMM",
-				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/stream/ce146cce125215f5e6615d2375ffa6a881c8eedd/1/1/Sherlock%20S01%20E01%20BluRay%201080p%20English%20DD%205.1%20x264%20ESub%20-%20mkvCinemas.mkv",
+				URL:         "https://mediafusion.elfhosted.com/streaming_provider/D-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/playback/ce146cce125215f5e6615d2375ffa6a881c8eedd/1/1/Sherlock%20S01%20E01%20BluRay%201080p%20English%20DD%205.1%20x264%20ESub%20-%20mkvCinemas.mkv",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "MediaFusion-|-ElfHosted-📺 BluRay 🎞️ avc 🎵 Dolby Digital-1080P",
 					Filename:   "Sherlock S01 E01 BluRay 1080p English DD 5.1 x264 ESub - mkvCinemas.mkv",
