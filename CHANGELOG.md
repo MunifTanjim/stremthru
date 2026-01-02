@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.95.4](https://github.com/MunifTanjim/stremthru/compare/0.95.3...0.95.4) (2026-01-02)
+
+
+### Bug Fixes
+
+* **stremio/transformer:** update extractor for comet ([806e17a](https://github.com/MunifTanjim/stremthru/commit/806e17a79356bb6104030fb9d53f88081b7abd5f))
+* **stremio/transformer:** update extractor for mediafusion ([7235d39](https://github.com/MunifTanjim/stremthru/commit/7235d393f3d3afc76d7bc710b8a06dfdb010d3ab))
+
 ## [0.95.3](https://github.com/MunifTanjim/stremthru/compare/0.95.2...0.95.3) (2025-12-29)
 
 
