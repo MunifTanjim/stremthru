@@ -2,9 +2,12 @@ package animetosho
 
 import (
 	"database/sql"
+	"errors"
+	"os"
 	"path"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -14,6 +17,25 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
+
+var datasetSyncMutex sync.Mutex
+
+var datasetDownloadDir = path.Join(config.DataDir, "animetosho")
+
+var ErrDatasetSyncInProgress = errors.New("dataset sync in progress")
+
+func PurgeDatasetTemporaryFiles() error {
+	if !datasetSyncMutex.TryLock() {
+		return ErrDatasetSyncInProgress
+	}
+	defer datasetSyncMutex.Unlock()
+
+	return os.RemoveAll(datasetDownloadDir)
+}
+
+func GetDatasetTemporaryDir() string {
+	return datasetDownloadDir
+}
 
 var STORAGE_BASE_URL = util.MustDecodeBase64("aHR0cHM6Ly9zdG9yYWdlLmFuaW1ldG9zaG8ub3Jn")
 
@@ -41,6 +63,13 @@ type AnimeToshoTorrentFile struct {
 
 func SyncDataset() error {
 	log := logger.Scoped("animetosho/dataset")
+
+	if !datasetSyncMutex.TryLock() {
+		log.Warn("dataset sync already in progress, skipping")
+		return nil
+	}
+	defer datasetSyncMutex.Unlock()
+
 	flog := logger.Scoped("animetosho/dataset/files")
 
 	filesDB, err := sql.Open("sqlite3", "file:animetosho-files.db?mode=memory")
@@ -67,7 +96,7 @@ func SyncDataset() error {
 	filesDS := util.NewSimpleTSVDataset(&util.SimpleTSVDatasetConfig[AnimeToshoTorrentFile]{
 		DatasetConfig: util.DatasetConfig{
 			Archive:     "xz",
-			DownloadDir: path.Join(config.DataDir, "animetosho/files"),
+			DownloadDir: path.Join(datasetDownloadDir, "files"),
 			IsStale: func(t time.Time) bool {
 				return t.Before(time.Now().Add(-24 * time.Hour))
 			},
@@ -180,7 +209,7 @@ func SyncDataset() error {
 	ds := util.NewSimpleTSVDataset(&util.SimpleTSVDatasetConfig[AnimeToshoTorrent]{
 		DatasetConfig: util.DatasetConfig{
 			Archive:     "xz",
-			DownloadDir: path.Join(config.DataDir, "animetosho/torrents"),
+			DownloadDir: path.Join(datasetDownloadDir, "torrents"),
 			IsStale: func(t time.Time) bool {
 				return t.Before(time.Now().Add(-24 * time.Hour))
 			},

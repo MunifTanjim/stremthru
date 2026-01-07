@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/animetosho"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/job_log"
@@ -135,6 +136,33 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		SendData(w, r, 200, files)
+	case "sync-animetosho":
+		dirPath := animetosho.GetDatasetTemporaryDir()
+		err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() {
+				info, err := d.Info()
+				if err != nil {
+					return err
+				}
+				files = append(files, WorkerTemporaryFile{
+					Path:       strings.Replace(path, config.DataDir, "DATA_DIR", 1),
+					Size:       util.ToSize(info.Size()),
+					ModifiedAt: info.ModTime().Format(time.RFC3339),
+				})
+			}
+			return nil
+		})
+		if err != nil {
+			var perr *fs.PathError
+			if !errors.As(err, &perr) || !strings.Contains(perr.Err.Error(), "no such file or directory") {
+				SendError(w, r, err)
+				return
+			}
+		}
+		SendData(w, r, 200, files)
 	default:
 		if _, ok := worker.WorkerDetailsById[name]; ok {
 			ErrorBadRequest(r, "worker does not support temporary files").Send(w, r)
@@ -182,6 +210,17 @@ func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		err := imdb_title.PurgeDatasetTemporaryFiles()
 		if err != nil {
 			if errors.Is(err, imdb_title.ErrDatasetSyncInProgress) {
+				ErrorLocked(r, err.Error()).WithCause(err).Send(w, r)
+			} else {
+				SendError(w, r, err)
+			}
+			return
+		}
+		SendData(w, r, 204, nil)
+	case "sync-animetosho":
+		err := animetosho.PurgeDatasetTemporaryFiles()
+		if err != nil {
+			if errors.Is(err, animetosho.ErrDatasetSyncInProgress) {
 				ErrorLocked(r, err.Error()).WithCause(err).Send(w, r)
 			} else {
 				SendError(w, r, err)

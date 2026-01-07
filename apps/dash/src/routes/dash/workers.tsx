@@ -155,6 +155,7 @@ const jobLogsColumns: ColumnDef<WorkerJobLog>[] = [
 ];
 
 const canPurgeTemporaryDataByWorkerId: Record<string, boolean> = {
+  "sync-animetosho": true,
   "sync-imdb": true,
 };
 
@@ -185,7 +186,7 @@ function PurgeWorkerTemporaryDataButton({
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This will delete all the temporary files for this worker.
-            <ScrollArea className="max-h-52">
+            <ScrollArea className="h-full max-h-52">
               <ItemGroup className="mt-2 gap-2">
                 {files.data?.map((item) => (
                   <Item key={item.path} size="sm" variant="muted">
