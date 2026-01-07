@@ -128,6 +128,12 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		if td.Addons == nil {
 			td.Addons = []stremio.Addon{}
 		}
+		for i := range td.Addons {
+			addon := &td.Addons[i]
+			if addon.Flags == nil {
+				addon.Flags = &stremio.AddonFlags{}
+			}
+		}
 		if td.AddonOperation == "" {
 			td.AddonOperation = "move"
 		}
