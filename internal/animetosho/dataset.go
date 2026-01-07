@@ -197,6 +197,7 @@ func SyncDataset() error {
 				"tosho_id",
 				"nyaa_id",
 				"anidex_id",
+				"nekobt_id",
 				"name",
 				"link",
 				"magnet",
@@ -215,6 +216,7 @@ func SyncDataset() error {
 				"nyaa_cat",
 				"anidex_cat",
 				"anidex_labels",
+				"nekobt_hide",
 				"btih",
 				"btih_sha256",
 				"isdupe",
@@ -240,35 +242,35 @@ func SyncDataset() error {
 				return nil, err
 			}
 
-			magnet, err := util.TSVGetValue(row, 6, ``, nilValue)
+			magnet, err := util.TSVGetValue(row, 7, ``, nilValue)
 			if err != nil {
 				return nil, err
 			}
 
-			totalSize, err := util.TSVGetValue(row, 9, int64(0), nilValue)
+			totalSize, err := util.TSVGetValue(row, 10, int64(0), nilValue)
 			if err != nil {
 				return nil, err
 			}
 
-			torrentName, err := util.TSVGetValue(row, 14, ``, nilValue)
+			torrentName, err := util.TSVGetValue(row, 15, ``, nilValue)
 			if err != nil {
 				return nil, err
 			}
 
 			if torrentName == "" {
-				name, err := util.TSVGetValue(row, 4, ``, nilValue)
+				name, err := util.TSVGetValue(row, 5, ``, nilValue)
 				if err != nil {
 					return nil, err
 				}
 				torrentName = name
 			}
 
-			torrentFiles, err := util.TSVGetValue(row, 15, 0, nilValue)
+			torrentFiles, err := util.TSVGetValue(row, 16, 0, nilValue)
 			if err != nil {
 				return nil, err
 			}
 
-			aid, err := util.TSVGetValue(row, 27, ``, nilValue)
+			aid, err := util.TSVGetValue(row, 29, ``, nilValue)
 			if err != nil {
 				return nil, err
 			}

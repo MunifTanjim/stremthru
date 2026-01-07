@@ -184,7 +184,10 @@ func (ds *SimpleTSVDataset[T]) processDiff() error {
 
 	lastR := ds.newReader(lastFile)
 	if lastR == nil {
-		return errors.New("failed to create reader for last file")
+		if err := os.RemoveAll(lastFilePath); err != nil {
+			ds.log.Error("failed to remove last file with invalid headers", "error", err)
+			return errors.New("failed to create reader for last file")
+		}
 	}
 	newR := ds.newReader(newFile)
 	if newR == nil {
