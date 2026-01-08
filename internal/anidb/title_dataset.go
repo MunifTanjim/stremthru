@@ -85,7 +85,7 @@ func SyncTitleDataset() error {
 			DownloadDir: path.Join(config.DataDir, "anidb-titles"),
 			URL:         "https://anidb.net/api/anime-titles.xml.gz",
 			DownloadHeaders: map[string]string{
-				"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+				"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
 			},
 			Log: log,
 			IsStale: func(t time.Time) bool {
