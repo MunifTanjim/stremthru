@@ -2,15 +2,11 @@ package cache
 
 import (
 	"context"
-	"net/url"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/redis"
 	"github.com/elastic/go-freelru"
 	rc "github.com/go-redis/cache/v9"
-	r "github.com/redis/go-redis/v9"
 )
 
 type localCache struct {
@@ -37,52 +33,6 @@ func newLocalCache(capacity uint32, lifetime time.Duration) localCache {
 	lru.SetLifetime(lifetime)
 	return localCache{c: lru}
 }
-
-type redisConfig struct {
-	Addr     string
-	Username string
-	Password string
-	DB       int
-}
-
-func parseRedisConnectionURI(uri string) (*redisConfig, error) {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-	config := redisConfig{
-		Addr:     u.Host,
-		Username: u.User.Username(),
-		Password: "",
-		DB:       0,
-	}
-	password, _ := u.User.Password()
-	config.Password = password
-	if db, err := strconv.Atoi(strings.TrimPrefix(u.Path, "/")); err == nil {
-		config.DB = db
-	}
-	return &config, nil
-}
-
-var redis = func() *r.Client {
-	if config.RedisURI == "" {
-		return nil
-	}
-
-	rconf, err := parseRedisConnectionURI(config.RedisURI)
-	if err != nil {
-		return nil
-	}
-
-	redis := r.NewClient(&r.Options{
-		Addr:     rconf.Addr,
-		Username: rconf.Username,
-		Password: rconf.Password,
-		DB:       rconf.DB,
-	})
-
-	return redis
-}()
 
 type RedisCache[V any] struct {
 	c        *rc.Cache
@@ -125,7 +75,8 @@ func (cache *RedisCache[V]) Remove(key string) {
 }
 
 func newRedisCache[V any](conf *CacheConfig) *RedisCache[V] {
-	if redis == nil {
+	redisClient := redis.GetClient()
+	if redisClient == nil {
 		errMsg := "failed to create cache"
 		if conf.Name != "" {
 			errMsg += ": " + conf.Name
@@ -139,7 +90,7 @@ func newRedisCache[V any](conf *CacheConfig) *RedisCache[V] {
 
 	cache := &RedisCache[V]{
 		c: rc.New(&rc.Options{
-			Redis: redis,
+			Redis: redisClient,
 			// LocalCache: newLocalCache(1024, conf.Lifetime/2),
 		}),
 		name:     conf.Name,

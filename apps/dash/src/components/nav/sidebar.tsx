@@ -10,6 +10,7 @@ import {
   LogOut,
   MagnetIcon,
   Moon,
+  Settings,
   Sparkles,
   Sun,
   User,
@@ -330,6 +331,19 @@ function useNavItems(): NavItem[] {
       }
       items.push(sync);
     }
+
+    const settings: NavItem = {
+      icon: Settings,
+      items: [
+        {
+          path: "/dash/settings/ratelimit-configs",
+          title: "Rate Limit Configs",
+        },
+      ],
+      path: "/dash/settings",
+      title: "Settings",
+    };
+    items.push(settings);
 
     return items;
   }, [server?.feature.vault, server?.integration.trakt]);

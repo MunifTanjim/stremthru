@@ -1,5 +1,8 @@
 import type { ComponentProps } from "react";
 
+import { XIcon } from "lucide-react";
+
+import { Button } from "../ui/button";
 import { Field, FieldError, FieldLabel } from "../ui/field";
 import {
   Select,
@@ -23,9 +26,26 @@ export function FormSelect({
   const field = useFieldContext<string>();
   const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
+  let onReset: ComponentProps<typeof Button>["onClick"];
+  if (!props.required && field.state.value) {
+    onReset = () => field.setValue("");
+  }
+
   return (
     <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <FieldLabel htmlFor={field.name}>
+        {label}
+
+        {onReset && (
+          <Button
+            className="hover:bg-inherit! p-0! ml-auto mr-3 h-auto"
+            onClick={onReset}
+            variant="ghost"
+          >
+            <XIcon />
+          </Button>
+        )}
+      </FieldLabel>
       <Select
         {...props}
         onValueChange={(value) => field.handleChange(value)}

@@ -3,7 +3,7 @@ package cache
 import (
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/redis"
 )
 
 type Cache[V any] interface {
@@ -25,7 +25,7 @@ func NewCache[V any](conf *CacheConfig) Cache[V] {
 		conf.LocalCapacity = 1024
 	}
 
-	if config.RedisURI != "" {
+	if redis.IsAvailable() {
 		return newRedisCache[V](conf)
 	}
 

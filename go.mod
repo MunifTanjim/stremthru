@@ -10,7 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hasura/go-graphql-client v0.14.3
 	github.com/posthog/posthog-go v1.6.12
-	github.com/redis/go-redis/v9 v9.0.0-rc.4
+	github.com/redis/go-redis/v9 v9.6.1
 	github.com/zeebo/xxh3 v1.0.2
 	golang.org/x/sync v0.16.0
 	golang.org/x/text v0.27.0
@@ -36,6 +36,7 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/nccapo/rate-limiter v0.7.6 // indirect
 	github.com/onsi/gomega v1.36.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
@@ -60,7 +61,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/jamespfennell/xz v0.1.2
-	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/lmittmann/tint v1.1.2
 	github.com/madflojo/tasks v1.2.1
 	github.com/mattn/go-isatty v0.0.20
