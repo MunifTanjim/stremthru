@@ -1,14 +1,10 @@
 package worker
 
 import (
-	"errors"
-	"strconv"
-	"strings"
+	"net/url"
 	"sync"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/anidb"
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
@@ -19,14 +15,9 @@ import (
 )
 
 func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
-	type indexerQueryMeta struct {
-		titles     []string
-		year       int
-		season, ep int
-	}
-	type indexerQuery struct {
-		query    *tznc.Query
-		is_exact bool
+	rateLimitTotalWaitThreshold := 1 * time.Minute
+	if conf.Interval != 0 {
+		rateLimitTotalWaitThreshold = conf.Interval / 2
 	}
 	conf.Executor = func(w *Worker) error {
 		log := w.Log
@@ -50,24 +41,23 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 		log.Info("processing pending sync items", "count", len(pendingItems))
 
-		itemsByIndexer := make(map[string][]torznab_indexer_syncinfo.TorznabIndexerSyncInfo)
+		itemsByIndexerId := make(map[string][]torznab_indexer_syncinfo.TorznabIndexerSyncInfo)
 		for _, item := range pendingItems {
-			key := string(item.Type) + ":" + item.Id
-			itemsByIndexer[key] = append(itemsByIndexer[key], item)
+			key := item.GetIndexerCompositeId()
+			itemsByIndexerId[key] = append(itemsByIndexerId[key], item)
 		}
 
 		indexerById := make(map[string]*torznab_indexer.TorznabIndexer)
 		for i := range indexers {
 			indexer := &indexers[i]
-			key := string(indexer.Type) + ":" + indexer.Id
-			indexerById[key] = indexer
+			indexerById[indexer.GetCompositeId()] = indexer
 		}
 
 		var wg sync.WaitGroup
-		for key, items := range itemsByIndexer {
-			indexer, ok := indexerById[key]
+		for indexerId, items := range itemsByIndexerId {
+			indexer, ok := indexerById[indexerId]
 			if !ok {
-				log.Warn("indexer not found in vault", "key", key)
+				log.Warn("indexer not found in vault", "id", indexerId)
 				continue
 			}
 
@@ -76,7 +66,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 			case torznab_indexer.IndexerTypeJackett:
 				c, err := indexer.GetClient()
 				if err != nil {
-					log.Error("failed to create torznab client", "error", err, "type", indexer.Type, "id", indexer.Id)
+					log.Error("failed to create torznab client", "error", err, "id", indexer.GetCompositeId())
 					return err
 				}
 				client = c
@@ -87,200 +77,94 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 			wg.Go(func() {
 				log.Info("processing items for indexer", "indexer", indexer.Name, "count", len(items))
+
+				rl, err := indexer.GetRateLimiter()
+				if err != nil {
+					log.Error("failed to get rate limiter", "error", err, "id", indexer.GetCompositeId())
+					return
+				}
+
+				rateLimitedWait := 0 * time.Second
+
 				for i := range items {
 					item := &items[i]
 
-					queryMeta := indexerQueryMeta{
-						titles: []string{},
+					queries := item.Queries
+					if len(queries) == 0 {
+						log.Debug("no queries stored for item", "sid", item.SId)
+						continue
 					}
 
 					nsid, err := torrent_stream.NormalizeStreamId(item.SId)
 					if err != nil {
-						log.Error("failed to normalize stream ID", "error", err, "sid", item.SId)
+						log.Error("failed to normalize stream id", "error", err, "sid", item.SId)
 						continue
-					}
-					if nsid.IsAnime {
-						if aniEp := util.SafeParseInt(nsid.Episode, -1); aniEp != -1 {
-							tvdbMaps, err := anidb.GetTVDBEpisodeMaps(nsid.Id, false)
-							if err != nil {
-								log.Error("failed to get AniDB-TVDB episode maps", "error", err, "anidb_id", nsid.Id)
-								continue
-							}
-							if epMap := tvdbMaps.GetByAnidbEpisode(aniEp); epMap != nil {
-								ep := epMap.GetTMDBEpisode(aniEp)
-								titles, err := anidb.GetTitlesByIds([]string{nsid.Id})
-								if err != nil {
-									log.Error("failed to get AniDB titles", "error", err, "anidb_id", nsid.Id)
-									continue
-								}
-								if len(titles) == 0 {
-									log.Warn("AniDB title not found", "anidb_id", nsid.Id)
-									continue
-								}
-								queryMeta.titles = make([]string, 0, len(titles))
-								queryMeta.season = epMap.TVDBSeason
-								queryMeta.ep = ep
-								seenTitle := util.NewSet[string]()
-								for i := range titles {
-									title := &titles[i]
-									if seenTitle.Has(title.Value) {
-										continue
-									}
-									seenTitle.Add(title.Value)
-									queryMeta.titles = append(queryMeta.titles, title.Value)
-									if queryMeta.year == 0 && title.Year != "" {
-										queryMeta.year = util.SafeParseInt(title.Year, 0)
-									}
-								}
-							}
-						}
-					} else {
-						it, err := imdb_title.Get(nsid.Id)
-						if err != nil {
-							log.Error("failed to get IMDB title", "error", err, "imdb_id", nsid.Id)
-							continue
-						}
-						if it == nil {
-							log.Warn("IMDB title not found", "imdb_id", nsid.Id)
-							continue
-						}
-						queryMeta.titles = append(queryMeta.titles, it.Title)
-						if it.OrigTitle != "" && it.OrigTitle != it.Title {
-							queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
-						}
-						if it.Year > 0 {
-							queryMeta.year = it.Year
-						}
-						if nsid.IsSeries() {
-							queryMeta.season = util.SafeParseInt(nsid.Season, 0)
-							queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
-						}
-					}
-
-					sQueriesBySId := map[string][]indexerQuery{}
-					query, err := client.NewSearchQuery(func(caps tznc.Caps) tznc.Function {
-						if nsid.IsSeries() && caps.SupportsFunction(tznc.FunctionSearchTV) {
-							return tznc.FunctionSearchTV
-						}
-						if caps.SupportsFunction(tznc.FunctionSearchMovie) {
-							return tznc.FunctionSearchMovie
-						}
-						return tznc.FunctionSearch
-					})
-					if err != nil {
-						log.Error("failed to create search query", "error", err, "indexer", client.GetId())
-						continue
-					}
-
-					query.SetLimit(-1)
-					if !nsid.IsAnime && query.IsSupported(tznc.SearchParamIMDBId) {
-						query.Set(tznc.SearchParamIMDBId, nsid.Id)
-						sid := nsid.ToClean()
-						sQuery := indexerQuery{
-							query:    query,
-							is_exact: !nsid.IsSeries(),
-						}
-						if nsid.IsSeries() {
-							if query.IsSupported(tznc.SearchParamSeason) && nsid.Season != "" {
-								query.Set(tznc.SearchParamSeason, nsid.Season)
-								if query.IsSupported(tznc.SearchParamEp) && nsid.Episode != "" {
-									query.Set(tznc.SearchParamEp, nsid.Episode)
-									sQuery.is_exact = true
-									sid = nsid.ToClean() + ":" + nsid.Season + ":" + nsid.Episode
-								} else {
-									sid = nsid.ToClean() + ":" + nsid.Season
-								}
-							}
-						}
-						sQueriesBySId[sid] = append(sQueriesBySId[sid], sQuery)
-					} else {
-						query.SetT(tznc.FunctionSearch)
-						supportsYear := query.IsSupported(tznc.SearchParamYear)
-						if supportsYear && queryMeta.year != 0 {
-							query.Set(tznc.SearchParamYear, strconv.Itoa(queryMeta.year))
-						}
-						for _, title := range queryMeta.titles {
-							var q strings.Builder
-							q.WriteString(title)
-							if nsid.IsSeries() {
-								sid := nsid.ToClean()
-								sQueriesBySId[sid] = append(sQueriesBySId[sid], indexerQuery{
-									query: query.Clone().Set(tznc.SearchParamQ, q.String()),
-								})
-								if queryMeta.season > 0 {
-									q.WriteString(" S")
-									q.WriteString(util.ZeroPadInt(queryMeta.season, 2))
-									sid := nsid.ToClean() + ":" + nsid.Season
-									sQueriesBySId[sid] = append(sQueriesBySId[sid], indexerQuery{
-										query: query.Clone().Set(tznc.SearchParamQ, q.String()),
-									})
-									if queryMeta.ep > 0 {
-										q.WriteString("E")
-										q.WriteString(util.ZeroPadInt(queryMeta.ep, 2))
-										sid := nsid.ToClean() + ":" + nsid.Season + ":" + nsid.Episode
-										sQueriesBySId[sid] = append(sQueriesBySId[sid], indexerQuery{
-											query: query.Clone().Set(tznc.SearchParamQ, q.String()),
-										})
-									}
-								}
-							} else if queryMeta.year > 0 {
-								if !supportsYear {
-									q.WriteString(" ")
-									q.WriteString(strconv.Itoa(queryMeta.year))
-								}
-								sid := nsid.ToClean()
-								sQueriesBySId[sid] = append(sQueriesBySId[sid], indexerQuery{
-									query: query.Clone().Set(tznc.SearchParamQ, q.String()),
-								})
-							}
-						}
 					}
 
 					results := []tznc.Torz{}
 
-					for sid, sQueries := range sQueriesBySId {
-						if !torznab_indexer_syncinfo.ShouldSync(item.Type, item.Id, sid) {
-							log.Debug("skipping already synced query", "indexer", client.GetId(), "sid", sid)
-							continue
-						}
-
-						var wg sync.WaitGroup
-						cResults := make([][]tznc.Torz, len(sQueries))
-						errs := make([]error, len(sQueries))
-						for i := range sQueries {
-							sQuery := sQueries[i]
-							wg.Go(func() {
-								start := time.Now()
-								cResults[i], errs[i] = client.Search(sQuery.query)
-								if errs[i] == nil {
-									log.Debug("indexer search completed", "indexer", client.GetId(), "query", sQuery.query.Encode(), "duration", time.Since(start).String(), "count", len(cResults[i]))
-								} else {
-									log.Error("indexer search failed", "error", errs[i], "indexer", client.GetId(), "query", sQuery.query.Encode(), "duration", time.Since(start).String())
-								}
-							})
-						}
-						wg.Wait()
-
-						if err := errors.Join(errs...); err != nil {
-							log.Error("some indexer search failed", "indexer", client.GetId(), "sid", item.SId, "error", err)
-							if err := torznab_indexer_syncinfo.SetSyncError(item.Type, item.Id, sid, err.Error()); err != nil {
-								log.Error("failed to set sync error", "error", err, "type", item.Type, "id", item.Id, "sid", sid)
-							}
-							continue
-						}
-
-						resultCount := 0
-						for _, items := range cResults {
-							resultCount += len(items)
-							results = append(results, items...)
-						}
-
-						if err := torznab_indexer_syncinfo.MarkSynced(item.Type, item.Id, sid, resultCount); err != nil {
-							log.Error("failed to mark synced", "error", err, "type", item.Type, "id", item.Id, "sid", sid)
+					recordProgress := func(queries torznab_indexer_syncinfo.Queries, query *torznab_indexer_syncinfo.Query) {
+						if err := torznab_indexer_syncinfo.RecordProgress(indexer.Type, indexer.Id, item.SId, queries); err != nil {
+							log.Error("failed to record progress", "error", err, "indexer", indexer.Name, "sid", item.SId, "query", query.Query)
 						}
 					}
 
-					log.Debug("indexer search completed", "indexer", client.GetId(), "sid", item.SId, "count", len(results))
+					for i := range queries {
+						sQuery := &queries[i]
+						if sQuery.Done {
+							continue
+						}
+
+						query, err := url.ParseQuery(sQuery.Query)
+						if err != nil {
+							log.Error("failed to parse query", "error", err, "indexer", indexer.Name, "query", sQuery.Query)
+							sQuery.Error = err.Error()
+							recordProgress(queries, sQuery)
+							continue
+						}
+
+						if rl != nil {
+							if result, err := rl.Try(""); err != nil {
+								log.Error("rate limit check failed", "error", err, "indexer", indexer.Name)
+								sQuery.Error = err.Error()
+								recordProgress(queries, sQuery)
+								continue
+							} else if !result.Allowed {
+								if rateLimitedWait+result.RetryAfter > rateLimitTotalWaitThreshold {
+									log.Warn("rate limited, stopping indexer processing", "indexer", indexer.Name, "retry_after", result.RetryAfter.String())
+									return
+								}
+								rateLimitedWait += result.RetryAfter
+								if err := rl.Wait(""); err != nil {
+									log.Error("rate limit wait failed", "error", err, "indexer", indexer.Name)
+									sQuery.Error = err.Error()
+									recordProgress(queries, sQuery)
+									return
+								}
+							}
+						}
+
+						start := time.Now()
+						qResults, err := client.Search(query)
+						if err != nil {
+							log.Error("indexer search failed", "error", err, "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String())
+							sQuery.Error = err.Error()
+							recordProgress(queries, sQuery)
+							continue
+						}
+
+						sQuery.Count = len(qResults)
+						sQuery.Done = true
+						sQuery.Error = ""
+
+						log.Debug("indexer search completed", "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String(), "count", sQuery.Count)
+
+						recordProgress(queries, sQuery)
+
+						results = append(results, qResults...)
+					}
+
+					log.Debug("indexer search completed", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
 
 					// TODO: download torrent files in a separate queue
 					seenSourceURL := util.NewSet[string]()
@@ -339,7 +223,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 							continue
 						}
 
-						log.Debug("saved torrents", "indexer", client.GetId(), "sid", item.SId, "count", len(tInfosToUpsert))
+						log.Debug("saved torrents", "indexer", indexer.Name, "sid", item.SId, "count", len(tInfosToUpsert))
 					}
 				}
 			})

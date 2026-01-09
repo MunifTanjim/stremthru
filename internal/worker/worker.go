@@ -877,7 +877,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitTorznabIndexerSyncerWorker(&WorkerConfig{
-		Disabled:     !config.Feature.HasVault(),
+		Disabled:     worker_queue.TorznabIndexerSyncerQueue.Disabled,
 		Name:         "sync-torznab-indexer",
 		Interval:     30 * time.Minute,
 		RunExclusive: true,

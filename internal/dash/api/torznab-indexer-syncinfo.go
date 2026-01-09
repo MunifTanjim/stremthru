@@ -8,9 +8,9 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
-	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 )
 
 type TorznabIndexerSyncInfoResponse struct {
@@ -21,6 +21,7 @@ type TorznabIndexerSyncInfoResponse struct {
 	SyncedAt    *string `json:"synced_at"`
 	Error       *string `json:"error"`
 	ResultCount *int64  `json:"result_count"`
+	Status      string  `json:"status"`
 }
 
 type ListTorznabIndexerSyncInfoResponse struct {
@@ -30,9 +31,10 @@ type ListTorznabIndexerSyncInfoResponse struct {
 
 func toTorznabIndexerSyncInfoResponse(item *torznab_indexer_syncinfo.TorznabIndexerSyncInfo) TorznabIndexerSyncInfoResponse {
 	res := TorznabIndexerSyncInfoResponse{
-		Type: string(item.Type),
-		Id:   item.Id,
-		SId:  item.SId,
+		Type:   string(item.Type),
+		Id:     item.Id,
+		SId:    item.SId,
+		Status: string(item.Status),
 	}
 
 	if !item.QueuedAt.Time.IsZero() {
@@ -127,19 +129,10 @@ func handleQueueTorznabIndexerSyncInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	indexers, err := torznab_indexer.GetAll()
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-
-	for i := range indexers {
-		indexer := &indexers[i]
-		if err := torznab_indexer_syncinfo.Queue(indexer.Type, indexer.Id, request.SId); err != nil {
-			SendError(w, r, err)
-			return
-		}
-	}
+	// Queue the sync request - the queue worker will prepare queries and create syncinfo entries
+	worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
+		SId: request.SId,
+	})
 
 	SendData(w, r, 204, nil)
 }

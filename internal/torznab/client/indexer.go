@@ -3,6 +3,7 @@ package torznab_client
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -133,5 +134,5 @@ func (t *Torz) EnsureMagnet() error {
 type Indexer interface {
 	GetId() string
 	NewSearchQuery(fn func(caps Caps) Function) (*Query, error)
-	Search(query *Query) ([]Torz, error)
+	Search(query url.Values) ([]Torz, error)
 }

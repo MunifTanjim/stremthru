@@ -234,7 +234,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 		go func(sq indexerSearchQuery, i int) {
 			defer wg.Done()
 			start := time.Now()
-			results[i], errs[i] = sq.indexer.Search(sq.query)
+			results[i], errs[i] = sq.indexer.Search(sq.query.Values())
 			if errs[i] == nil {
 				log.Debug("indexer search completed", "indexer", sq.indexer.GetId(), "query", sq.query.Encode(), "duration", time.Since(start).String(), "count", len(results[i]))
 			} else {

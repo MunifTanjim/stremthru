@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	"github.com/MunifTanjim/stremthru/internal/ratelimit"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 )
 
@@ -49,13 +50,25 @@ func ParseCompositeId(compositeId string) (IndexerType, string, error) {
 }
 
 type TorznabIndexer struct {
-	Type   IndexerType
-	Id     string
-	Name   string
-	URL    string
-	APIKey string
-	CAt    db.Timestamp
-	UAt    db.Timestamp
+	Type              IndexerType
+	Id                string
+	Name              string
+	URL               string
+	APIKey            string
+	RateLimitConfigId sql.NullString
+	CAt               db.Timestamp
+	UAt               db.Timestamp
+}
+
+func (idxr TorznabIndexer) GetCompositeId() string {
+	return string(idxr.Type) + ":" + idxr.Id
+}
+
+func (idxr TorznabIndexer) GetRateLimiter() (*ratelimit.Limiter, error) {
+	if !idxr.RateLimitConfigId.Valid {
+		return nil, nil
+	}
+	return ratelimit.NewLimiterById(idxr.RateLimitConfigId.String)
 }
 
 func NewTorznabIndexer(indexerType IndexerType, url, apiKey string) (*TorznabIndexer, error) {
@@ -133,21 +146,23 @@ func (i *TorznabIndexer) Validate() error {
 }
 
 var Column = struct {
-	Type   string
-	Id     string
-	Name   string
-	URL    string
-	APIKey string
-	CAt    string
-	UAt    string
+	Type              string
+	Id                string
+	Name              string
+	URL               string
+	APIKey            string
+	RateLimitConfigId string
+	CAt               string
+	UAt               string
 }{
-	Type:   "type",
-	Id:     "id",
-	Name:   "name",
-	URL:    "url",
-	APIKey: "api_key",
-	CAt:    "cat",
-	UAt:    "uat",
+	Type:              "type",
+	Id:                "id",
+	Name:              "name",
+	URL:               "url",
+	APIKey:            "api_key",
+	RateLimitConfigId: "rate_limit_config_id",
+	CAt:               "cat",
+	UAt:               "uat",
 }
 
 var columns = []string{
@@ -156,6 +171,7 @@ var columns = []string{
 	Column.Name,
 	Column.URL,
 	Column.APIKey,
+	Column.RateLimitConfigId,
 	Column.CAt,
 	Column.UAt,
 }
@@ -187,7 +203,7 @@ func GetAll() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -207,7 +223,7 @@ func GetById(indexerType IndexerType, id string) (*TorznabIndexer, error) {
 	row := db.QueryRow(query_get_by_id, indexerType, id)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -225,7 +241,7 @@ func GetByCompositeId(compositeId string) (*TorznabIndexer, error) {
 }
 
 var query_upsert = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES (?,?,?,?,?) ON CONFLICT (%s, %s) DO UPDATE SET %s`,
+	`INSERT INTO %s (%s) VALUES (?,?,?,?,?,?) ON CONFLICT (%s, %s) DO UPDATE SET %s`,
 	TableName,
 	db.JoinColumnNames(
 		Column.Type,
@@ -233,6 +249,7 @@ var query_upsert = fmt.Sprintf(
 		Column.Name,
 		Column.URL,
 		Column.APIKey,
+		Column.RateLimitConfigId,
 	),
 	Column.Type,
 	Column.Id,
@@ -240,6 +257,7 @@ var query_upsert = fmt.Sprintf(
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Name, Column.Name),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.URL, Column.URL),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.APIKey, Column.APIKey),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.RateLimitConfigId, Column.RateLimitConfigId),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
 )
@@ -251,6 +269,7 @@ func (i *TorznabIndexer) Upsert() error {
 		i.Name,
 		i.URL,
 		i.APIKey,
+		i.RateLimitConfigId,
 	)
 	return err
 }

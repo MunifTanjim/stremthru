@@ -119,10 +119,9 @@ func (tc TorznabClient) GetId() string {
 	return "jackett/" + tc.id
 }
 
-func (tc TorznabClient) Search(query *torznab_client.Query) ([]torznab_client.Torz, error) {
+func (tc TorznabClient) Search(query url.Values) ([]torznab_client.Torz, error) {
 	params := &Ctx{}
-	q := query.Values()
-	params.Query = &q
+	params.Query = &query
 	var resp torznab_client.Response[SearchResponse]
 	_, err := tc.Client.Request("GET", "/api", params, &resp)
 	if err != nil {

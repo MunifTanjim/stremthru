@@ -1,32 +1,42 @@
 package dash_api
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/ratelimit"
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 )
 
 type TorznabIndexerResponse struct {
-	Type      string `json:"type"`
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	URL       string `json:"url"`
-	IsValid   bool   `json:"is_valid"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Type              string  `json:"type"`
+	Id                string  `json:"id"`
+	Name              string  `json:"name"`
+	URL               string  `json:"url"`
+	IsValid           bool    `json:"is_valid"`
+	RateLimitConfigId *string `json:"rate_limit_config_id"`
+	CreatedAt         string  `json:"created_at"`
+	UpdatedAt         string  `json:"updated_at"`
 }
 
 func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndexerResponse {
 	compositeId := string(item.Type) + ":" + item.Id
+
+	var rateLimitConfigId *string
+	if item.RateLimitConfigId.Valid {
+		rateLimitConfigId = &item.RateLimitConfigId.String
+	}
+
 	return TorznabIndexerResponse{
-		Type:      string(item.Type),
-		Id:        compositeId,
-		Name:      item.Name,
-		URL:       item.URL,
-		CreatedAt: item.CAt.Format(time.RFC3339),
-		UpdatedAt: item.UAt.Format(time.RFC3339),
+		Type:              string(item.Type),
+		Id:                compositeId,
+		Name:              item.Name,
+		URL:               item.URL,
+		RateLimitConfigId: rateLimitConfigId,
+		CreatedAt:         item.CAt.Format(time.RFC3339),
+		UpdatedAt:         item.UAt.Format(time.RFC3339),
 	}
 }
 
@@ -46,10 +56,11 @@ func handleGetTorznabIndexers(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateTorznabIndexerRequest struct {
-	Type   torznab_indexer.IndexerType `json:"type"`
-	URL    string                      `json:"url"`
-	APIKey string                      `json:"api_key"`
-	Name   string                      `json:"name,omitempty"`
+	Type              torznab_indexer.IndexerType `json:"type"`
+	URL               string                      `json:"url"`
+	APIKey            string                      `json:"api_key"`
+	Name              string                      `json:"name,omitempty"`
+	RateLimitConfigId *string                     `json:"rate_limit_config_id"`
 }
 
 var ErrorInvalidTorznabCredentials = errors.New("invalid torznab credentials or connection failed")
@@ -94,6 +105,23 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		indexer.Name = request.Name
 	}
 
+	if request.RateLimitConfigId != nil && *request.RateLimitConfigId != "" {
+		if rlc, err := ratelimit.GetById(*request.RateLimitConfigId); err != nil {
+			SendError(w, r, err)
+			return
+		} else if rlc == nil {
+			ErrorBadRequest(r, "").Append(Error{
+				Location: "rate_limit_config_id",
+				Message:  "rate limit config not found",
+			}).Send(w, r)
+			return
+		}
+		indexer.RateLimitConfigId = sql.NullString{
+			String: *request.RateLimitConfigId,
+			Valid:  true,
+		}
+	}
+
 	if err := indexer.Validate(); err != nil {
 		ErrorBadRequest(r, "Invalid Torznab URL or API key").Send(w, r)
 		return
@@ -124,8 +152,9 @@ func handleGetTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 }
 
 type UpdateTorznabIndexerRequest struct {
-	APIKey string `json:"api_key"`
-	Name   string `json:"name,omitempty"`
+	APIKey            string  `json:"api_key"`
+	Name              string  `json:"name,omitempty"`
+	RateLimitConfigId *string `json:"rate_limit_config_id"`
 }
 
 func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
@@ -153,6 +182,24 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 
 	if request.Name != "" {
 		indexer.Name = request.Name
+	}
+
+	if request.RateLimitConfigId == nil || *request.RateLimitConfigId == "" {
+		indexer.RateLimitConfigId = sql.NullString{Valid: false}
+	} else if config, err := ratelimit.GetById(*request.RateLimitConfigId); err != nil {
+		SendError(w, r, err)
+		return
+	} else if config == nil {
+		ErrorBadRequest(r, "").Append(Error{
+			Location: "rate_limit_config_id",
+			Message:  "rate limit config not found",
+		}).Send(w, r)
+		return
+	} else {
+		indexer.RateLimitConfigId = sql.NullString{
+			String: *request.RateLimitConfigId,
+			Valid:  true,
+		}
 	}
 
 	if err := indexer.Validate(); err != nil {

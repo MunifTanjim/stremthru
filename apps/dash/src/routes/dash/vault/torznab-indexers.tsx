@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
 import { Pencil, Plus, RefreshCwIcon, Trash2 } from "lucide-react";
 import { DateTime } from "luxon";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  useRateLimitConfig,
+  useRateLimitConfigs,
+} from "@/api/ratelimit-config";
 import {
   TorznabIndexer,
   useTorznabIndexerMutation,
@@ -59,6 +63,11 @@ declare module "@/components/data-table" {
 
 const col = createColumnHelper<TorznabIndexer>();
 
+function RateLimitConfigName({ id }: { id: null | string }) {
+  const conf = useRateLimitConfig(id);
+  return conf ? conf.name : "-";
+}
+
 const columns: ColumnDef<TorznabIndexer>[] = [
   col.accessor("type", {
     header: "Type",
@@ -72,6 +81,12 @@ const columns: ColumnDef<TorznabIndexer>[] = [
       return <span className="max-w-md truncate font-mono text-xs">{url}</span>;
     },
     header: "URL",
+  }),
+  col.accessor("rate_limit_config_id", {
+    cell: ({ getValue }) => {
+      return <RateLimitConfigName id={getValue()} />;
+    },
+    header: "Rate Limit",
   }),
   col.accessor("updated_at", {
     cell: ({ getValue }) => {
@@ -188,6 +203,13 @@ function TorznabIndexerFormSheet({
   setEditItem: (item: null | TorznabIndexer) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const rateLimitConfigs = useRateLimitConfigs();
+  const rateLimitConfigOptions = useMemo(() => {
+    return (rateLimitConfigs.data ?? [])?.map((config) => ({
+      label: config.name,
+      value: config.id,
+    }));
+  }, [rateLimitConfigs.data]);
 
   useEffect(() => {
     if (editItem) {
@@ -197,35 +219,43 @@ function TorznabIndexerFormSheet({
 
   const { create, update } = useTorznabIndexerMutation();
 
-  const form = useAppForm({
-    defaultValues: {
+  const defaultValues = useMemo(
+    () => ({
       api_key: "",
       name: editItem?.name ?? "",
+      rate_limit_config_id: editItem?.rate_limit_config_id ?? "",
       url: editItem?.url ?? "",
-    },
+    }),
+    [editItem?.name, editItem?.rate_limit_config_id, editItem?.url],
+  );
+
+  const form = useAppForm({
+    defaultValues,
     onSubmit: async ({ value }) => {
       if (editItem) {
         await update.mutateAsync({
           api_key: value.api_key,
           id: editItem.id,
           name: value.name,
+          rate_limit_config_id: value.rate_limit_config_id || null,
         });
         toast.success("Updated successfully!");
       } else {
         await create.mutateAsync({
           api_key: value.api_key,
           name: value.name,
+          rate_limit_config_id: value.rate_limit_config_id || null,
           url: value.url,
         });
         toast.success("Created successfully!");
       }
-      setEditItem(null);
+      setIsOpen(false);
     },
   });
 
   useEffect(() => {
-    form.reset();
-  }, [form, editItem]);
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   return (
     <Sheet onOpenChange={setIsOpen} open={isOpen}>
@@ -266,6 +296,14 @@ function TorznabIndexerFormSheet({
               </form.AppField>
               <form.AppField name="api_key">
                 {(field) => <field.Input label="API Key" type="password" />}
+              </form.AppField>
+              <form.AppField name="rate_limit_config_id">
+                {(field) => (
+                  <field.Select
+                    label="Rate Limit Config"
+                    options={rateLimitConfigOptions}
+                  />
+                )}
               </form.AppField>
             </div>
           </ScrollArea>

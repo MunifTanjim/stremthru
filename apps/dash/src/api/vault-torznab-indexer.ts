@@ -6,6 +6,7 @@ export type TorznabIndexer = {
   created_at: string;
   id: string;
   name: string;
+  rate_limit_config_id: null | string;
   type: TorznabIndexerType;
   updated_at: string;
   url: string;
@@ -16,6 +17,7 @@ export type TorznabIndexerType = "jackett";
 type CreateTorznabIndexerParams = {
   api_key: string;
   name: string;
+  rate_limit_config_id: null | string;
   type?: TorznabIndexerType;
   url: string;
 };
@@ -23,6 +25,7 @@ type CreateTorznabIndexerParams = {
 type UpdateTorznabIndexerParams = {
   api_key?: string;
   name?: string;
+  rate_limit_config_id: null | string;
 };
 
 export function useTorznabIndexerMutation() {
