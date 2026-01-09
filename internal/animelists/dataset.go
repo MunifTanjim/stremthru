@@ -25,6 +25,7 @@ type AnimeListItemMapping struct {
 	// 0 for special, 1 for regular
 	AniDBSeason string `xml:"anidbseason,attr"`
 	TVDBSeason  string `xml:"tvdbseason,attr"`
+	TMDBSeason  string `xml:"tmdbseason,attr"`
 	// anidb episode
 	Start string `xml:"start,attr"`
 	// anidb episode
@@ -43,6 +44,9 @@ type AnimeListItem struct {
 	EpisodeOffset     string                 `xml:"episodeoffset,attr"`
 	IMDBId            string                 `xml:"imdbid,attr"`
 	TMDBId            string                 `xml:"tmdbid,attr"`
+	TMDBOffset        string                 `xml:"tmdboffset,attr"`
+	TMDBSeason        string                 `xml:"tmdbseason,attr"` // 'a' for absolute order
+	TMDBTv            string                 `xml:"tmdbtv,attr"`
 	Name              string                 `xml:"name"`
 	Before            string                 `xml:"before"`
 	Mappings          []AnimeListItemMapping `xml:"mapping-list>mapping"`
@@ -244,6 +248,11 @@ func PrepareAniDBTVDBEpisodeMaps(tvdbId string, items []AnimeListItem) *anidb.An
 				tvdbMap.AniDBSeason = 0
 			case "1":
 				tvdbMap.AniDBSeason = 1
+			}
+
+			if m.TVDBSeason == "" && m.TMDBSeason != "" {
+				// TODO: process tmdb data
+				continue
 			}
 
 			tvdbSeason, err := strconv.Atoi(m.TVDBSeason)
