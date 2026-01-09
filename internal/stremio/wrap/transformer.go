@@ -44,10 +44,6 @@ func (ws WrappedStream) GetHDR() string {
 func (st StreamTransformer) Do(stream *stremio.Stream, sType string, tryReconfigure bool) (*WrappedStream, error) {
 	s := &WrappedStream{Stream: stream}
 
-	if st.Template == nil || st.Template.IsEmpty() {
-		return s, nil
-	}
-
 	data := st.Extractor.Parse(stream, sType)
 	if data == nil {
 		return s, nil
@@ -74,10 +70,12 @@ func (st StreamTransformer) Do(stream *stremio.Stream, sType string, tryReconfig
 
 	s.r = data
 
-	var err error
-	s.Stream, err = st.Template.Execute(s.Stream, data)
-	if err != nil {
-		return s, err
+	if st.Template != nil && !st.Template.IsEmpty() {
+		var err error
+		s.Stream, err = st.Template.Execute(s.Stream, data)
+		if err != nil {
+			return s, err
+		}
 	}
 
 	return s, nil
