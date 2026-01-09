@@ -5,9 +5,11 @@ import { api } from "@/lib/api";
 export type TorznabIndexerSyncInfo = {
   error: null | string;
   id: string;
+  queries: TorznabIndexerSyncInfoQuery[];
   queued_at: null | string;
   result_count: null | number;
   sid: string;
+  status: "queued" | "synced" | "syncing";
   synced_at: null | string;
   type: string;
 };
@@ -21,6 +23,13 @@ export type TorznabIndexerSyncInfoParams = {
   limit?: number;
   offset?: number;
   sid?: string;
+};
+
+type TorznabIndexerSyncInfoQuery = {
+  count: number;
+  done: boolean;
+  error?: string;
+  query: string;
 };
 
 export function useTorznabIndexerSyncInfoMutation() {

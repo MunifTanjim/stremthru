@@ -13,15 +13,23 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 )
 
+type TorznabIndexerSyncInfoQueryResponse struct {
+	Query string `json:"query"`
+	Done  bool   `json:"done"`
+	Count int    `json:"count"`
+	Error string `json:"error,omitempty"`
+}
+
 type TorznabIndexerSyncInfoResponse struct {
-	Type        string  `json:"type"`
-	Id          string  `json:"id"`
-	SId         string  `json:"sid"`
-	QueuedAt    *string `json:"queued_at"`
-	SyncedAt    *string `json:"synced_at"`
-	Error       *string `json:"error"`
-	ResultCount *int64  `json:"result_count"`
-	Status      string  `json:"status"`
+	Type        string                                `json:"type"`
+	Id          string                                `json:"id"`
+	SId         string                                `json:"sid"`
+	QueuedAt    *string                               `json:"queued_at"`
+	SyncedAt    *string                               `json:"synced_at"`
+	Error       *string                               `json:"error"`
+	ResultCount *int64                                `json:"result_count"`
+	Status      string                                `json:"status"`
+	Queries     []TorznabIndexerSyncInfoQueryResponse `json:"queries"`
 }
 
 type ListTorznabIndexerSyncInfoResponse struct {
@@ -31,10 +39,20 @@ type ListTorznabIndexerSyncInfoResponse struct {
 
 func toTorznabIndexerSyncInfoResponse(item *torznab_indexer_syncinfo.TorznabIndexerSyncInfo) TorznabIndexerSyncInfoResponse {
 	res := TorznabIndexerSyncInfoResponse{
-		Type:   string(item.Type),
-		Id:     item.Id,
-		SId:    item.SId,
-		Status: string(item.Status),
+		Type:    string(item.Type),
+		Id:      item.Id,
+		SId:     item.SId,
+		Status:  string(item.Status),
+		Queries: make([]TorznabIndexerSyncInfoQueryResponse, len(item.Queries)),
+	}
+
+	for i, q := range item.Queries {
+		res.Queries[i] = TorznabIndexerSyncInfoQueryResponse{
+			Query: q.Query,
+			Done:  q.Done,
+			Count: q.Count,
+			Error: q.Error,
+		}
 	}
 
 	if !item.QueuedAt.Time.IsZero() {

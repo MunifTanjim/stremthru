@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { AlertCircle, Plus, SearchIcon } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Plus,
+  SearchIcon,
+} from "lucide-react";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,6 +20,7 @@ import { useTorznabIndexers } from "@/api/vault-torznab-indexer";
 import { DataTable } from "@/components/data-table";
 import { DataTablePagination } from "@/components/data-table/pagination";
 import { useDataTable } from "@/components/data-table/use-data-table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,6 +31,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
   TooltipContent,
@@ -50,6 +63,102 @@ export const Route = createFileRoute("/dash/torrents/indexers-sync")({
   },
 });
 
+function decodeQueryParams(query: string): string {
+  try {
+    const params = new URLSearchParams(query);
+    const parts: string[] = [];
+    params.forEach((value, key) => {
+      parts.push(`${key}=${value}`);
+    });
+    return parts.join(", ") || query;
+  } catch {
+    return query;
+  }
+}
+
+function QueriesPopover({
+  queries,
+}: {
+  queries: TorznabIndexerSyncInfo["queries"][number][];
+}) {
+  if (!queries || queries.length === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  const doneCount = queries.filter((q) => q.done).length;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="ghost">
+          {doneCount}/{queries.length} queries
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-96 p-0">
+        <ScrollArea className="max-h-80">
+          <div className="flex flex-col divide-y">
+            {queries.map((q) => (
+              <div className="flex flex-col gap-1 p-3" key={q.query}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground flex-1 truncate font-mono text-xs">
+                    {decodeQueryParams(q.query)}
+                  </span>
+                  {q.done ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-green-600" />
+                  ) : (
+                    <Clock className="text-muted-foreground size-4 shrink-0" />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {q.done && (
+                    <span className="text-muted-foreground">
+                      {q.count.toLocaleString()} results
+                    </span>
+                  )}
+                  {q.error && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-destructive flex cursor-help items-center gap-1">
+                          <AlertCircle className="size-3" />
+                          Error
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-md">
+                        <p className="text-sm">{q.error}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function StatusBadge({ status }: { status: TorznabIndexerSyncInfo["status"] }) {
+  const config = {
+    queued: {
+      className: "bg-muted text-muted-foreground",
+      label: "Queued",
+    },
+    synced: {
+      className:
+        "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      label: "Synced",
+    },
+    syncing: {
+      className:
+        "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      label: "Syncing",
+    },
+  }[status];
+
+  return <Badge className={config.className}>{config.label}</Badge>;
+}
+
 const col = createColumnHelper<TorznabIndexerSyncInfo>();
 
 const columns: ColumnDef<TorznabIndexerSyncInfo>[] = [
@@ -70,6 +179,20 @@ const columns: ColumnDef<TorznabIndexerSyncInfo>[] = [
       return <span className="font-mono text-xs">{sid}</span>;
     },
     header: "Strem Id",
+  }),
+  col.accessor("status", {
+    cell: ({ getValue }) => {
+      const status = getValue();
+      return <StatusBadge status={status} />;
+    },
+    header: "Status",
+  }),
+  col.accessor("queries", {
+    cell: ({ getValue }) => {
+      const queries = getValue();
+      return <QueriesPopover queries={queries} />;
+    },
+    header: "Queries",
   }),
   col.accessor("queued_at", {
     cell: ({ getValue }) => {
