@@ -1,24 +1,41 @@
 package torznab
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"strings"
 )
 
 type CapsServer struct {
-	XMLName   xml.Name `xml:"server"`
-	Version   string   `xml:"version,attr,omitempty"`
-	Title     string   `xml:"title,attr,omitempty"`
-	Strapline string   `xml:"strapline,attr,omitempty"`
-	Email     string   `xml:"email,attr,omitempty"`
-	URL       string   `xml:"url,attr,omitempty"`
-	Image     string   `xml:"image,attr,omitempty"`
+	XMLName   xml.Name `xml:"server" json:"-"`
+	Version   string   `xml:"version,attr,omitempty" json:"version,omitempty"`
+	Title     string   `xml:"title,attr,omitempty" json:"title,omitempty"`
+	Strapline string   `xml:"strapline,attr,omitempty" json:"strapline,omitempty"`
+	Email     string   `xml:"email,attr,omitempty" json:"email,omitempty"`
+	URL       string   `xml:"url,attr,omitempty" json:"url,omitempty"`
+	Image     string   `xml:"image,attr,omitempty" json:"image,omitempty"`
+}
+
+type jsonCapsServer struct {
+	Attributes *CapsServer `json:"@attributes"`
+}
+
+func (jcs jsonCapsServer) IsZero() bool {
+	return jcs.Attributes == nil
 }
 
 type CapsLimits struct {
-	XMLName xml.Name `xml:"limits"`
-	Max     int      `xml:"max,attr,omitempty"`
-	Default int      `xml:"default,attr,omitempty"`
+	XMLName xml.Name `xml:"limits" json:"-"`
+	Max     int      `xml:"max,attr,omitempty" json:"max,omitempty"`
+	Default int      `xml:"default,attr,omitempty" json:"default,omitempty"`
+}
+
+type jsonCapsLimits struct {
+	Attributes *CapsLimits `json:"@attributes"`
+}
+
+func (jcl jsonCapsLimits) IsZero() bool {
+	return jcl.Attributes == nil
 }
 
 type CapsSearchingItemAvailable bool
@@ -33,14 +50,22 @@ func (b CapsSearchingItemAvailable) MarshalXMLAttr(name xml.Name) (xml.Attr, err
 
 type CapsSearchingItemSupportedParams []string
 
+func (sp CapsSearchingItemSupportedParams) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strings.Join(sp, ","))
+}
+
 func (sp CapsSearchingItemSupportedParams) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: strings.Join(sp, ",")}, nil
 }
 
 type CapsSearchingItem struct {
-	Name            string
-	Available       CapsSearchingItemAvailable
-	SupportedParams CapsSearchingItemSupportedParams
+	Name            string                           `json:"-"`
+	Available       CapsSearchingItemAvailable       `json:"available"`
+	SupportedParams CapsSearchingItemSupportedParams `json:"supportedParams,omitempty"`
+}
+
+type jsonCapsSearchingItem struct {
+	Attributes CapsSearchingItem `json:"@attributes"`
 }
 
 type xmlCapsSearchingItem struct {
@@ -60,6 +85,19 @@ type CapsCategory struct {
 	Subcat []Category `xml:"subcat"`
 }
 
+type jsonCapsCategory struct {
+	jsonCategory
+	Subcat []jsonCategory `json:"subcat,omitempty"`
+}
+
+type jsonCapsCategories struct {
+	Category []jsonCapsCategory `json:"category"`
+}
+
+func (jcc *jsonCapsCategories) IsZero() bool {
+	return len(jcc.Category) == 0
+}
+
 type xmlCapsCategories struct {
 	XMLName  xml.Name `xml:"categories"`
 	Children []CapsCategory
@@ -73,11 +111,48 @@ type xmlCaps struct {
 	Categories xmlCapsCategories
 }
 
+type jsonCaps struct {
+	Server     jsonCapsServer                   `json:"server,omitzero"`
+	Limits     jsonCapsLimits                   `json:"limits,omitzero"`
+	Searching  map[string]jsonCapsSearchingItem `json:"searching,omitempty"`
+	Categories jsonCapsCategories               `json:"categories,omitzero"`
+}
+
 type Caps struct {
 	Server     *CapsServer
 	Limits     *CapsLimits
 	Searching  []CapsSearchingItem
 	Categories []CapsCategory
+}
+
+func (c Caps) MarshalJSON() ([]byte, error) {
+	jc := jsonCaps{
+		Server: jsonCapsServer{c.Server},
+		Limits: jsonCapsLimits{c.Limits},
+		Categories: jsonCapsCategories{
+			Category: make([]jsonCapsCategory, len(c.Categories)),
+		},
+	}
+	for i, cat := range c.Categories {
+		category := jsonCapsCategory{
+			jsonCategory: jsonCategory{cat.Category},
+		}
+		if len(cat.Subcat) > 0 {
+			category.Subcat = make([]jsonCategory, len(cat.Subcat))
+			for i, subcat := range cat.Subcat {
+				subcat.Name = strings.TrimPrefix(subcat.Name, cat.Name+"/")
+				category.Subcat[i] = jsonCategory{subcat}
+			}
+		}
+		jc.Categories.Category[i] = category
+	}
+	if len(c.Searching) > 0 {
+		jc.Searching = make(map[string]jsonCapsSearchingItem, len(c.Searching))
+		for _, mode := range c.Searching {
+			jc.Searching[mode.Name] = jsonCapsSearchingItem{mode}
+		}
+	}
+	return json.Marshal(jc)
 }
 
 func (c Caps) MarshalXML(e *xml.Encoder, start xml.StartElement) error {

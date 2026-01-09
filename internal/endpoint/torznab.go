@@ -2,11 +2,23 @@ package endpoint
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torznab"
 )
+
+func sendResponse(w http.ResponseWriter, r *http.Request, statusCode int, data any, o string) {
+	switch o {
+	case "json":
+		shared.SendJSON(w, r, statusCode, data)
+	case "xml", "":
+		shared.SendXML(w, r, statusCode, data)
+	default:
+		shared.SendXML(w, r, 200, torznab.ErrorIncorrectParameter("invalid output format"))
+	}
+}
 
 func handleTorznab(w http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get("t")
@@ -16,29 +28,35 @@ func handleTorznab(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	o := strings.ToLower(r.URL.Query().Get("o"))
+	if o != "" && o != "json" && o != "xml" {
+		shared.SendXML(w, r, 200, torznab.ErrorIncorrectParameter("invalid output format"))
+		return
+	}
+
 	switch t {
 	case "caps":
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		shared.SendXML(w, r, 200, torznab.StremThruIndexer.Capabilities())
+		sendResponse(w, r, 200, torznab.StremThruIndexer.Capabilities(), o)
 	case "search", "tvsearch", "movie":
 		query, err := torznab.ParseQuery(r.URL.Query())
 		if err != nil {
-			shared.SendXML(w, r, 200, torznab.ErrorIncorrectParameter(err.Error()))
+			sendResponse(w, r, 200, torznab.ErrorIncorrectParameter(err.Error()), o)
 			return
 		}
 		items, err := torznab.StremThruIndexer.Search(query)
 		if err != nil {
-			shared.SendXML(w, r, 200, torznab.ErrorUnknownError(err.Error()))
+			sendResponse(w, r, 200, torznab.ErrorUnknownError(err.Error()), o)
 			return
 		}
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		shared.SendXML(w, r, 200, torznab.ResultFeed{
+		sendResponse(w, r, 200, torznab.ResultFeed{
 			Info:  torznab.StremThruIndexer.Info(),
 			Items: items,
-		})
+		}, o)
 	default:
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		shared.SendXML(w, r, 200, torznab.ErrorIncorrectParameter(t))
+		sendResponse(w, r, 200, torznab.ErrorIncorrectParameter(t), o)
 	}
 }
 func AddTorznabEndpoints(mux *http.ServeMux) {

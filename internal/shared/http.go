@@ -111,6 +111,16 @@ func SendHTML(w http.ResponseWriter, statusCode int, data bytes.Buffer) {
 	data.WriteTo(w)
 }
 
+func SendJSON(w http.ResponseWriter, r *http.Request, statusCode int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(data); err != nil {
+		core.LogError(r, "failed to encode json", err)
+	}
+}
+
 func SendXML(w http.ResponseWriter, r *http.Request, statusCode int, v any) {
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(statusCode)

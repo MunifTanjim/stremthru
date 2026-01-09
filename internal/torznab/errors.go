@@ -1,6 +1,7 @@
 package torznab
 
 import (
+	"encoding/json"
 	"encoding/xml"
 )
 
@@ -12,6 +13,17 @@ type Error struct {
 
 func (e Error) Error() string {
 	return e.Description
+}
+
+func (e Error) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]map[string]map[string]any{
+		"error": {
+			"@attributes": {
+				"code":        e.Code,
+				"description": e.Description,
+			},
+		},
+	})
 }
 
 var (
