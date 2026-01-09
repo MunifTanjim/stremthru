@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.96.0](https://github.com/MunifTanjim/stremthru/compare/0.95.4...0.96.0) (2026-01-09)
+
+
+### Features
+
+* **animetosho:** add button for purging temporary files ([0245560](https://github.com/MunifTanjim/stremthru/commit/024556053e994c4aecbad76e568e5662d3258359))
+* **ratelimit:** introduce rate limit config ([ea4020a](https://github.com/MunifTanjim/stremthru/commit/ea4020a94e8254dc535d0371c1dabc1629164482))
+* **torznab:** add support for configurable rate limit ([c3e5309](https://github.com/MunifTanjim/stremthru/commit/c3e53094b9e2dbb53b7e10d800f9255282262876))
+* **torznab:** support json output format ([b0f7e29](https://github.com/MunifTanjim/stremthru/commit/b0f7e29dfc3fb2335417975e29cef7a3d826cd50))
+* **torznab:** surface indexer sync status and queries ([021d99d](https://github.com/MunifTanjim/stremthru/commit/021d99d9805ec5fee95211e792d6b9d025ad6159))
+
+
+### Bug Fixes
+
+* **anidb:** update download headers for dataset ([19490f4](https://github.com/MunifTanjim/stremthru/commit/19490f459153a07df95bdd6a5ba0c12a11c60d2b))
+* **animelists:** ignore tmdb data ([c08c1f9](https://github.com/MunifTanjim/stremthru/commit/c08c1f912fb6f806666d7da6b0b2c05f9688c9d1))
+* **animetosho:** update columns for dataset ([3632ce1](https://github.com/MunifTanjim/stremthru/commit/3632ce1c9d6db80d2fd5237102d688ebe6496498))
+* **stremio/sidekick:** handle missing addon flags ([9fb4a09](https://github.com/MunifTanjim/stremthru/commit/9fb4a09eed1d02f9e499197075c387af9cfb92a7))
+* **stremio/wrap:** run extractor regardless of template presence ([e72c15d](https://github.com/MunifTanjim/stremthru/commit/e72c15dbbcda148c7834bb08c0c71b1675b9136f))
+
 ## [0.95.4](https://github.com/MunifTanjim/stremthru/compare/0.95.3...0.95.4) (2026-01-02)
 
 
