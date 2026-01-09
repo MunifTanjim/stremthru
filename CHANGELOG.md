@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.96.1](https://github.com/MunifTanjim/stremthru/compare/0.96.0...0.96.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* **torznab:** fix rate limiter key for re-used rl config ([61e8221](https://github.com/MunifTanjim/stremthru/commit/61e82219eb63bcd6096355470daaf32b593a6edd))
+
 ## [0.96.0](https://github.com/MunifTanjim/stremthru/compare/0.95.4...0.96.0) (2026-01-09)
 
 
