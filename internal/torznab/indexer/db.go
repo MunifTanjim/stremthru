@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/ratelimit"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
+	rrl "github.com/nccapo/rate-limiter"
 )
 
 func encrypt(value string) (string, error) {
@@ -64,11 +65,31 @@ func (idxr TorznabIndexer) GetCompositeId() string {
 	return string(idxr.Type) + ":" + idxr.Id
 }
 
-func (idxr TorznabIndexer) GetRateLimiter() (*ratelimit.Limiter, error) {
+type torznabIndexerRateLimiter struct {
+	*ratelimit.Limiter
+	prefix string
+}
+
+func (rl *torznabIndexerRateLimiter) Try() (*rrl.RateLimitResult, error) {
+	return rl.Limiter.Try(rl.prefix)
+}
+
+func (rl *torznabIndexerRateLimiter) Wait() error {
+	return rl.Limiter.Wait(rl.prefix)
+}
+
+func (idxr TorznabIndexer) GetRateLimiter() (*torznabIndexerRateLimiter, error) {
 	if !idxr.RateLimitConfigId.Valid {
 		return nil, nil
 	}
-	return ratelimit.NewLimiterById(idxr.RateLimitConfigId.String)
+	rl, err := ratelimit.NewLimiterById(idxr.RateLimitConfigId.String)
+	if err != nil {
+		return nil, err
+	}
+	return &torznabIndexerRateLimiter{
+		Limiter: rl,
+		prefix:  idxr.GetCompositeId(),
+	}, nil
 }
 
 func NewTorznabIndexer(indexerType IndexerType, url, apiKey string) (*TorznabIndexer, error) {

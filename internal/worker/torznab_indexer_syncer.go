@@ -124,7 +124,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 						}
 
 						if rl != nil {
-							if result, err := rl.Try(""); err != nil {
+							if result, err := rl.Try(); err != nil {
 								log.Error("rate limit check failed", "error", err, "indexer", indexer.Name)
 								sQuery.Error = err.Error()
 								recordProgress(queries, sQuery)
@@ -135,7 +135,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 									return
 								}
 								rateLimitedWait += result.RetryAfter
-								if err := rl.Wait(""); err != nil {
+								if err := rl.Wait(); err != nil {
 									log.Error("rate limit wait failed", "error", err, "indexer", indexer.Name)
 									sQuery.Error = err.Error()
 									recordProgress(queries, sQuery)
