@@ -8,6 +8,12 @@ export type ParsedNZB = {
   size: number;
 };
 
+type DownloadNzbFileParams = {
+  groups: string[];
+  name: string;
+  segments: ParsedNZBFileSegment[];
+};
+
 type ParsedNZBFile = {
   date: string;
   groups: string[];
@@ -23,6 +29,22 @@ type ParsedNZBFileSegment = {
   message_id: string;
   number: number;
 };
+
+export async function downloadNzbFile(params: DownloadNzbFileParams) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = "/dash/api/usenet/nzb/download";
+
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = "nzb_file";
+  input.value = JSON.stringify(params);
+  form.appendChild(input);
+
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+}
 
 export function useNzbParseMutation() {
   return useMutation({
