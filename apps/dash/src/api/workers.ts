@@ -77,6 +77,11 @@ export function useWorkerMutation(workerId: string) {
     mutationFn: async () => {
       await api(`/workers/${workerId}/temporary-files`, { method: "DELETE" });
     },
+    onSuccess: async (_, __, ___, ctx) => {
+      await ctx.client.invalidateQueries({
+        queryKey: ["/workers/{id}/temporary-files", workerId],
+      });
+    },
   });
 
   return { deleteJobLog, purgeJobLogs, purgeTemporaryFiles };
