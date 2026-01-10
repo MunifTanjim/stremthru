@@ -154,7 +154,7 @@ var columns = []string{
 }
 
 var query_queue = fmt.Sprintf(
-	"INSERT INTO %s (%s) VALUES (?,?,?,%s,'%s',?) ON CONFLICT (%s) DO UPDATE SET %s WHERE %s",
+	"INSERT INTO %s AS tisi (%s) VALUES (?,?,?,%s,'%s',?) ON CONFLICT (%s) DO UPDATE SET %s WHERE %s",
 	TableName,
 	strings.Join([]string{
 		Column.Type,
@@ -177,7 +177,7 @@ var query_queue = fmt.Sprintf(
 		fmt.Sprintf("%s = EXCLUDED.%s", Column.Queries, Column.Queries),
 	}, ", "),
 	fmt.Sprintf(
-		`%s = '%s'`,
+		`tisi.%s = '%s'`,
 		Column.Status,
 		StatusSynced,
 	),
