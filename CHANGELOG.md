@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.96.2](https://github.com/MunifTanjim/stremthru/compare/0.96.1...0.96.2) (2026-01-10)
+
+
+### Bug Fixes
+
+* **torznab/indexer:** fix queue query for postgres ([1fcc71c](https://github.com/MunifTanjim/stremthru/commit/1fcc71c17abab4c06e432b75b82b4b053e05bf87))
+* **worker:** invalidate cache after purging temporary files ([76c4067](https://github.com/MunifTanjim/stremthru/commit/76c4067a4fe6c5a860ac5be314ec0b4ae304524c))
+
 ## [0.96.1](https://github.com/MunifTanjim/stremthru/compare/0.96.0...0.96.1) (2026-01-09)
 
 
