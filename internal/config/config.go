@@ -82,8 +82,10 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT": "5",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_IP_CHECKER":                             "aws",
+		"STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM":         "8",
 		"STREMTHRU_NEWZ_NZB_CACHE_SIZE":                    "512MB",
 		"STREMTHRU_NEWZ_NZB_CACHE_TTL":                     "24h",
+		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
 	},
 }
 
