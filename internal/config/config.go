@@ -194,6 +194,17 @@ func (m AuthAdminMap) IsAdmin(userName string) bool {
 	return false
 }
 
+type SabnzbdAuthMap map[string]string // username -> apikey
+
+func (m SabnzbdAuthMap) GetUser(apikey string) string {
+	for user, key := range m {
+		if key == apikey {
+			return user
+		}
+	}
+	return ""
+}
+
 const (
 	StremioAddonSidekick string = "sidekick"
 	StremioAddonStore    string = "store"
@@ -373,6 +384,7 @@ type Config struct {
 	ProxyAuthPassword           UserPasswordMap
 	AuthAdmin                   AuthAdminMap
 	AdminPassword               UserPasswordMap
+	SabnzbdAuth                 SabnzbdAuthMap
 	BuddyURL                    string
 	HasBuddy                    bool
 	PeerURL                     string
@@ -449,6 +461,16 @@ var config = func() Config {
 		password := util.GenerateRandomString(27, util.CharSet.AlphaNumericMixedCase)
 		authAdminMap[username] = true
 		adminPasswordMap[username] = password
+	}
+
+	sabnzbdAuthMap := make(SabnzbdAuthMap)
+	sabnzbdAuthList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_SABNZBD"), func(c rune) bool {
+		return c == ','
+	})
+	for _, entry := range sabnzbdAuthList {
+		if username, apikey, ok := strings.Cut(entry, ":"); ok && username != "" && apikey != "" {
+			sabnzbdAuthMap[username] = apikey
+		}
 	}
 
 	storeAlldebridTokenList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_AUTH"), func(c rune) bool {
@@ -599,6 +621,7 @@ var config = func() Config {
 		ProxyAuthPassword:           proxyAuthPasswordMap,
 		AuthAdmin:                   authAdminMap,
 		AdminPassword:               adminPasswordMap,
+		SabnzbdAuth:                 sabnzbdAuthMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
 		HasBuddy:                    len(buddyUrl) > 0,
@@ -633,6 +656,7 @@ var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var AuthAdmin = config.AuthAdmin
 var AdminPassword = config.AdminPassword
+var SabnzbdAuth = config.SabnzbdAuth
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var HasBuddy = config.HasBuddy
