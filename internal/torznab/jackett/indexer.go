@@ -7,6 +7,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
 type IndexerType string
@@ -40,29 +41,23 @@ type ItemJackettIndexer struct {
 }
 
 type ChannelItem struct {
-	Title          string             `xml:"title"`
-	GUID           string             `xml:"guid"`
-	JackettIndexer ItemJackettIndexer `xml:"jackettindexer"`
-	Type           IndexerType        `xml:"type"`
-	Comments       string             `xml:"comments"`
-	PubDate        string             `xml:"pubDate"` // Mon, 02 Jan 2006 15:04:05 -0700
-	Size           int64              `xml:"size"`
-	Grabs          int                `xml:"grabs"`
-	Description    string             `xml:"description"`
-	Link           string             `xml:"link"`
-	Categories     []int              `xml:"category"`
-	Enclosure      tznc.ItemEnclosure `xml:"enclosure"`
-	TorznabAttrs   tznc.TorznabAttrs  `xml:"http://torznab.com/schemas/2015/feed attr"`
+	znab.ChannelItem
+	Comments       string                `xml:"comments"`
+	Grabs          int                   `xml:"grabs"`
+	JackettIndexer ItemJackettIndexer    `xml:"jackettindexer"`
+	Size           int64                 `xml:"size"`
+	Type           IndexerType           `xml:"type"`
+	Attributes     znab.ChannelItemAttrs `xml:"http://torznab.com/schemas/2015/feed attr"`
 }
 
 func (o ChannelItem) ToTorz() *tznc.Torz {
 	t := &tznc.Torz{}
 	t.Indexer = o.JackettIndexer.ID
-	t.Hash = strings.ToLower(o.TorznabAttrs.Get(tznc.TorznabAttrNameInfoHash))
+	t.Hash = strings.ToLower(o.Attributes.Get(znab.TorznabAttrNameInfoHash))
 	t.Title = o.Title
 	t.Size = o.Size
-	t.Seeders = util.SafeParseInt(o.TorznabAttrs.Get(tznc.TorznabAttrNameSeeders), 0)
-	if peers := util.SafeParseInt(o.TorznabAttrs.Get(tznc.TorznabAttrNamePeers), 0); peers > t.Seeders {
+	t.Seeders = util.SafeParseInt(o.Attributes.Get(znab.TorznabAttrNameSeeders), 0)
+	if peers := util.SafeParseInt(o.Attributes.Get(znab.TorznabAttrNamePeers), 0); peers > t.Seeders {
 		t.Leechers = peers - t.Seeders
 	}
 	t.Private = o.Type == IndexerTypePrivate || o.Type == IndexerTypeSemiPrivate
@@ -80,13 +75,7 @@ func (o ChannelItem) ToTorz() *tznc.Torz {
 }
 
 type Channel struct {
-	XMLName     xml.Name      `xml:"channel"`
-	Title       string        `xml:"title,omitempty"`
-	Description string        `xml:"description,omitempty"`
-	Link        string        `xml:"link,omitempty"`
-	Language    string        `xml:"language,omitempty"`
-	Category    string        `xml:"category,omitempty"`
-	Items       []ChannelItem `xml:"item"`
+	znab.Channel[ChannelItem]
 }
 
 type SearchResponse struct {
