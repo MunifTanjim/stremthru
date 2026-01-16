@@ -1,10 +1,14 @@
-package torznab_client
+package znab
 
 import "fmt"
 
 type Category struct {
-	ID   int    `xml:"id,attr"`
-	Name string `xml:"name,attr"`
+	ID   int    `xml:"id,attr" json:"id"`
+	Name string `xml:"name,attr" json:"name"`
+}
+
+type jsonCategory struct {
+	Attributes Category `json:"@attributes"`
 }
 
 func (c Category) String() string {

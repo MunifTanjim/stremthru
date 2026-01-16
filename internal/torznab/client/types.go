@@ -1,51 +1,36 @@
 package torznab_client
 
-type TorznabAttrName string
+import "github.com/MunifTanjim/stremthru/internal/znab"
+
+type Caps = znab.Caps
+
+type Function = znab.Function
 
 const (
-	TorznabAttrNameCategory             TorznabAttrName = "category"
-	TorznabAttrNameInfoHash             TorznabAttrName = "infohash"
-	TorznabAttrNameMagnetURL            TorznabAttrName = "magneturl"
-	TorznabAttrNameIMDB                 TorznabAttrName = "imdb"
-	TorznabAttrNameIMDBId               TorznabAttrName = "imdbid"
-	TorznabAttrNameGenre                TorznabAttrName = "genre"
-	TorznabAttrNameSeeders              TorznabAttrName = "seeders"
-	TorznabAttrNamePeers                TorznabAttrName = "peers"
-	TorznabAttrNameMinimumRatio         TorznabAttrName = "minimumratio"
-	TorznabAttrNameMinimumSeedTime      TorznabAttrName = "minimumseedtime"
-	TorznabAttrNameDownloadVolumeFactor TorznabAttrName = "downloadvolumefactor"
-	TorznabAttrNameUploadVolumeFactor   TorznabAttrName = "uploadvolumefactor"
-	TorznabAttrNameCoverURL             TorznabAttrName = "coverurl"
+	FunctionCaps        = znab.FunctionCaps
+	FunctionSearch      = znab.FunctionSearch
+	FunctionSearchTV    = znab.FunctionSearchTV
+	FunctionSearchMovie = znab.FunctionSearchMovie
+	FunctionSearchMusic = znab.FunctionSearchMusic
+	FunctionSearchBook  = znab.FunctionSearchBook
 )
 
-type TorznabAttr struct {
-	Name  TorznabAttrName `xml:"name,attr"`
-	Value string          `xml:"value,attr"`
-}
+type SearchParam = znab.SearchParam
 
-type TorznabAttrs []TorznabAttr
-
-func (attrs TorznabAttrs) Get(name TorznabAttrName) string {
-	for _, attr := range attrs {
-		if attr.Name == name {
-			return attr.Value
-		}
-	}
-	return ""
-}
-
-func (attrs TorznabAttrs) GetAll(name TorznabAttrName) []string {
-	values := []string{}
-	for _, attr := range attrs {
-		if attr.Name == name {
-			values = append(values, attr.Value)
-		}
-	}
-	return values
-}
-
-type ItemEnclosure struct {
-	URL    string `xml:"url,attr"`
-	Length int64  `xml:"length,attr"`
-	Type   string `xml:"type,attr"` // application/x-bittorrent
-}
+const (
+	SearchParamT        SearchParam = znab.SearchParamT
+	SearchParamAPIKey   SearchParam = znab.SearchParamAPIKey
+	SearchParamCat      SearchParam = znab.SearchParamCat
+	SearchParamAttrs    SearchParam = znab.SearchParamAttrs
+	SearchParamExtended SearchParam = znab.SearchParamExtended
+	SearchParamOffset   SearchParam = znab.SearchParamOffset
+	SearchParamLimit    SearchParam = znab.SearchParamLimit
+	SearchParamQ        SearchParam = znab.SearchParamQ
+	SearchParamEp       SearchParam = znab.SearchParamEp
+	SearchParamSeason   SearchParam = znab.SearchParamSeason
+	SearchParamYear     SearchParam = znab.SearchParamYear
+	SearchParamIMDBId   SearchParam = znab.SearchParamIMDBId
+	SearchParamTVDBId   SearchParam = znab.SearchParamTVDBId
+	SearchParamTVMazeId SearchParam = znab.SearchParamTVMazeId
+	SearchParamTraktId  SearchParam = znab.SearchParamTraktId
+)
