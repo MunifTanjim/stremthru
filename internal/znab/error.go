@@ -1,8 +1,9 @@
-package torznab
+package znab
 
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 )
 
 type Error struct {
@@ -12,18 +13,23 @@ type Error struct {
 }
 
 func (e Error) Error() string {
-	return e.Description
+	return fmt.Sprintf("[%d] %s", e.Code, e.Description)
+}
+
+type jsonError struct {
+	Error struct {
+		Attributes struct {
+			Code        int    `json:"code"`
+			Description string `json:"description"`
+		} `json:"@attributes"`
+	} `json:"error"`
 }
 
 func (e Error) MarshalJSON() ([]byte, error) {
-	return json.Marshal(map[string]map[string]map[string]any{
-		"error": {
-			"@attributes": {
-				"code":        e.Code,
-				"description": e.Description,
-			},
-		},
-	})
+	jErr := jsonError{}
+	jErr.Error.Attributes.Code = e.Code
+	jErr.Error.Attributes.Description = e.Description
+	return json.Marshal(jErr)
 }
 
 var (
@@ -73,4 +79,6 @@ var (
 		}
 		return err
 	}
+
+	ErrorAPIDisabled = Error{Code: 910, Description: "API Disabled"}
 )

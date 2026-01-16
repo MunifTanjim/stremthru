@@ -11,36 +11,27 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	"github.com/MunifTanjim/stremthru/internal/util"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
-
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
-type Info struct {
-	ID          string
-	Title       string
-	Description string
-	Link        string
-	Language    string
-	Category    string
-}
-
 type Indexer interface {
-	Info() Info
-	Search(query Query) ([]ResultItem, error)
+	Info() znab.Info
+	Search(query Query) ([]FeedItem, error)
 	Download(urlStr string) (io.ReadCloser, http.Header, error)
-	Capabilities() Caps
+	Capabilities() znab.Caps
 }
 
 type stremThruIndexer struct {
-	info Info
-	caps Caps
+	info znab.Info
+	caps znab.Caps
 }
 
-func (sti stremThruIndexer) Info() Info {
+func (sti stremThruIndexer) Info() znab.Info {
 	return sti.info
 }
 
@@ -49,7 +40,7 @@ var lastMappedIMDBIdCached struct {
 	staleAt time.Time
 }
 
-func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
+func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	imdbIds := []string{}
 
 	if q.IMDBId == "" && q.Q == "" {
@@ -85,7 +76,7 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 	}
 
 	if len(imdbIds) == 0 {
-		return []ResultItem{}, nil
+		return []FeedItem{}, nil
 	}
 
 	var wg sync.WaitGroup
@@ -166,7 +157,7 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 	}
 	defer rows.Close()
 
-	items := []ResultItem{}
+	items := []FeedItem{}
 	for rows.Next() {
 		var imdbId string
 		var tInfo torrent_info.TorrentInfo
@@ -248,7 +239,7 @@ func (sti stremThruIndexer) Search(q Query) ([]ResultItem, error) {
 		if len(tInfo.Channels) > 0 {
 			audio += " | " + strings.Join(tInfo.Channels, ", ")
 		}
-		items = append(items, ResultItem{
+		items = append(items, FeedItem{
 			Audio:       audio,
 			Category:    category,
 			Codec:       tInfo.Codec,
@@ -281,41 +272,38 @@ func (sti stremThruIndexer) Download(urlStr string) (io.ReadCloser, http.Header,
 	return nil, nil, nil
 }
 
-func (sti stremThruIndexer) Capabilities() Caps {
+func (sti stremThruIndexer) Capabilities() znab.Caps {
 	return sti.caps
 }
 
 var StremThruIndexer = stremThruIndexer{
-	info: Info{
+	info: znab.Info{
 		Title:       "StremThru",
 		Description: "StremThru Torznab",
 	},
-	caps: Caps{
-		Server: &CapsServer{
+	caps: znab.Caps{
+		Server: &znab.CapsServer{
 			Title:     "StremThru",
 			Strapline: "StremThru Torznab",
 			Image:     "https://emojiapi.dev/api/v1/sparkles/256.png",
 			URL:       config.BaseURL.String(),
 			Version:   "1.3",
 		},
-		Searching: []CapsSearchingItem{
-			{
-				Name:            "search",
+		Searching: &znab.CapsSearching{
+			Search: &znab.CapsSearchingItem{
 				Available:       true,
 				SupportedParams: []string{"q"},
 			},
-			{
-				Name:            "tv-search",
+			TVSearch: &znab.CapsSearchingItem{
 				Available:       true,
 				SupportedParams: []string{"q,imdbid,season,ep"},
 			},
-			{
-				Name:            "movie-search",
+			MovieSearch: &znab.CapsSearchingItem{
 				Available:       true,
 				SupportedParams: []string{"q,imdbid"},
 			},
 		},
-		Categories: []CapsCategory{
+		Categories: []znab.CapsCategory{
 			{
 				Category: CategoryMovies,
 			},

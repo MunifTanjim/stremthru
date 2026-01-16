@@ -1,4 +1,4 @@
-package torznab_client
+package newznab_client
 
 import (
 	"net/url"
@@ -72,7 +72,7 @@ func (q *Query) SetCat(cat ...int) *Query {
 		builder.WriteString(",")
 	}
 	for i, c := range cat {
-		if i > 1 {
+		if i > 0 {
 			builder.WriteString(",")
 		}
 		builder.WriteString(strconv.Itoa(c))
@@ -96,7 +96,7 @@ func (q *Query) SetAttrs(attrs ...string) *Query {
 		builder.WriteString(",")
 	}
 	for i, a := range attrs {
-		if i > 1 {
+		if i > 0 {
 			builder.WriteString(",")
 		}
 		builder.WriteString(a)
@@ -133,7 +133,7 @@ func (q *Query) GetLimit() int {
 }
 
 func (q *Query) SetLimit(value int) *Query {
-	if value <= 0 {
+	if value <= 0 && q.caps.Limits != nil {
 		value = q.caps.Limits.Max
 	}
 	q.values.Set(SearchParamLimit, strconv.Itoa(value))
@@ -145,8 +145,8 @@ func (q *Query) Set(param SearchParam, value string) *Query {
 	return q
 }
 
-func (q *Query) Get(param SearchParam, value string) {
-	q.values.Set(param, value)
+func (q *Query) Get(param SearchParam) string {
+	return q.values.Get(param)
 }
 
 func (q *Query) Values() url.Values {
