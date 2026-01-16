@@ -7,4 +7,5 @@ import (
 var GetQueryInt = shared.GetQueryInt
 var SendError = shared.SendError
 var SendHTML = shared.SendHTML
+var SendJSON = shared.SendJSON
 var SendResponse = shared.SendResponse
