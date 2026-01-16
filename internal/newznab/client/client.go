@@ -1,4 +1,4 @@
-package torznab_client
+package newznab_client
 
 import (
 	"encoding/xml"
@@ -39,10 +39,6 @@ type Client struct {
 func NewClient(conf *ClientConfig) *Client {
 	if conf.HTTPClient == nil {
 		conf.HTTPClient = config.GetHTTPClient(config.TUNNEL_TYPE_AUTO)
-	}
-
-	if conf.UserAgent == "" {
-		conf.UserAgent = "stremthru/" + config.Version
 	}
 
 	c := Client{
@@ -87,7 +83,7 @@ func (r Response[T]) GetError(res *http.Response) error {
 func (r *Response[T]) Unmarshal(res *http.Response, body []byte, v any) error {
 	contentType := res.Header.Get("Content-Type")
 	switch {
-	case strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "application/rss+xml"):
+	case strings.Contains(contentType, "application/xml") || strings.Contains(contentType, "application/rss+xml") || strings.Contains(contentType, "text/xml"):
 		var root struct {
 			XMLName xml.Name
 		}

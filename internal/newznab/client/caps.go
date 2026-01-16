@@ -1,4 +1,4 @@
-package torznab_client
+package newznab_client
 
 import (
 	"net/url"
