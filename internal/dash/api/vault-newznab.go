@@ -2,36 +2,33 @@ package dash_api
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
+	newznab_indexer "github.com/MunifTanjim/stremthru/internal/newznab/indexer"
 	"github.com/MunifTanjim/stremthru/internal/ratelimit"
-	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 )
 
-type TorznabIndexerResponse struct {
+type NewznabIndexerResponse struct {
+	Id                int64   `json:"id"`
 	Type              string  `json:"type"`
-	Id                string  `json:"id"`
 	Name              string  `json:"name"`
 	URL               string  `json:"url"`
-	IsValid           bool    `json:"is_valid"`
 	RateLimitConfigId *string `json:"rate_limit_config_id"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
 }
 
-func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndexerResponse {
-	compositeId := string(item.Type) + ":" + item.Id
-
+func toNewznabIndexerResponse(item *newznab_indexer.NewznabIndexer) NewznabIndexerResponse {
 	var rateLimitConfigId *string
 	if item.RateLimitConfigId.Valid {
 		rateLimitConfigId = &item.RateLimitConfigId.String
 	}
 
-	return TorznabIndexerResponse{
+	return NewznabIndexerResponse{
+		Id:                item.Id,
 		Type:              string(item.Type),
-		Id:                compositeId,
 		Name:              item.Name,
 		URL:               item.URL,
 		RateLimitConfigId: rateLimitConfigId,
@@ -40,39 +37,42 @@ func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndex
 	}
 }
 
-func handleGetTorznabIndexers(w http.ResponseWriter, r *http.Request) {
-	items, err := torznab_indexer.GetAll()
+func handleGetNewznabIndexers(w http.ResponseWriter, r *http.Request) {
+	items, err := newznab_indexer.GetAll()
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	data := make([]TorznabIndexerResponse, len(items))
+	data := make([]NewznabIndexerResponse, len(items))
 	for i := range items {
-		data[i] = toTorznabIndexerResponse(&items[i])
+		data[i] = toNewznabIndexerResponse(&items[i])
 	}
 
 	SendData(w, r, 200, data)
 }
 
-type CreateTorznabIndexerRequest struct {
-	Type              torznab_indexer.IndexerType `json:"type"`
-	URL               string                      `json:"url"`
-	APIKey            string                      `json:"api_key"`
-	Name              string                      `json:"name,omitempty"`
-	RateLimitConfigId *string                     `json:"rate_limit_config_id"`
+type CreateNewznabIndexerRequest struct {
+	URL               string  `json:"url"`
+	APIKey            string  `json:"api_key"`
+	Name              string  `json:"name"`
+	RateLimitConfigId *string `json:"rate_limit_config_id"`
 }
 
-var ErrorInvalidTorznabCredentials = errors.New("invalid torznab credentials or connection failed")
-
-func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	request := &CreateTorznabIndexerRequest{}
+func handleCreateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	request := &CreateNewznabIndexerRequest{}
 	if err := ReadRequestBodyJSON(r, request); err != nil {
 		SendError(w, r, err)
 		return
 	}
 
 	errs := []Error{}
+	if request.Name == "" {
+		errs = append(errs, Error{
+			Location: "name",
+			Message:  "missing name",
+		})
+	}
 	if request.URL == "" {
 		errs = append(errs, Error{
 			Location: "url",
@@ -90,20 +90,13 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	indexerType := request.Type
-	if indexerType == "" {
-		indexerType = torznab_indexer.IndexerTypeJackett
-	}
-
-	indexer, err := torznab_indexer.NewTorznabIndexer(indexerType, request.URL, request.APIKey)
+	indexer, err := newznab_indexer.NewNewznabIndexer(request.URL, request.APIKey)
 	if err != nil {
-		ErrorBadRequest(r, "Invalid Torznab URL").WithCause(err).Send(w, r)
+		ErrorBadRequest(r, "Invalid Newznab URL").WithCause(err).Send(w, r)
 		return
 	}
 
-	if request.Name != "" {
-		indexer.Name = request.Name
-	}
+	indexer.Name = request.Name
 
 	if request.RateLimitConfigId != nil && *request.RateLimitConfigId != "" {
 		if rlc, err := ratelimit.GetById(*request.RateLimitConfigId); err != nil {
@@ -123,56 +116,66 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Torznab URL or API key").Send(w, r)
+		ErrorBadRequest(r, "Invalid Newznab URL or API key").WithCause(err).Send(w, r)
 		return
 	}
 
-	if err := indexer.Upsert(); err != nil {
+	if err := indexer.Insert(); err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	SendData(w, r, 201, toTorznabIndexerResponse(indexer))
+	SendData(w, r, 201, toNewznabIndexerResponse(indexer))
 }
 
-func handleGetTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+func handleGetNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ErrorBadRequest(r, "invalid id").Send(w, r)
+		return
+	}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+	indexer, err := newznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
 		return
 	}
 
-	SendData(w, r, 200, toTorznabIndexerResponse(indexer))
+	SendData(w, r, 200, toNewznabIndexerResponse(indexer))
 }
 
-type UpdateTorznabIndexerRequest struct {
+type UpdateNewznabIndexerRequest struct {
 	APIKey            string  `json:"api_key"`
 	Name              string  `json:"name,omitempty"`
 	RateLimitConfigId *string `json:"rate_limit_config_id"`
 }
 
-func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+func handleUpdateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ErrorBadRequest(r, "invalid id").Send(w, r)
+		return
+	}
 
-	request := &UpdateTorznabIndexerRequest{}
+	request := &UpdateNewznabIndexerRequest{}
 	if err := ReadRequestBodyJSON(r, request); err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+	indexer, err := newznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "indexer not found").Send(w, r)
+		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -206,32 +209,37 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Torznab API key").Send(w, r)
+		ErrorBadRequest(r, "Invalid Newznab API key").Send(w, r)
 		return
 	}
 
-	if err := indexer.Upsert(); err != nil {
+	if err := indexer.Update(); err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	SendData(w, r, 200, toTorznabIndexerResponse(indexer))
+	SendData(w, r, 200, toNewznabIndexerResponse(indexer))
 }
 
-func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+func handleDeleteNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ErrorBadRequest(r, "invalid id").Send(w, r)
+		return
+	}
 
-	existing, err := torznab_indexer.GetByCompositeId(compositeId)
+	existing, err := newznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
 		return
 	}
 
-	if err := torznab_indexer.DeleteByCompositeId(compositeId); err != nil {
+	if err := newznab_indexer.Delete(id); err != nil {
 		SendError(w, r, err)
 		return
 	}
@@ -239,16 +247,21 @@ func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 204, nil)
 }
 
-func handleTestTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+func handleTestNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ErrorBadRequest(r, "invalid id").Send(w, r)
+		return
+	}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+	indexer, err := newznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -257,38 +270,38 @@ func handleTestTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	SendData(w, r, 200, toTorznabIndexerResponse(indexer))
+	SendData(w, r, 200, toNewznabIndexerResponse(indexer))
 }
 
-func AddVaultTorznabEndpoints(router *http.ServeMux) {
+func AddVaultNewznabEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
-	router.HandleFunc("/vault/torznab/indexers", authed(func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/vault/newznab/indexers", authed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			handleGetTorznabIndexers(w, r)
+			handleGetNewznabIndexers(w, r)
 		case http.MethodPost:
-			handleCreateTorznabIndexer(w, r)
+			handleCreateNewznabIndexer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}
 	}))
-	router.HandleFunc("/vault/torznab/indexers/{id}", authed(func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/vault/newznab/indexers/{id}", authed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			handleGetTorznabIndexer(w, r)
+			handleGetNewznabIndexer(w, r)
 		case http.MethodPatch:
-			handleUpdateTorznabIndexer(w, r)
+			handleUpdateNewznabIndexer(w, r)
 		case http.MethodDelete:
-			handleDeleteTorznabIndexer(w, r)
+			handleDeleteNewznabIndexer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}
 	}))
-	router.HandleFunc("/vault/torznab/indexers/{id}/test", authed(func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/vault/newznab/indexers/{id}/test", authed(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			handleTestTorznabIndexer(w, r)
+			handleTestNewznabIndexer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}

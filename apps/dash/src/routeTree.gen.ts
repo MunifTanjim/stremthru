@@ -29,6 +29,7 @@ import { Route as DashVaultUsenetServersRouteImport } from './routes/dash/vault/
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultTorznabIndexersRouteImport } from './routes/dash/vault/torznab-indexers'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
+import { Route as DashVaultNewznabIndexersRouteImport } from './routes/dash/vault/newznab-indexers'
 import { Route as DashUsenetNzbRouteImport } from './routes/dash/usenet/nzb'
 import { Route as DashTorrentsIndexersSyncRouteImport } from './routes/dash/torrents/indexers-sync'
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
@@ -137,6 +138,12 @@ const DashVaultStremioAccountsRoute =
     path: '/stremio-accounts',
     getParentRoute: () => DashVaultRoute,
   } as any)
+const DashVaultNewznabIndexersRoute =
+  DashVaultNewznabIndexersRouteImport.update({
+    id: '/newznab-indexers',
+    path: '/newznab-indexers',
+    getParentRoute: () => DashVaultRoute,
+  } as any)
 const DashUsenetNzbRoute = DashUsenetNzbRouteImport.update({
   id: '/nzb',
   path: '/nzb',
@@ -181,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
+  '/dash/vault/newznab-indexers': typeof DashVaultNewznabIndexersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -201,6 +209,7 @@ export interface FileRoutesByTo {
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
+  '/dash/vault/newznab-indexers': typeof DashVaultNewznabIndexersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -229,6 +238,7 @@ export interface FileRoutesById {
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
+  '/dash/vault/newznab-indexers': typeof DashVaultNewznabIndexersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-trakt'
     | '/dash/torrents/indexers-sync'
     | '/dash/usenet/nzb'
+    | '/dash/vault/newznab-indexers'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-trakt'
     | '/dash/torrents/indexers-sync'
     | '/dash/usenet/nzb'
+    | '/dash/vault/newznab-indexers'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-trakt'
     | '/dash/torrents/indexers-sync'
     | '/dash/usenet/nzb'
+    | '/dash/vault/newznab-indexers'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
@@ -463,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashVaultStremioAccountsRouteImport
       parentRoute: typeof DashVaultRoute
     }
+    '/dash/vault/newznab-indexers': {
+      id: '/dash/vault/newznab-indexers'
+      path: '/newznab-indexers'
+      fullPath: '/dash/vault/newznab-indexers'
+      preLoaderRoute: typeof DashVaultNewznabIndexersRouteImport
+      parentRoute: typeof DashVaultRoute
+    }
     '/dash/usenet/nzb': {
       id: '/dash/usenet/nzb'
       path: '/nzb'
@@ -572,6 +592,7 @@ const DashUsenetRouteWithChildren = DashUsenetRoute._addFileChildren(
 )
 
 interface DashVaultRouteChildren {
+  DashVaultNewznabIndexersRoute: typeof DashVaultNewznabIndexersRoute
   DashVaultStremioAccountsRoute: typeof DashVaultStremioAccountsRoute
   DashVaultTorznabIndexersRoute: typeof DashVaultTorznabIndexersRoute
   DashVaultTraktAccountsRoute: typeof DashVaultTraktAccountsRoute
@@ -580,6 +601,7 @@ interface DashVaultRouteChildren {
 }
 
 const DashVaultRouteChildren: DashVaultRouteChildren = {
+  DashVaultNewznabIndexersRoute: DashVaultNewznabIndexersRoute,
   DashVaultStremioAccountsRoute: DashVaultStremioAccountsRoute,
   DashVaultTorznabIndexersRoute: DashVaultTorznabIndexersRoute,
   DashVaultTraktAccountsRoute: DashVaultTraktAccountsRoute,
