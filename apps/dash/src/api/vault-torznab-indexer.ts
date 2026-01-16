@@ -12,8 +12,6 @@ export type TorznabIndexer = {
   url: string;
 };
 
-export type TorznabIndexerType = "jackett";
-
 type CreateTorznabIndexerParams = {
   api_key: string;
   name: string;
@@ -21,6 +19,8 @@ type CreateTorznabIndexerParams = {
   type?: TorznabIndexerType;
   url: string;
 };
+
+type TorznabIndexerType = "jackett";
 
 type UpdateTorznabIndexerParams = {
   api_key?: string;

@@ -324,6 +324,10 @@ function useNavItems(): NavItem[] {
         path: "/dash/vault/usenet-servers",
         title: "Usenet Servers",
       });
+      vault.items!.push({
+        path: "/dash/vault/newznab-indexers",
+        title: "Newznab Indexers",
+      });
       items.push(vault);
 
       const sync: NavItem = {
