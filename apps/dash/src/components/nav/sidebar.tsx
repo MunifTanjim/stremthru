@@ -289,6 +289,10 @@ function useNavItems(): NavItem[] {
             path: "/dash/usenet/nzb",
             title: "NZB",
           },
+          {
+            path: "/dash/usenet/queue",
+            title: "Queue",
+          },
         ],
         path: "/dash/usenet",
         title: "Usenet",
