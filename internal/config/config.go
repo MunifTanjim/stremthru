@@ -387,6 +387,7 @@ type Config struct {
 	LogLevel  llog.Level
 	LogFormat string
 
+	ListenAddr                  string
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
 	UserAuth                    UserPasswordMap
@@ -626,11 +627,15 @@ var config = func() Config {
 		peerFlag.Lazy = true
 	}
 
+	listenAddr := getEnv("STREMTHRU_LISTEN_ADDR")
+	if listenAddr == "" {
+		listenAddr = "127.0.0.1:" + getEnv("STREMTHRU_PORT")
+	}
 	return Config{
 		LogLevel:  logLevel,
 		LogFormat: logFormat,
 
-		Port:                        getEnv("STREMTHRU_PORT"),
+		ListenAddr:                  listenAddr,
 		UserAuth:                    authPasswordMap,
 		AuthAdmin:                   authAdminMap,
 		AdminPassword:               adminPasswordMap,
@@ -665,7 +670,7 @@ var config = func() Config {
 var LogLevel = config.LogLevel
 var LogFormat = config.LogFormat
 
-var Port = config.Port
+var ListenAddr = config.ListenAddr
 var UserAuth = config.UserAuth
 var AuthAdmin = config.AuthAdmin
 var AdminPassword = config.AdminPassword
@@ -747,7 +752,7 @@ func PrintConfig(state *AppState) {
 	l.Println("====== StremThru =======")
 	l.Printf(" Time: %v\n", ServerStartTime.Format(time.RFC3339))
 	l.Printf(" Version: %v\n", Version)
-	l.Printf(" Port: %v\n", Port)
+	l.Printf(" Addr: %v\n", ListenAddr)
 	if Environment != "" {
 		l.Printf(" Env: %v\n", Environment)
 	}

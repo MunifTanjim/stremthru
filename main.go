@@ -65,17 +65,13 @@ func main() {
 
 	handler := shared.RootServerContext(mux)
 
-	addr := ":" + config.Port
-	if config.Environment == config.EnvDev {
-		addr = "localhost" + addr
-	}
-	server := &http.Server{Addr: addr, Handler: handler}
+	server := &http.Server{Addr: config.ListenAddr, Handler: handler}
 
 	if len(config.UserAuth) == 0 {
 		server.SetKeepAlivesEnabled(false)
 	}
 
-	log.Println("stremthru listening on " + addr)
+	log.Println("stremthru listening on " + config.ListenAddr)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("failed to start stremthru: %v", err)
 	}
