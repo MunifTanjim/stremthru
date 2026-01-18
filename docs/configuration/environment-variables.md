@@ -16,6 +16,16 @@ Base URL for StremThru. Used for generating callback URLs and links.
 STREMTHRU_BASE_URL=http://localhost:8080
 ```
 
+### `STREMTHRU_LISTEN_ADDR`
+
+Address to listen on.
+
+**Example:**
+
+```sh
+STREMTHRU_LISTEN_ADDR=127.0.0.1:8080
+```
+
 ### `STREMTHRU_PORT`
 
 Port to listen on.
