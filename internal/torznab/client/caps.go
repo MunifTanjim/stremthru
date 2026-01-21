@@ -35,6 +35,15 @@ func (sp CapsSearchingItemSupportedParams) MarshalXMLAttr(name xml.Name) (xml.At
 	return xml.Attr{Name: name, Value: strings.Join(sp, ",")}, nil
 }
 
+func (sp *CapsSearchingItemSupportedParams) UnmarshalXMLAttr(attr xml.Attr) error {
+	if attr.Value == "" {
+		*sp = nil
+		return nil
+	}
+	*sp = strings.Split(attr.Value, ",")
+	return nil
+}
+
 type CapsSearchingItem struct {
 	Available       CapsSearchingItemAvailable       `xml:"available,attr"`
 	SupportedParams CapsSearchingItemSupportedParams `xml:"supportedParams,attr"`
@@ -43,7 +52,7 @@ type CapsSearchingItem struct {
 	supportedParam map[SearchParam]struct{} `xml:"-"`
 }
 
-func (csi CapsSearchingItem) SupportsParam(param SearchParam) bool {
+func (csi *CapsSearchingItem) SupportsParam(param SearchParam) bool {
 	if csi.supportedParam == nil {
 		csi.supportedParam = make(map[SearchParam]struct{}, len(csi.SupportedParams))
 		for _, p := range csi.SupportedParams {
@@ -88,7 +97,7 @@ type Caps struct {
 	Categories []CapsCategory `xml:"categories>category"`
 }
 
-func (caps Caps) getSearchingItem(t Function) *CapsSearchingItem {
+func (caps *Caps) getSearchingItem(t Function) *CapsSearchingItem {
 	switch t {
 	case FunctionSearch:
 		return &caps.Searching.Search
@@ -105,13 +114,13 @@ func (caps Caps) getSearchingItem(t Function) *CapsSearchingItem {
 	}
 }
 
-func (caps Caps) SupportsFunction(t Function) bool {
+func (caps *Caps) SupportsFunction(t Function) bool {
 	if si := caps.getSearchingItem(t); si != nil {
 		return bool(si.Available)
 	}
 	return false
 }
-func (caps Caps) SupportsParam(t Function, param SearchParam) bool {
+func (caps *Caps) SupportsParam(t Function, param SearchParam) bool {
 	if si := caps.getSearchingItem(t); si != nil {
 		return si.SupportsParam(param)
 	}
