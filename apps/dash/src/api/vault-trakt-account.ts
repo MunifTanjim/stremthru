@@ -35,6 +35,17 @@ export function useTraktAccountMutation() {
     },
   });
 
+  const get = useMutation({
+    mutationFn: getTraktAccount,
+    onSuccess: async (data, { id }, __, ctx) => {
+      ctx.client.setQueryData<TraktAccount[]>(
+        ["/vault/trakt/accounts"],
+        (list) =>
+          list?.map((item) => (item.id === id ? { ...item, ...data } : item)),
+      );
+    },
+  });
+
   const remove = useMutation({
     mutationFn: deleteTraktAccount,
     onSuccess: async (_, id, __, ctx) => {
@@ -50,7 +61,7 @@ export function useTraktAccountMutation() {
     },
   });
 
-  return { create, remove };
+  return { create, get, remove };
 }
 
 export function useTraktAccounts() {
@@ -69,6 +80,19 @@ async function createTraktAccount(params: CreateTraktAccountParams) {
 
 async function deleteTraktAccount(id: string) {
   await api(`DELETE /vault/trakt/accounts/${id}`);
+}
+
+async function getTraktAccount({
+  id,
+  refresh = false,
+}: {
+  id: string;
+  refresh?: boolean;
+}) {
+  const { data } = await api<TraktAccount>(
+    `GET /vault/trakt/accounts/${id}?refresh=${refresh}`,
+  );
+  return data;
 }
 
 async function getTraktAccounts() {

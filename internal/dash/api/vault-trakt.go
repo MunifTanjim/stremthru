@@ -6,7 +6,9 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
+	"github.com/MunifTanjim/stremthru/internal/trakt"
 	trakt_account "github.com/MunifTanjim/stremthru/internal/trakt/account"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type TraktAccountResponse struct {
@@ -85,6 +87,17 @@ func handleGetTraktAccount(w http.ResponseWriter, r *http.Request) {
 		ErrorNotFound(r, "trakt account not found").Send(w, r)
 		return
 	}
+
+	forceRefresh := util.StringToBool(r.URL.Query().Get("refresh"), false)
+	if forceRefresh {
+		client := trakt.GetAPIClient(account.OAuthTokenId)
+		_, err := client.RetrieveSettings(&trakt.RetrieveSettingsParams{})
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+	}
+
 	SendData(w, r, 200, toTraktAccountResponse(account))
 }
 

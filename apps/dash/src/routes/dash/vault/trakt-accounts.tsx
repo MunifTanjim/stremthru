@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { CheckCircle, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Plus,
+  RefreshCwIcon,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { DateTime } from "luxon";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInterval } from "react-use";
@@ -27,11 +33,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { APIError } from "@/lib/api";
 
 declare module "@/components/data-table" {
   export interface DataTableMetaCtx {
     TraktAccount: {
+      getAccount: ReturnType<typeof useTraktAccountMutation>["get"];
       removeAccount: ReturnType<typeof useTraktAccountMutation>["remove"];
     };
   }
@@ -76,10 +88,41 @@ const columns: ColumnDef<TraktAccount>[] = [
   }),
   col.display({
     cell: (c) => {
-      const { removeAccount } = c.table.options.meta!.ctx;
+      const { getAccount, removeAccount } = c.table.options.meta!.ctx;
       const item = c.row.original;
       return (
         <div className="flex gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={getAccount.isPending}
+                onClick={() => {
+                  toast.promise(
+                    getAccount.mutateAsync({ id: item.id, refresh: true }),
+                    {
+                      error(err: APIError) {
+                        console.error(err);
+                        return {
+                          closeButton: true,
+                          message: err.message,
+                        };
+                      },
+                      loading: "Refreshing account...",
+                      success: {
+                        closeButton: true,
+                        message: "Refreshed account!",
+                      },
+                    },
+                  );
+                }}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <RefreshCwIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh</TooltipContent>
+          </Tooltip>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button size="icon-sm" variant="ghost">
@@ -141,8 +184,11 @@ export const Route = createFileRoute("/dash/vault/trakt-accounts")({
 
 function RouteComponent() {
   const traktAccounts = useTraktAccounts();
-  const { create: createAccount, remove: removeAccount } =
-    useTraktAccountMutation();
+  const {
+    create: createAccount,
+    get: getAccount,
+    remove: removeAccount,
+  } = useTraktAccountMutation();
 
   const [oauthState, setOauthState] = useState("");
   const popupRef = useRef<null | Window>(null);
@@ -226,6 +272,7 @@ function RouteComponent() {
     },
     meta: {
       ctx: {
+        getAccount,
         removeAccount,
       },
     },
