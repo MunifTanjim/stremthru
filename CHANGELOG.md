@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.96.3](https://github.com/MunifTanjim/stremthru/compare/0.96.2...0.96.3) (2026-01-21)
+
+
+### Bug Fixes
+
+* **dash/sync:** hide dummy buttons ([6ec79a4](https://github.com/MunifTanjim/stremthru/commit/6ec79a4576d1ff73c34bfe59853545c28ae5deb3))
+* **dash/vault:** show refresh button for invalid trakt account ([ea71cee](https://github.com/MunifTanjim/stremthru/commit/ea71ceecc1b8dfac08ea55839e80b3594e6ed000))
+* **stremio/torz:** fix logger assignment ([89114f1](https://github.com/MunifTanjim/stremthru/commit/89114f1c7168e138920b1f65edbf782e5b8f4d42))
+* **torznab:** queue indexer sync in torznab endpoint ([6a2fab5](https://github.com/MunifTanjim/stremthru/commit/6a2fab50cb8f1510f597698a1359dbd28225aabb))
+* **torznab:** unmarshal CapsSearchingItemSupportedParams properly ([3807c4b](https://github.com/MunifTanjim/stremthru/commit/3807c4b82f654163719c5fa4d65e6ddf847b0433))
+
 ## [0.96.2](https://github.com/MunifTanjim/stremthru/compare/0.96.1...0.96.2) (2026-01-10)
 
 
