@@ -427,7 +427,7 @@ function LinkCard({
       </CardContent>
       <CardFooter className="mt-auto gap-4">
         <Button
-          className="flex-1"
+          className="hidden flex-1"
           disabled={link.sync_config.watched.dir === "none" || sync.isPending}
           onClick={handleSync}
           size="sm"

@@ -605,7 +605,7 @@ function LinkCard({
       </CardContent>
       <CardFooter className="mt-auto gap-4">
         <Button
-          className="flex-1"
+          className="hidden flex-1"
           disabled={
             link.sync_config.watched.dir === "none" ||
             link.sync_config.watched.ids.length === 0 ||
