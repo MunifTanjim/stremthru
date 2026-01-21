@@ -86,7 +86,7 @@ func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]W
 		return []WrappedStream{}, []string{}, nil
 	}
 
-	log = ctx.Log
+	log := ctx.Log
 
 	nsid, err := torrent_stream.NormalizeStreamId(stremId)
 	if err != nil {
