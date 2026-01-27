@@ -12,5 +12,5 @@ description
 (?i)💿 (?:.+\|)?(?<codec>` + codecPattern + `)
 
 url
-\/playback\/(?<hash>[a-f0-9]{40})\/(?:n|(?<file_idx>\d+))\/(?:n|(?<season>\d+))\/(?:n|(?<episode>\d+))\/(?<file_name>[^?]+)
+\/playback\/(?<hash>[a-f0-9]{40})\/\d+\/(?:n|(?<file_idx>\d+))\/(?:n|(?<season>\d+))\/(?:n|(?<episode>\d+))\/(?<file_name>[^?]+)
 `)).MustParse()

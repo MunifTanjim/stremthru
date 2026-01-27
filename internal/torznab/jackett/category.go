@@ -1,10 +1,10 @@
 package jackett
 
 import (
-	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
-type Category = torznab_client.Category
+type Category = znab.Category
 
 const (
 	CustomCategoryOffset = 100000
@@ -118,7 +118,7 @@ func ParentCategory(c Category) Category {
 	return CategoryOther
 }
 
-var AllCategories = torznab_client.Categories{
+var AllCategories = znab.Categories{
 	CategoryConsole,
 	CategoryConsole_NDS,
 	CategoryConsole_PSP,

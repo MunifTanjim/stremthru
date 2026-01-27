@@ -177,7 +177,10 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.APIKey != "" {
-		indexer.SetAPIKey(request.APIKey)
+		if err := indexer.SetAPIKey(request.APIKey); err != nil {
+			SendError(w, r, err)
+			return
+		}
 	}
 
 	if request.Name != "" {

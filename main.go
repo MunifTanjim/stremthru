@@ -4,11 +4,13 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
 	"github.com/MunifTanjim/stremthru/internal/posthog"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -34,6 +36,9 @@ func main() {
 	defer db.Close()
 	db.Ping()
 	RunSchemaMigration(database.URI, database)
+
+	defer cache.CloseOtterCaches()
+	defer usenetmanager.Close()
 
 	stopWorkers := worker.InitWorkers()
 	defer stopWorkers()

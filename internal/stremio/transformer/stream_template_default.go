@@ -6,7 +6,9 @@ var StreamTemplateDefault = StreamTemplateBlob{
 	Name: strings.TrimSpace(`
 {{if .Store.IsProxied}}✨ {{end}}{{if ne .Store.Code ""}}{{if .Store.IsCached}}⚡️ {{end}}[{{.Store.Code}}]{{end}}{{if .IsPrivate}} 🔑{{end}}
 {{.Addon.Name}}
-{{.Resolution}}
+{{.Resolution}}{{if ne .Emoji ""}}
+{{.Emoji}}
+{{end}}
 `),
 	Description: strings.TrimSpace(`
 {{if ne .Quality ""}}💿 {{.Quality}} {{end}}{{if ne .Codec ""}}🎞️ {{.Codec}}{{end}}
