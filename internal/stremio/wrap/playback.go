@@ -144,45 +144,45 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		shouldTagStream := strings.HasPrefix(sid, "tt")
 
-		videoFiles := []store.MagnetFile{}
+		videoFiles := []store.File{}
 		for i := range magnet.Files {
 			f := &magnet.Files[i]
 			if core.HasVideoExtension(f.Name) {
-				videoFiles = append(videoFiles, *f)
+				videoFiles = append(videoFiles, f)
 			}
 		}
 
-		var file *store.MagnetFile
+		var file store.File
 		if fileName != "" {
 			if file = stremio_shared.MatchFileByName(videoFiles, fileName); file != nil {
-				log.Debug("matched file using filename", "filename", file.Name)
+				log.Debug("matched file using filename", "filename", file.GetName())
 			}
 		}
 		if file == nil && strings.Contains(sid, ":") {
-			if file = stremio_shared.MatchFileByStremId(videoFiles, sid, magnetHash, storeCode); file != nil {
-				log.Debug("matched file using stream id", "sid", sid, "filename", file.Name)
+			if file = stremio_shared.MatchFileByStremId(magnet.Name, videoFiles, sid, magnetHash, storeCode); file != nil {
+				log.Debug("matched file using stream id", "sid", sid, "filename", file.GetName())
 			}
 		}
 		if file == nil {
 			if file = stremio_shared.MatchFileByIdx(videoFiles, fileIdx, storeCode); file != nil {
-				log.Debug("matched file using fileidx", "fileidx", file.Idx, "filename", file.Name)
+				log.Debug("matched file using fileidx", "fileidx", file.GetIdx(), "filename", file.GetName())
 			}
 		}
 		if file == nil && pattern != nil {
 			if file = stremio_shared.MatchFileByPattern(videoFiles, pattern); file != nil {
-				log.Debug("matched file using pattern", "pattern", pattern.String(), "filename", file.Name)
+				log.Debug("matched file using pattern", "pattern", pattern.String(), "filename", file.GetName())
 			}
 		}
 		if file == nil {
 			if file = stremio_shared.MatchFileByLargestSize(videoFiles); file != nil {
-				log.Debug("matched file using largest size", "filename", file.Name)
+				log.Debug("matched file using largest size", "filename", file.GetName())
 				shouldTagStream = false
 			}
 		}
 
 		link := ""
 		if file != nil {
-			link = file.Link
+			link = file.GetLink()
 		}
 		if link == "" {
 			return &stremResult{
@@ -193,7 +193,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if shouldTagStream {
-			torrent_stream.TagStremId(magnet.Hash, file.Name, sid)
+			torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, ctx, link)

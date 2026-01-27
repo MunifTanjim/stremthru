@@ -22,7 +22,7 @@ type SegmentsStream struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-	dataCh chan SegmentData
+	dataCh chan *SegmentData
 	errCh  chan error
 
 	mu       sync.Mutex
@@ -45,7 +45,7 @@ func NewSegmentsStream(
 		pool:     pool,
 		ctx:      ctx,
 		cancel:   cancel,
-		dataCh:   make(chan SegmentData, bufferCount),
+		dataCh:   make(chan *SegmentData, bufferCount),
 		errCh:    make(chan error, 1),
 	}
 
@@ -119,9 +119,9 @@ func (s *SegmentsStream) Read(p []byte) (n int, err error) {
 			return 0, io.EOF
 		}
 
-		segmentLog.Trace("segments stream - segment received", "size", len(data.Body()))
+		segmentLog.Trace("segments stream - segment received", "size", len(data.Body))
 
-		s.currData = data.Body()
+		s.currData = data.Body
 		s.currPos = 0
 	}
 

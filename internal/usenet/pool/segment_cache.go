@@ -1,32 +1,28 @@
 package usenet_pool
 
 import (
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/logger"
-	"github.com/maypok86/otter/v2"
 )
 
 var cacheLog = logger.Scoped("usenet/pool/segment_cache")
 
-type SegmentData interface {
-	Body() []byte
-	ByteRange() ByteRange
-	FileSize() int64
-	Size() int64
+type SegmentData struct {
+	Body      []byte
+	ByteRange ByteRange
+	FileSize  int64
+	Size      int64
 }
 
 type SegmentCache struct {
-	cache *otter.Cache[string, SegmentData]
+	cache *cache.OtterCache[SegmentData]
 }
 
 func NewSegmentCache(size int64) *SegmentCache {
-	cache := otter.Must(&otter.Options[string, SegmentData]{
-		MaximumWeight: uint64(size),
-		Weigher: func(key string, value SegmentData) uint32 {
-			return uint32(value.Size())
-		},
-		OnAtomicDeletion: func(e otter.DeletionEvent[string, SegmentData]) {
-			cacheLog.Trace("cache - deleted", "message_id", e.Key, "cause", e.Cause)
-		},
+	cache := cache.NewOtterCache[SegmentData](&cache.CacheConfig{
+		Name:    "newz_segment",
+		MaxSize: size,
+		Persist: true,
 	})
 
 	return &SegmentCache{
@@ -35,10 +31,11 @@ func NewSegmentCache(size int64) *SegmentCache {
 }
 
 func (c *SegmentCache) Get(messageId string) (SegmentData, bool) {
-	data, ok := c.cache.GetIfPresent(messageId)
+	var data SegmentData
+	ok := c.cache.Get(messageId, &data)
 	return data, ok
 }
 
 func (c *SegmentCache) Set(messageId string, data SegmentData) {
-	c.cache.Set(messageId, data)
+	c.cache.Add(messageId, data)
 }

@@ -113,7 +113,7 @@ func (ufs *UsenetFS) Stat(name string) (os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	fi.size = firstSegment.FileSize()
+	fi.size = firstSegment.FileSize
 
 	return &fi, nil
 }

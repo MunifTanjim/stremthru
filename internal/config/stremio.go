@@ -28,11 +28,18 @@ type stremioConfigWrap struct {
 	PublicMaxStoreCount    int
 }
 
+type stremioConfigNewz struct {
+	IndexerMaxTimeout     time.Duration
+	PublicMaxIndexerCount int
+	PublicMaxStoreCount   int
+}
+
 type StremioConfig struct {
 	List  stremioConfigList
 	Store stremioConfigStore
 	Torz  stremioConfigTorz
 	Wrap  stremioConfigWrap
+	Newz  stremioConfigNewz
 }
 
 func parseStremio() StremioConfig {
@@ -53,6 +60,11 @@ func parseStremio() StremioConfig {
 		Wrap: stremioConfigWrap{
 			PublicMaxUpstreamCount: util.MustParseInt(getEnv("STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT")),
 			PublicMaxStoreCount:    util.MustParseInt(getEnv("STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT")),
+		},
+		Newz: stremioConfigNewz{
+			IndexerMaxTimeout:     mustParseDuration("stremio newz indexer max timeout", getEnv("STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT"), 2*time.Second, 60*time.Second),
+			PublicMaxIndexerCount: util.MustParseInt(getEnv("STREMTHRU_STREMIO_NEWZ_PUBLIC_MAX_INDEXER_COUNT")),
+			PublicMaxStoreCount:   util.MustParseInt(getEnv("STREMTHRU_STREMIO_NEWZ_PUBLIC_MAX_STORE_COUNT")),
 		},
 	}
 	return stremio

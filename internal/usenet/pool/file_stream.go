@@ -71,7 +71,7 @@ func NewFileStream(
 	if err != nil {
 		return nil, err
 	}
-	fileSize := firstSegment.FileSize()
+	fileSize := firstSegment.FileSize
 
 	fileLog.Trace("file stream - created", "segment_count", file.SegmentCount(), "file_size", fileSize, "buffer_segment_count", bufferSegmentCount)
 
@@ -240,7 +240,7 @@ func (s *FileStream) getSegmentByteRange(ctx context.Context, index int) (ByteRa
 		return ByteRange{}, err
 	}
 
-	byteRange := data.ByteRange()
+	byteRange := data.ByteRange
 	fileLog.Trace("file stream - segment byte range", "segment_num", segment.Number, "byte_range", fmt.Sprintf("[%d, %d)", byteRange.Start, byteRange.End))
 
 	return byteRange, nil

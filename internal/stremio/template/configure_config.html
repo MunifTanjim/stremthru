@@ -1,10 +1,10 @@
 {{if not .Hidden}}
 {{if ne .Type "checkbox"}}
-<label for="{{.Key}}">{{.Title}}{{if .Required}} *{{end}}</label>
+<label for="{{.Key}}" {{if ne .Tooltip ""}}data-tooltip="{{.Tooltip}}"{{end}} style="border: 0;">{{.Title}}{{if .Required}} *{{end}}</label>
 {{end}}
 {{if eq .Type "checkbox"}}
   <fieldset>
-    <label>
+    <label {{if ne .Tooltip ""}}data-tooltip="{{.Tooltip}}" style="border: 0;"{{end}}>
       <input type="checkbox" id="{{.Key}}" name="{{.Key}}" {{if eq .Default "checked"}}checked{{end}} {{if .Disabled}}disabled{{end}} {{if ne .Error ""}}aria-invalid="true"{{end}}>
       {{.Title}}
     </label>

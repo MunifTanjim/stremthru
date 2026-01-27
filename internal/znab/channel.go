@@ -3,6 +3,7 @@ package znab
 import (
 	"encoding/json"
 	"encoding/xml"
+	"time"
 )
 
 type ChannelItemEnclosure struct {
@@ -81,6 +82,16 @@ type ChannelItem struct {
 	PublishDate string               `xml:"pubDate,omitempty" json:"pubDate,omitempty"` // Mon, 02 Jan 2006 15:04:05 -0700
 	Title       string               `xml:"title,omitempty" json:"title,omitempty"`
 	Attributes  ChannelItemAttrs     `xml:"-" json:"attr"`
+}
+
+func (ci ChannelItem) GetPublishDate() time.Time {
+	if ci.PublishDate == "" {
+		return time.Time{}
+	}
+	if t, err := time.Parse(TimeFormat, ci.PublishDate); err == nil {
+		return t
+	}
+	return time.Time{}
 }
 
 type Channel[Item any] struct {

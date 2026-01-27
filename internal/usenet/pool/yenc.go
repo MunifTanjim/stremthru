@@ -107,20 +107,13 @@ type YEncDecodedData struct {
 	body   []byte
 }
 
-func (d *YEncDecodedData) Body() []byte {
-	return d.body
-}
-
-func (d *YEncDecodedData) ByteRange() ByteRange {
-	return d.header.ByteRange()
-}
-
-func (d *YEncDecodedData) Size() int64 {
-	return d.header.PartSize
-}
-
-func (d *YEncDecodedData) FileSize() int64 {
-	return d.header.FileSize
+func (d *YEncDecodedData) ToSegmentData() SegmentData {
+	return SegmentData{
+		Body:      d.body,
+		ByteRange: d.header.ByteRange(),
+		FileSize:  d.header.FileSize,
+		Size:      d.header.PartSize,
+	}
 }
 
 func (d *YEncDecoder) ReadAll() (*YEncDecodedData, error) {

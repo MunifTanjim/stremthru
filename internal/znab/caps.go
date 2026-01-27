@@ -59,8 +59,30 @@ func (sp CapsSearchingItemSupportedParams) MarshalJSON() ([]byte, error) {
 	return json.Marshal(strings.Join(sp, ","))
 }
 
+func (sp *CapsSearchingItemSupportedParams) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	if s == "" {
+		*sp = nil
+		return nil
+	}
+	*sp = strings.Split(s, ",")
+	return nil
+}
+
 func (sp CapsSearchingItemSupportedParams) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: strings.Join(sp, ",")}, nil
+}
+
+func (sp *CapsSearchingItemSupportedParams) UnmarshalXMLAttr(attr xml.Attr) error {
+	if attr.Value == "" {
+		*sp = nil
+		return nil
+	}
+	*sp = strings.Split(attr.Value, ",")
+	return nil
 }
 
 type CapsSearchingItem struct {
@@ -71,16 +93,16 @@ type CapsSearchingItem struct {
 	supportedParam map[SearchParam]struct{} `xml:"-" json:"-"`
 }
 
-func (csi CapsSearchingItem) IsZero() bool {
+func (csi *CapsSearchingItem) IsZero() bool {
 	return !bool(csi.Available) && len(csi.SupportedParams) == 0 && csi.SearchEngine == ""
 }
 
-func (csi CapsSearchingItem) IsEmpty() bool {
+func (csi *CapsSearchingItem) IsEmpty() bool {
 	return csi.IsZero()
 }
 
-func (csi CapsSearchingItem) SupportsParam(param SearchParam) bool {
-	if csi.supportedParam == nil {
+func (csi *CapsSearchingItem) SupportsParam(param SearchParam) bool {
+	if len(csi.supportedParam) == 0 {
 		csi.supportedParam = make(map[SearchParam]struct{}, len(csi.SupportedParams))
 		for _, p := range csi.SupportedParams {
 			csi.supportedParam[p] = struct{}{}

@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/rs/xid"
 )
 
 func encrypt(value string) (string, error) {
@@ -28,28 +29,37 @@ func decrypt(value string) (string, error) {
 const TableName = "usenet_server"
 
 type UsenetServer struct {
-	Id            string
-	Name          string
-	Host          string
-	Port          int
-	Username      string
-	Password      string
-	TLS           bool
-	TLSSkipVerify bool
-	CAt           db.Timestamp
-	UAt           db.Timestamp
+	Id             string
+	Name           string
+	Host           string
+	Port           int
+	Username       string
+	Password       string
+	TLS            bool
+	TLSSkipVerify  bool
+	Priority       int
+	IsBackup       bool
+	MaxConnections int
+	CAt            db.Timestamp
+	UAt            db.Timestamp
 }
 
-func NewUsenetServer(name, host string, port int, username, password string, tls, tlsSkipVerify bool) (*UsenetServer, error) {
-	id := host + ":" + util.IntToString(port) + ":" + username
+func (s *UsenetServer) ProviderId() string {
+	return s.Host + ":" + util.IntToString(s.Port) + ":" + s.Username
+}
+
+func NewUsenetServer(name, host string, port int, username, password string, tls, tlsSkipVerify bool, priority int, isBackup bool, maxConnections int) (*UsenetServer, error) {
 	server := &UsenetServer{
-		Id:            id,
-		Name:          name,
-		Host:          host,
-		Port:          port,
-		Username:      username,
-		TLS:           tls,
-		TLSSkipVerify: tlsSkipVerify,
+		Id:             xid.New().String(),
+		Name:           name,
+		Host:           host,
+		Port:           port,
+		Username:       username,
+		TLS:            tls,
+		TLSSkipVerify:  tlsSkipVerify,
+		Priority:       priority,
+		IsBackup:       isBackup,
+		MaxConnections: maxConnections,
 	}
 	err := server.SetPassword(password)
 	if err != nil {
@@ -72,27 +82,33 @@ func (s *UsenetServer) GetPassword() (string, error) {
 }
 
 var Column = struct {
-	Id            string
-	Name          string
-	Host          string
-	Port          string
-	Username      string
-	Password      string
-	TLS           string
-	TLSSkipVerify string
-	CAt           string
-	UAt           string
+	Id             string
+	Name           string
+	Host           string
+	Port           string
+	Username       string
+	Password       string
+	TLS            string
+	TLSSkipVerify  string
+	Priority       string
+	IsBackup       string
+	MaxConnections string
+	CAt            string
+	UAt            string
 }{
-	Id:            "id",
-	Name:          "name",
-	Host:          "host",
-	Port:          "port",
-	Username:      "username",
-	Password:      "password",
-	TLS:           "tls",
-	TLSSkipVerify: "tls_skip_verify",
-	CAt:           "cat",
-	UAt:           "uat",
+	Id:             "id",
+	Name:           "name",
+	Host:           "host",
+	Port:           "port",
+	Username:       "username",
+	Password:       "password",
+	TLS:            "tls",
+	TLSSkipVerify:  "tls_skip_verify",
+	Priority:       "priority",
+	IsBackup:       "is_backup",
+	MaxConnections: "max_conn",
+	CAt:            "cat",
+	UAt:            "uat",
 }
 
 var columns = []string{
@@ -104,6 +120,9 @@ var columns = []string{
 	Column.Password,
 	Column.TLS,
 	Column.TLSSkipVerify,
+	Column.Priority,
+	Column.IsBackup,
+	Column.MaxConnections,
 	Column.CAt,
 	Column.UAt,
 }
@@ -122,6 +141,9 @@ var query_upsert = fmt.Sprintf(
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Password, Column.Password),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.TLS, Column.TLS),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.TLSSkipVerify, Column.TLSSkipVerify),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Priority, Column.Priority),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.IsBackup, Column.IsBackup),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.MaxConnections, Column.MaxConnections),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
 )
@@ -136,14 +158,18 @@ func (s *UsenetServer) Upsert() error {
 		s.Password,
 		s.TLS,
 		s.TLSSkipVerify,
+		s.Priority,
+		s.IsBackup,
+		s.MaxConnections,
 	)
 	return err
 }
 
 var query_get_all = fmt.Sprintf(
-	`SELECT %s FROM %s ORDER BY %s DESC`,
+	`SELECT %s FROM %s ORDER BY %s ASC, %s DESC`,
 	strings.Join(columns, ", "),
 	TableName,
+	Column.Priority,
 	Column.UAt,
 )
 
@@ -157,7 +183,7 @@ func GetAll() ([]UsenetServer, error) {
 	items := []UsenetServer{}
 	for rows.Next() {
 		item := UsenetServer{}
-		if err := rows.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -176,7 +202,7 @@ func GetById(id string) (*UsenetServer, error) {
 	row := db.QueryRow(query_get_by_id, id)
 
 	item := UsenetServer{}
-	if err := row.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

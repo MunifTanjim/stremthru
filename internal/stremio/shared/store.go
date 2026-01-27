@@ -38,6 +38,18 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 	return options
 }
 
+func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
+	options := []configure.ConfigOption{
+		{Value: "", Label: "StremThru"},
+		{Value: "tb", Label: "TorBox"},
+	}
+	if config.IsPublicInstance {
+		options[0].Disabled = true
+		options[0].Label = ""
+	}
+	return options
+}
+
 func WaitForMagnetStatus(ctx *context.StoreContext, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
 	retry := 0
 	for m.Status != status && retry < maxRetry {

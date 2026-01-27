@@ -64,7 +64,7 @@ func (p *Pool) streamFile(
 		return nil, fmt.Errorf("failed to fetch file header: %w", err)
 	}
 
-	fileBytes := firstSegment.Body()
+	fileBytes := firstSegment.Body
 	filename := file.GetName()
 	fileType := DetectFileType(fileBytes, filename)
 
@@ -85,7 +85,7 @@ func (p *Pool) streamFile(
 func (p *Pool) fetchFirstSegment(
 	ctx context.Context,
 	file *nzb.File,
-) (SegmentData, error) {
+) (*SegmentData, error) {
 	p.Log.Trace("fetch first segment - start")
 
 	firstSegment := &file.Segments[0]
@@ -94,7 +94,7 @@ func (p *Pool) fetchFirstSegment(
 		return nil, err
 	}
 
-	p.Log.Trace("fetch first segment - done", "size", data.FileSize())
+	p.Log.Trace("fetch first segment - done", "size", data.FileSize)
 
 	return data, nil
 }
@@ -228,8 +228,10 @@ func (p *Pool) stream7zFile(
 	}
 
 	targetVideo := &videos[0]
+	println(targetVideo.Name)
 	for i := range videos[1:] {
 		f := &videos[i+1]
+		println(f.Name)
 		if f.UnPackedSize > targetVideo.UnPackedSize {
 			targetVideo = f
 		}
@@ -326,6 +328,6 @@ func (p *Pool) StreamSegments(
 
 	return &StreamSegmentsResult{
 		ReadCloser: stream,
-		Size:       firstSegment.FileSize(),
+		Size:       firstSegment.FileSize,
 	}, nil
 }

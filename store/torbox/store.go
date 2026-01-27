@@ -16,6 +16,11 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 )
 
+var (
+	_ store.Store     = (*StoreClient)(nil)
+	_ store.NewzStore = (*StoreClient)(nil)
+)
+
 type StoreClientConfig struct {
 	HTTPClient *http.Client
 	UserAgent  string
@@ -518,5 +523,135 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 		return nil, err
 	}
 	data := &store.RemoveMagnetData{Id: params.Id}
+	return data, nil
+}
+
+func (c *StoreClient) CheckNewz(params *store.CheckNewzParams) (*store.CheckNewzData, error) {
+	chunkCount := len(params.Hashes)/100 + 1
+	cItems := make([][]CheckUsenetCachedDataItem, chunkCount)
+	errs := make([]error, chunkCount)
+
+	var wg sync.WaitGroup
+	for i, cHashes := range slices.Collect(slices.Chunk(params.Hashes, 100)) {
+		wg.Go(func() {
+			cucParams := &CheckUsenetCachedParams{
+				Hashes: cHashes,
+			}
+			cucParams.APIKey = params.APIKey
+			res, err := c.client.CheckUsenetCached(cucParams)
+			if err != nil {
+				errs[i] = err
+				return
+			}
+			cItems[i] = res.Data
+		})
+	}
+	wg.Wait()
+
+	if err := errors.Join(errs...); err != nil {
+		return nil, err
+	}
+
+	itemByHash := map[string]CheckUsenetCachedDataItem{}
+
+	for _, items := range cItems {
+		for _, item := range items {
+			itemByHash[item.Hash] = item
+		}
+	}
+
+	data := &store.CheckNewzData{
+		Items: []store.CheckNewzDataItem{},
+	}
+
+	for _, hash := range params.Hashes {
+		item := store.CheckNewzDataItem{
+			Hash:   hash,
+			Status: store.NewzStatusUnknown,
+		}
+		if _, ok := itemByHash[hash]; ok {
+			item.Status = store.NewzStatusCached
+		}
+		data.Items = append(data.Items, item)
+	}
+	return data, nil
+}
+
+func (c *StoreClient) AddNewz(params *store.AddNewzParams) (*store.AddNewzData, error) {
+	rParams := &CreateUsenetDownloadParams{
+		Ctx:  params.Ctx,
+		Link: params.Link,
+	}
+	res, err := c.client.CreateUsenetDownload(rParams)
+	if err != nil {
+		return nil, err
+	}
+	data := &store.AddNewzData{
+		Id: strconv.Itoa(res.Data.UsenetDownloadId),
+	}
+	return data, nil
+}
+
+func (c *StoreClient) GetNewz(params *store.GetNewzParams) (*store.GetNewzData, error) {
+	id, err := strconv.Atoi(params.Id)
+	if err != nil {
+		return nil, err
+	}
+	rParams := &GetUsenetDownloadParams{
+		Ctx:         params.Ctx,
+		Id:          id,
+		BypassCache: true,
+	}
+	res, err := c.client.GetUsenetDownload(rParams)
+	if err != nil {
+		return nil, err
+	}
+	und := &res.Data
+	data := &store.GetNewzData{
+		Id:     strconv.Itoa(und.Id),
+		Hash:   und.Hash,
+		Name:   und.Name,
+		Size:   und.Size,
+		Status: store.NewzStatusUnknown,
+	}
+	if und.DownloadState == TorrentDownloadStateDownloading {
+		data.Status = store.NewzStatusDownloading
+	}
+	if und.DownloadFinished && und.DownloadPresent {
+		data.Status = store.NewzStatusDownloaded
+	}
+	for i := range und.Files {
+		f := &und.Files[i]
+		file := store.NewzFile{
+			Idx:       f.Id,
+			Link:      LockedFileLink("").Create(und.Id, f.Id),
+			Name:      f.GetName(),
+			Path:      f.GetPath(),
+			Size:      f.Size,
+			VideoHash: f.OpensubtitlesHash,
+		}
+		data.Files = append(data.Files, file)
+	}
+	return data, nil
+}
+
+func (c *StoreClient) GenerateNewzLink(params *store.GenerateNewzLinkParams) (*store.GenerateNewzLinkData, error) {
+	usenetId, fileId, err := LockedFileLink(params.Link).Parse()
+	if err != nil {
+		error := core.NewAPIError("invalid link")
+		error.StatusCode = http.StatusBadRequest
+		error.Cause = err
+		return nil, error
+	}
+	res, err := c.client.RequestUsenetDownloadLink(&RequestUsenetDownloadLinkParams{
+		Ctx:      params.Ctx,
+		UsenetId: usenetId,
+		FileId:   fileId,
+		UserIP:   params.ClientIP,
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := &store.GenerateNewzLinkData{Link: res.Data.Link}
 	return data, nil
 }

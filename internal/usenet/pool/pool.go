@@ -39,7 +39,7 @@ func (conf *Config) setDefaults() {
 		return a.Priority - b.Priority
 	})
 	if conf.CacheSize == 0 {
-		conf.CacheSize = 200 * 1024 * 1024 // 200 MB
+		conf.CacheSize = 2 * 1024 * 1024 * 1024 // 2 GB
 	}
 }
 
@@ -218,11 +218,11 @@ func (p *Pool) ensureConnectionGroup(conn *nntp.PooledConnection, groups ...stri
 	return errors.Join(errs...)
 }
 
-func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []string) (SegmentData, error) {
+func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []string) (*SegmentData, error) {
 	messageId := segment.MessageId
 	if cachedData, ok := p.segmentCache.Get(messageId); ok {
-		p.Log.Trace("fetch segment - cache hit", "segment_num", segment.Number, "message_id", messageId, "size", len(cachedData.Body()))
-		return cachedData, nil
+		p.Log.Trace("fetch segment - cache hit", "segment_num", segment.Number, "message_id", messageId, "size", len(cachedData.Body))
+		return &cachedData, nil
 	}
 
 	result, err, _ := p.fetchGroup.Do(messageId, func() (any, error) {
@@ -300,11 +300,13 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 				continue
 			}
 
-			p.Log.Trace("fetch segment - decoded body", "segment_num", segment.Number, "message_id", messageId, "decoded_size", len(data.body))
+			segmentData := data.ToSegmentData()
 
-			p.segmentCache.Set(messageId, data)
+			p.Log.Trace("fetch segment - decoded body", "segment_num", segment.Number, "message_id", messageId, "decoded_size", len(segmentData.Body))
 
-			return data, nil
+			p.segmentCache.Set(messageId, segmentData)
+
+			return &segmentData, nil
 		}
 
 		return nil, errors.New("failed to fetch segment " + strconv.Itoa(segment.Number) + " <" + messageId + "> after retries: " + errors.Join(errs...).Error())
@@ -314,7 +316,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 		return nil, err
 	}
 
-	return result.(SegmentData), nil
+	return result.(*SegmentData), nil
 }
 
 func (p *Pool) Close() {

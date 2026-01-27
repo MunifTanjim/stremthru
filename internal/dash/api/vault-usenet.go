@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/nntp"
+	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	usenet_server "github.com/MunifTanjim/stremthru/internal/usenet/server"
 )
 
@@ -128,6 +129,8 @@ func handleCreateUsenetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usenetmanager.AddServer(server.ProviderId())
+
 	SendData(w, r, 201, toUsenetServerResponse(server))
 }
 
@@ -160,21 +163,27 @@ type UpdateUsenetServerRequest struct {
 }
 
 func handleUpdateUsenetServer(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-
-	request := &UpdateUsenetServerRequest{}
-	if err := ReadRequestBodyJSON(r, request); err != nil {
-		SendError(w, r, err)
-		return
-	}
-
-	server, err := usenet_server.GetById(id)
+	server, err := usenet_server.GetById(r.PathValue("id"))
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 	if server == nil {
 		ErrorNotFound(r, "server not found").Send(w, r)
+		return
+	}
+
+	oldProviderId := server.ProviderId()
+
+	if err := usenetmanager.LockServer(oldProviderId); err != nil {
+		ErrorLocked(r, "cannot modify server with active connections").Send(w, r)
+		return
+	}
+	defer usenetmanager.UnlockServer(oldProviderId)
+
+	request := &UpdateUsenetServerRequest{}
+	if err := ReadRequestBodyJSON(r, request); err != nil {
+		SendError(w, r, err)
 		return
 	}
 
@@ -215,10 +224,14 @@ func handleUpdateUsenetServer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	newProviderId := server.ProviderId()
+
 	if err := server.Upsert(); err != nil {
 		SendError(w, r, err)
 		return
 	}
+
+	usenetmanager.UpdateServer(oldProviderId, newProviderId)
 
 	SendData(w, r, 200, toUsenetServerResponse(server))
 }
@@ -236,10 +249,20 @@ func handleDeleteUsenetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	providerId := existing.ProviderId()
+
+	if err := usenetmanager.LockServer(providerId); err != nil {
+		ErrorLocked(r, "cannot delete server with active connections").Send(w, r)
+		return
+	}
+	defer usenetmanager.UnlockServer(providerId)
+
 	if err := usenet_server.Delete(id); err != nil {
 		SendError(w, r, err)
 		return
 	}
+
+	usenetmanager.RemoveServer(providerId)
 
 	SendData(w, r, 204, nil)
 }

@@ -2,43 +2,121 @@ package newznab_client
 
 import (
 	"encoding/xml"
+	"io"
 	"net/url"
+	"strings"
+	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/logger"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
+
+var nzbCache = cache.NewOtterCache[[]byte](&cache.CacheConfig{
+	Name:     "newznab:indexer:nzb",
+	Lifetime: 7 * 24 * time.Hour,
+	Persist:  true,
+})
+
+func IsNZBCached(hash string) bool {
+	return nzbCache.Has(hash)
+}
 
 // Newz represents a search result item from a Newznab indexer
 type Newz struct {
 	Indexer string
 
 	// Core metadata
+
 	Title       string
 	GUID        string
+	PublishDate time.Time
 	Size        int64
-	PublishDate string // RFC822 format: "Mon, 02 Jan 2006 15:04:05 -0700"
 
 	// NZB-specific attributes
-	Files    int    // Number of files in the NZB
-	Poster   string // Usenet poster
-	Group    string // Primary newsgroup
-	Grabs    int    // Download count
-	Comments int    // Number of comments
-	Password bool   // Whether the release is password protected
+
+	Files        int       // Number of files in the NZB
+	Poster       string    // Usenet poster
+	Group        string    // Primary newsgroup
+	Grabs        int       // Download count
+	Comments     int       // Number of comments
+	Password     bool      // Whether the release is password protected
+	InnerArchive bool      // Whether the release contains inner archive
+	Date         time.Time // Original upload date
 
 	// Category info
-	Categories []int // Category IDs
+
+	Categories []string // Category IDs
 
 	// Media metadata (optional, from extended attributes)
-	IMDB    string // IMDB ID (without "tt" prefix)
+	IMDB    string // IMDB ID
 	TVDB    string // TVDB ID
 	TVRage  string // TVRage ID
 	Season  string // Season number
 	Episode string // Episode number
 
-	// Download link
 	DownloadLink string // Direct NZB download URL
-	DetailsLink  string // Link to details page
+}
+
+func (n *Newz) Age() time.Duration {
+	return time.Since(n.Date)
+}
+
+func cleanDownloadLink(link string) string {
+	link, _, ok := strings.Cut(link, "?")
+	if !ok {
+		link, _, _ = strings.Cut(link, "&")
+	}
+	return link
+}
+
+func HashDownloadLink(link string) string {
+	return util.MD5Hash(cleanDownloadLink(link))
+}
+
+func (n *Newz) MD5() string {
+	return HashDownloadLink(n.DownloadLink)
+}
+
+func (n *Newz) FetchNZB(log *logger.Logger) (*nzb.NZB, error) {
+	link := cleanDownloadLink(n.DownloadLink)
+	cacheKey := n.MD5()
+	var nzbData []byte
+	if !nzbCache.Get(cacheKey, &nzbData) {
+		if log != nil {
+			log.Debug("fetch nzb - cache miss", "link", link)
+		}
+		httpClient := config.GetHTTPClient(config.TUNNEL_TYPE_AUTO)
+		resp, err := httpClient.Get(n.DownloadLink)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		nzbData, err = io.ReadAll(resp.Body)
+		if err != nil {
+			if log != nil {
+				log.Error("fetch nzb - failed", "error", err, "link", link)
+			}
+			return nil, err
+		}
+		if log != nil {
+			log.Debug("fetch nzb - completed", "link", link)
+		}
+		err = nzbCache.Add(cacheKey, nzbData)
+		if err != nil && log != nil {
+			log.Warn("fetch nzb - failed to cache", "error", err, "link", link)
+		}
+	} else {
+		if log != nil {
+			log.Debug("fetch nzb - cache hit", "link", link)
+		}
+	}
+	return nzb.ParseBytes(nzbData)
+
 }
 
 type Indexer interface {
@@ -61,7 +139,7 @@ func (o ChannelItem) ToNewz() *Newz {
 	// Core metadata
 	nzb.Title = o.Title
 	nzb.GUID = o.GUID
-	nzb.PublishDate = o.PublishDate
+	nzb.PublishDate = o.GetPublishDate()
 	nzb.Size = o.Size
 	if nzb.Size == 0 {
 		nzb.Size = o.Enclosure.Length
@@ -76,14 +154,27 @@ func (o ChannelItem) ToNewz() *Newz {
 		nzb.Grabs = util.SafeParseInt(o.Attributes.Get(znab.NewznabAttrNameGrabs), 0)
 	}
 	nzb.Comments = util.SafeParseInt(o.Attributes.Get(znab.NewznabAttrNameComments), 0)
-	nzb.Password = util.StringToBool(o.Attributes.Get(znab.NewznabAttrNamePassword), false)
+	if password := o.Attributes.Get(znab.NewznabAttrNamePassword); password == "2" {
+		nzb.Password = true
+		nzb.InnerArchive = true
+	} else {
+		nzb.Password = util.StringToBool(o.Attributes.Get(znab.NewznabAttrNamePassword), false)
+	}
+	if t, err := time.Parse(znab.TimeFormat, o.Attributes.Get(znab.NewznabAttrNameUsenetDate)); err == nil {
+		nzb.Date = t
+	}
 
 	// Categories
-	// nzb.Categories = o.Category
+	nzb.Categories = o.Attributes.GetAll("category")
+	if len(nzb.Categories) == 0 && util.IsNumericString(o.Category) {
+		nzb.Categories = []string{o.Category}
+	}
 
 	// Media metadata
 	nzb.IMDB = o.Attributes.Get(znab.NewznabAttrNameIMDB)
-	if nzb.IMDB == "" {
+	if nzb.IMDB != "" {
+		nzb.IMDB = "tt" + nzb.IMDB
+	} else {
 		nzb.IMDB = o.Attributes.Get(znab.NewznabAttrNameIMDBId)
 	}
 	nzb.TVDB = o.Attributes.Get(znab.NewznabAttrNameTVDBId)
@@ -93,7 +184,6 @@ func (o ChannelItem) ToNewz() *Newz {
 
 	// Download links
 	nzb.DownloadLink = o.Enclosure.URL
-	nzb.DetailsLink = o.Link
 
 	return nzb
 }

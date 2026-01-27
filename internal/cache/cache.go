@@ -18,6 +18,9 @@ type CacheConfig struct {
 	Lifetime      time.Duration
 	Name          string
 	LocalCapacity uint32
+	Persist       bool
+	MaxCount      int
+	MaxSize       int64
 }
 
 func NewCache[V any](conf *CacheConfig) Cache[V] {
