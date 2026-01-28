@@ -249,26 +249,34 @@ class StremThruStore:
     async def add_magnet(
         self,
         magnet: Optional[str] = None,
-        torrent: Optional[io.BufferedReader] = None,
+        torrent: Optional[io.BufferedReader | str] = None,
         client_ip: str | None = None,
     ) -> Response[AddMagnetData]:
         if not client_ip:
             client_ip = self._client_ip
 
-        if magnet is None:
-            data = aiohttp.FormData()
-            data.add_field("torrent", torrent)
+        if type(magnet) is str:
             return await self.client.request(
                 "/v0/store/magnets",
                 "POST",
-                data=data,
+                json={"magnet": magnet},
                 params={"client_ip": client_ip} if client_ip else None,
             )
 
+        if type(torrent) is str:
+            return await self.client.request(
+                "/v0/store/magnets",
+                "POST",
+                json={"torrent": torrent},
+                params={"client_ip": client_ip} if client_ip else None,
+            )
+
+        data = aiohttp.FormData()
+        data.add_field("torrent", torrent)
         return await self.client.request(
             "/v0/store/magnets",
             "POST",
-            json={"magnet": magnet},
+            data=data,
             params={"client_ip": client_ip} if client_ip else None,
         )
 
