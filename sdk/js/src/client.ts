@@ -41,14 +41,16 @@ class StremThruStore {
     clientIp?: string;
   } & (
     | { magnet: string; torrent?: never }
-    | { magnet?: never; torrent: File }
+    | { magnet?: never; torrent: File | string }
   )) {
     let body: FormData | Record<string, unknown>;
-    if (torrent) {
+    if (magnet) {
+      body = { magnet };
+    } else if (typeof torrent === "string") {
+      body = { torrent };
+    } else {
       body = new FormData();
       body.set("torrent", torrent);
-    } else {
-      body = { magnet };
     }
     return await this.#client.request<{
       added_at: string;
