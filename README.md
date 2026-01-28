@@ -76,6 +76,10 @@ Configuration is done using environment variables.
 
 Base URL for StremThru.
 
+#### `STREMTHRU_HOST`
+
+Host to listen on, default `0.0.0.0` (listens on all network interfaces).
+
 #### `STREMTHRU_PORT`
 
 Port to listen on, default `8080`.
