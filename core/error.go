@@ -43,6 +43,7 @@ const (
 	ErrorCodeStoreLimitExceeded ErrorCode = "STORE_LIMIT_EXCEEDED"
 	ErrorCodeStoreMagnetInvalid ErrorCode = "STORE_MAGNET_INVALID"
 	ErrorCodeStoreNameInvalid   ErrorCode = "STORE_NAME_INVALID"
+	ErrorCodeStoreServerDown    ErrorCode = "STORE_SERVER_DOWN"
 )
 
 type StremThruError interface {

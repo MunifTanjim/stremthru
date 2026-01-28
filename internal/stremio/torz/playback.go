@@ -147,6 +147,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 				case core.ErrorCodeStoreLimitExceeded:
 					result.error_log = "store limit exceeded"
 					result.error_video = store_video.StoreVideoNameStoreLimitExceeded
+				case core.ErrorCodeStoreServerDown:
+					result.error_level = logger.LevelWarn
+					result.error_log = "store server down"
+					result.error_video = store_video.StoreVideoName500
 				}
 			}
 			return result, err

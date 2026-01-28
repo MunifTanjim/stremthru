@@ -25,6 +25,8 @@ func UpstreamErrorWithCause(cause error) *core.UpstreamError {
 		} else if err.Msg == "You already have a maximum of 25 active downloads in progress!" {
 			err.Code = core.ErrorCodeStoreLimitExceeded
 			err.StatusCode = http.StatusUnprocessableEntity
+		} else if err.StatusCode == 521 {
+			err.Code = core.ErrorCodeStoreServerDown
 		}
 		err.UpstreamCause = rerr
 	} else {
