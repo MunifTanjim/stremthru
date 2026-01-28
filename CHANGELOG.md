@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.96.5](https://github.com/MunifTanjim/stremthru/compare/0.96.4...0.96.5) (2026-01-28)
+
+
+### Bug Fixes
+
+* **stremio/list:** reduce head call to letterboxd ([c17cfa7](https://github.com/MunifTanjim/stremthru/commit/c17cfa7c48b4f899904ca1c1e4b01c3722f8ad70))
+
 ## [0.96.4](https://github.com/MunifTanjim/stremthru/compare/0.96.3...0.96.4) (2026-01-28)
 
 
