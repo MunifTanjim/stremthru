@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.10.0...sdk-js-0.11.0) (2026-01-28)
+
+
+### Features
+
+* **sdk/js:** support torrent link for add magnet ([8bf81bd](https://github.com/MunifTanjim/stremthru/commit/8bf81bd1ac21e5e75d10d363a39261bc58915c14))
+
 ## [0.10.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.9.1...sdk-js-0.10.0) (2025-11-02)
 
 
