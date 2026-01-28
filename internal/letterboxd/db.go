@@ -531,3 +531,42 @@ func setListItems(tx db.Executor, listId string, items []LetterboxdItem) error {
 	}
 	return nil
 }
+
+var query_get_user_id_by_name = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ? LIMIT 1`,
+	ListColumn.UserId,
+	ListTableName,
+	ListColumn.UserName,
+)
+
+func GetUserIdByName(user_name string) (string, error) {
+	var id string
+	row := db.QueryRow(query_get_user_id_by_name, user_name)
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+	return id, nil
+}
+
+var query_get_list_id_by_user_name_and_slug = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ? AND %s = ?`,
+	ListColumn.Id,
+	ListTableName,
+	ListColumn.UserName,
+	ListColumn.Slug,
+)
+
+func GetListIdByUserNameAndSlug(userName, slug string) (string, error) {
+	var id string
+	row := db.QueryRow(query_get_list_id_by_user_name_and_slug, userName, slug)
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return "", nil
+		}
+		return "", err
+	}
+	return id, nil
+}

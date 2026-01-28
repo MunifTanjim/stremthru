@@ -513,7 +513,8 @@
 
         item.querySelector("[data-field='pattern']").textContent = url.pattern;
         const examples = url.examples.map((example) => {
-          return `<li><a href="https://${hostname}${example}" target="_blank">${example}</a></li>`
+          const href = example.startsWith("https://") ? example : `https://${hostname}${example}`
+          return `<li><a href="${href}" target="_blank">${example}</a></li>`
         }); 
         item.querySelector("[data-field='examples']").innerHTML = examples.join("\n");
 

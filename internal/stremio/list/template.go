@@ -449,6 +449,12 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 							"/trippburton13/watchlist/",
 						},
 					},
+					{
+						Pattern: "https://boxd.it/{lid}",
+						Examples: []string{
+							"https://boxd.it/8HjM",
+						},
+					},
 				},
 			})
 		}

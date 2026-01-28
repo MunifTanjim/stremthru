@@ -271,7 +271,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				continue
 			}
 
-			switch listUrl.Hostname() {
+			switch hostname := listUrl.Hostname(); hostname {
 			case "anilist.co":
 				if !AnimeEnabled {
 					udErr.list_urls[idx] = "Unsupported List URL"
@@ -310,53 +310,66 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				}
 				ud.Lists[idx] = "anilist:" + list.Id
 
-			case "letterboxd.com":
+			case "boxd.it", "letterboxd.com":
 				if !isLetterboxdEnabled {
 					udErr.list_urls[idx] = "Unsupported List URL"
 					continue
 				}
 
 				list := letterboxd.LetterboxdList{}
-				parts := strings.Split(strings.Trim(listUrl.Path, "/"), "/")
-				switch {
-				case len(parts) == 3 && parts[1] == "list":
-					username, slug := parts[0], parts[2]
-					if username == "" || slug == "" {
+
+				switch hostname {
+				case "boxd.it":
+					parts := strings.Split(strings.Trim(listUrl.Path, "/"), "/")
+					switch {
+					case len(parts) == 1:
+						list.Id = parts[0]
+					default:
 						udErr.list_urls[idx] = "Invalid List URL"
 						continue
 					}
-					listId, err := letterboxd.FetchLetterboxdListIdentifier(username, slug)
-					if err != nil {
-						udErr.list_urls[idx] = "Failed to fetch list identifier: " + err.Error()
-						continue
-					}
-					userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
-					if err != nil {
-						udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
-						continue
-					}
-					list.Id = listId
-					list.UserId = userId
-					list.UserName = username
-					list.Slug = slug
-				case len(parts) == 2 && parts[1] == "watchlist":
-					username, slug := parts[0], parts[1]
-					if username == "" || slug == "" {
+				case "letterboxd.com":
+					parts := strings.Split(strings.Trim(listUrl.Path, "/"), "/")
+					switch {
+					case len(parts) == 3 && parts[1] == "list":
+						username, slug := parts[0], parts[2]
+						if username == "" || slug == "" {
+							udErr.list_urls[idx] = "Invalid List URL"
+							continue
+						}
+						listId, err := letterboxd.FetchLetterboxdListIdentifier(username, slug)
+						if err != nil {
+							udErr.list_urls[idx] = "Failed to fetch list identifier: " + err.Error()
+							continue
+						}
+						userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
+						if err != nil {
+							udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
+							continue
+						}
+						list.Id = listId
+						list.UserId = userId
+						list.UserName = username
+						list.Slug = slug
+					case len(parts) == 2 && parts[1] == "watchlist":
+						username, slug := parts[0], parts[1]
+						if username == "" || slug == "" {
+							udErr.list_urls[idx] = "Invalid List URL"
+							continue
+						}
+						userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
+						if err != nil {
+							udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
+							continue
+						}
+						list.Id = letterboxd.ID_PREFIX_USER_WATCHLIST + userId
+						list.UserId = userId
+						list.UserName = username
+						list.Slug = slug
+					default:
 						udErr.list_urls[idx] = "Invalid List URL"
 						continue
 					}
-					userId, err := letterboxd.FetchLetterboxdUserIdentifier(username)
-					if err != nil {
-						udErr.list_urls[idx] = "Failed to fetch user identifier: " + err.Error()
-						continue
-					}
-					list.Id = letterboxd.ID_PREFIX_USER_WATCHLIST + userId
-					list.UserId = userId
-					list.UserName = username
-					list.Slug = slug
-				default:
-					udErr.list_urls[idx] = "Invalid List URL"
-					continue
 				}
 
 				err := ud.FetchLetterboxdList(&list)
