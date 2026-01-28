@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.96.4](https://github.com/MunifTanjim/stremthru/compare/0.96.3...0.96.4) (2026-01-28)
+
+
+### Bug Fixes
+
+* **posthog:** add hostname in log prop allowlist ([6f62f66](https://github.com/MunifTanjim/stremthru/commit/6f62f66337848ff57ad2371d0ed94d8c9f3d1ad5))
+* **store/premiumize:** handle web server down error ([708f4ff](https://github.com/MunifTanjim/stremthru/commit/708f4ff8305a7d57e8318aa76e4daf3337dd1a4c))
+* **stremio/torz:** add store.name in error ([24fa263](https://github.com/MunifTanjim/stremthru/commit/24fa2639b72a8ef5c5bd141252fd6e8769e133b1))
+* **stremio/wrap:** add store.name in error ([433d51f](https://github.com/MunifTanjim/stremthru/commit/433d51fd8781f700b0b21f06f7f949d56f53fca2))
+
 ## [0.96.3](https://github.com/MunifTanjim/stremthru/compare/0.96.2...0.96.3) (2026-01-21)
 
 
