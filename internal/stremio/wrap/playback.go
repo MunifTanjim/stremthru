@@ -215,7 +215,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 	strem := result.(*stremResult)
 
 	if strem.error_log != "" {
-		log.Log(strem.error_level, strem.error_log, "error", err)
+		log.Log(strem.error_level, strem.error_log, "error", err, "store.name", ctx.Store.GetName())
 		redirectToStaticVideo(w, r, cacheKey, strem.error_video)
 		return
 	}
