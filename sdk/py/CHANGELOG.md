@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.6.0...sdk-py-0.7.0) (2026-01-28)
+
+
+### Features
+
+* **sdk/py:** support torrent link for add magnet ([1d7a739](https://github.com/MunifTanjim/stremthru/commit/1d7a739c097f62d714ee1f602fc372a1bab78122))
+
 ## [0.6.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.5.2...sdk-py-0.6.0) (2025-11-02)
 
 
