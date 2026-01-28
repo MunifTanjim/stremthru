@@ -57,6 +57,7 @@ var _ = func() *struct{} {
 	logProps.Add("id")
 	logProps.Add("key")
 	logProps.Add("store.name")
+	logProps.Add("hostname")
 
 	handler = posthog.WrapLogHandler(handler, logProps)
 	logger := slog.New(handler)
