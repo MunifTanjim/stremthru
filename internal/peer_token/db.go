@@ -17,9 +17,9 @@ type PeerToken struct {
 }
 
 var peerTokenCache = cache.NewLRUCache[bool](&cache.CacheConfig{
-	Lifetime:      15 * time.Minute,
-	Name:          "peer_token_is_valid",
-	LocalCapacity: 512,
+	Lifetime: 15 * time.Minute,
+	Name:     "peer_token_is_valid",
+	MaxSize:  512,
 })
 
 func IsValid(token string) (isValid bool, err error) {
