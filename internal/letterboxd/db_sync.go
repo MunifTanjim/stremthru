@@ -25,9 +25,9 @@ var Peer = peer.NewAPIClient(&peer.APIClientConfig{
 })
 
 var listCache = cache.NewCache[LetterboxdList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "letterboxd:list",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "letterboxd:list",
+	MaxSize:  1024,
 })
 
 func getListCacheKey(l *LetterboxdList) string {

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
@@ -34,6 +35,8 @@ func main() {
 	defer db.Close()
 	db.Ping()
 	RunSchemaMigration(database.URI, database)
+
+	defer cache.ClosePersistentCaches()
 
 	stopWorkers := worker.InitWorkers()
 	defer stopWorkers()

@@ -23,15 +23,15 @@ import (
 )
 
 var upstreamManifestCache = cache.NewCache[stremio.Manifest](&cache.CacheConfig{
-	Name:          "stremio:wrap:upstreamManifest",
-	Lifetime:      6 * time.Hour,
-	LocalCapacity: 1024,
+	Name:     "stremio:wrap:upstreamManifest",
+	Lifetime: 6 * time.Hour,
+	MaxSize:  1024,
 })
 
 var upstreamResolverCache = cache.NewCache[upstreamsResolver](&cache.CacheConfig{
-	Name:          "stremio:wrap:upstreamResolver",
-	Lifetime:      24 * time.Hour,
-	LocalCapacity: 2048,
+	Name:     "stremio:wrap:upstreamResolver",
+	Lifetime: 24 * time.Hour,
+	MaxSize:  2048,
 })
 
 type upstreamsResolverEntry struct {

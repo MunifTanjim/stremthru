@@ -9,6 +9,10 @@ import (
 	rc "github.com/go-redis/cache/v9"
 )
 
+var (
+	_ Cache[any] = (*RedisCache[any])(nil)
+)
+
 type localCache struct {
 	c *freelru.LRU[string, []byte]
 }
@@ -42,6 +46,10 @@ type RedisCache[V any] struct {
 
 func (cache *RedisCache[V]) GetName() string {
 	return cache.name
+}
+
+func (cache *RedisCache[V]) Has(key string) bool {
+	return cache.c.Exists(context.Background(), cache.name+":"+key)
 }
 
 func (cache *RedisCache[V]) Add(key string, value V) error {
