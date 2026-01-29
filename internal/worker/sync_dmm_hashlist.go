@@ -226,8 +226,8 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 
 	conf.Executor = func(w *Worker) error {
 		hashSeenLru := cache.NewLRUCache[struct{}](&cache.CacheConfig{
-			Name:          "worker:dmm_hashlist:seen",
-			LocalCapacity: 100000,
+			Name:    "worker:dmm_hashlist:seen",
+			MaxSize: 100000,
 		})
 
 		if err := ensureRepository(w); err != nil {

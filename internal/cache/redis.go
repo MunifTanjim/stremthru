@@ -44,6 +44,10 @@ func (cache *RedisCache[V]) GetName() string {
 	return cache.name
 }
 
+func (cache *RedisCache[V]) Has(key string) bool {
+	return cache.c.Exists(context.Background(), cache.name+":"+key)
+}
+
 func (cache *RedisCache[V]) Add(key string, value V) error {
 	err := cache.c.Set(&rc.Item{
 		Key:   cache.name + ":" + key,
