@@ -16,9 +16,9 @@ import (
 var IsEnabled = config.Posthog.IsEnabled()
 
 var exceptionLastSentAt = cache.NewLRUCache[time.Time](&cache.CacheConfig{
-	Lifetime:      5 * time.Minute,
-	Name:          "posthog:excepiton-last-sent-at",
-	LocalCapacity: 2048,
+	Lifetime: 5 * time.Minute,
+	Name:     "posthog:excepiton-last-sent-at",
+	MaxSize:  2048,
 })
 
 var client = func() posthog.Client {

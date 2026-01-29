@@ -11,9 +11,9 @@ import (
 )
 
 var listCache = cache.NewCache[TraktList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "trakt:list",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "trakt:list",
+	MaxSize:  1024,
 })
 
 func getListCacheKey(l *TraktList, tokenId string) string {

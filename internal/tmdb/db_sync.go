@@ -11,9 +11,9 @@ import (
 )
 
 var listCache = cache.NewCache[TMDBList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "tmdb:list",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "tmdb:list",
+	MaxSize:  1024,
 })
 
 func getListCacheKey(l *TMDBList, tokenId string) string {

@@ -70,9 +70,9 @@ var sessionStorage = func() SessionStorage {
 	}
 
 	return cache.NewCache[Session](&cache.CacheConfig{
-		Lifetime:      7 * 24 * time.Hour,
-		Name:          "dash:session",
-		LocalCapacity: 8,
+		Lifetime: 7 * 24 * time.Hour,
+		Name:     "dash:session",
+		MaxSize:  8,
 	})
 }()
 

@@ -8,6 +8,10 @@ import (
 	"github.com/zeebo/xxh3"
 )
 
+var (
+	_ Cache[any] = (*LRUCache[any])(nil)
+)
+
 type LRUCache[V any] struct {
 	c    *freelru.LRU[string, V]
 	name string
@@ -16,6 +20,13 @@ type LRUCache[V any] struct {
 
 func (cache *LRUCache[V]) GetName() string {
 	return cache.name
+}
+
+func (cache *LRUCache[V]) Has(key string) bool {
+	cache.m.Lock()
+	defer cache.m.Unlock()
+
+	return cache.c.Contains(key)
 }
 
 func (cache *LRUCache[V]) Add(key string, value V) error {
@@ -55,11 +66,11 @@ func CacheHashKeyString(key string) uint32 {
 }
 
 func NewLRUCache[V any](config *CacheConfig) *LRUCache[V] {
-	if config.LocalCapacity == 0 {
-		config.LocalCapacity = 1024
+	if config.MaxSize == 0 {
+		config.MaxSize = 1024
 	}
 
-	lru, err := freelru.New[string, V](config.LocalCapacity, CacheHashKeyString)
+	lru, err := freelru.New[string, V](uint32(config.MaxSize), CacheHashKeyString)
 	if err != nil {
 		errMsg := "failed to create cache"
 		if config.Name != "" {

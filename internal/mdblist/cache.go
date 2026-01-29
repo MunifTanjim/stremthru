@@ -7,13 +7,13 @@ import (
 )
 
 var listCache = cache.NewCache[MDBListList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "mdblist:list:v2",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "mdblist:list:v2",
+	MaxSize:  1024,
 })
 
 var listIdByNameCache = cache.NewCache[string](&cache.CacheConfig{
-	Lifetime:      12 * time.Hour,
-	Name:          "mdblist:list-id-by-name:v2",
-	LocalCapacity: 2048,
+	Lifetime: 12 * time.Hour,
+	Name:     "mdblist:list-id-by-name:v2",
+	MaxSize:  2048,
 })

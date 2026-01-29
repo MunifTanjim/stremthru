@@ -14,9 +14,9 @@ import (
 )
 
 var listCache = cache.NewCache[AniListList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "mdblist:list:v2",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "mdblist:list:v2",
+	MaxSize:  1024,
 })
 
 var anizipClient = anizip.NewAPIClient(&anizip.APIClientConfig{})

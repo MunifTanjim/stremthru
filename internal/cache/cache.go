@@ -11,18 +11,30 @@ type Cache[V any] interface {
 	Add(key string, value V) error
 	AddWithLifetime(key string, value V, lifetime time.Duration) error
 	Get(key string, value *V) bool
+	Has(key string) bool
 	Remove(key string)
 }
 
 type CacheConfig struct {
-	Lifetime      time.Duration
-	Name          string
-	LocalCapacity uint32
+	DiskBacked bool
+	Lifetime   time.Duration
+	MaxSize    int64
+	Name       string
+	Persist    bool
 }
 
 func NewCache[V any](conf *CacheConfig) Cache[V] {
-	if conf.LocalCapacity == 0 {
-		conf.LocalCapacity = 1024
+	if conf.DiskBacked || conf.Persist {
+		return newOtterCache[V](conf)
+	}
+
+	var v V
+	if _, ok := any(v).(cacheSizer); ok {
+		return newOtterCache[V](conf)
+	}
+
+	if conf.MaxSize == 0 {
+		conf.MaxSize = 1024
 	}
 
 	if redis.IsAvailable() {
