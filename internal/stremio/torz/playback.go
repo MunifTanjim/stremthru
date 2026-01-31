@@ -244,7 +244,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		glRes, err := shared.GenerateStremThruLink(r, ctx.StoreContext, link)
+		glRes, err := shared.GenerateStremThruLink(r, ctx.StoreContext, link, fileName)
 		if err != nil {
 			return &stremResult{
 				error_level: logger.LevelError,
