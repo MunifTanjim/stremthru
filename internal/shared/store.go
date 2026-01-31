@@ -195,7 +195,23 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 	return pLink.String(), nil
 }
 
-func GenerateStremThruLink(r *http.Request, ctx *context.StoreContext, link string) (*store.GenerateLinkData, error) {
+func ProxyWrapLink(r *http.Request, ctx *context.StoreContext, link string, filename string) (string, error) {
+	storeName := string(ctx.Store.GetName())
+	if config.StoreContentProxy.IsEnabled(storeName) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName) {
+		if ctx.IsProxyAuthorized {
+			tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
+			proxyLink, err := CreateProxyLink(r, link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, filename)
+			if err != nil {
+				return link, err
+			}
+
+			return proxyLink, nil
+		}
+	}
+	return link, nil
+}
+
+func GenerateStremThruLink(r *http.Request, ctx *context.StoreContext, link string, filename string) (*store.GenerateLinkData, error) {
 	params := &store.GenerateLinkParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Link = link
@@ -208,17 +224,9 @@ func GenerateStremThruLink(r *http.Request, ctx *context.StoreContext, link stri
 		return nil, err
 	}
 
-	storeName := string(ctx.Store.GetName())
-	if config.StoreContentProxy.IsEnabled(storeName) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName) {
-		if ctx.IsProxyAuthorized {
-			tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-			proxyLink, err := CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, "")
-			if err != nil {
-				return nil, err
-			}
-
-			data.Link = proxyLink
-		}
+	data.Link, err = ProxyWrapLink(r, ctx, data.Link, filename)
+	if err != nil {
+		return nil, err
 	}
 
 	return data, nil

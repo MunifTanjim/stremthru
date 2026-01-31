@@ -394,7 +394,7 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.GetStoreContext(r)
-	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link)
+	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
 	SendResponse(w, r, 200, link, err)
 }
 
