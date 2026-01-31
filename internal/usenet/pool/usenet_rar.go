@@ -31,10 +31,12 @@ func (ura *RARArchive) Open(password string) error {
 	if password != "" {
 		opts = append(opts, rardecode.Password(password))
 	}
+	println("openfs")
 	r, err := rardecode.OpenFS(ura.name, opts...)
 	if err != nil {
 		return err
 	}
+	println("openfs done")
 	ura.r = r
 	return nil
 }
@@ -57,19 +59,25 @@ func (ura *RARArchive) isSolid() (bool, error) {
 		if ura.password != "" {
 			opts = append(opts, rardecode.Password(ura.password))
 		}
+		println("A")
 		iter, err := rardecode.OpenIter(ura.name, opts...)
 		if err != nil {
 			return false, err
 		}
 		defer iter.Close()
 
+		println("B")
 		solid := false
 		for iter.Next() {
+			println("c1")
 			if h := iter.Header(); h.Solid {
+				println("c2")
 				solid = true
 				break
 			}
+			println("c3")
 		}
+		println("D")
 		if err := iter.Err(); err != nil {
 			return false, err
 		}

@@ -87,6 +87,6 @@ require (
 
 replace github.com/posthog/posthog-go => github.com/MunifTanjim/posthog-go v1.6.13-0.20251115073058-2d57c45d7610
 
-replace github.com/nwaples/rardecode/v2 => github.com/MunifTanjim/rardecode/v2 v2.0.0-20260105181300-a5dab301b69c
+replace github.com/nwaples/rardecode/v2 => /Users/muniftanjim/Dev/github/nwaples/rardecode
 
-replace github.com/bodgit/sevenzip => github.com/MunifTanjim/sevenzip v1.4.4-0.20260105180903-01c13fc3d824
+replace github.com/bodgit/sevenzip => /Users/muniftanjim/Dev/github/bodgit/sevenzip

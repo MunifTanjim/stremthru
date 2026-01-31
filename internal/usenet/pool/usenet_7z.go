@@ -58,6 +58,7 @@ func (usa *SevenZipArchive) GetFiles() ([]ArchiveFile, error) {
 		files := []ArchiveFile{}
 		for iter.Next() {
 			entry := iter.Entry()
+			println(entry.Name())
 			file := &Usenet7zFile{
 				ArchiveEntry: entry,
 				name:         entry.Name(),

@@ -219,6 +219,7 @@ func (p *Pool) ensureConnectionGroup(conn *nntp.PooledConnection, groups ...stri
 }
 
 func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []string) (*SegmentData, error) {
+	println(segment.Number)
 	messageId := segment.MessageId
 	if cachedData, ok := p.segmentCache.Get(messageId); ok {
 		p.Log.Trace("fetch segment - cache hit", "segment_num", segment.Number, "message_id", messageId, "size", len(cachedData.Body))
