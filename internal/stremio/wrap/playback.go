@@ -196,7 +196,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
 		}
 
-		glRes, err := shared.GenerateStremThruLink(r, ctx, link)
+		glRes, err := shared.GenerateStremThruLink(r, ctx, link, fileName)
 		if err != nil {
 			return &stremResult{
 				error_level: logger.LevelError,
