@@ -193,40 +193,40 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
-		videoFiles := []store.MagnetFile{}
+		videoFiles := []store.File{}
 		for i := range magnet.Files {
 			f := &magnet.Files[i]
 			if core.HasVideoExtension(f.Name) {
-				videoFiles = append(videoFiles, *f)
+				videoFiles = append(videoFiles, f)
 			}
 		}
 
-		var file *store.MagnetFile
+		var file store.File
 		if strings.Contains(sid, ":") {
-			if file = stremio_shared.MatchFileByStremId(videoFiles, sid, magnetHash, storeCode); file != nil {
-				log.Debug("matched file using strem id", "sid", sid, "filename", file.Name)
+			if file = stremio_shared.MatchFileByStremId(magnet.Name, videoFiles, sid, magnetHash, storeCode); file != nil {
+				log.Debug("matched file using strem id", "sid", sid, "filename", file.GetName())
 			}
 		}
 		if file == nil && fileName != "" {
 			if file = stremio_shared.MatchFileByName(videoFiles, fileName); file != nil {
-				log.Debug("matched file using filename", "filename", file.Name)
+				log.Debug("matched file using filename", "filename", file.GetName())
 			}
 		}
 		if file == nil {
 			if file = stremio_shared.MatchFileByIdx(videoFiles, fileIdx, storeCode); file != nil {
-				log.Debug("matched file using fileidx", "fileidx", file.Idx, "filename", file.Name)
+				log.Debug("matched file using fileidx", "fileidx", file.GetIdx(), "filename", file.GetName())
 			}
 		}
 		if file == nil && isIMDBId && (!strings.Contains(sid, ":") || len(videoFiles) == 1) {
 			if file = stremio_shared.MatchFileByLargestSize(videoFiles); file != nil {
-				log.Debug("matched file using largest size", "filename", file.Name)
+				log.Debug("matched file using largest size", "filename", file.GetName())
 				shouldTagStream = len(videoFiles) == 1
 			}
 		}
 
 		link := ""
 		if file != nil {
-			link = file.Link
+			link = file.GetLink()
 		}
 		if link == "" {
 			return &stremResult{
@@ -238,9 +238,9 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		if shouldTagStream {
 			if isIMDBId {
-				torrent_stream.TagStremId(magnet.Hash, file.Path, sid)
+				torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
 			} else if isAnimeId {
-				go torrent_stream.TagAnimeStremId(magnet.Hash, file.Path, sid)
+				go torrent_stream.TagAnimeStremId(magnet.Hash, file.GetPath(), sid)
 			}
 		}
 

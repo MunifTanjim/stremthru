@@ -13,49 +13,45 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-func MatchFileByIdx(files []store.MagnetFile, idx int, storeCode store.StoreCode) *store.MagnetFile {
+func MatchFileByIdx(files []store.File, idx int, storeCode store.StoreCode) store.File {
 	if idx == -1 || storeCode != store.StoreCodeRealDebrid {
 		return nil
 	}
-	for i := range files {
-		f := &files[i]
-		if f.Idx == idx {
+	for _, f := range files {
+		if f.GetIdx() == idx {
 			return f
 		}
 	}
 	return nil
 }
 
-func MatchFileByLargestSize(files []store.MagnetFile) (file *store.MagnetFile) {
-	for i := range files {
-		f := &files[i]
-		if file == nil || file.Size < f.Size {
+func MatchFileByLargestSize(files []store.File) (file store.File) {
+	for _, f := range files {
+		if file == nil || file.GetSize() < f.GetSize() {
 			file = f
 		}
 	}
 	return file
 }
 
-func MatchFileByName(files []store.MagnetFile, name string) *store.MagnetFile {
+func MatchFileByName(files []store.File, name string) store.File {
 	if name == "" {
 		return nil
 	}
-	for i := range files {
-		f := &files[i]
-		if f.Name == name {
+	for _, f := range files {
+		if f.GetName() == name {
 			return f
 		}
 	}
 	return nil
 }
 
-func MatchFileByPattern(files []store.MagnetFile, pattern *regexp.Regexp) *store.MagnetFile {
+func MatchFileByPattern(files []store.File, pattern *regexp.Regexp) store.File {
 	if pattern == nil {
 		return nil
 	}
-	for i := range files {
-		f := &files[i]
-		if pattern.MatchString(f.Name) {
+	for _, f := range files {
+		if pattern.MatchString(f.GetName()) {
 			return f
 		}
 	}
@@ -97,7 +93,7 @@ func ParseSeasonEpisodeFromName(title string, extractDigitsAsEpisodeAgressively 
 	return data
 }
 
-func matchFileByIMDBStremId(files []store.MagnetFile, sid string) *store.MagnetFile {
+func matchFileByIMDBStremId(files []store.File, sid string) store.File {
 	parts := strings.SplitN(sid, ":", 3)
 	if len(parts) != 3 {
 		return nil
@@ -115,26 +111,27 @@ func matchFileByIMDBStremId(files []store.MagnetFile, sid string) *store.MagnetF
 			return nil
 		}
 	}
-	for i := range files {
-		f := &files[i]
-		if d := ParseSeasonEpisodeFromName(f.Name, false); d.Season == expectedSeason && d.Episode == expectedEpisode {
+	for _, f := range files {
+		if d := ParseSeasonEpisodeFromName(f.GetName(), false); d.Season == expectedSeason && d.Episode == expectedEpisode {
 			return f
 		}
 	}
 	return nil
 }
 
-func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string, storeCode store.StoreCode) *store.MagnetFile {
-	if f, err := torrent_stream.GetFile(magnetHash, sid); err != nil {
-		log.Error("failed to get file by strem id", "hash", magnetHash, "sid", sid, "error", err)
-	} else if f != nil {
-		if file := MatchFileByIdx(files, f.Idx, storeCode); file != nil {
-			log.Debug("matched file by strem id - fileidx", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store.name", storeCode.Name())
-			return file
-		}
-		if file := MatchFileByName(files, f.Name); file != nil {
-			log.Debug("matched file by strem id - filename", "hash", magnetHash, "sid", sid, "filename", file.Name, "fileidx", file.Idx, "store.name", storeCode.Name())
-			return file
+func MatchFileByStremId(folderName string, files []store.File, sid string, torzHash string, storeCode store.StoreCode) store.File {
+	if torzHash != "" {
+		if f, err := torrent_stream.GetFile(torzHash, sid); err != nil {
+			log.Error("failed to get file by strem id", "hash", torzHash, "sid", sid, "error", err)
+		} else if f != nil {
+			if file := MatchFileByIdx(files, f.Idx, storeCode); file != nil {
+				log.Debug("matched file by strem id - fileidx", "hash", torzHash, "sid", sid, "filename", file.GetName(), "fileidx", file.GetIdx(), "store.name", storeCode.Name())
+				return file
+			}
+			if file := MatchFileByName(files, f.Name); file != nil {
+				log.Debug("matched file by strem id - filename", "hash", torzHash, "sid", sid, "filename", file.GetName(), "fileidx", file.GetIdx(), "store.name", storeCode.Name())
+				return file
+			}
 		}
 	}
 
@@ -147,22 +144,16 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 	if nsid.IsAnime {
 		anidbId, season, episode := nsid.Id, nsid.Season, nsid.Episode
 
-		tInfo, err := torrent_info.GetByHash(magnetHash)
-		if err != nil {
-			log.Error("failed to get torrent info by hash", "error", err, "hash", magnetHash)
-			return nil
-		}
 		expectedEpisode := util.SafeParseInt(episode, -1)
 		expectedSeason := util.SafeParseInt(season, -1)
 
-		filesForSeason := []*store.MagnetFile{}
+		filesForSeason := []store.File{}
 		dataByName := map[string]seasonEpisodeData{}
 
 		minEpisode := 99999
-		for i := range files {
-			f := &files[i]
-			d := ParseSeasonEpisodeFromName(f.Name, true)
-			dataByName[f.Name] = d
+		for _, f := range files {
+			d := ParseSeasonEpisodeFromName(f.GetName(), true)
+			dataByName[f.GetName()] = d
 			if d.ReleaseType == "" && (d.Episode != -1) && ((d.Season == -1 && expectedSeason == 1) || d.Season == expectedSeason) {
 				filesForSeason = append(filesForSeason, f)
 				if d.Episode < minEpisode {
@@ -181,18 +172,36 @@ func MatchFileByStremId(files []store.MagnetFile, sid string, magnetHash string,
 			absMap := tvdbMaps.GetAbsoluteOrderSeasonMap()
 			if absMap != nil {
 				expectedEpisode = expectedEpisode + absMap.Offset
-				for i := range files {
-					f := &files[i]
-					d := dataByName[f.Name]
+				for _, f := range files {
+					d := dataByName[f.GetName()]
 					if d.Episode == expectedEpisode {
 						return f
 					}
 				}
 			}
 		} else {
+			episodes := []int{}
+			if torzHash != "" {
+				tInfo, err := torrent_info.GetByHash(torzHash)
+				if err != nil {
+					log.Error("failed to get torrent info by hash", "error", err, "hash", torzHash)
+					return nil
+				}
+				episodes = tInfo.Episodes
+			} else if folderName != "" {
+				r, err := util.ParseTorrentTitle(folderName)
+				if err != nil {
+					log.Error("failed to parse title", "error", err, "title", folderName)
+					return nil
+				}
+				episodes = r.Episodes
+			} else {
+				return nil
+			}
+
 			for _, f := range filesForSeason {
-				d := dataByName[f.Name]
-				if d.Episode == expectedEpisode || (len(tInfo.Episodes) == 0 && minEpisode > 1 && d.Episode-minEpisode+1 == expectedEpisode) {
+				d := dataByName[f.GetName()]
+				if d.Episode == expectedEpisode || (len(episodes) == 0 && minEpisode > 1 && d.Episode-minEpisode+1 == expectedEpisode) {
 					return f
 				}
 			}

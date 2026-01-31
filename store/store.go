@@ -12,6 +12,18 @@ import (
 
 type Ctx = request.Ctx
 
+var (
+	_ File = (*MagnetFile)(nil)
+)
+
+type File interface {
+	GetIdx() int
+	GetPath() string
+	GetName() string
+	GetSize() int64
+	GetLink() string
+}
+
 type StoreName string
 
 const (
@@ -123,6 +135,26 @@ type MagnetFile struct {
 	Size      int64  `json:"size"`
 	VideoHash string `json:"video_hash,omitempty"`
 	Source    string `json:"source,omitempty"`
+}
+
+func (f *MagnetFile) GetIdx() int {
+	return f.Idx
+}
+
+func (f *MagnetFile) GetPath() string {
+	return f.Path
+}
+
+func (f *MagnetFile) GetName() string {
+	return f.Name
+}
+
+func (f *MagnetFile) GetSize() int64 {
+	return f.Size
+}
+
+func (f *MagnetFile) GetLink() string {
+	return f.Link
 }
 
 type MagnetStatus string
