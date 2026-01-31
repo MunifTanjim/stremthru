@@ -13,6 +13,10 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 )
 
+var (
+	_ store.Store     = (*StoreClient)(nil)
+)
+
 type StoreClientConfig struct {
 	HTTPClient *http.Client
 	UserAgent  string
