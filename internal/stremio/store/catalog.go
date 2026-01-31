@@ -29,9 +29,9 @@ type CachedCatalogItem struct {
 }
 
 var catalogCache = cache.NewCache[[]CachedCatalogItem](&cache.CacheConfig{
-	Lifetime:      config.Stremio.Store.CatalogCacheTime,
-	Name:          "stremio:store:catalog",
-	LocalCapacity: 2048,
+	Lifetime: config.Stremio.Store.CatalogCacheTime,
+	Name:     "stremio:store:catalog",
+	MaxSize:  2048,
 })
 
 func InvalidateCatalogCache(storeCode store.StoreCode, storeToken string) {

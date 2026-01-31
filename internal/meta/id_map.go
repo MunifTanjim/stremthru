@@ -58,9 +58,9 @@ var ErrorUnsupportedId = errors.New("unsupported id")
 var ErrorUnsupportedIdAnchor = errors.New("unsupported id anchor")
 
 var idMapCache = cache.NewCache[IdMap](&cache.CacheConfig{
-	Lifetime:      3 * time.Hour,
-	Name:          "meta:id-map",
-	LocalCapacity: 2048,
+	Lifetime: 3 * time.Hour,
+	Name:     "meta:id-map",
+	MaxSize:  2048,
 })
 
 func GetIdMap(idType IdType, idStr string) (*IdMap, error) {

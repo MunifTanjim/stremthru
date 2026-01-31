@@ -9,8 +9,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
-	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
 	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
+	"github.com/MunifTanjim/stremthru/store"
 )
 
 var stremLinkCache = cache.NewCache[string](&cache.CacheConfig{
@@ -74,20 +74,28 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fileName := r.PathValue("fileName")
+
 	if idr.isUsenet {
+		newzStore, ok := ctx.Store.(store.NewzStore)
+		if !ok {
+			log.Warn("store does not support newz")
+			store_video.Redirect("500", w, r)
+			return
+		}
 		storeName := ctx.Store.GetName()
-		rParams := &stremio_store_usenet.GenerateLinkParams{
+		rParams := &store.GenerateNewzLinkParams{
 			Link:     link,
-			CLientIP: ctx.ClientIP,
+			ClientIP: ctx.ClientIP,
 		}
 		rParams.APIKey = ctx.StoreAuthToken
 		var lerr error
-		data, err := stremio_store_usenet.GenerateLink(rParams, storeName)
+		data, err := newzStore.GenerateNewzLink(rParams)
 		if err == nil {
 			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
 				if ctx.IsProxyAuthorized {
 					tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, ""); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
 						data.Link = proxyLink
 					} else {
 						lerr = err
@@ -122,7 +130,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
 				if ctx.IsProxyAuthorized {
 					tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, ""); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
 						data.Link = proxyLink
 					} else {
 						lerr = err
@@ -141,7 +149,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		stremLinkCache.Add(cacheKey, data.Link)
 		http.Redirect(w, r, data.Link, http.StatusFound)
 	} else {
-		stLink, err := shared.GenerateStremThruLink(r, ctx, url)
+		stLink, err := shared.GenerateStremThruLink(r, ctx, url, fileName)
 		if err != nil {
 			LogError(r, "failed to generate stremthru link", err)
 			store_video.Redirect("500", w, r)

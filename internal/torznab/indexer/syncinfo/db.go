@@ -14,9 +14,9 @@ import (
 )
 
 var queueCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
-	Lifetime:      3 * time.Hour,
-	Name:          "torznab_indexer_syncinfo:queue",
-	LocalCapacity: 2048,
+	Lifetime: 3 * time.Hour,
+	Name:     "torznab_indexer_syncinfo:queue",
+	MaxSize:  2048,
 })
 
 const staleTime = 24 * time.Hour

@@ -60,6 +60,8 @@ const (
 	ErrorCodeMagnetLinksRemoved     ErrorCode = "MAGNET_LINKS_REMOVED"
 	ErrorCodeMagnetProcessingFailed ErrorCode = "MAGNET_PROCESSING_FAILED"
 	ErrorCodeMagnetNoServer         ErrorCode = "MAGNET_NO_SERVER"
+	// undocumented
+	ErrorCodeMagnetProcessingCooldown ErrorCode = "MAGNET_PROCESSING_COOLDOWN"
 
 	ErrorCodePinAlreadyAuthed ErrorCode = "PIN_ALREADY_AUTHED"
 	ErrorCodePinExpired       ErrorCode = "PIN_EXPIRED"

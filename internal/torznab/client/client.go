@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
 type ClientConfig struct {
@@ -72,7 +73,7 @@ func NewClient(conf *ClientConfig) *Client {
 }
 
 type Response[T any] struct {
-	Error *Error
+	Error *znab.Error
 	Data  T
 }
 
@@ -95,7 +96,7 @@ func (r *Response[T]) Unmarshal(res *http.Response, body []byte, v any) error {
 		}
 		switch root.XMLName.Local {
 		case "error":
-			var xmlError Error
+			var xmlError znab.Error
 			if err := xml.Unmarshal(body, &xmlError); err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -128,6 +129,7 @@ type StreamExtractorResult struct {
 	*ptt.Result
 
 	Addon     StreamExtractorResultAddon
+	Age       time.Duration
 	Category  string
 	Episode   int
 	File      StreamExtractorResultFile
@@ -139,6 +141,7 @@ type StreamExtractorResult struct {
 	Store     StreamExtractorResultStore
 	TTitle    string `expr:"-"`
 	Indexer   string `expr:"-"`
+	Emoji     string `expr:"-"`
 }
 
 var language_to_code = map[string]string{

@@ -74,6 +74,9 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
 		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT":     "10",
+		"STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT":       "10s",
+		"STREMTHRU_STREMIO_NEWZ_PUBLIC_MAX_INDEXER_COUNT":  "2",
+		"STREMTHRU_STREMIO_NEWZ_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
@@ -189,6 +192,17 @@ func (m AuthAdminMap) IsAdmin(userName string) bool {
 	return false
 }
 
+type SabnzbdAuthMap map[string]string // username -> apikey
+
+func (m SabnzbdAuthMap) GetUser(apikey string) string {
+	for user, key := range m {
+		if key == apikey {
+			return user
+		}
+	}
+	return ""
+}
+
 const (
 	StremioAddonSidekick string = "sidekick"
 	StremioAddonStore    string = "store"
@@ -200,6 +214,7 @@ const (
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
 	FeatureStremioList     string = "stremio_list"
+	FeatureStremioNewz     string = "stremio_newz"
 	FeatureStremioP2P      string = "stremio_p2p"
 	FeatureStremioSidekick string = "stremio_sidekick"
 	FeatureStremioStore    string = "stremio_store"
@@ -213,6 +228,7 @@ var features = []string{
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
 	FeatureStremioList,
+	FeatureStremioNewz,
 	FeatureStremioP2P,
 	FeatureStremioSidekick,
 	FeatureStremioStore,
@@ -244,6 +260,10 @@ func (f FeatureConfig) IsEnabled(name string) bool {
 
 func (f FeatureConfig) HasStremioList() bool {
 	return f.IsEnabled(FeatureStremioList)
+}
+
+func (f FeatureConfig) HasStremioNewz() bool {
+	return f.HasVault() && f.IsEnabled(FeatureStremioNewz)
 }
 
 func (f FeatureConfig) HasTorrentInfo() bool {
@@ -368,6 +388,7 @@ type Config struct {
 	ProxyAuthPassword           UserPasswordMap
 	AuthAdmin                   AuthAdminMap
 	AdminPassword               UserPasswordMap
+	SabnzbdAuth                 SabnzbdAuthMap
 	BuddyURL                    string
 	HasBuddy                    bool
 	PeerURL                     string
@@ -444,6 +465,16 @@ var config = func() Config {
 		password := util.GenerateRandomString(27, util.CharSet.AlphaNumericMixedCase)
 		authAdminMap[username] = true
 		adminPasswordMap[username] = password
+	}
+
+	sabnzbdAuthMap := make(SabnzbdAuthMap)
+	sabnzbdAuthList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_SABNZBD"), func(c rune) bool {
+		return c == ','
+	})
+	for _, entry := range sabnzbdAuthList {
+		if username, apikey, ok := strings.Cut(entry, ":"); ok && username != "" && apikey != "" {
+			sabnzbdAuthMap[username] = apikey
+		}
 	}
 
 	storeAlldebridTokenList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_AUTH"), func(c rune) bool {
@@ -594,6 +625,7 @@ var config = func() Config {
 		ProxyAuthPassword:           proxyAuthPasswordMap,
 		AuthAdmin:                   authAdminMap,
 		AdminPassword:               adminPasswordMap,
+		SabnzbdAuth:                 sabnzbdAuthMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
 		HasBuddy:                    len(buddyUrl) > 0,
@@ -628,6 +660,7 @@ var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var AuthAdmin = config.AuthAdmin
 var AdminPassword = config.AdminPassword
+var SabnzbdAuth = config.SabnzbdAuth
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var HasBuddy = config.HasBuddy

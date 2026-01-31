@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type CheckUsenetCachedDataItem struct {
@@ -76,17 +77,27 @@ func (c APIClient) CreateUsenetDownload(params *CreateUsenetDownloadParams) (API
 type UsenetDownloadState = TorrentDownloadState
 
 type UsenetDownloadFile struct {
-	Id           int    `json:"id"`
-	MD5          string `json:"md5"`
-	Hash         string `json:"hash"`
-	Name         string `json:"name"`
-	Size         int64  `json:"size"`
-	Zipped       bool   `json:"zipped"`
-	S3Path       string `json:"s3_path"`
-	Infected     bool   `json:"infected"`
-	MimeType     string `json:"mimetype"`
-	ShortName    string `json:"short_name"`
-	AbsolutePath string `json:"absolute_path"`
+	Id                int    `json:"id"`
+	MD5               string `json:"md5"`
+	Hash              string `json:"hash"`
+	Name              string `json:"name"`
+	Size              int64  `json:"size"`
+	Zipped            bool   `json:"zipped"`
+	S3Path            string `json:"s3_path"`
+	Infected          bool   `json:"infected"`
+	MimeType          string `json:"mimetype"`
+	ShortName         string `json:"short_name"`
+	AbsolutePath      string `json:"absolute_path"`
+	OpensubtitlesHash string `json:"opensubtitles_hash"`
+}
+
+func (f UsenetDownloadFile) GetName() string {
+	return f.ShortName
+}
+
+func (f UsenetDownloadFile) GetPath() string {
+	path, _ := util.RemoveRootFolderFromPath(f.Name)
+	return path
 }
 
 type UsenetDownload struct {
