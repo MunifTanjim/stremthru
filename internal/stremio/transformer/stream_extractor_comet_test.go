@@ -74,7 +74,7 @@ func TestStreamExtractorCometDebrid(t *testing.T) {
 			"movie", stremio.Stream{
 				Name:        "[PM⚡] Comet 2160p",
 				Description: "Deadpool (2016) 2160p [4K] BluRay SDR [HINDI-ENG-5.1] 10bit HEVC - PeruGuy.mkv\n💿 BluRay|SDR|hevc|AC3|5.1|10bit|PeruGuy\n💾 8.14 GB 🔎 MediaFusion|Knightcrawler\n🇬🇧/🇮🇳",
-				URL:         "https://comet.elfhosted.com/xxxxxxx/playback/74315dd5d8a0a4e2b229914ad729887acedc396f/0/n/n/Deadpool (2016) 2160p [4K] BluRay SDR [HINDI-ENG-5.1] 10bit HEVC - PeruGuy.mkv?name=deadpool",
+				URL:         "https://comet.elfhosted.com/xxxxxxx/playback/74315dd5d8a0a4e2b229914ad729887acedc396f/0/0/n/n/Deadpool (2016) 2160p [4K] BluRay SDR [HINDI-ENG-5.1] 10bit HEVC - PeruGuy.mkv?name=deadpool",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "comet|74315dd5d8a0a4e2b229914ad729887acedc396f",
 					VideoSize:  8734893087,
@@ -113,7 +113,7 @@ func TestStreamExtractorCometDebrid(t *testing.T) {
 			"series", stremio.Stream{
 				Name:        "[PM⬇️] Comet 2160p",
 				Description: "Black Snow S01 MULTi HDR 2160p WEB H265-BraD\n💿 WEB|HDR|hevc|BraD\n👤 0 💾 27.93 GB 🔎 MediaFusion|Zilean DMM",
-				URL:         "https://comet.elfhosted.com/xxxxxxx/playback/e3cd01e301c4bd3bc7888b189ba6a3b8e0ac152d/n/1/2/Black Snow S01 MULTi HDR 2160p WEB H265-BraD?name=black%20snow",
+				URL:         "https://comet.elfhosted.com/xxxxxxx/playback/e3cd01e301c4bd3bc7888b189ba6a3b8e0ac152d/0/n/1/2/Black Snow S01 MULTi HDR 2160p WEB H265-BraD?name=black%20snow",
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					BingeGroup: "comet|e3cd01e301c4bd3bc7888b189ba6a3b8e0ac152d",
 					VideoSize:  29991714406,
