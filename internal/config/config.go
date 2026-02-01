@@ -74,6 +74,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
 		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT":     "10",
+		"STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT":       "10s",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
@@ -216,6 +217,7 @@ const (
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
 	FeatureStremioList     string = "stremio_list"
+	FeatureStremioNewz     string = "stremio_newz"
 	FeatureStremioP2P      string = "stremio_p2p"
 	FeatureStremioSidekick string = "stremio_sidekick"
 	FeatureStremioStore    string = "stremio_store"
@@ -229,6 +231,7 @@ var features = []string{
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
 	FeatureStremioList,
+	FeatureStremioNewz,
 	FeatureStremioP2P,
 	FeatureStremioSidekick,
 	FeatureStremioStore,
@@ -260,6 +263,10 @@ func (f FeatureConfig) IsEnabled(name string) bool {
 
 func (f FeatureConfig) HasStremioList() bool {
 	return f.IsEnabled(FeatureStremioList)
+}
+
+func (f FeatureConfig) HasStremioNewz() bool {
+	return f.HasVault() && f.IsEnabled(FeatureStremioNewz)
 }
 
 func (f FeatureConfig) HasTorrentInfo() bool {
