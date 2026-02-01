@@ -61,3 +61,39 @@ func WaitForMagnetStatus(ctx *context.StoreContext, m *store.GetMagnetData, stat
 	}
 	return m, nil
 }
+
+func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
+	options := []configure.ConfigOption{
+		{Value: "", Label: "StremThru"},
+		{Value: "tb", Label: "TorBox"},
+	}
+	if config.IsPublicInstance {
+		options[0].Disabled = true
+		options[0].Label = ""
+	}
+	return options
+}
+
+func WaitForNewzStatus(ctx *context.StoreContext, data *store.GetNewzData, status store.NewzStatus, maxRetry int, retryInterval time.Duration) (*store.GetNewzData, error) {
+	retry := 0
+	for data.Status != status && retry < maxRetry {
+		params := &store.GetNewzParams{
+			Id:       data.Id,
+			ClientIP: ctx.ClientIP,
+		}
+		params.APIKey = ctx.StoreAuthToken
+		newz, err := ctx.Store.(store.NewzStore).GetNewz(params)
+		if err != nil {
+			return data, err
+		}
+		data = newz
+		time.Sleep(retryInterval)
+		retry++
+	}
+	if data.Status != status {
+		error := core.NewStoreError("newz failed to reach status: " + string(status) + ", last status: " + string(data.Status))
+		error.StoreName = string(ctx.Store.GetName())
+		return data, error
+	}
+	return data, nil
+}

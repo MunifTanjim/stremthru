@@ -378,6 +378,12 @@ func (p *Pool) RemoveProvider(serverId string) {
 	}
 }
 
+func (p *Pool) CountProviders() int {
+	p.providersMutex.RLock()
+	defer p.providersMutex.RUnlock()
+	return len(p.providers)
+}
+
 func (p *Pool) HasProvider(serverId string) bool {
 	p.providersMutex.RLock()
 	defer p.providersMutex.RUnlock()

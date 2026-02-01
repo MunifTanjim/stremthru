@@ -1,0 +1,133 @@
+package stremio_newz
+
+import (
+	"net/http"
+	"slices"
+
+	"github.com/MunifTanjim/stremthru/internal/server"
+	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
+)
+
+func handleConfigure(w http.ResponseWriter, r *http.Request) {
+	if !IsMethod(r, http.MethodGet) && !IsMethod(r, http.MethodPost) {
+		shared.ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	ud, err := getUserData(r)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	td := getTemplateData(ud, w, r)
+
+	if action := r.Header.Get("x-addon-configure-action"); action != "" {
+		switch action {
+		case "add-indexer":
+			if td.IsAuthed {
+				td.Indexers = append(td.Indexers, newTemplateDataIndexer(len(td.Indexers), "", "", "", ""))
+			}
+
+		case "remove-indexer":
+			end := max(len(td.Indexers)-1, 1)
+			td.Indexers = slices.Clone(td.Indexers[0:end])
+
+		case "add-store":
+			if td.IsAuthed {
+				td.Stores = append(td.Stores, StoreConfig{})
+			}
+
+		case "remove-store":
+			end := max(len(td.Stores)-1, 1)
+			td.Stores = slices.Clone(td.Stores[0:end])
+		}
+
+		page, err := getPage(td)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		SendHTML(w, 200, page)
+		return
+	}
+
+	if ud.encoded != "" {
+		_, err := ud.GetRequestContext(r)
+		if err != nil {
+			if uderr, ok := err.(*userDataError); ok {
+				for i, err := range uderr.storeCode {
+					td.Stores[i].Error.Code = err
+				}
+				for i, err := range uderr.storeToken {
+					td.Stores[i].Error.Token = err
+				}
+			} else {
+				SendError(w, r, err)
+				return
+			}
+		}
+
+		if !td.HasStoreError() {
+			s := ud.GetUser()
+			if s.HasErr {
+				log := server.GetReqCtx(r).Log
+				for i, err := range s.Err {
+					if err == nil {
+						continue
+					}
+					log.Warn("failed to access store", "error", err)
+					var ts *StoreConfig
+					if ud.IsStremThruStore() {
+						ts = &td.Stores[0]
+						if ts.Error.Token != "" {
+							ts.Error.Token += "\n"
+						}
+						ts.Error.Token += string(ud.GetStoreByIdx(i).Store.GetName()) + ": Failed to access store (" + err.Error() + ")"
+					} else {
+						ts = &td.Stores[i]
+						ts.Error.Token = "Failed to access store (" + err.Error() + ")"
+					}
+				}
+			}
+		}
+
+		for i := range ud.Indexers {
+			indexer := &ud.Indexers[i]
+			field, err := indexer.Validate()
+			switch field {
+			case "name":
+				td.Indexers[i].Name.Error = err.Error()
+			case "url":
+				td.Indexers[i].URL.Error = err.Error()
+			case "apikey":
+				td.Indexers[i].APIKey.Error = err.Error()
+			}
+		}
+	}
+
+	hasError := td.HasFieldError()
+
+	if IsMethod(r, http.MethodPost) && !hasError {
+		err = udManager.Sync(ud)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		stremio_shared.RedirectToConfigurePage(w, r, "newz", ud, true)
+		return
+	}
+
+	if !hasError && ud.HasRequiredValues() {
+		td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/newz/" + ud.GetEncoded() + "/manifest.json").String()
+	}
+
+	page, err := getPage(td)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, page)
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -281,6 +282,108 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 
 				for _, item := range cmRes.Items {
 					if _, found := res.ByHash[item.Hash]; !found && item.Status == store.MagnetStatusCached {
+						res.ByHash[item.Hash] = storeCode
+					}
+				}
+			}
+		})
+	}
+	wg.Wait()
+
+	return &res
+}
+
+type storesCheckNewzData struct {
+	ByHash            map[string]string
+	Err               []error
+	HasErr            bool
+	HasErrByStoreCode *util.Set[string]
+	m                 sync.Mutex
+}
+
+func (ud *UserDataStores) CheckNewz(params *store.CheckNewzParams, log *logger.Logger) *storesCheckNewzData {
+	ms := make([]resolvedStore, 0, len(ud.stores))
+	for _, s := range ud.stores {
+		if _, ok := s.Store.(store.NewzStore); ok {
+			ms = append(ms, s)
+		}
+	}
+
+	storeCount := len(ms)
+	res := storesCheckNewzData{
+		ByHash:            map[string]string{},
+		Err:               make([]error, storeCount),
+		HasErr:            false,
+		HasErrByStoreCode: util.NewSet[string](),
+	}
+
+	if storeCount == 0 {
+		res.Err = []error{errors.New("no configured store")}
+		res.HasErr = true
+		return &res
+	}
+
+	firstStore := ms[0]
+
+	missingHashes := []string{}
+
+	cnParams := &store.CheckNewzParams{
+		Hashes: params.Hashes,
+	}
+	cnParams.APIKey = firstStore.AuthToken
+	storeCode := strings.ToUpper(string(firstStore.Store.GetName().Code()))
+	if cnRes, err := firstStore.Store.(store.NewzStore).CheckNewz(cnParams); err != nil {
+		log.Warn("failed to check magnet", "error", err, "store.name", firstStore.Store.GetName())
+		res.Err[0] = err
+		res.HasErr = true
+		res.HasErrByStoreCode.Add(storeCode)
+
+		if storeCount > 1 {
+			missingHashes = params.Hashes
+		}
+	} else {
+		for i := range cnRes.Items {
+			item := cnRes.Items[i]
+			if item.Status == store.NewzStatusCached {
+				res.ByHash[item.Hash] = storeCode
+			} else if storeCount > 1 {
+				missingHashes = append(missingHashes, item.Hash)
+			}
+		}
+	}
+
+	if storeCount == 1 || len(missingHashes) == 0 {
+		return &res
+	}
+
+	var wg sync.WaitGroup
+	for i := range storeCount - 1 {
+		idx := i + 1
+		s := &ms[idx]
+
+		wg.Go(func() {
+			if s.Store == nil {
+				res.Err[idx] = errors.New("invalid userdata, invalid store")
+				res.HasErr = true
+				return
+			}
+			cnParams := &store.CheckNewzParams{
+				Hashes: missingHashes,
+			}
+			cnParams.APIKey = s.AuthToken
+			cnRes, err := s.Store.(store.NewzStore).CheckNewz(cnParams)
+			storeCode := strings.ToUpper(string(s.Store.GetName().Code()))
+			if err != nil {
+				log.Warn("failed to check magnet", "error", err, "store.name", s.Store.GetName())
+				res.Err[idx] = err
+				res.HasErr = true
+				res.HasErrByStoreCode.Add(storeCode)
+			} else {
+				res.m.Lock()
+				defer res.m.Unlock()
+
+				for _, item := range cnRes.Items {
+					if _, found := res.ByHash[item.Hash]; !found && item.Status == store.NewzStatusCached {
 						res.ByHash[item.Hash] = storeCode
 					}
 				}

@@ -45,6 +45,7 @@ type Config struct {
 	Autocomplete string
 	Error        string
 	Action       ConfigAction
+	Tooltip      string
 }
 
 type Base = stremio_template.BaseData
