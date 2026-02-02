@@ -28,8 +28,38 @@ type stremioConfigWrap struct {
 	PublicMaxStoreCount    int
 }
 
+type NZBLinkType string
+
+var (
+	NZBLinkTypeProxy    NZBLinkType = "proxy"
+	NZBLinkTypeRedirect NZBLinkType = "redirect"
+)
+
+type nzbLinkTypeMap map[string]NZBLinkType
+
+func (m nzbLinkTypeMap) Proxy(hostname string) bool {
+	if mode, ok := m[hostname]; ok {
+		return mode == NZBLinkTypeProxy
+	}
+	if mode, ok := m["*"]; ok {
+		return mode == NZBLinkTypeProxy
+	}
+	return false
+}
+
+func (m nzbLinkTypeMap) Redirect(hostname string) bool {
+	if mode, ok := m[hostname]; ok {
+		return mode == NZBLinkTypeRedirect
+	}
+	if mode, ok := m["*"]; ok {
+		return mode == NZBLinkTypeRedirect
+	}
+	return false
+}
+
 type stremioConfigNewz struct {
 	IndexerMaxTimeout time.Duration
+	NZBLinkType       nzbLinkTypeMap
 }
 
 type StremioConfig struct {
@@ -61,8 +91,20 @@ func parseStremio() StremioConfig {
 		},
 		Newz: stremioConfigNewz{
 			IndexerMaxTimeout: mustParseDuration("stremio newz indexer max timeout", getEnv("STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT"), 2*time.Second, 60*time.Second),
+			NZBLinkType: nzbLinkTypeMap{
+				"*": NZBLinkTypeProxy,
+			},
 		},
 	}
+
+	for _, entry := range strings.FieldsFunc(getEnv("STREMTHRU_STREMIO_NEWZ_NZB_LINK_TYPE"), func(c rune) bool {
+		return c == ','
+	}) {
+		if hostname, lType, ok := strings.Cut(entry, ":"); ok && hostname != "" && lType != "" {
+			stremio.Newz.NZBLinkType[hostname] = NZBLinkType(lType)
+		}
+	}
+
 	return stremio
 }
 

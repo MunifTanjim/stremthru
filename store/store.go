@@ -341,6 +341,7 @@ type CheckNewzData struct {
 
 type AddNewzParams struct {
 	Ctx
+	File     *multipart.FileHeader
 	Link     string
 	ClientIP string
 }

@@ -215,6 +215,27 @@
     });
   });
 
+  function syncIndexerFields() {
+    document.querySelectorAll('[id^="indexers["][id$="].type"]').forEach((typeSelect) => {
+      const match = typeSelect.id.match(/\[(\d+)\]/);
+      if (!match) return;
+      const idx = match[1];
+      const urlInput = document.getElementById(`indexers[${idx}].url`);
+      if (urlInput) {
+        const isTorbox = typeSelect.value === 'torbox';
+        urlInput.disabled = isTorbox;
+        urlInput.required = !isTorbox;
+        if (isTorbox) {
+          urlInput.value = '';
+        }
+      }
+    });
+  }
+  syncIndexerFields();
+  document.querySelectorAll('[id^="indexers["][id$="].type"]').forEach((el) => {
+    el.addEventListener('change', syncIndexerFields);
+  });
+
   {{.Script}}
 </script>
 {{end}}

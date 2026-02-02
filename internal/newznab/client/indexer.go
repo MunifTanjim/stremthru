@@ -2,36 +2,13 @@ package newznab_client
 
 import (
 	"encoding/xml"
-	"io"
 	"net/url"
-	"strings"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/cache"
-	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/logger"
-	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
-	"golang.org/x/sync/singleflight"
 )
-
-type NZBBlob []byte
-
-func (b NZBBlob) CacheSize() int64 {
-	return int64(len(b))
-}
-
-var nzbCache = cache.NewCache[NZBBlob](&cache.CacheConfig{
-	Name:       "newz_nzb",
-	Lifetime:   config.NewzNZBCacheTTL,
-	DiskBacked: true,
-	MaxSize:    config.NewzNZBCacheSize,
-})
-
-func IsNZBCached(hash string) bool {
-	return nzbCache.Has(hash)
-}
 
 type Newz struct {
 	// Core metadata
@@ -65,72 +42,22 @@ type Newz struct {
 	Episode string // Episode number
 
 	DownloadLink string // Direct NZB download URL
+
+	Hash string
+
+	LockedDownload bool
+	LockedProvider string
 }
 
 func (n *Newz) Age() time.Duration {
 	return time.Since(n.Date)
 }
 
-func cleanDownloadLink(link string) string {
-	link, _, ok := strings.Cut(link, "?")
-	if !ok {
-		link, _, _ = strings.Cut(link, "&")
+func (n *Newz) GetHash() string {
+	if n.Hash == "" {
+		n.Hash = shared.HashNZBDownloadLink(n.DownloadLink)
 	}
-	return link
-}
-
-func HashDownloadLink(link string) string {
-	return util.MD5Hash(cleanDownloadLink(link))
-}
-
-func (n *Newz) MD5() string {
-	return HashDownloadLink(n.DownloadLink)
-}
-
-var nzbFetchSG singleflight.Group
-
-func (n *Newz) FetchNZB(log *logger.Logger) (*nzb.NZB, error) {
-	link := cleanDownloadLink(n.DownloadLink)
-	cacheKey := n.MD5()
-	var nzbData NZBBlob
-	if !nzbCache.Get(cacheKey, &nzbData) {
-		if log != nil {
-			log.Debug("fetch nzb - cache miss", "link", link)
-		}
-		data, err, _ := nzbFetchSG.Do(cacheKey, func() (any, error) {
-			httpClient := config.GetHTTPClient(config.TUNNEL_TYPE_AUTO)
-			resp, err := httpClient.Get(n.DownloadLink)
-			if err != nil {
-				return nil, err
-			}
-			defer resp.Body.Close()
-
-			nzbData, err := io.ReadAll(resp.Body)
-			if err != nil {
-				if log != nil {
-					log.Error("fetch nzb - failed", "error", err, "link", link)
-				}
-				return nil, err
-			}
-			if log != nil {
-				log.Debug("fetch nzb - completed", "link", link)
-			}
-			err = nzbCache.Add(cacheKey, nzbData)
-			if err != nil && log != nil {
-				log.Warn("fetch nzb - failed to cache", "error", err, "link", link)
-			}
-			return nzbData, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		nzbData = data.([]byte)
-	} else {
-		if log != nil {
-			log.Debug("fetch nzb - cache hit", "link", link)
-		}
-	}
-	return nzb.ParseBytes(nzbData)
+	return n.Hash
 }
 
 type Indexer interface {

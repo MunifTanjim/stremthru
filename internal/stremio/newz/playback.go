@@ -11,27 +11,28 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
-	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
 	"github.com/MunifTanjim/stremthru/store"
 	"golang.org/x/sync/singleflight"
 )
 
-var stremLinkCache = cache.NewCache[string](&cache.CacheConfig{
-	Name:     "stremio:newz:streamLink",
+var streamLinkCache = cache.NewCache[string](&cache.CacheConfig{
+	Name:     "stremio:newz:stream-link",
 	Lifetime: 3 * time.Hour,
 })
 
 func redirectToStaticVideo(w http.ResponseWriter, r *http.Request, cacheKey string, videoName string) {
 	url := store_video.Redirect(videoName, w, r)
 	if cacheKey != "" {
-		stremLinkCache.AddWithLifetime(cacheKey, url, 1*time.Minute)
+		streamLinkCache.AddWithLifetime(cacheKey, url, 1*time.Minute)
 	}
 }
 
@@ -44,7 +45,7 @@ type stremResult struct {
 	error_video string
 }
 
-func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserData, ctx *RequestContext, sid string, storeCode store.StoreCode, nzbUrl string) {
+func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserData, ctx *RequestContext, sid string, storeCode store.StoreCode, nzbUrl string, isLockedDownload bool) {
 	log := server.GetReqCtx(r).Log
 
 	s := ud.GetStoreByCode(string(storeCode))
@@ -65,7 +66,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 	cacheKey := strings.Join([]string{ctx.ClientIP, string(storeCode), ctx.StoreAuthToken, sid, nzbUrl}, ":")
 
 	stremLink := ""
-	if stremLinkCache.Get(cacheKey, &stremLink) {
+	if streamLinkCache.Get(cacheKey, &stremLink) {
 		log.Debug("redirecting to cached stream link")
 		http.Redirect(w, r, stremLink, http.StatusFound)
 		return
@@ -73,8 +74,39 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 
 	result, err, _ := stremGroup.Do(cacheKey, func() (any, error) {
 		addParams := &store.AddNewzParams{
-			Link:     nzbUrl,
 			ClientIP: ctx.ClientIP,
+		}
+		if isLockedDownload {
+			addParams.Link = nzbUrl
+		} else if u, err := url.Parse(nzbUrl); err == nil {
+			hostname := u.Hostname()
+			if config.Stremio.Newz.NZBLinkType.Redirect(hostname) {
+				addParams.Link = nzbUrl
+			} else if config.Stremio.Newz.NZBLinkType.Proxy(hostname) {
+				nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), config.NewzNZBMaxFileSize, log)
+				if err != nil {
+					return &stremResult{
+						error_level: logger.LevelError,
+						error_log:   "failed to fetch nzb",
+						error_video: store_video.StoreVideoNameDownloadFailed,
+					}, err
+				}
+				fileHeader, err := nzbFile.ToFileHeader()
+				if err != nil {
+					return &stremResult{
+						error_level: logger.LevelError,
+						error_log:   "failed to prepare nzb",
+						error_video: store_video.StoreVideoName500,
+					}, err
+				}
+				addParams.File = fileHeader
+			} else {
+				return &stremResult{
+					error_level: logger.LevelWarn,
+					error_log:   "nzb host not allowed",
+					error_video: store_video.StoreVideoNameDownloadFailed,
+				}, nil
+			}
 		}
 		addParams.APIKey = ctx.StoreAuthToken
 		addRes, err := newzStore.AddNewz(addParams)
@@ -130,7 +162,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 				strem.error_level = logger.LevelWarn
 				strem.error_video = store_video.StoreVideoNameDownloadFailed
 			}
-			return strem, nil
+			return strem, err
 		}
 
 		videoFiles := []store.File{}
@@ -190,7 +222,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			}, err
 		}
 
-		stremLinkCache.Add(cacheKey, link)
+		streamLinkCache.Add(cacheKey, link)
 
 		return &stremResult{
 			link: link,
@@ -226,10 +258,16 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, nzbUrl strin
 		return
 	}
 
-	newz := newznab_client.Newz{DownloadLink: nzbUrl}
-	nzbDoc, err := newz.FetchNZB(log)
+	nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), config.NewzNZBMaxFileSize, log)
 	if err != nil {
+		log.Error("failed to fetch nzb", "error", err)
 		redirectToStaticVideo(w, r, "", store_video.StoreVideoNameDownloadFailed)
+		return
+	}
+	nzbDoc, err := nzb.ParseBytes(nzbFile.Blob)
+	if err != nil {
+		log.Error("failed to parse nzb", "error", err)
+		redirectToStaticVideo(w, r, "", store_video.StoreVideoName500)
 		return
 	}
 
@@ -259,6 +297,8 @@ func handlePlayback(w http.ResponseWriter, r *http.Request) {
 		shared.ErrorBadRequest(r, "invalid nzbUrl").Send(w, r)
 		return
 	}
+	var isLockedDownload bool
+	encodedNzbUrl, isLockedDownload = strings.CutPrefix(encodedNzbUrl, "-")
 	nzbUrl, err := core.Base64Decode(encodedNzbUrl)
 	if err != nil {
 		shared.ErrorBadRequest(r, "invalid nzbUrl encoding").Send(w, r)
@@ -288,7 +328,7 @@ func handlePlayback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		handlePlaybackFromStore(w, r, ud, ctx, sid, storeCode, nzbUrl)
+		handlePlaybackFromStore(w, r, ud, ctx, sid, storeCode, nzbUrl, isLockedDownload)
 	case UserDataModeStream:
 		if !ctx.IsProxyAuthorized {
 			redirectToStaticVideo(w, r, "", store_video.StoreVideoName403)

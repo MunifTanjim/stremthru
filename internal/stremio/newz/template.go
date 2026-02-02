@@ -90,6 +90,10 @@ func getIndexerTypeOptions() []configure.ConfigOption {
 			Value: string(stremio_userdata.NewzIndexerTypeGeneric),
 			Label: "Generic",
 		},
+		{
+			Value: string(stremio_userdata.NewzIndexerTypeTorbox),
+			Label: "Torbox",
+		},
 	}
 	return options
 }
@@ -99,6 +103,7 @@ func newTemplateDataIndexer(index int, indexerType, name, url, apiKey string) Te
 		indexerType = string(stremio_userdata.NewzIndexerTypeGeneric)
 	}
 	idx := strconv.Itoa(index)
+	isTorbox := indexerType == string(stremio_userdata.NewzIndexerTypeTorbox)
 	return TemplateDataIndexer{
 		Type: configure.Config{
 			Key:      "indexers[" + idx + "].type",
@@ -120,7 +125,8 @@ func newTemplateDataIndexer(index int, indexerType, name, url, apiKey string) Te
 			Type:     configure.ConfigTypeURL,
 			Default:  url,
 			Title:    "URL",
-			Required: true,
+			Required: !isTorbox,
+			Disabled: isTorbox,
 		},
 		APIKey: configure.Config{
 			Key:     "indexers[" + idx + "].apikey",

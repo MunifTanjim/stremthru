@@ -581,6 +581,7 @@ func (c *StoreClient) AddNewz(params *store.AddNewzParams) (*store.AddNewzData, 
 	rParams := &CreateUsenetDownloadParams{
 		Ctx:  params.Ctx,
 		Link: params.Link,
+		File: params.File,
 	}
 	res, err := c.client.CreateUsenetDownload(rParams)
 	if err != nil {
