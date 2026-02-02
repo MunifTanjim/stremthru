@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.96.6](https://github.com/MunifTanjim/stremthru/compare/0.96.5...0.96.6) (2026-02-02)
+
+
+### Bug Fixes
+
+* **stremio/list:** add fallback for letterboxd user id detection ([0262d77](https://github.com/MunifTanjim/stremthru/commit/0262d77bed2517420cc4e087920c8219831da4e4))
+
 ## [0.96.5](https://github.com/MunifTanjim/stremthru/compare/0.96.4...0.96.5) (2026-01-28)
 
 
