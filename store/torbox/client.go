@@ -7,10 +7,13 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 var DefaultHTTPClient = config.DefaultHTTPClient
+
+var SearchAPIBaseURL = util.MustParseURL("https://search-api.torbox.app")
 
 type APIClientConfig struct {
 	BaseURL    string // default: https://api.torbox.app
@@ -91,4 +94,8 @@ func (c APIClient) Request(method, path string, params request.Context, v Respon
 		return res, err
 	}
 	return res, nil
+}
+
+func (c APIClient) RequestSearch(method, path string, params request.Context, v ResponseEnvelop) (*http.Response, error) {
+	return c.Request(method, SearchAPIBaseURL.JoinPath(path).String(), params, v)
 }
