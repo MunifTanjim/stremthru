@@ -3,6 +3,7 @@ package letterboxd
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
@@ -51,7 +52,35 @@ func FetchLetterboxdUserIdentifier(userName string) (lid string, err error) {
 		letterboxdIdentifierCache.Add(urlPath, lid)
 		return id, nil
 	}
-	return fetchLetterboxdIdentifier(urlPath)
+
+	lid, err = fetchLetterboxdIdentifier(urlPath)
+	if err == nil {
+		return lid, nil
+	}
+
+	log.Warn("failed to fetch user identifier via HEAD request", "error", err, "user_name", userName)
+
+	client := GetSystemClient()
+	res, err := client.Search(&SearchParams{
+		Input:   userName,
+		Include: SearchResultTypeMemberSearchItem,
+		PerPage: 10,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	for _, item := range res.Data.Items {
+		if item.Type == SearchResultTypeMemberSearchItem && strings.EqualFold(item.Member.Username, userName) {
+			lid = item.Member.Id
+			if err := letterboxdIdentifierCache.Add(urlPath, lid); err != nil {
+				return "", err
+			}
+			return lid, nil
+		}
+	}
+
+	return "", errors.New("not found")
 }
 
 func FetchLetterboxdListIdentifier(userName, listSlug string) (lid string, err error) {

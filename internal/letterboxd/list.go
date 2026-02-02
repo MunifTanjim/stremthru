@@ -8,6 +8,31 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 )
 
+type ListEntryOccurrence struct {
+	Rank   int    `json:"rank"`
+	FilmID string `json:"filmId"`
+}
+
+type ListSummary struct {
+	Id                   string                `json:"id"`
+	Name                 string                `json:"name"`
+	Version              int64                 `json:"version,omitempty"`
+	FilmCount            int                   `json:"filmCount"`
+	Published            bool                  `json:"published"`
+	Ranked               bool                  `json:"ranked"`
+	DescriptionLbml      string                `json:"descriptionLbml,omitempty"`
+	DescriptionTruncated bool                  `json:"descriptionTruncated,omitempty"`
+	SharePolicy          SharePolicy           `json:"sharePolicy"`
+	Owner                MemberSummary         `json:"owner"`
+	ClonedFrom           *ListIdentifier       `json:"clonedFrom,omitempty"`
+	PreviewEntries       []ListEntrySummary    `json:"previewEntries"`
+	EntriesOfNote        []ListEntryOccurrence `json:"entriesOfNote,omitempty"`
+	Description          string                `json:"description,omitempty"`
+	WhenCreated          string                `json:"whenCreated"`
+	WhenPublished        string                `json:"whenPublished,omitempty"`
+	WhenUpdated          string                `json:"whenUpdated"`
+}
+
 type Tag struct {
 	Code       string `json:"code"`
 	DisplayTag string `json:"displayTag"`
@@ -47,38 +72,6 @@ type ImageSize struct {
 
 type Image struct {
 	Sizes []ImageSize `json:"sizes"`
-}
-
-type MemberStatus string
-
-const (
-	MemberStatusCrew   MemberStatus = "Crew"
-	MemberStatusAlum   MemberStatus = "Alum"
-	MemberStatusHq     MemberStatus = "Hq"
-	MemberStatusPatron MemberStatus = "Patron"
-	MemberStatusPro    MemberStatus = "Pro"
-	MemberStatusMember MemberStatus = "Member"
-)
-
-type AccountStatus string
-
-const (
-	AccountStatusActive       AccountStatus = "Active"
-	AccountStatusMemorialized AccountStatus = "Memorialized"
-)
-
-type MemberSummary struct {
-	Id               string        `json:"id"`
-	Username         string        `json:"username"`
-	GivenName        string        `json:"givenName,omitempty"`
-	FamilyName       string        `json:"familyName,omitempty"`
-	DisplayName      string        `json:"displayName"`
-	ShortName        string        `json:"shortName"`
-	Pronoun          *Pronoun      `json:"pronoun,omitempty"`
-	Avatar           *Image        `json:"avatar,omitempty"`
-	MemberStatus     MemberStatus  `json:"memberStatus"`
-	HideAdsInContent bool          `json:"hideAdsInContent"`
-	AccountStatus    AccountStatus `json:"accountStatus"`
 }
 
 type ListIdentifier struct {

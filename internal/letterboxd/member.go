@@ -7,6 +7,38 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 )
 
+type MemberStatus string
+
+const (
+	MemberStatusCrew   MemberStatus = "Crew"
+	MemberStatusAlum   MemberStatus = "Alum"
+	MemberStatusHq     MemberStatus = "Hq"
+	MemberStatusPatron MemberStatus = "Patron"
+	MemberStatusPro    MemberStatus = "Pro"
+	MemberStatusMember MemberStatus = "Member"
+)
+
+type AccountStatus string
+
+const (
+	AccountStatusActive       AccountStatus = "Active"
+	AccountStatusMemorialized AccountStatus = "Memorialized"
+)
+
+type MemberSummary struct {
+	Id               string        `json:"id"`
+	Username         string        `json:"username"`
+	GivenName        string        `json:"givenName,omitempty"`
+	FamilyName       string        `json:"familyName,omitempty"`
+	DisplayName      string        `json:"displayName"`
+	ShortName        string        `json:"shortName"`
+	Pronoun          *Pronoun      `json:"pronoun,omitempty"`
+	Avatar           *Image        `json:"avatar,omitempty"`
+	MemberStatus     MemberStatus  `json:"memberStatus"`
+	HideAdsInContent bool          `json:"hideAdsInContent"`
+	AccountStatus    AccountStatus `json:"accountStatus"`
+}
+
 type FetchMemberWatchlistData struct {
 	ResponseError
 	Next  string        `json:"next"`
