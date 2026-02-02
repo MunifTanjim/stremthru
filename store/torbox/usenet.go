@@ -1,6 +1,7 @@
 package torbox
 
 import (
+	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -71,6 +72,7 @@ const (
 
 type CreateUsenetDownloadParams struct {
 	Ctx
+	File           *multipart.FileHeader
 	Link           string
 	Name           string
 	Password       string
@@ -79,19 +81,39 @@ type CreateUsenetDownloadParams struct {
 }
 
 func (c APIClient) CreateUsenetDownload(params *CreateUsenetDownloadParams) (APIResponse[CreateUsenetDownloadData], error) {
-	form := &url.Values{}
-	form.Add("link", params.Link)
-	if params.Name != "" {
-		form.Add("name", params.Name)
+	if params.Link != "" {
+		form := &url.Values{}
+		form.Add("link", params.Link)
+		form.Add("as_queued", strconv.FormatBool(params.AsQueued))
+		if params.Name != "" {
+			form.Add("name", params.Name)
+		}
+		if params.Password != "" {
+			form.Add("password", params.Password)
+		}
+		if params.PostProcessing != 0 {
+			form.Add("post_processing", strconv.Itoa(int(params.PostProcessing-1)))
+		}
+		params.Form = form
+	} else {
+		form := &multipart.Form{}
+		form.File = map[string][]*multipart.FileHeader{
+			"file": {params.File},
+		}
+		form.Value = map[string][]string{
+			"as_queued": {strconv.FormatBool(params.AsQueued)},
+		}
+		if params.Name != "" {
+			form.Value["name"] = []string{params.Name}
+		}
+		if params.Password != "" {
+			form.Value["password"] = []string{params.Password}
+		}
+		if params.PostProcessing != 0 {
+			form.Value["post_processing"] = []string{strconv.Itoa(int(params.PostProcessing - 1))}
+		}
+		params.MultiPartForm = form
 	}
-	if params.Password != "" {
-		form.Add("password", params.Password)
-	}
-	if params.PostProcessing != 0 {
-		form.Add("post_processing", strconv.Itoa(int(params.PostProcessing-1)))
-	}
-	form.Add("as_queued", strconv.FormatBool(params.AsQueued))
-	params.Form = form
 	response := &Response[CreateUsenetDownloadData]{}
 	res, err := c.Request("POST", "/v1/api/usenet/createusenetdownload", params, response)
 	return newAPIResponse(res, response.Data, response.Detail), err

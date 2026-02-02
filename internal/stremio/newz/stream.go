@@ -36,8 +36,10 @@ var indexerSearchCache = cache.NewCache[[]newznab_client.Newz](&cache.CacheConfi
 
 type WrappedStream struct {
 	*stremio.Stream
-	R      *stremio_transformer.StreamExtractorResult
-	nzbURL string
+	R              *stremio_transformer.StreamExtractorResult
+	nzbURL         string
+	lockedDownload bool
+	lockedProvider string
 }
 
 func (s WrappedStream) IsSortable() bool {
@@ -182,7 +184,7 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *RequestContext, stremTy
 				},
 				Age:      item.Age(),
 				Category: stremType,
-				Hash:     item.MD5(),
+				Hash:     item.GetHash(),
 				Indexer:  indexer.Name,
 				TTitle:   item.Title,
 			}
@@ -191,8 +193,10 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *RequestContext, stremTy
 			}
 
 			wrappedStreams = append(wrappedStreams, WrappedStream{
-				nzbURL: item.DownloadLink,
-				R:      data,
+				lockedDownload: item.LockedDownload,
+				lockedProvider: item.LockedProvider,
+				nzbURL:         item.DownloadLink,
+				R:              data,
 				Stream: &stremio.Stream{
 					Name:        data.Addon.Name,
 					Description: data.TTitle,
@@ -337,12 +341,12 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		hash := wStream.R.Hash
 
 		nzbUrl := core.Base64Encode(wStream.nzbURL)
-		if includeStream {
+		if includeStream && !wStream.lockedDownload {
 			wStream.R.Store.Code = ""
 			wStream.R.Store.Name = ""
 			wStream.R.Store.IsCached = false
 			wStream.R.Store.IsProxied = false
-			wasPreviouslySelected := newznab_client.IsNZBCached(wStream.R.Hash)
+			wasPreviouslySelected := shared.IsNZBCached(wStream.R.Hash)
 			stream, err := streamTemplate.Execute(wStream.Stream, wStream.R)
 			if err != nil {
 				SendError(w, r, err)
@@ -363,8 +367,15 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if includeDebrid {
+			lockedProvider := strings.ToLower(wStream.lockedProvider)
+
 			if storeCode, isCached := isCachedByHash[hash]; isCached && storeCode != "" {
 				storeName := store.StoreCode(strings.ToLower(storeCode)).Name()
+
+				if lockedProvider != "" && lockedProvider != string(storeName) {
+					continue
+				}
+
 				wStream.R.Store.Code = storeCode
 				wStream.R.Store.Name = string(storeName)
 				wStream.R.Store.IsCached = true
@@ -374,7 +385,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 					SendError(w, r, err)
 					return
 				}
-				steamUrl := streamBaseUrl.JoinPath(string(UserDataModeDebrid), strings.ToLower(storeCode), url.PathEscape(nzbUrl), "/")
+				escapedNZBURL := url.PathEscape(nzbUrl)
+				if wStream.lockedDownload {
+					escapedNZBURL = "-" + escapedNZBURL
+				}
+				steamUrl := streamBaseUrl.JoinPath(string(UserDataModeDebrid), strings.ToLower(storeCode), escapedNZBURL, "/")
 				if wStream.R.TTitle != "" {
 					steamUrl = steamUrl.JoinPath(url.PathEscape(wStream.R.TTitle))
 				}
@@ -385,6 +400,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				for i := range stores {
 					s := &stores[i]
 					storeName := s.Store.GetName()
+
+					if lockedProvider != "" && lockedProvider != string(storeName) {
+						continue
+					}
+
 					storeCode := storeName.Code()
 					if hasErrByStoreCode.Has(strings.ToUpper(string(storeCode))) {
 						continue
@@ -400,7 +420,11 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-					steamUrl := streamBaseUrl.JoinPath(string(UserDataModeDebrid), string(storeCode), url.PathEscape(nzbUrl), "/")
+					escapedNZBURL := url.PathEscape(nzbUrl)
+					if wStream.lockedDownload {
+						escapedNZBURL = "-" + escapedNZBURL
+					}
+					steamUrl := streamBaseUrl.JoinPath(string(UserDataModeDebrid), string(storeCode), escapedNZBURL, "/")
 					if wStream.R.TTitle != "" {
 						steamUrl = steamUrl.JoinPath(url.PathEscape(wStream.R.TTitle))
 					}
