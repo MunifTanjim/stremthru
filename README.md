@@ -252,6 +252,107 @@ Max number of upstream allowed on public instance.
 
 Max number of stores allowed on public instance.
 
+#### StremThru Newz Config
+
+##### `STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT`
+
+Max timeout for newz indexer requests, default `15s`. Minimum `2s`, maximum `60s`.
+
+#### Newz Config
+
+##### `STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM`
+
+Maximum number of concurrent connections per stream, default `8`.
+
+##### `STREMTHRU_NEWZ_NZB_CACHE_SIZE`
+
+Size of NZB file cache, default `512MB`.
+
+##### `STREMTHRU_NEWZ_NZB_CACHE_TTL`
+
+TTL for cached NZB files, default `24h`. Minimum `6h`.
+
+##### `STREMTHRU_NEWZ_NZB_LINK_MODE`
+
+Comma separated list of NZB link mode config, in `hostname:mode` format.
+
+| `mode`     | Description                 |
+| ---------- | --------------------------- |
+| `proxy`    | Act as a proxy for NZB file |
+| `redirect` | Redirect to NZB url         |
+
+If `hostname` is `*`, it is used as fallback. Default `*:proxy`.
+
+##### `STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE`
+
+Maximum NZB file size allowed, default `50MB`.
+
+##### `STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE`
+
+Size of Usenet segment cache, default `10GB`.
+
+##### `STREMTHRU_NEWZ_STREAM_BUFFER_SIZE`
+
+Buffer size for streaming Usenet content, default `200MB`.
+
+##### `STREMTHRU_NEWZ_QUERY_HEADER`
+
+Custom headers for indexer query requests.
+
+Format:
+
+```
+[query_type]
+:preset_name:
+Header-Name: Header-Value
+```
+
+`query_type` can be `*` (fallback), `movie`, `tv`.
+
+Available `preset_name`:
+
+- `chrome`
+- `prowlarr`
+- `radarr`
+- `sonarr`
+
+Example:
+
+```
+[*]
+:prowlarr:
+
+[movie]
+:radarr:
+
+[tv]
+:sonarr:
+Header-Name: Header-Value
+```
+
+##### `STREMTHRU_NEWZ_GRAB_HEADER`
+
+Custom headers for NZB file download requests.
+
+Format:
+
+```
+:preset_name:
+Header-Name: Header-Value
+```
+
+Available `preset_name`:
+
+- `chrome`
+- `nzbget`
+- `sabnzbd`
+
+Example:
+
+```
+:sabnzbd:
+```
+
 #### AniList Integration
 
 ##### `STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME`
