@@ -11,7 +11,8 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
+	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/store/alldebrid"
 	"github.com/MunifTanjim/stremthru/store/debrider"
@@ -138,7 +139,7 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 		if err != nil {
 			return "", err
 		}
-		encodedToken = "base64." + core.Base64EncodeByte(blob)
+		encodedToken = "base64." + util.Base64EncodeByte(blob)
 	} else {
 		linkBlob := link
 		if headers != nil {
@@ -158,7 +159,7 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 			encLink = encryptedLink
 			encFormat = core.EncryptionFormat
 		} else {
-			encLink = core.Base64Encode(linkBlob)
+			encLink = util.Base64Encode(linkBlob)
 			encFormat = "base64"
 		}
 
@@ -195,7 +196,7 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 	return pLink.String(), nil
 }
 
-func ProxyWrapLink(r *http.Request, ctx *context.StoreContext, link string, filename string) (string, error) {
+func ProxyWrapLink(r *http.Request, ctx *storecontext.Context, link string, filename string) (string, error) {
 	storeName := string(ctx.Store.GetName())
 	if config.StoreContentProxy.IsEnabled(storeName) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName) {
 		if ctx.IsProxyAuthorized {
@@ -211,7 +212,7 @@ func ProxyWrapLink(r *http.Request, ctx *context.StoreContext, link string, file
 	return link, nil
 }
 
-func GenerateStremThruLink(r *http.Request, ctx *context.StoreContext, link string, filename string) (*store.GenerateLinkData, error) {
+func GenerateStremThruLink(r *http.Request, ctx *storecontext.Context, link string, filename string) (*store.GenerateLinkData, error) {
 	params := &store.GenerateLinkParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Link = link
@@ -255,7 +256,7 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 	}
 
 	if encodedBlob, ok := strings.CutPrefix(encodedToken, "base64."); ok {
-		blob, err := core.Base64DecodeToByte(encodedBlob)
+		blob, err := util.Base64DecodeToByte(encodedBlob)
 		if err != nil {
 			return "", "", nil, "", err
 		}
@@ -290,7 +291,7 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 
 		var linkBlob string
 		if claims.Data.EncFormat == "base64" {
-			blob, err := core.Base64Decode(claims.Data.EncLink)
+			blob, err := util.Base64Decode(claims.Data.EncLink)
 			if err != nil {
 				return "", "", nil, "", err
 			}

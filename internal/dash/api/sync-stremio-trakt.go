@@ -71,7 +71,7 @@ func handleCreateStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -81,12 +81,12 @@ func handleCreateStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing != nil {
-		ErrorBadRequest(r, "link already exists").Send(w, r)
+		ErrorBadRequest(r).WithMessage("link already exists").Send(w, r)
 		return
 	}
 
 	if !request.SyncConfig.Watched.Direction.IsValid() {
-		ErrorBadRequest(r, "invalid sync direction").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid sync direction").Send(w, r)
 		return
 	}
 
@@ -113,7 +113,7 @@ func handleGetStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -139,12 +139,12 @@ func handleUpdateStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
 	if !request.SyncConfig.Watched.Direction.IsValid() {
-		ErrorBadRequest(r, "invalid sync direction").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid sync direction").Send(w, r)
 		return
 	}
 
@@ -166,7 +166,7 @@ func handleDeleteStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -187,7 +187,7 @@ func handleSyncStremioTraktLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -204,7 +204,7 @@ func handleResetStremioTraktLinkSyncState(w http.ResponseWriter, r *http.Request
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 

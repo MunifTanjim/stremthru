@@ -7,7 +7,6 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -27,7 +26,7 @@ func getRDDownloadsCacheKey(idStoreCode, storeToken string) string {
 	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
-func getRDWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId) stremio.Meta {
+func getRDWebDLsMeta(r *http.Request, ctx *Ctx, idr *ParsedId) stremio.Meta {
 	released := time.Now().UTC()
 
 	log := ctx.Log

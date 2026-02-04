@@ -9,7 +9,6 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -23,7 +22,7 @@ func getPMItemsCacheKey(idStoreCode, storeToken string) string {
 	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
-func getPMWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) (stremio.Meta, error) {
+func getPMWebDLsMeta(r *http.Request, ctx *Ctx, idr *ParsedId, eud string) (stremio.Meta, error) {
 	released := time.Now().UTC()
 
 	log := ctx.Log

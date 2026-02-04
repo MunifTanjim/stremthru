@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MunifTanjim/stremthru/internal/context"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -32,7 +31,7 @@ func parseCatalogId(id string, ud *UserData) (idx int, catalogId string, err err
 	return idx, catalogId, nil
 }
 
-func (ud UserData) fetchAddonCatalog(ctx *context.StoreContext, w http.ResponseWriter, r *http.Request, rType, id string) {
+func (ud UserData) fetchAddonCatalog(ctx *Ctx, w http.ResponseWriter, r *http.Request, rType, id string) {
 	idx, catalogId, err := parseCatalogId(id, &ud)
 	if err != nil {
 		SendError(w, r, err)
@@ -47,7 +46,7 @@ func (ud UserData) fetchAddonCatalog(ctx *context.StoreContext, w http.ResponseW
 	})
 }
 
-func (ud UserData) fetchCatalog(ctx *context.StoreContext, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
+func (ud UserData) fetchCatalog(ctx *Ctx, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
 	if id == catalog_id_calendar_videos || id == catalog_id_last_videos {
 		return ud.fetchCatalogWithMetasDetails(ctx, rType, id, extra)
 	}
@@ -87,7 +86,7 @@ func (ud UserData) fetchCatalog(ctx *context.StoreContext, rType, id, extra stri
 	return &res.Data, nil
 }
 
-func (ud UserData) fetchCatalogWithMetasDetails(ctx *context.StoreContext, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
+func (ud UserData) fetchCatalogWithMetasDetails(ctx *Ctx, rType, id, extra string) (*stremio.CatalogHandlerResponse, error) {
 	log := ctx.Log
 
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameCatalog, rType, id)

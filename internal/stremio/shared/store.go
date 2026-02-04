@@ -5,7 +5,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -38,7 +37,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 	return options
 }
 
-func WaitForMagnetStatus(ctx *context.StoreContext, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
+func WaitForMagnetStatus(ctx *Ctx, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
 	retry := 0
 	for m.Status != status && retry < maxRetry {
 		gmParams := &store.GetMagnetParams{
@@ -74,7 +73,7 @@ func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
 	return options
 }
 
-func WaitForNewzStatus(ctx *context.StoreContext, data *store.GetNewzData, status store.NewzStatus, maxRetry int, retryInterval time.Duration) (*store.GetNewzData, error) {
+func WaitForNewzStatus(ctx *Ctx, data *store.GetNewzData, status store.NewzStatus, maxRetry int, retryInterval time.Duration) (*store.GetNewzData, error) {
 	retry := 0
 	for data.Status != status && retry < maxRetry {
 		params := &store.GetNewzParams{

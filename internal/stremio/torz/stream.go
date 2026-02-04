@@ -81,7 +81,7 @@ type indexerSearchQuery struct {
 
 var torrentFetchPool = pond.NewPool(20)
 
-func GetStreamsFromIndexers(ctx *RequestContext, stremType, stremId string) ([]WrappedStream, []string, error) {
+func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStream, []string, error) {
 	if len(ctx.Indexers) == 0 {
 		return []WrappedStream{}, []string{}, nil
 	}
@@ -863,7 +863,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 				identifier := hash
 				if wStream.R.IsPrivate {
-					identifier += "-" + core.Base64Encode(wStream.torrentLink)
+					identifier += "-" + util.Base64Encode(wStream.torrentLink)
 				}
 				steamUrl := streamBaseUrl.JoinPath(string(storeCode), identifier, strconv.Itoa(wStream.R.File.Idx), "/")
 				if wStream.R.File.Name != "" {

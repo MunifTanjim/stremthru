@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	llog "github.com/MunifTanjim/stremthru/internal/logger/log"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
@@ -439,7 +438,7 @@ var config = func() Config {
 	proxyAuthPasswordMap := make(UserPasswordMap)
 
 	for _, cred := range proxyAuthCredList {
-		if basicAuth, err := core.ParseBasicAuth(cred); err == nil {
+		if basicAuth, err := util.ParseBasicAuth(cred); err == nil {
 			proxyAuthPasswordMap[basicAuth.Username] = basicAuth.Password
 		}
 	}
@@ -505,7 +504,7 @@ var config = func() Config {
 	}
 
 	defaultPeerUri := ""
-	if peerUri, err := core.Base64Decode("aHR0cHM6Ly9zdHJlbXRocnUuMTMzNzcwMDEueHl6"); err == nil && buddyUrl == "" {
+	if peerUri, err := util.Base64Decode("aHR0cHM6Ly9zdHJlbXRocnUuMTMzNzcwMDEueHl6"); err == nil && buddyUrl == "" {
 		defaultPeerUri = peerUri
 	}
 	peerUri := getEnv("STREMTHRU_PEER_URI")

@@ -60,7 +60,7 @@ func handleCreateTraktAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.OAuthTokenId == "" {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "oauth_token_id",
 			Message:  "missing oauth_token_id",
 		}).Send(w, r)
@@ -84,7 +84,7 @@ func handleGetTraktAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if account == nil {
-		ErrorNotFound(r, "trakt account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("trakt account not found").Send(w, r)
 		return
 	}
 
@@ -110,7 +110,7 @@ func handleDeleteTraktAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "trakt account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("trakt account not found").Send(w, r)
 		return
 	}
 

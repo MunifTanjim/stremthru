@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -235,11 +236,11 @@ type LockedFileLink string
 const lockedFileLinkPrefix = "stremthru://store/pikpak/"
 
 func (l LockedFileLink) encodeData(rootFileId, fileId string) string {
-	return core.Base64Encode(rootFileId + ":" + fileId)
+	return util.Base64Encode(rootFileId + ":" + fileId)
 }
 
 func (l LockedFileLink) decodeData(encoded string) (rootFileId, fileId string, err error) {
-	decoded, err := core.Base64Decode(encoded)
+	decoded, err := util.Base64Decode(encoded)
 	if err != nil {
 		return "", "", err
 	}

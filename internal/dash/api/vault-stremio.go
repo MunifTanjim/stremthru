@@ -73,7 +73,7 @@ func handleCreateStremioAccount(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -83,7 +83,7 @@ func handleCreateStremioAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing != nil {
-		ErrorBadRequest(r, "email already exists").Send(w, r)
+		ErrorBadRequest(r).WithMessage("email already exists").Send(w, r)
 		return
 	}
 
@@ -95,7 +95,7 @@ func handleCreateStremioAccount(w http.ResponseWriter, r *http.Request) {
 
 	if err := account.Refresh(true); err != nil {
 		if errors.Is(err, stremio_account.ErrorInvalidCredentials) {
-			ErrorBadRequest(r, "Invalid Stremio credentials").Send(w, r)
+			ErrorBadRequest(r).WithMessage("Invalid Stremio credentials").Send(w, r)
 			return
 		}
 		SendError(w, r, err)
@@ -113,14 +113,14 @@ func handleGetStremioAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if account == nil {
-		ErrorNotFound(r, "stremio account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("stremio account not found").Send(w, r)
 		return
 	}
 
 	forceRefresh := util.StringToBool(r.URL.Query().Get("refresh"), false)
 	if err := account.Refresh(forceRefresh); err != nil {
 		if errors.Is(err, stremio_account.ErrorInvalidCredentials) {
-			ErrorBadRequest(r, "Invalid Stremio credentials").Send(w, r)
+			ErrorBadRequest(r).WithMessage("Invalid Stremio credentials").Send(w, r)
 			return
 		}
 		SendError(w, r, err)
@@ -144,7 +144,7 @@ func handleUpdateStremioAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.Password == "" {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "password",
 			Message:  "missing password",
 		}).Send(w, r)
@@ -157,7 +157,7 @@ func handleUpdateStremioAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if account == nil {
-		ErrorNotFound(r, "Account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("Account not found").Send(w, r)
 		return
 	}
 
@@ -165,7 +165,7 @@ func handleUpdateStremioAccount(w http.ResponseWriter, r *http.Request) {
 
 	if err := account.Refresh(true); err != nil {
 		if errors.Is(err, stremio_account.ErrorInvalidCredentials) {
-			ErrorBadRequest(r, "Invalid Stremio credentials").Send(w, r)
+			ErrorBadRequest(r).WithMessage("Invalid Stremio credentials").Send(w, r)
 			return
 		}
 		SendError(w, r, err)
@@ -184,7 +184,7 @@ func handleDeleteStremioAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "stremio account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("stremio account not found").Send(w, r)
 		return
 	}
 
@@ -212,7 +212,7 @@ func handleGetStremioAccountUserdata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if account == nil {
-		ErrorNotFound(r, "stremio account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("stremio account not found").Send(w, r)
 		return
 	}
 
@@ -248,14 +248,14 @@ func handleSyncStremioAccountUserdata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if account == nil {
-		ErrorNotFound(r, "stremio account not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("stremio account not found").Send(w, r)
 		return
 	}
 
 	token, err := account.GetValidToken()
 	if err != nil {
 		if errors.Is(err, stremio_account.ErrorInvalidCredentials) {
-			ErrorBadRequest(r, "Invalid Stremio credentials").Send(w, r)
+			ErrorBadRequest(r).WithMessage("Invalid Stremio credentials").Send(w, r)
 			return
 		}
 		SendError(w, r, err)

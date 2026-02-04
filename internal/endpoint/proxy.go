@@ -79,7 +79,7 @@ func handleProxifyLinks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAuthorized, user, password := getProxyAuthorization(r, true)
+	isAuthorized, user, password := server.GetProxyAuthorization(r, true)
 	if !isAuthorized {
 		w.Header().Add(server.HEADER_STREMTHRU_AUTHENTICATE, "Basic")
 		shared.ErrorForbidden(r).Send(w, r)
@@ -174,7 +174,7 @@ func handleProxifyLinks(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddProxyEndpoints(mux *http.ServeMux) {
-	withCors := shared.Middleware(shared.EnableCORS)
+	withCors := server.Middleware(shared.EnableCORS)
 
 	mux.HandleFunc("/v0/proxy", withCors(handleProxifyLinks))
 	mux.HandleFunc("/v0/proxy/{token}", withCors(handleProxyLinkAccess))

@@ -86,13 +86,13 @@ func handleCreateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
 	indexer, err := newznab_indexer.NewNewznabIndexer(request.URL, request.APIKey)
 	if err != nil {
-		ErrorBadRequest(r, "Invalid Newznab URL").WithCause(err).Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Newznab URL").WithCause(err).Send(w, r)
 		return
 	}
 
@@ -103,7 +103,7 @@ func handleCreateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 			SendError(w, r, err)
 			return
 		} else if rlc == nil {
-			ErrorBadRequest(r, "").Append(Error{
+			ErrorBadRequest(r).Append(Error{
 				Location: "rate_limit_config_id",
 				Message:  "rate limit config not found",
 			}).Send(w, r)
@@ -116,7 +116,7 @@ func handleCreateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Newznab URL or API key").WithCause(err).Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Newznab URL or API key").WithCause(err).Send(w, r)
 		return
 	}
 
@@ -132,7 +132,7 @@ func handleGetNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		ErrorBadRequest(r, "invalid id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
 		return
 	}
 
@@ -142,7 +142,7 @@ func handleGetNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("newznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -159,7 +159,7 @@ func handleUpdateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		ErrorBadRequest(r, "invalid id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
 		return
 	}
 
@@ -175,7 +175,7 @@ func handleUpdateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("newznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -196,7 +196,7 @@ func handleUpdateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if config == nil {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "rate_limit_config_id",
 			Message:  "rate limit config not found",
 		}).Send(w, r)
@@ -209,7 +209,7 @@ func handleUpdateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Newznab API key").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Newznab API key").Send(w, r)
 		return
 	}
 
@@ -225,7 +225,7 @@ func handleDeleteNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		ErrorBadRequest(r, "invalid id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
 		return
 	}
 
@@ -235,7 +235,7 @@ func handleDeleteNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("newznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -251,7 +251,7 @@ func handleTestNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		ErrorBadRequest(r, "invalid id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
 		return
 	}
 
@@ -261,12 +261,12 @@ func handleTestNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "newznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("newznab indexer not found").Send(w, r)
 		return
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Connection test failed").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Connection test failed").Send(w, r)
 		return
 	}
 

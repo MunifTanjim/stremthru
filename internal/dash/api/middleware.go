@@ -6,7 +6,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/server"
-	"github.com/MunifTanjim/stremthru/internal/shared"
 )
 
 type reqCtxtKey struct{}
@@ -29,7 +28,7 @@ func withAPIContext(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := getSession(w, r)
 		if err != nil {
-			ErrorInternalServerError(r, "").WithCause(err).Send(w, r)
+			ErrorInternalServerError(r).WithCause(err).Send(w, r)
 			return
 		}
 		ctx := &ReqCtx{
@@ -41,15 +40,15 @@ func withAPIContext(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func WithMiddleware(middlewares ...shared.MiddlewareFunc) shared.MiddlewareFunc {
-	return shared.Middleware(append([]shared.MiddlewareFunc{withAPIContext}, middlewares...)...)
+func WithMiddleware(middlewares ...server.MiddlewareFunc) server.MiddlewareFunc {
+	return server.Middleware(append([]server.MiddlewareFunc{withAPIContext}, middlewares...)...)
 }
 
 func EnsureAuthed(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := GetReqCtx(r)
 		if !ctx.IsAuthed() {
-			ErrorUnauthorized(r, "").Send(w, r)
+			ErrorUnauthorized(r).Send(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

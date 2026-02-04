@@ -53,11 +53,11 @@ func handleListTorrents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originInstanceId := r.Header.Get(server.HEADER_ORIGIN_INSTANCE_ID)
+	originInstanceId := r.Header.Get(server.HEADER_STREMTHRU_ORIGIN_INSTANCE_ID)
 	if originInstanceId == "" {
-		w.Header().Set(server.HEADER_ORIGIN_INSTANCE_ID, originInstanceId)
+		w.Header().Set(server.HEADER_STREMTHRU_ORIGIN_INSTANCE_ID, originInstanceId)
 	} else {
-		w.Header().Set(server.HEADER_ORIGIN_INSTANCE_ID, config.InstanceId)
+		w.Header().Set(server.HEADER_STREMTHRU_ORIGIN_INSTANCE_ID, config.InstanceId)
 	}
 
 	localOnly := query.Get("local_only") != ""

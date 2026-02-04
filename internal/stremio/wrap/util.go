@@ -5,6 +5,8 @@ import (
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
+type Ctx = stremio_shared.Ctx
+
 var IsMethod = shared.IsMethod
 var SendError = shared.SendError
 var ExtractRequestBaseURL = shared.ExtractRequestBaseURL

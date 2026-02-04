@@ -91,7 +91,7 @@ func handleCreateUsenetServer(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -142,7 +142,7 @@ func handleGetUsenetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if server == nil {
-		ErrorNotFound(r, "usenet server not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("usenet server not found").Send(w, r)
 		return
 	}
 
@@ -169,14 +169,14 @@ func handleUpdateUsenetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if server == nil {
-		ErrorNotFound(r, "server not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("server not found").Send(w, r)
 		return
 	}
 
 	oldProviderId := server.ProviderId()
 
 	if err := usenetmanager.LockServer(oldProviderId); err != nil {
-		ErrorLocked(r, "cannot modify server with active connections").Send(w, r)
+		ErrorLocked(r).WithMessage("cannot modify server with active connections").Send(w, r)
 		return
 	}
 	defer usenetmanager.UnlockServer(oldProviderId)
@@ -245,14 +245,14 @@ func handleDeleteUsenetServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "usenet server not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("usenet server not found").Send(w, r)
 		return
 	}
 
 	providerId := existing.ProviderId()
 
 	if err := usenetmanager.LockServer(providerId); err != nil {
-		ErrorLocked(r, "cannot delete server with active connections").Send(w, r)
+		ErrorLocked(r).WithMessage("cannot delete server with active connections").Send(w, r)
 		return
 	}
 	defer usenetmanager.UnlockServer(providerId)
@@ -295,7 +295,7 @@ func handlePingUsenetServer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if existing == nil {
-			ErrorNotFound(r, "usenet server not found").Send(w, r)
+			ErrorNotFound(r).WithMessage("usenet server not found").Send(w, r)
 			return
 		}
 		if request.Password == "" {
@@ -338,7 +338,7 @@ func handlePingUsenetServer(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if nntpErr, ok := err.(*nntp.Error); ok {
-			ErrorBadRequest(r, nntpErr.Error()).Send(w, r)
+			ErrorBadRequest(r).WithMessage(nntpErr.Error()).Send(w, r)
 			return
 		}
 		SendError(w, r, err)

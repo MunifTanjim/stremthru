@@ -149,7 +149,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		stremLinkCache.Add(cacheKey, data.Link)
 		http.Redirect(w, r, data.Link, http.StatusFound)
 	} else {
-		stLink, err := shared.GenerateStremThruLink(r, ctx, url, fileName)
+		stLink, err := shared.GenerateStremThruLink(r, &ctx.Context, url, fileName)
 		if err != nil {
 			LogError(r, "failed to generate stremthru link", err)
 			store_video.Redirect("500", w, r)
