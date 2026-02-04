@@ -9,8 +9,8 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/server"
+	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
 )
 
 type HealthData struct {
@@ -49,7 +49,7 @@ type HealthDebugData struct {
 }
 
 func handleHealthDebug(w http.ResponseWriter, r *http.Request) {
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 
 	data := &HealthDebugData{
 		Time:    time.Now().Format(time.RFC3339),
@@ -130,5 +130,5 @@ func handleHealthDebug(w http.ResponseWriter, r *http.Request) {
 
 func AddHealthEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/v0/health", handleHealth)
-	mux.HandleFunc("/v0/health/__debug__", StoreMiddleware(ProxyAuthContext, StoreContext)(handleHealthDebug))
+	mux.HandleFunc("/v0/health/__debug__", server.Middleware(StoreContext)(handleHealthDebug))
 }

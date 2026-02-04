@@ -81,7 +81,7 @@ func handleCreateRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -89,7 +89,7 @@ func handleCreateRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if existing != nil {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "name",
 			Message:  "name already exists",
 		}).Send(w, r)
@@ -124,7 +124,7 @@ func handleUpdateRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if existing == nil {
-		ErrorNotFound(r, "rate limit config not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("rate limit config not found").Send(w, r)
 		return
 	}
 
@@ -154,7 +154,7 @@ func handleUpdateRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -162,7 +162,7 @@ func handleUpdateRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if existingByName != nil && existingByName.Id != id {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "name",
 			Message:  "name already exists",
 		}).Send(w, r)
@@ -185,7 +185,7 @@ func handleDeleteRateLimitConfig(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if existing == nil {
-		ErrorNotFound(r, "rate limit config not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("rate limit config not found").Send(w, r)
 		return
 	}
 

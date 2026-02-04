@@ -20,6 +20,7 @@ import (
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"golang.org/x/sync/singleflight"
 )
@@ -45,7 +46,7 @@ type stremResult struct {
 	error_video string
 }
 
-func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserData, ctx *RequestContext, sid string, storeCode store.StoreCode, nzbUrl string, isLockedDownload bool) {
+func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserData, ctx *Ctx, sid string, storeCode store.StoreCode, nzbUrl string, isLockedDownload bool) {
 	log := server.GetReqCtx(r).Log
 
 	s := ud.GetStoreByCode(string(storeCode))
@@ -143,7 +144,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			return result, err
 		}
 
-		newz, err := stremio_shared.WaitForNewzStatus(ctx.StoreContext, &store.GetNewzData{
+		newz, err := stremio_shared.WaitForNewzStatus(&ctx.Ctx, &store.GetNewzData{
 			Id:     addRes.Id,
 			Hash:   addRes.Hash,
 			Status: addRes.Status,
@@ -213,7 +214,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			}, err
 		}
 
-		link, err = shared.ProxyWrapLink(r, ctx.StoreContext, linkRes.Link, file.GetName())
+		link, err = shared.ProxyWrapLink(r, &ctx.Context, linkRes.Link, file.GetName())
 		if err != nil {
 			return &stremResult{
 				error_level: logger.LevelError,
@@ -299,7 +300,7 @@ func handlePlayback(w http.ResponseWriter, r *http.Request) {
 	}
 	var isLockedDownload bool
 	encodedNzbUrl, isLockedDownload = strings.CutPrefix(encodedNzbUrl, "-")
-	nzbUrl, err := core.Base64Decode(encodedNzbUrl)
+	nzbUrl, err := util.Base64Decode(encodedNzbUrl)
 	if err != nil {
 		shared.ErrorBadRequest(r, "invalid nzbUrl encoding").Send(w, r)
 		return

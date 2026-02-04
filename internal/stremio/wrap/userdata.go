@@ -12,7 +12,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
@@ -204,11 +203,9 @@ func (uderr *userDataError) Error() string {
 	return str.String()
 }
 
-func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, error) {
-	rCtx := server.GetReqCtx(r)
-	ctx := &context.StoreContext{
-		Log: rCtx.Log,
-	}
+func (ud *UserData) GetRequestContext(r *http.Request) (*Ctx, error) {
+	ctx := &Ctx{}
+	ctx.Log = server.GetReqCtx(r).Log
 
 	udErr := &userDataError{}
 	if ud.RPDBAPIKey != "" && ud.TopPostersAPIKey != "" {
@@ -253,12 +250,12 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*context.StoreContext, e
 		return ctx, udErr
 	}
 
-	ctx.ClientIP = shared.GetClientIP(r, ctx)
+	ctx.ClientIP = shared.GetClientIP(r, &ctx.Context)
 
 	return ctx, nil
 }
 
-func (ud UserData) getUpstreamManifests(ctx *context.StoreContext, useCache bool) ([]stremio.Manifest, []error) {
+func (ud UserData) getUpstreamManifests(ctx *Ctx, useCache bool) ([]stremio.Manifest, []error) {
 	if ud.manifests == nil {
 		var wg sync.WaitGroup
 
@@ -302,7 +299,7 @@ func (ud UserData) getUpstreamManifests(ctx *context.StoreContext, useCache bool
 	return ud.manifests, nil
 }
 
-func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsResolver, error) {
+func (ud UserData) getUpstreamsResolver(ctx *Ctx) (upstreamsResolver, error) {
 	eud := ud.GetEncoded()
 
 	if ud.resolver == nil {
@@ -390,7 +387,7 @@ func (ud UserData) getUpstreamsResolver(ctx *context.StoreContext) (upstreamsRes
 	return ud.resolver, nil
 }
 
-func (ud UserData) getUpstreams(ctx *context.StoreContext, rName stremio.ResourceName, rType, id string) ([]UserDataUpstream, error) {
+func (ud UserData) getUpstreams(ctx *Ctx, rName stremio.ResourceName, rType, id string) ([]UserDataUpstream, error) {
 	switch rName {
 	case stremio.ResourceNameAddonCatalog:
 		return []UserDataUpstream{}, nil

@@ -50,11 +50,11 @@ type LockedFileLink string
 const lockedFileLinkPrefix = "stremthru://store/debrider/"
 
 func (l LockedFileLink) encodeData(taskId, fileName string) string {
-	return core.Base64Encode(taskId + ":" + fileName)
+	return util.Base64Encode(taskId + ":" + fileName)
 }
 
 func (l LockedFileLink) decodeData(encoded string) (taskId, fileName string, err error) {
-	decoded, err := core.Base64Decode(encoded)
+	decoded, err := util.Base64Decode(encoded)
 	if err != nil {
 		return "", "", err
 	}

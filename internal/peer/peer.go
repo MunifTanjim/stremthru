@@ -68,10 +68,10 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 	}
 
 	c.reqHeader = func(header *http.Header, params request.Context) {
-		header.Set("X-StremThru-Peer-Token", params.GetAPIKey(c.apiKey))
-		header.Set(server.HEADER_INSTANCE_ID, config.InstanceId)
-		header.Set("X-StremThru-Version", config.Version)
-		header.Add("User-Agent", c.agent)
+		header.Set(server.HEADER_STREMTHRU_PEER_TOKEN, params.GetAPIKey(c.apiKey))
+		header.Set(server.HEADER_STREMTHRU_INSTANCE_ID, config.InstanceId)
+		header.Set(server.HEADER_STREMTHRU_VERSION, config.Version)
+		header.Add(server.HEADER_USER_AGENT, c.agent)
 	}
 
 	return c
@@ -184,8 +184,8 @@ func (c APIClient) CheckMagnet(params *CheckMagnetParams) (request.APIResponse[s
 	}
 	params.Query.Set("local_only", "1")
 	params.Headers = &http.Header{
-		"X-StremThru-Store-Name":          []string{string(params.StoreName)},
-		"X-StremThru-Store-Authorization": []string{"Bearer " + params.StoreToken},
+		server.HEADER_STREMTHRU_STORE_NAME:          []string{string(params.StoreName)},
+		server.HEADER_STREMTHRU_STORE_AUTHORIZATION: []string{"Bearer " + params.StoreToken},
 	}
 
 	response := &Response[store.CheckMagnetData]{}
@@ -206,8 +206,8 @@ type TrackMagnetData struct{}
 
 func (c APIClient) TrackMagnet(params *TrackMagnetParams) (request.APIResponse[TrackMagnetData], error) {
 	params.Headers = &http.Header{
-		"X-StremThru-Store-Name":          []string{string(params.StoreName)},
-		"X-StremThru-Store-Authorization": []string{"Bearer " + params.StoreToken},
+		server.HEADER_STREMTHRU_STORE_NAME:          []string{string(params.StoreName)},
+		server.HEADER_STREMTHRU_STORE_AUTHORIZATION: []string{"Bearer " + params.StoreToken},
 	}
 	if config.PeerFlag.NoSpillTorz {
 		if params.Cached == nil {
@@ -244,9 +244,9 @@ func (c APIClient) ListTorrents(params *ListTorrentsByStremIdParams) (request.AP
 	}
 	params.Headers = &http.Header{}
 	if params.OriginInstanceId != "" {
-		params.Headers.Set(server.HEADER_ORIGIN_INSTANCE_ID, params.OriginInstanceId)
+		params.Headers.Set(server.HEADER_STREMTHRU_ORIGIN_INSTANCE_ID, params.OriginInstanceId)
 	} else {
-		params.Headers.Set(server.HEADER_ORIGIN_INSTANCE_ID, config.InstanceId)
+		params.Headers.Set(server.HEADER_STREMTHRU_ORIGIN_INSTANCE_ID, config.InstanceId)
 	}
 
 	response := &Response[ListTorrentsByStremIdData]{}

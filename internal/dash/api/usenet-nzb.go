@@ -80,16 +80,16 @@ func handleParseNzb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.MultipartForm.File == nil {
-		ErrorBadRequest(r, "missing file").Send(w, r)
+		ErrorBadRequest(r).WithMessage("missing file").Send(w, r)
 		return
 	}
 	fileHeaders := r.MultipartForm.File["file"]
 	if len(fileHeaders) == 0 {
-		ErrorBadRequest(r, "missing file").Send(w, r)
+		ErrorBadRequest(r).WithMessage("missing file").Send(w, r)
 		return
 	}
 	if len(fileHeaders) > 1 {
-		ErrorBadRequest(r, "multiple files provided").Send(w, r)
+		ErrorBadRequest(r).WithMessage("multiple files provided").Send(w, r)
 		return
 	}
 	fileHeader := fileHeaders[0]
@@ -103,7 +103,7 @@ func handleParseNzb(w http.ResponseWriter, r *http.Request) {
 	parsed, err := nzb.Parse(file)
 	if err != nil {
 		if parseErr, ok := err.(*nzb.ParseError); ok {
-			ErrorBadRequest(r, parseErr.Error()).Send(w, r)
+			ErrorBadRequest(r).WithMessage(parseErr.Error()).Send(w, r)
 			return
 		}
 		SendError(w, r, err)

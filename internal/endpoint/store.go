@@ -7,18 +7,18 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/buddy"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/kv"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
-func getUser(ctx *context.StoreContext) (*store.User, error) {
+func getUser(ctx *storecontext.Context) (*store.User, error) {
 	params := &store.GetUserParams{}
 	params.APIKey = ctx.StoreAuthToken
 	return ctx.Store.GetUser(params)
@@ -30,7 +30,7 @@ func handleStoreUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 	user, err := getUser(ctx)
 	SendResponse(w, r, 200, user, err)
 }
@@ -40,7 +40,7 @@ type AddMagnetPayload struct {
 	Torrent string `json:"torrent"`
 }
 
-func checkMagnet(ctx *context.StoreContext, magnets []string, sid string, localOnly bool) (*store.CheckMagnetData, error) {
+func checkMagnet(r *http.Request, ctx *storecontext.Context, magnets []string, sid string, localOnly bool) (*store.CheckMagnetData, error) {
 	params := &store.CheckMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnets = magnets
@@ -49,7 +49,7 @@ func checkMagnet(ctx *context.StoreContext, magnets []string, sid string, localO
 	if ctx.ClientIP != "" {
 		params.ClientIP = ctx.ClientIP
 	}
-	params.IsTrustedRequest, _ = peer_token.IsValid(ctx.PeerToken)
+	params.IsTrustedRequest, _ = peer_token.IsValid(peer_token.ExtractFromRequest(r))
 	data, err := ctx.Store.CheckMagnet(params)
 	if err == nil && data.Items == nil {
 		data.Items = []store.CheckMagnetDataItem{}
@@ -72,11 +72,11 @@ func hadleStoreMagnetsTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 
 	log := server.GetReqCtx(r).Log
 
-	isValidToken, err := peer_token.IsValid(ctx.PeerToken)
+	isValidToken, err := peer_token.IsValid(peer_token.ExtractFromRequest(r))
 	if err != nil {
 		log.Error("failed to validate peer token", "error", err)
 		SendError(w, r, err)
@@ -138,8 +138,8 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 
 	sid := queryParams.Get("sid")
 
-	ctx := context.GetStoreContext(r)
-	data, err := checkMagnet(ctx, magnets, sid, queryParams.Get("local_only") != "")
+	ctx := storecontext.Get(r)
+	data, err := checkMagnet(r, ctx, magnets, sid, queryParams.Get("local_only") != "")
 	if err == nil && data != nil {
 		for _, item := range data.Items {
 			item.Hash = strings.ToLower(item.Hash)
@@ -148,7 +148,7 @@ func handleStoreMagnetsCheck(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, data, err)
 }
 
-func listMagnets(ctx *context.StoreContext, r *http.Request) (*store.ListMagnetsData, error) {
+func listMagnets(ctx *storecontext.Context, r *http.Request) (*store.ListMagnetsData, error) {
 	queryParams := r.URL.Query()
 	limit, err := GetQueryInt(queryParams, "limit", 100)
 	if err != nil {
@@ -186,7 +186,7 @@ func handleStoreMagnetsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 	data, err := listMagnets(ctx, r)
 	if err == nil && data != nil {
 		for _, item := range data.Items {
@@ -196,7 +196,7 @@ func handleStoreMagnetsList(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, data, err)
 }
 
-func addMagnet(ctx *context.StoreContext, magnet string, torrent *multipart.FileHeader) (*store.AddMagnetData, error) {
+func addMagnet(ctx *storecontext.Context, magnet string, torrent *multipart.FileHeader) (*store.AddMagnetData, error) {
 	params := &store.AddMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Magnet = magnet
@@ -239,7 +239,7 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ctx := context.GetStoreContext(r)
+		ctx := storecontext.Get(r)
 
 		if payload.Magnet != "" {
 			data, err = addMagnet(ctx, payload.Magnet, nil)
@@ -273,7 +273,7 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 			fileHeader = fileHeaders[0]
 		}
 
-		ctx := context.GetStoreContext(r)
+		ctx := storecontext.Get(r)
 		data, err = addMagnet(ctx, "", fileHeader)
 
 	default:
@@ -304,7 +304,7 @@ func handleStoreMagnets(w http.ResponseWriter, r *http.Request) {
 	shared.ErrorMethodNotAllowed(r).Send(w, r)
 }
 
-func getMagnet(ctx *context.StoreContext, magnetId string) (*store.GetMagnetData, error) {
+func getMagnet(ctx *storecontext.Context, magnetId string) (*store.GetMagnetData, error) {
 	params := &store.GetMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Id = magnetId
@@ -330,7 +330,7 @@ func handleStoreMagnetGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 	data, err := getMagnet(ctx, magnetId)
 	if err == nil && data != nil {
 		data.Hash = strings.ToLower(data.Hash)
@@ -338,7 +338,7 @@ func handleStoreMagnetGet(w http.ResponseWriter, r *http.Request) {
 	SendResponse(w, r, 200, data, err)
 }
 
-func removeMagnet(ctx *context.StoreContext, magnetId string) (*store.RemoveMagnetData, error) {
+func removeMagnet(ctx *storecontext.Context, magnetId string) (*store.RemoveMagnetData, error) {
 	params := &store.RemoveMagnetParams{}
 	params.APIKey = ctx.StoreAuthToken
 	params.Id = magnetId
@@ -357,7 +357,7 @@ func handleStoreMagnetRemove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 	data, err := removeMagnet(ctx, magnetId)
 	SendResponse(w, r, 200, data, err)
 }
@@ -393,7 +393,7 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.GetStoreContext(r)
+	ctx := storecontext.Get(r)
 	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
 	SendResponse(w, r, 200, link, err)
 }
@@ -421,8 +421,8 @@ func handleStatic(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddStoreEndpoints(mux *http.ServeMux) {
-	withCors := shared.Middleware(shared.EnableCORS)
-	withStore := StoreMiddleware(ProxyAuthContext, StoreContext, StoreRequired)
+	withCors := server.Middleware(shared.EnableCORS)
+	withStore := server.Middleware(StoreContext, RequireStore)
 
 	mux.HandleFunc("/v0/store/user", withStore(handleStoreUser))
 	mux.HandleFunc("/v0/store/magnets", withStore(handleStoreMagnets))

@@ -122,7 +122,7 @@ func handleSabnzbdAddUrl(w http.ResponseWriter, r *http.Request, user string) {
 }
 
 func AddExperimentEndpoints(mux *http.ServeMux) {
-	withAdminAuth := shared.Middleware(AdminAuthed)
+	withAdminAuth := server.Middleware(server.AdminAuthed)
 
 	mux.HandleFunc("/__experiment__/zilean/torrents", withAdminAuth(handleExperimentZileanTorrents))
 

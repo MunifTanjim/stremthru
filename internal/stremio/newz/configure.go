@@ -116,7 +116,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stremio_shared.RedirectToConfigurePage(w, r, "newz", ud, true)
+		stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), true)
 		return
 	}
 

@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MunifTanjim/stremthru/internal/context"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -182,20 +182,16 @@ type Indexer struct {
 	Name string
 }
 
-type RequestContext struct {
-	*context.StoreContext
+type Ctx struct {
+	stremio_shared.Ctx
 	Indexers []Indexer
 }
 
-func (ud *UserData) GetRequestContext(r *http.Request) (*RequestContext, error) {
-	rCtx := server.GetReqCtx(r)
-	ctx := &RequestContext{
-		StoreContext: &context.StoreContext{
-			Log: rCtx.Log,
-		},
-	}
+func (ud *UserData) GetRequestContext(r *http.Request) (*Ctx, error) {
+	ctx := &Ctx{}
+	ctx.Log = server.GetReqCtx(r).Log
 
-	if err, errField := ud.UserDataStores.Prepare(ctx.StoreContext); err != nil {
+	if err, errField := ud.UserDataStores.Prepare(&ctx.Ctx); err != nil {
 		switch errField {
 		case "store":
 			return ctx, &userDataError{storeCode: []string{err.Error()}}
@@ -219,7 +215,7 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*RequestContext, error) 
 		}
 	}
 
-	ctx.ClientIP = shared.GetClientIP(r, ctx.StoreContext)
+	ctx.ClientIP = shared.GetClientIP(r, &ctx.Context)
 
 	if indexers, err := ud.UserDataNewzIndexers.Prepare(); err != nil {
 		return ctx, &userDataError{indexerURL: []string{err.Error()}}

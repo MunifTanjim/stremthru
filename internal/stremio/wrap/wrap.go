@@ -141,7 +141,7 @@ func commonMiddleware(next http.Handler) http.Handler {
 func AddStremioWrapEndpoints(mux *http.ServeMux) {
 	seedDefaultTransformerEntities()
 
-	withCors := shared.Middleware(shared.EnableCORS)
+	withCors := server.Middleware(shared.EnableCORS)
 
 	router := http.NewServeMux()
 

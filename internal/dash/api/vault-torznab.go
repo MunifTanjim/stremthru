@@ -86,7 +86,7 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -97,7 +97,7 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 
 	indexer, err := torznab_indexer.NewTorznabIndexer(indexerType, request.URL, request.APIKey)
 	if err != nil {
-		ErrorBadRequest(r, "Invalid Torznab URL").WithCause(err).Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Torznab URL").WithCause(err).Send(w, r)
 		return
 	}
 
@@ -110,7 +110,7 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 			SendError(w, r, err)
 			return
 		} else if rlc == nil {
-			ErrorBadRequest(r, "").Append(Error{
+			ErrorBadRequest(r).Append(Error{
 				Location: "rate_limit_config_id",
 				Message:  "rate limit config not found",
 			}).Send(w, r)
@@ -123,7 +123,7 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Torznab URL or API key").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Torznab URL or API key").Send(w, r)
 		return
 	}
 
@@ -144,7 +144,7 @@ func handleGetTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("torznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -172,7 +172,7 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("indexer not found").Send(w, r)
 		return
 	}
 
@@ -193,7 +193,7 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if config == nil {
-		ErrorBadRequest(r, "").Append(Error{
+		ErrorBadRequest(r).Append(Error{
 			Location: "rate_limit_config_id",
 			Message:  "rate limit config not found",
 		}).Send(w, r)
@@ -206,7 +206,7 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Invalid Torznab API key").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid Torznab API key").Send(w, r)
 		return
 	}
 
@@ -227,7 +227,7 @@ func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("torznab indexer not found").Send(w, r)
 		return
 	}
 
@@ -248,12 +248,12 @@ func handleTestTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if indexer == nil {
-		ErrorNotFound(r, "torznab indexer not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("torznab indexer not found").Send(w, r)
 		return
 	}
 
 	if err := indexer.Validate(); err != nil {
-		ErrorBadRequest(r, "Connection test failed").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Connection test failed").Send(w, r)
 		return
 	}
 

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/google/uuid"
 )
@@ -38,13 +38,13 @@ func (m iManager[T]) encode(ud UserData[T]) error {
 	if err != nil {
 		return err
 	}
-	ud.SetEncoded(core.Base64Encode(string(blob)))
+	ud.SetEncoded(util.Base64Encode(string(blob)))
 	return nil
 }
 
 func (m iManager[T]) decode(ud UserData[T]) error {
 	encoded := ud.GetEncoded()
-	blob, err := core.Base64DecodeToByte(encoded)
+	blob, err := util.Base64DecodeToByte(encoded)
 	if err != nil {
 		return err
 	}
@@ -147,11 +147,11 @@ func (m iManager[T]) Export(ud UserData[T]) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return core.Base64Encode(string(blob)), nil
+	return util.Base64Encode(string(blob)), nil
 }
 
 func (m iManager[T]) Import(encodedBlob string, ud UserData[T]) error {
-	blob, err := core.Base64Decode(encodedBlob)
+	blob, err := util.Base64Decode(encodedBlob)
 	if err != nil {
 		return err
 	}

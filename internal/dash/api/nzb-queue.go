@@ -58,7 +58,7 @@ func handleGetNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if item == nil {
-		ErrorNotFound(r, "queue item not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("queue item not found").Send(w, r)
 		return
 	}
 
@@ -74,7 +74,7 @@ func handleDeleteNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing == nil {
-		ErrorNotFound(r, "queue item not found").Send(w, r)
+		ErrorNotFound(r).WithMessage("queue item not found").Send(w, r)
 		return
 	}
 

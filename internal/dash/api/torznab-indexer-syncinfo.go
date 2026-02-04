@@ -135,7 +135,7 @@ func handleQueueTorznabIndexerSyncInfo(w http.ResponseWriter, r *http.Request) {
 
 	nsid, err := torrent_stream.NormalizeStreamId(request.SId)
 	if !strings.HasPrefix(request.SId, "tt") || err != nil {
-		ErrorBadRequest(r, "Invalid IMDB Id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Invalid IMDB Id").Send(w, r)
 		return
 	}
 
@@ -143,7 +143,7 @@ func handleQueueTorznabIndexerSyncInfo(w http.ResponseWriter, r *http.Request) {
 		SendError(w, r, err)
 		return
 	} else if title == nil {
-		ErrorBadRequest(r, "Unknow IMDB Id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("Unknow IMDB Id").Send(w, r)
 		return
 	}
 
