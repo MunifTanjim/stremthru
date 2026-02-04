@@ -6,11 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -73,14 +72,14 @@ func (ud *UserDataStores) IsP2P() bool {
 	return ud.isP2P
 }
 
-func (ud *UserDataStores) Prepare(ctx *context.StoreContext) (err error, errField string) {
+func (ud *UserDataStores) Prepare(ctx *stremio_shared.Ctx) (err error, errField string) {
 	storeCount := len(ud.Stores)
 	if storeCount == 0 {
 		return errors.New("missing store"), "store"
 	}
 	if storeCount == 1 && ud.Stores[0].Code.IsStremThru() {
 		token := ud.Stores[0].Token
-		auth, err := core.ParseBasicAuth(token)
+		auth, err := util.ParseBasicAuth(token)
 		if err != nil {
 			return err, "token"
 		}

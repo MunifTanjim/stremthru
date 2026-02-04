@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
@@ -76,7 +75,7 @@ type indexerSearchQuery struct {
 	znabsearch.IndexerQuery
 }
 
-func GetStreamsFromIndexers(reqCtx context.Context, ctx *RequestContext, stremType, stremId string) ([]WrappedStream, error) {
+func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId string) ([]WrappedStream, error) {
 	if len(ctx.Indexers) == 0 {
 		return []WrappedStream{}, nil
 	}
@@ -340,7 +339,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	for _, wStream := range wrappedStreams {
 		hash := wStream.R.Hash
 
-		nzbUrl := core.Base64Encode(wStream.nzbURL)
+		nzbUrl := util.Base64Encode(wStream.nzbURL)
 		if includeStream && !wStream.lockedDownload {
 			wStream.R.Store.Code = ""
 			wStream.R.Store.Name = ""

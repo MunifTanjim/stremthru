@@ -43,11 +43,11 @@ type LockedFileLink string
 const lockedFileLinkPrefix = "stremthru://store/easydebrid/"
 
 func (l LockedFileLink) encodeData(magnetHash string, fileIdx int) string {
-	return core.Base64Encode(magnetHash + ":" + strconv.Itoa(fileIdx))
+	return util.Base64Encode(magnetHash + ":" + strconv.Itoa(fileIdx))
 }
 
 func (l LockedFileLink) decodeData(encoded string) (magnetHash string, fileIdx int, err error) {
-	decoded, err := core.Base64Decode(encoded)
+	decoded, err := util.Base64Decode(encoded)
 	if err != nil {
 		return "", 0, err
 	}

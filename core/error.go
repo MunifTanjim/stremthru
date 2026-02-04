@@ -17,33 +17,31 @@ const (
 	ErrorTypeUnknown  ErrorType = "unknown_error"
 )
 
-type ErrorCode string
+type ErrorCode = server.ErrorCode
 
 const (
-	ErrorCodeUnknown ErrorCode = "UNKNOWN"
-
-	ErrorCodeBadGateway                  ErrorCode = "BAD_GATEWAY"
-	ErrorCodeBadRequest                  ErrorCode = "BAD_REQUEST"
-	ErrorCodeConflict                    ErrorCode = "CONFLICT"
-	ErrorCodeForbidden                   ErrorCode = "FORBIDDEN"
-	ErrorCodeGone                        ErrorCode = "GONE"
-	ErrorCodeInternalServerError         ErrorCode = "INTERNAL_SERVER_ERROR"
-	ErrorCodeMethodNotAllowed            ErrorCode = "METHOD_NOT_ALLOWED"
-	ErrorCodeNotFound                    ErrorCode = "NOT_FOUND"
-	ErrorCodeNotImplemented              ErrorCode = "NOT_IMPLEMENTED"
-	ErrorCodePaymentRequired             ErrorCode = "PAYMENT_REQUIRED"
-	ErrorCodeProxyAuthenticationRequired ErrorCode = "PROXY_AUTHENTICATION_REQUIRED"
-	ErrorCodeServiceUnavailable          ErrorCode = "SERVICE_UNAVAILABLE"
-	ErrorCodeTooManyRequests             ErrorCode = "TOO_MANY_REQUESTS"
-	ErrorCodeUnauthorized                ErrorCode = "UNAUTHORIZED"
-	ErrorCodeUnavailableForLegalReasons  ErrorCode = "UNAVAILABLE_FOR_LEGAL_REASONS"
-	ErrorCodeUnprocessableEntity         ErrorCode = "UNPROCESSABLE_ENTITY"
-	ErrorCodeUnsupportedMediaType        ErrorCode = "UNSUPPORTED_MEDIA_TYPE"
-
-	ErrorCodeStoreLimitExceeded ErrorCode = "STORE_LIMIT_EXCEEDED"
-	ErrorCodeStoreMagnetInvalid ErrorCode = "STORE_MAGNET_INVALID"
-	ErrorCodeStoreNameInvalid   ErrorCode = "STORE_NAME_INVALID"
-	ErrorCodeStoreServerDown    ErrorCode = "STORE_SERVER_DOWN"
+	ErrorCodeUnknown                     = server.ErrorCodeUnknown
+	ErrorCodeBadGateway                  = server.ErrorCodeBadGateway
+	ErrorCodeBadRequest                  = server.ErrorCodeBadRequest
+	ErrorCodeConflict                    = server.ErrorCodeConflict
+	ErrorCodeForbidden                   = server.ErrorCodeForbidden
+	ErrorCodeGone                        = server.ErrorCodeGone
+	ErrorCodeInternalServerError         = server.ErrorCodeInternalServerError
+	ErrorCodeMethodNotAllowed            = server.ErrorCodeMethodNotAllowed
+	ErrorCodeNotFound                    = server.ErrorCodeNotFound
+	ErrorCodeNotImplemented              = server.ErrorCodeNotImplemented
+	ErrorCodePaymentRequired             = server.ErrorCodePaymentRequired
+	ErrorCodeProxyAuthenticationRequired = server.ErrorCodeProxyAuthenticationRequired
+	ErrorCodeServiceUnavailable          = server.ErrorCodeServiceUnavailable
+	ErrorCodeTooManyRequests             = server.ErrorCodeTooManyRequests
+	ErrorCodeUnauthorized                = server.ErrorCodeUnauthorized
+	ErrorCodeUnavailableForLegalReasons  = server.ErrorCodeUnavailableForLegalReasons
+	ErrorCodeUnprocessableEntity         = server.ErrorCodeUnprocessableEntity
+	ErrorCodeUnsupportedMediaType        = server.ErrorCodeUnsupportedMediaType
+	ErrorCodeStoreLimitExceeded          = server.ErrorCodeStoreLimitExceeded
+	ErrorCodeStoreMagnetInvalid          = server.ErrorCodeStoreMagnetInvalid
+	ErrorCodeStoreNameInvalid            = server.ErrorCodeStoreNameInvalid
+	ErrorCodeStoreServerDown             = server.ErrorCodeStoreServerDown
 )
 
 type StremThruError interface {

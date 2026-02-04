@@ -58,7 +58,7 @@ func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 func handleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
-		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
 
@@ -74,7 +74,7 @@ func handleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 func handlePurgeWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
-		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
 
@@ -165,9 +165,9 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		SendData(w, r, 200, files)
 	default:
 		if _, ok := worker.WorkerDetailsById[name]; ok {
-			ErrorBadRequest(r, "worker does not support temporary files").Send(w, r)
+			ErrorBadRequest(r).WithMessage("worker does not support temporary files").Send(w, r)
 		} else {
-			ErrorBadRequest(r, "invalid worker id").Send(w, r)
+			ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		}
 	}
 }
@@ -175,7 +175,7 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 func handleDeleteWorkerJobLog(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
-		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
 
@@ -201,7 +201,7 @@ func handleWorkerJobLog(w http.ResponseWriter, r *http.Request) {
 func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
 	if _, ok := worker.WorkerDetailsById[name]; !ok {
-		ErrorBadRequest(r, "invalid worker id").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
 
@@ -210,7 +210,7 @@ func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		err := imdb_title.PurgeDatasetTemporaryFiles()
 		if err != nil {
 			if errors.Is(err, imdb_title.ErrDatasetSyncInProgress) {
-				ErrorLocked(r, err.Error()).WithCause(err).Send(w, r)
+				ErrorLocked(r).WithMessage(err.Error()).WithCause(err).Send(w, r)
 			} else {
 				SendError(w, r, err)
 			}
@@ -221,7 +221,7 @@ func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		err := animetosho.PurgeDatasetTemporaryFiles()
 		if err != nil {
 			if errors.Is(err, animetosho.ErrDatasetSyncInProgress) {
-				ErrorLocked(r, err.Error()).WithCause(err).Send(w, r)
+				ErrorLocked(r).WithMessage(err.Error()).WithCause(err).Send(w, r)
 			} else {
 				SendError(w, r, err)
 			}
@@ -229,7 +229,7 @@ func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		SendData(w, r, 204, nil)
 	default:
-		ErrorBadRequest(r, "worker does not support temporary file purge").Send(w, r)
+		ErrorBadRequest(r).WithMessage("worker does not support temporary file purge").Send(w, r)
 		return
 	}
 }

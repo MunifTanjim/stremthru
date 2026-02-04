@@ -3,13 +3,12 @@ package stremio_wrap
 import (
 	"net/http"
 
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
-func (ud UserData) fetchMeta(ctx *context.StoreContext, w http.ResponseWriter, r *http.Request, rType, id, extra string) error {
+func (ud UserData) fetchMeta(ctx *Ctx, w http.ResponseWriter, r *http.Request, rType, id, extra string) error {
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameMeta, rType, id)
 	if err != nil {
 		return err

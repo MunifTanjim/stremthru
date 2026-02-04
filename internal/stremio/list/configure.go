@@ -120,7 +120,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to unselect userdata", err)
 					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "list", ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), false)
 						return
 					}
 				} else {
@@ -128,7 +128,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to load userdata", err)
 					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "list", ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), false)
 						return
 					}
 				}
@@ -140,7 +140,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to save userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "list", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -152,7 +152,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to copy userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "list", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -162,7 +162,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to delete userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "list", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -224,7 +224,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stremio_shared.RedirectToConfigurePage(w, r, "list", ud, true)
+		stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
 		return
 	}
 

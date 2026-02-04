@@ -42,7 +42,7 @@ func commonMiddleware(next http.Handler) http.Handler {
 }
 
 func AddStremioDisabledEndpoints(mux *http.ServeMux) {
-	withCors := shared.Middleware(shared.EnableCORS)
+	withCors := server.Middleware(shared.EnableCORS)
 
 	router := http.NewServeMux()
 

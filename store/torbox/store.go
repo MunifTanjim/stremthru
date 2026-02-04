@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -221,11 +222,11 @@ type LockedFileLink string
 const lockedFileLinkPrefix = "stremthru://store/torbox/"
 
 func (l LockedFileLink) encodeData(id int, fileId int) string {
-	return core.Base64Encode(strconv.Itoa(id) + ":" + strconv.Itoa(fileId))
+	return util.Base64Encode(strconv.Itoa(id) + ":" + strconv.Itoa(fileId))
 }
 
 func (l LockedFileLink) decodeData(encoded string) (id, fileId int, err error) {
-	decoded, err := core.Base64Decode(encoded)
+	decoded, err := util.Base64Decode(encoded)
 	if err != nil {
 		return 0, 0, err
 	}

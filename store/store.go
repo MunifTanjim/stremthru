@@ -5,25 +5,9 @@ import (
 	"mime/multipart"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/anacrolix/torrent/metainfo"
 )
-
-type Ctx = request.Ctx
-
-var (
-	_ File = (*MagnetFile)(nil)
-	_ File = (*NewzFile)(nil)
-)
-
-type File interface {
-	GetIdx() int
-	GetPath() string
-	GetName() string
-	GetSize() int64
-	GetLink() string
-}
 
 type StoreName string
 
@@ -86,9 +70,11 @@ func (sn StoreName) IsValid() bool {
 	return ok
 }
 
-func (sn StoreName) Validate() (StoreName, *core.StoreError) {
+var ErrInvalidName = errors.New("invalid store name")
+
+func (sn StoreName) Validate() (StoreName, error) {
 	if !sn.IsValid() {
-		return sn, ErrorInvalidStoreName(string(sn))
+		return sn, ErrInvalidName
 	}
 	return sn, nil
 }
@@ -100,6 +86,21 @@ func (sc StoreCode) Name() StoreName {
 func (sc StoreCode) IsValid() bool {
 	_, ok := storeNameByCode[sc]
 	return ok
+}
+
+type Ctx = request.Ctx
+
+var (
+	_ File = (*MagnetFile)(nil)
+	_ File = (*NewzFile)(nil)
+)
+
+type File interface {
+	GetIdx() int
+	GetPath() string
+	GetName() string
+	GetSize() int64
+	GetLink() string
 }
 
 type UserSubscriptionStatus string

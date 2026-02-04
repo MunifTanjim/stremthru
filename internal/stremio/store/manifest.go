@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -68,7 +69,7 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 		switch ud.StoreName {
 		case "":
 			names := []string{}
-			if user, err := core.ParseBasicAuth(ud.StoreToken); err == nil {
+			if user, err := util.ParseBasicAuth(ud.StoreToken); err == nil {
 				if password := config.ProxyAuthPassword.GetPassword(user.Username); password != "" && password == user.Password {
 					for _, name := range config.StoreAuthToken.ListStores(user.Username) {
 						storeName := store.StoreName(name)

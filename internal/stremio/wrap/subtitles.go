@@ -3,12 +3,11 @@ package stremio_wrap
 import (
 	"sync"
 
-	"github.com/MunifTanjim/stremthru/internal/context"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
-func (ud UserData) fetchSubtitles(ctx *context.StoreContext, rType, id, extra string) (*stremio.SubtitlesHandlerResponse, error) {
+func (ud UserData) fetchSubtitles(ctx *Ctx, rType, id, extra string) (*stremio.SubtitlesHandlerResponse, error) {
 	log := ctx.Log
 
 	upstreams, err := ud.getUpstreams(ctx, stremio.ResourceNameSubtitles, rType, id)

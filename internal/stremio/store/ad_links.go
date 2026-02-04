@@ -8,7 +8,6 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
 	"github.com/MunifTanjim/stremthru/stremio"
@@ -23,7 +22,7 @@ func getADLinksCacheKey(idStoreCode, storeToken string) string {
 	return getCatalogCacheKey(idStoreCode, storeToken)
 }
 
-func getADWebDLsMeta(r *http.Request, ctx *context.StoreContext, idr *ParsedId, eud string) stremio.Meta {
+func getADWebDLsMeta(r *http.Request, ctx *Ctx, idr *ParsedId, eud string) stremio.Meta {
 	log := ctx.Log
 
 	released := time.Now().UTC()

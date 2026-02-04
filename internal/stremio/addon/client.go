@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"golang.org/x/sync/singleflight"
 )
@@ -43,11 +44,11 @@ var commonHeaders = func() map[string]string {
 	}
 	headers := map[string]string{}
 	for k, v := range encodedHeaders {
-		key, err := core.Base64Decode(k)
+		key, err := util.Base64Decode(k)
 		if err != nil {
 			panic(err)
 		}
-		val, err := core.Base64Decode(v)
+		val, err := util.Base64Decode(v)
 		if err != nil {
 			panic(err)
 		}

@@ -18,6 +18,7 @@ import (
 	stremio_store "github.com/MunifTanjim/stremthru/internal/stremio/store"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"golang.org/x/sync/singleflight"
 )
@@ -93,7 +94,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		if encodedLink == "" {
 			amParams.Magnet = magnetHash
 		} else {
-			link, err := core.Base64Decode(encodedLink)
+			link, err := util.Base64Decode(encodedLink)
 			if err != nil {
 				return &stremResult{
 					error_level: logger.LevelError,
@@ -173,7 +174,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		isAnimeId := isKitsuId || isMALId
 		shouldTagStream := isIMDBId || isAnimeId
 
-		magnet, err = stremio_shared.WaitForMagnetStatus(ctx.StoreContext, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
+		magnet, err = stremio_shared.WaitForMagnetStatus(&ctx.Ctx, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {
 			strem := &stremResult{
 				error_level: logger.LevelError,
@@ -244,7 +245,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		glRes, err := shared.GenerateStremThruLink(r, ctx.StoreContext, link, fileName)
+		glRes, err := shared.GenerateStremThruLink(r, &ctx.Context, link, fileName)
 		if err != nil {
 			return &stremResult{
 				error_level: logger.LevelError,

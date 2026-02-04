@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -38,13 +37,13 @@ func (ud UserData) GetEncoded() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return core.Base64Encode(string(blob)), nil
+	return util.Base64Encode(string(blob)), nil
 }
 
 func (ud *UserData) getIdPrefixes() []string {
 	if len(ud.idPrefixes) == 0 {
 		if ud.StoreName == "" {
-			if user, err := core.ParseBasicAuth(ud.StoreToken); err == nil {
+			if user, err := util.ParseBasicAuth(ud.StoreToken); err == nil {
 				if password := config.ProxyAuthPassword.GetPassword(user.Username); password != "" && password == user.Password {
 					for _, name := range config.StoreAuthToken.ListStores(user.Username) {
 						storeName := store.StoreName(name)
@@ -103,15 +102,13 @@ func (uderr *userDataError) Error() string {
 	return str.String()
 }
 
-func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*context.StoreContext, error) {
-	rCtx := server.GetReqCtx(r)
-	ctx := &context.StoreContext{
-		Log: rCtx.Log,
-	}
+func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*Ctx, error) {
+	ctx := &Ctx{}
+	ctx.Log = server.GetReqCtx(r).Log
 
 	storeToken := ud.StoreToken
 	if idr.isST {
-		user, err := core.ParseBasicAuth(storeToken)
+		user, err := util.ParseBasicAuth(storeToken)
 		if err != nil {
 			return ctx, &userDataError{storeToken: err.Error()}
 		}
@@ -133,7 +130,7 @@ func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*context.S
 		ctx.StoreAuthToken = storeToken
 	}
 
-	ctx.ClientIP = shared.GetClientIP(r, ctx)
+	ctx.ClientIP = shared.GetClientIP(r, &ctx.Context)
 
 	return ctx, nil
 }
@@ -146,7 +143,7 @@ func getUserData(r *http.Request) (*UserData, error) {
 		if data.encoded == "" {
 			return data, nil
 		}
-		blob, err := core.Base64DecodeToByte(data.encoded)
+		blob, err := util.Base64DecodeToByte(data.encoded)
 		if err != nil {
 			return nil, err
 		}
