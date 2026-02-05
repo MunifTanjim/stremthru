@@ -74,7 +74,6 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT":     "10",
 		"STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT":       "15s",
-		"STREMTHRU_STREMIO_NEWZ_NZB_LINK_TYPE":             "*:proxy",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
@@ -89,6 +88,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE":                 "50MB",
 		"STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE":                "10GB",
 		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
+		"STREMTHRU_NEWZ_NZB_LINK_TYPE":                     "*:proxy",
 	},
 }
 

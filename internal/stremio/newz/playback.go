@@ -81,9 +81,9 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			addParams.Link = nzbUrl
 		} else if u, err := url.Parse(nzbUrl); err == nil {
 			hostname := u.Hostname()
-			if config.Stremio.Newz.NZBLinkType.Redirect(hostname) {
+			if config.NewzNZBLinkMode.Redirect(hostname) {
 				addParams.Link = nzbUrl
-			} else if config.Stremio.Newz.NZBLinkType.Proxy(hostname) {
+			} else if config.NewzNZBLinkMode.Proxy(hostname) {
 				nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), config.NewzNZBMaxFileSize, log)
 				if err != nil {
 					return &stremResult{
