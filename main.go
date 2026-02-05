@@ -55,6 +55,7 @@ func main() {
 	endpoint.AddStremioEndpoints(mux)
 	endpoint.AddTorrentEndpoints(mux)
 	endpoint.AddTorznabEndpoints(mux)
+	endpoint.AddNewznabEndpoints(mux)
 	endpoint.AddExperimentEndpoints(mux)
 
 	handler := shared.RootServerContext(mux)

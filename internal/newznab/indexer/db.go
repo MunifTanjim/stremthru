@@ -3,6 +3,7 @@ package newznab_indexer
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -47,6 +48,18 @@ type NewznabIndexer struct {
 	RateLimitConfigId sql.NullString
 	CAt               db.Timestamp
 	UAt               db.Timestamp
+
+	host   string
+	apikey string
+}
+
+func (idxr *NewznabIndexer) GetHost() string {
+	if idxr.host == "" {
+		if u, err := url.Parse(idxr.URL); err == nil {
+			idxr.host = u.Host
+		}
+	}
+	return idxr.host
 }
 
 type newznabIndexerRateLimiter struct {
@@ -88,30 +101,37 @@ func NewNewznabIndexer(url, apiKey string) (*NewznabIndexer, error) {
 	return indexer, nil
 }
 
-func (i *NewznabIndexer) SetAPIKey(apiKey string) error {
+func (idxr *NewznabIndexer) SetAPIKey(apiKey string) error {
 	encAPIKey, err := encrypt(apiKey)
 	if err != nil {
 		return err
 	}
-	i.APIKey = encAPIKey
+	idxr.APIKey = encAPIKey
 	return nil
 }
 
-func (i *NewznabIndexer) GetAPIKey() (string, error) {
-	if i.APIKey == "" {
+func (idxr *NewznabIndexer) GetAPIKey() (string, error) {
+	if idxr.APIKey == "" {
 		return "", nil
 	}
-	return decrypt(i.APIKey)
+	if idxr.apikey == "" {
+		apikey, err := decrypt(idxr.APIKey)
+		if err != nil {
+			return "", err
+		}
+		idxr.apikey = apikey
+	}
+	return idxr.apikey, nil
 }
 
-func (i *NewznabIndexer) Validate() error {
-	apiKey, err := i.GetAPIKey()
+func (idxr *NewznabIndexer) Validate() error {
+	apiKey, err := idxr.GetAPIKey()
 	if err != nil {
 		return fmt.Errorf("failed to decrypt api key: %w", err)
 	}
 
 	client := newznab_client.NewClient(&newznab_client.ClientConfig{
-		BaseURL: i.URL,
+		BaseURL: idxr.URL,
 		APIKey:  apiKey,
 	})
 
@@ -120,8 +140,8 @@ func (i *NewznabIndexer) Validate() error {
 		return fmt.Errorf("failed to fetch capabilities: %w", err)
 	}
 
-	if i.Name == "" && caps.Server.Title != "" {
-		i.Name = caps.Server.Title
+	if idxr.Name == "" && caps.Server.Title != "" {
+		idxr.Name = caps.Server.Title
 	}
 
 	return nil
@@ -219,13 +239,13 @@ var query_insert = fmt.Sprintf(
 	db.JoinColumnNames(columnsInsert...),
 )
 
-func (i *NewznabIndexer) Insert() error {
+func (idxr *NewznabIndexer) Insert() error {
 	result, err := db.Exec(query_insert,
-		i.Type,
-		i.Name,
-		i.URL,
-		i.APIKey,
-		i.RateLimitConfigId,
+		idxr.Type,
+		idxr.Name,
+		idxr.URL,
+		idxr.APIKey,
+		idxr.RateLimitConfigId,
 	)
 	if err != nil {
 		return err
@@ -234,7 +254,7 @@ func (i *NewznabIndexer) Insert() error {
 	if err != nil {
 		return err
 	}
-	i.Id = id
+	idxr.Id = id
 	return nil
 }
 
@@ -251,13 +271,13 @@ var query_update = fmt.Sprintf(
 	Column.Id,
 )
 
-func (i *NewznabIndexer) Update() error {
+func (idxr *NewznabIndexer) Update() error {
 	_, err := db.Exec(query_update,
-		i.Name,
-		i.URL,
-		i.APIKey,
-		i.RateLimitConfigId,
-		i.Id,
+		idxr.Name,
+		idxr.URL,
+		idxr.APIKey,
+		idxr.RateLimitConfigId,
+		idxr.Id,
 	)
 	return err
 }

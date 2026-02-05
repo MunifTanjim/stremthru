@@ -102,6 +102,10 @@ func FetchNZBFile(link string, name string, maxSize int64, log *logger.Logger) (
 			}
 			defer res.Body.Close()
 
+			if res.StatusCode < 200 || 300 <= res.StatusCode {
+				return nil, fmt.Errorf("failed to fetch nzb: status %d", res.StatusCode)
+			}
+
 			if res.ContentLength <= 0 {
 				return nil, fmt.Errorf("unable to determine file size")
 			}

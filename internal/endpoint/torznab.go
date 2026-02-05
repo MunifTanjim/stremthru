@@ -10,7 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
-func sendResponse(w http.ResponseWriter, r *http.Request, statusCode int, data any, o string) {
+func sendZnabResponse(w http.ResponseWriter, r *http.Request, statusCode int, data any, o string) {
 	switch o {
 	case "json":
 		shared.SendJSON(w, r, statusCode, data)
@@ -38,26 +38,26 @@ func handleTorznab(w http.ResponseWriter, r *http.Request) {
 	switch t {
 	case "caps":
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		sendResponse(w, r, 200, torznab.StremThruIndexer.Capabilities(), o)
+		sendZnabResponse(w, r, 200, torznab.StremThruIndexer.Capabilities(), o)
 	case "search", "tvsearch", "movie":
 		query, err := torznab.ParseQuery(r.URL.Query())
 		if err != nil {
-			sendResponse(w, r, 200, znab.ErrorIncorrectParameter(err.Error()), o)
+			sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter(err.Error()), o)
 			return
 		}
 		items, err := torznab.StremThruIndexer.Search(query)
 		if err != nil {
-			sendResponse(w, r, 200, znab.ErrorUnknownError(err.Error()), o)
+			sendZnabResponse(w, r, 200, znab.ErrorUnknownError(err.Error()), o)
 			return
 		}
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		sendResponse(w, r, 200, torznab.Feed{
+		sendZnabResponse(w, r, 200, torznab.Feed{
 			Info:  torznab.StremThruIndexer.Info(),
 			Items: items,
 		}, o)
 	default:
 		w.Header().Set("Cache-Control", "public, max-age=7200")
-		sendResponse(w, r, 200, znab.ErrorIncorrectParameter(t), o)
+		sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter(t), o)
 	}
 }
 func AddTorznabEndpoints(mux *http.ServeMux) {

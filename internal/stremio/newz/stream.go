@@ -8,10 +8,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
+	newznabcache "github.com/MunifTanjim/stremthru/internal/newznab/cache"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
@@ -25,13 +24,6 @@ import (
 )
 
 var streamTemplate = stremio_transformer.StreamTemplateDefault
-
-var indexerSearchCache = cache.NewCache[[]newznab_client.Newz](&cache.CacheConfig{
-	Name:     "stremio:newz:indexer_search",
-	Lifetime: 1 * time.Hour,
-	MaxSize:  512,
-	Persist:  true,
-})
 
 type WrappedStream struct {
 	*stremio.Stream
@@ -119,24 +111,7 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 
 	for i := range sQueries {
 		go func(sq indexerSearchQuery) {
-			start := time.Now()
-			cacheKey := sq.indexer.GetId() + ":" + sq.Query.Encode()
-
-			var items []newznab_client.Newz
-			var err error
-
-			if indexerSearchCache.Get(cacheKey, &items) {
-				log.Debug("indexer search cache hit", "indexer", sq.indexer.GetId(), "query", sq.Query.Encode(), "count", len(items))
-			} else {
-				items, err = sq.indexer.Search(sq.Query)
-				if err == nil {
-					log.Debug("indexer search completed", "indexer", sq.indexer.GetId(), "query", sq.Query.Encode(), "duration", time.Since(start).String(), "count", len(items))
-					indexerSearchCache.Add(cacheKey, items)
-				} else {
-					log.Error("indexer search failed", "error", err, "indexer", sq.indexer.GetId(), "query", sq.Query.Encode(), "duration", time.Since(start).String())
-				}
-			}
-
+			items, err := newznabcache.Search.Do(sq.indexer, sq.Query, log)
 			resultCh <- searchResult{indexer: sq.indexer, items: items, err: err, is_exact: sq.IsExact}
 		}(sQueries[i])
 	}
