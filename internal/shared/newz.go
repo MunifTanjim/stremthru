@@ -67,6 +67,11 @@ func IsNZBCached(hash string) bool {
 	return nzbCache.Has(hash)
 }
 
+var nzbFetchErrCache = cache.NewCache[string](&cache.CacheConfig{
+	Name:     "newz_nzb_fetch_failure",
+	Lifetime: 5 * time.Minute,
+})
+
 func HashNZBDownloadLink(link string) string {
 	return util.MD5Hash(cleanNZBDownloadLink(link))
 }
@@ -95,11 +100,25 @@ func FetchNZBFile(link string, name string, log *logger.Logger) (*NZBFile, error
 		if log != nil {
 			log.Debug("fetch nzb - cache hit", "link", clink)
 		}
+	} else if fetchErr := ""; nzbFetchErrCache.Get(cacheKey, &fetchErr) {
+		if log != nil {
+			log.Debug("fetch nzb - cached failure", "link", clink)
+		}
+		return nil, fmt.Errorf("cached failure: %s", fetchErr)
 	} else {
 		if log != nil {
 			log.Debug("fetch nzb - cache miss", "link", clink)
 		}
-		file, err, _ := nzbFileFetchSG.Do(cacheKey, func() (any, error) {
+		file, err, _ := nzbFileFetchSG.Do(cacheKey, func() (ret any, err error) {
+			defer func() {
+				if err == nil {
+					return
+				}
+				if err := nzbFetchErrCache.Add(cacheKey, err.Error()); err != nil && log != nil {
+					log.Warn("fetch nzb - failed to cache failure", "error", err, "link", clink)
+				}
+			}()
+
 			req, err := http.NewRequest("GET", link, nil)
 			if err != nil {
 				return nil, err
@@ -115,22 +134,25 @@ func FetchNZBFile(link string, name string, log *logger.Logger) (*NZBFile, error
 				return nil, fmt.Errorf("failed to fetch nzb: status %d", res.StatusCode)
 			}
 
-			if res.ContentLength <= 0 {
-				return nil, fmt.Errorf("unable to determine file size")
-			}
 			if res.ContentLength > config.NewzNZBMaxFileSize {
 				return nil, fmt.Errorf("file too large: %d bytes (max %d)", res.ContentLength, config.NewzNZBMaxFileSize)
 			}
 
-			blob, err := io.ReadAll(io.LimitReader(res.Body, config.NewzNZBMaxFileSize+1))
+			blob, err := io.ReadAll(io.LimitReader(res.Body, config.NewzNZBMaxFileSize+1024))
 			if err != nil {
 				if log != nil {
-					log.Error("fetch nzb - failed", "error", err, "link", link)
+					log.Error("fetch nzb - failed", "error", err, "link", clink)
 				}
 				return nil, err
 			}
+			if size := int64(len(blob)); size > config.NewzNZBMaxFileSize {
+				return nil, fmt.Errorf("file too large: %d+ bytes (max %d)", size, config.NewzNZBMaxFileSize)
+			}
+			if len(blob) == 0 {
+				return nil, fmt.Errorf("empty response body")
+			}
 			if log != nil {
-				log.Debug("fetch nzb - completed", "link", link)
+				log.Debug("fetch nzb - completed", "link", clink)
 			}
 
 			if name == "" {
@@ -158,13 +180,13 @@ func FetchNZBFile(link string, name string, log *logger.Logger) (*NZBFile, error
 			}
 			err = nzbCache.Add(cacheKey, file)
 			if err != nil && log != nil {
-				log.Warn("fetch nzb - failed to cache", "error", err, "link", link)
+				log.Warn("fetch nzb - failed to cache", "error", err, "link", clink)
 			}
 			return file, nil
 		})
 		if err != nil {
 			if log != nil {
-				log.Error("fetch nzb - failed", "error", err, "link", link)
+				log.Error("fetch nzb - failed", "error", err, "link", clink)
 			}
 			return nil, err
 		}
