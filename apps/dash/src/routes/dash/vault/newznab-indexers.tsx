@@ -1,6 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Plus, RefreshCwIcon, Trash2 } from "lucide-react";
+import {
+  CheckCircle,
+  Pencil,
+  Plus,
+  Power,
+  RefreshCwIcon,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { DateTime } from "luxon";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -53,6 +61,7 @@ declare module "@/components/data-table" {
       onEdit: (item: NewznabIndexer) => void;
       removeIndexer: ReturnType<typeof useNewznabIndexerMutation>["remove"];
       testIndexer: ReturnType<typeof useNewznabIndexerMutation>["test"];
+      toggleIndexer: ReturnType<typeof useNewznabIndexerMutation>["toggle"];
     };
   }
 
@@ -85,6 +94,23 @@ const columns: ColumnDef<NewznabIndexer>[] = [
     },
     header: "Rate Limit",
   }),
+  col.accessor("disabled", {
+    cell: ({ getValue }) => {
+      const disabled = getValue();
+      return disabled ? (
+        <span className="flex items-center gap-1 text-red-500">
+          <XCircle className="size-4" />
+          Disabled
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-green-500">
+          <CheckCircle className="size-4" />
+          Enabled
+        </span>
+      );
+    },
+    header: "Status",
+  }),
   col.accessor("updated_at", {
     cell: ({ getValue }) => {
       const date = DateTime.fromISO(getValue());
@@ -94,10 +120,45 @@ const columns: ColumnDef<NewznabIndexer>[] = [
   }),
   col.display({
     cell: (c) => {
-      const { onEdit, removeIndexer, testIndexer } = c.table.options.meta!.ctx;
+      const { onEdit, removeIndexer, testIndexer, toggleIndexer } =
+        c.table.options.meta!.ctx;
       const item = c.row.original;
       return (
         <div className="flex gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={toggleIndexer.isPending}
+                onClick={() => {
+                  toast.promise(toggleIndexer.mutateAsync(item.id), {
+                    error(err: APIError) {
+                      console.error(err);
+                      return {
+                        closeButton: true,
+                        message: err.message,
+                      };
+                    },
+                    loading: item.disabled ? "Enabling..." : "Disabling...",
+                    success: {
+                      closeButton: true,
+                      message: item.disabled
+                        ? "Enabled successfully!"
+                        : "Disabled successfully!",
+                    },
+                  });
+                }}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <Power
+                  className={item.disabled ? "text-red-500" : "text-green-500"}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {item.disabled ? "Enable" : "Disable"}
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -325,8 +386,11 @@ export const Route = createFileRoute("/dash/vault/newznab-indexers")({
 
 function RouteComponent() {
   const newznabIndexers = useNewznabIndexers();
-  const { remove: removeIndexer, test: testIndexer } =
-    useNewznabIndexerMutation();
+  const {
+    remove: removeIndexer,
+    test: testIndexer,
+    toggle: toggleIndexer,
+  } = useNewznabIndexerMutation();
 
   const [editItem, setEditItem] = useState<NewznabIndexer | null>(null);
 
@@ -345,6 +409,7 @@ function RouteComponent() {
         onEdit: handleEdit,
         removeIndexer,
         testIndexer,
+        toggleIndexer,
       },
     },
   });

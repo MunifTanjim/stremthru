@@ -16,6 +16,7 @@ type NewznabIndexerResponse struct {
 	Name              string  `json:"name"`
 	URL               string  `json:"url"`
 	RateLimitConfigId *string `json:"rate_limit_config_id"`
+	Disabled          bool    `json:"disabled"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
 }
@@ -32,6 +33,7 @@ func toNewznabIndexerResponse(item *newznab_indexer.NewznabIndexer) NewznabIndex
 		Name:              item.Name,
 		URL:               item.URL,
 		RateLimitConfigId: rateLimitConfigId,
+		Disabled:          item.Disabled,
 		CreatedAt:         item.CAt.Format(time.RFC3339),
 		UpdatedAt:         item.UAt.Format(time.RFC3339),
 	}
@@ -273,6 +275,34 @@ func handleTestNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, toNewznabIndexerResponse(indexer))
 }
 
+func handleToggleNewznabIndexer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
+
+	indexer, err := newznab_indexer.GetById(id)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	if indexer == nil {
+		ErrorNotFound(r).WithMessage("newznab indexer not found").Send(w, r)
+		return
+	}
+
+	if err := newznab_indexer.SetDisabled(id, !indexer.Disabled); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	indexer.Disabled = !indexer.Disabled
+
+	SendData(w, r, 200, toNewznabIndexerResponse(indexer))
+}
+
 func AddVaultNewznabEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
@@ -302,6 +332,14 @@ func AddVaultNewznabEndpoints(router *http.ServeMux) {
 		switch r.Method {
 		case http.MethodPost:
 			handleTestNewznabIndexer(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+	router.HandleFunc("/vault/newznab/indexers/{id}/toggle", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleToggleNewznabIndexer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}

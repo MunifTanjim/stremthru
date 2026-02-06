@@ -46,6 +46,7 @@ type NewznabIndexer struct {
 	URL               string
 	APIKey            string
 	RateLimitConfigId sql.NullString
+	Disabled          bool
 	CAt               db.Timestamp
 	UAt               db.Timestamp
 
@@ -154,6 +155,7 @@ var Column = struct {
 	URL               string
 	APIKey            string
 	RateLimitConfigId string
+	Disabled          string
 	CAt               string
 	UAt               string
 }{
@@ -163,6 +165,7 @@ var Column = struct {
 	URL:               "url",
 	APIKey:            "api_key",
 	RateLimitConfigId: "rate_limit_config_id",
+	Disabled:          "disabled",
 	CAt:               "cat",
 	UAt:               "uat",
 }
@@ -174,6 +177,7 @@ var columns = []string{
 	Column.URL,
 	Column.APIKey,
 	Column.RateLimitConfigId,
+	Column.Disabled,
 	Column.CAt,
 	Column.UAt,
 }
@@ -202,7 +206,36 @@ func GetAll() ([]NewznabIndexer, error) {
 	items := []NewznabIndexer{}
 	for rows.Next() {
 		item := NewznabIndexer{}
-		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+var query_get_all_enabled = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = %s`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.Disabled,
+	db.BooleanFalse,
+)
+
+func GetAllEnabled() ([]NewznabIndexer, error) {
+	rows, err := db.Query(query_get_all_enabled)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []NewznabIndexer{}
+	for rows.Next() {
+		item := NewznabIndexer{}
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -224,7 +257,7 @@ func GetById(id int64) (*NewznabIndexer, error) {
 	row := db.QueryRow(query_get_by_id, id)
 
 	item := NewznabIndexer{}
-	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -266,6 +299,7 @@ var query_update = fmt.Sprintf(
 		fmt.Sprintf(`%s = ?`, Column.URL),
 		fmt.Sprintf(`%s = ?`, Column.APIKey),
 		fmt.Sprintf(`%s = ?`, Column.RateLimitConfigId),
+		fmt.Sprintf(`%s = ?`, Column.Disabled),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
 	Column.Id,
@@ -277,8 +311,22 @@ func (idxr *NewznabIndexer) Update() error {
 		idxr.URL,
 		idxr.APIKey,
 		idxr.RateLimitConfigId,
+		idxr.Disabled,
 		idxr.Id,
 	)
+	return err
+}
+
+var query_set_disabled = fmt.Sprintf(
+	`UPDATE %s SET %s = ?, %s = %s WHERE %s = ?`,
+	TableName,
+	Column.Disabled,
+	Column.UAt, db.CurrentTimestamp,
+	Column.Id,
+)
+
+func SetDisabled(id int64, disabled bool) error {
+	_, err := db.Exec(query_set_disabled, disabled, id)
 	return err
 }
 
