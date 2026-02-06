@@ -286,12 +286,16 @@ function useNavItems(): NavItem[] {
         icon: NewspaperIcon,
         items: [
           {
+            path: "/dash/usenet/config",
+            title: "Config",
+          },
+          {
             path: "/dash/usenet/nzb",
             title: "NZB",
           },
           {
             path: "/dash/usenet/queue",
-            title: "Queue",
+            title: "Queue 🧪",
           },
         ],
         path: "/dash/usenet",
