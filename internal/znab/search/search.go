@@ -1,6 +1,7 @@
 package znabsearch
 
 import (
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -92,6 +93,7 @@ func GetQueryMeta(log *logger.Logger, sid string) (*QueryMeta, *torrent_stream.N
 }
 
 type IndexerQuery struct {
+	Header  http.Header
 	Query   url.Values
 	IsExact bool
 }
@@ -230,6 +232,7 @@ func BuildQueriesForNewznab(client nznc.Indexer, conf QueryBuilderConfig) (map[s
 		}
 
 		queriesBySid[sid] = append(queriesBySid[sid], IndexerQuery{
+			Header:  query.GetHeader(),
 			Query:   query.Clone().Values(),
 			IsExact: isExact,
 		})
@@ -247,7 +250,8 @@ func BuildQueriesForNewznab(client nznc.Indexer, conf QueryBuilderConfig) (map[s
 			if nsid.IsSeries() {
 				sid := nsid.ToClean()
 				queriesBySid[sid] = append(queriesBySid[sid], IndexerQuery{
-					Query: query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
+					Header: query.GetHeader(),
+					Query:  query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
 				})
 
 				if meta.Season > 0 {
@@ -255,7 +259,8 @@ func BuildQueriesForNewznab(client nznc.Indexer, conf QueryBuilderConfig) (map[s
 					q.WriteString(util.ZeroPadInt(meta.Season, 2))
 					sid := nsid.ToClean() + ":" + nsid.Season
 					queriesBySid[sid] = append(queriesBySid[sid], IndexerQuery{
-						Query: query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
+						Header: query.GetHeader(),
+						Query:  query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
 					})
 
 					if meta.Ep > 0 {
@@ -263,7 +268,8 @@ func BuildQueriesForNewznab(client nznc.Indexer, conf QueryBuilderConfig) (map[s
 						q.WriteString(util.ZeroPadInt(meta.Ep, 2))
 						sid := nsid.ToClean() + ":" + nsid.Season + ":" + nsid.Episode
 						queriesBySid[sid] = append(queriesBySid[sid], IndexerQuery{
-							Query: query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
+							Header: query.GetHeader(),
+							Query:  query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
 						})
 					}
 				}
@@ -274,7 +280,8 @@ func BuildQueriesForNewznab(client nznc.Indexer, conf QueryBuilderConfig) (map[s
 				}
 				sid := nsid.ToClean()
 				queriesBySid[sid] = append(queriesBySid[sid], IndexerQuery{
-					Query: query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
+					Header: query.GetHeader(),
+					Query:  query.Clone().Set(znab.SearchParamQ, q.String()).Values(),
 				})
 			}
 		}

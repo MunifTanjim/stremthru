@@ -1,11 +1,13 @@
 package newznab_client
 
 import (
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -161,4 +163,17 @@ func (q *Query) Encode() string {
 
 func (q *Query) String() string {
 	return q.Encode()
+}
+
+func (q *Query) GetHeader() http.Header {
+	var h http.Header
+	switch q.t {
+	case FunctionSearchTV:
+		h = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeTV)
+	case FunctionSearchMovie:
+		h = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeMovie)
+	default:
+		h = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeAny)
+	}
+	return h
 }

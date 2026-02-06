@@ -1,6 +1,7 @@
 package newznab_torbox
 
 import (
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -83,7 +84,7 @@ func convertNZBToNewz(nzb *torbox.UsenetSearchByIDDataNZB) newznab_client.Newz {
 	}
 }
 
-func (i *Indexer) Search(query url.Values) ([]newznab_client.Newz, error) {
+func (i *Indexer) Search(query url.Values, header http.Header) ([]newznab_client.Newz, error) {
 	imdbId := query.Get(znab.SearchParamIMDBId)
 	if imdbId == "" {
 		return nil, nil
