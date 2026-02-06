@@ -223,7 +223,7 @@ func (sti stremThruIndexer) UnwrapLink(id string) (*url.URL, error) {
 }
 
 func (sti stremThruIndexer) Download(link string) (io.ReadCloser, http.Header, error) {
-	file, err := shared.FetchNZBFile(link, "", config.NewzNZBMaxFileSize, log)
+	file, err := shared.FetchNZBFile(link, "", log)
 	if err != nil {
 		return nil, nil, err
 	}

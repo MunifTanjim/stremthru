@@ -22,12 +22,17 @@ func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, head
 		query.Set("apikey", apiKey)
 	}
 
-	cacheKey := idxr.GetId() + ":" + encQuery
+	var cacheKey string
+	switch id := idxr.GetId(); id {
+	case "stremthru":
+	default:
+		cacheKey = id + ":" + encQuery
+	}
 
 	var items []newznab_client.Newz
 	var err error
 
-	if cs.cache.Get(cacheKey, &items) {
+	if cacheKey != "" && cs.cache.Get(cacheKey, &items) {
 		if log != nil {
 			log.Debug("indexer search cache hit", "indexer", idxr.GetId(), "query", encQuery, "count", len(items))
 		}
@@ -38,7 +43,9 @@ func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, head
 			if log != nil {
 				log.Debug("indexer search completed", "indexer", idxr.GetId(), "query", encQuery, "duration", time.Since(start).String(), "count", len(items))
 			}
-			cs.cache.Add(cacheKey, items)
+			if cacheKey != "" {
+				cs.cache.Add(cacheKey, items)
+			}
 		} else {
 			if log != nil {
 				log.Error("indexer search failed", "error", err, "indexer", idxr.GetId(), "query", encQuery, "duration", time.Since(start).String())
