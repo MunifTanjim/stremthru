@@ -2,6 +2,7 @@ package newznab_client
 
 import (
 	"encoding/xml"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -63,7 +64,7 @@ func (n *Newz) GetHash() string {
 type Indexer interface {
 	GetId() string
 	NewSearchQuery(fn func(caps *znab.Caps) Function) (*Query, error)
-	Search(query url.Values) ([]Newz, error)
+	Search(query url.Values, headers http.Header) ([]Newz, error)
 }
 
 type ChannelItem struct {
@@ -134,9 +135,10 @@ type SearchResponse struct {
 	Channel Channel  `xml:"channel"`
 }
 
-func (c *Client) Search(query url.Values) ([]Newz, error) {
+func (c *Client) Search(query url.Values, headers http.Header) ([]Newz, error) {
 	params := &Ctx{}
 	params.Query = &query
+	params.Headers = &headers
 
 	var resp Response[SearchResponse]
 	_, err := c.Request("GET", "/api", params, &resp)

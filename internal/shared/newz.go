@@ -96,7 +96,12 @@ func FetchNZBFile(link string, name string, maxSize int64, log *logger.Logger) (
 			log.Debug("fetch nzb - cache miss", "link", clink)
 		}
 		file, err, _ := nzbFileFetchSG.Do(cacheKey, func() (any, error) {
-			res, err := nzbFileFetcher.Get(link)
+			req, err := http.NewRequest("GET", link, nil)
+			if err != nil {
+				return nil, err
+			}
+			req.Header = config.Newz.IndexerRequestHeader.Grab.Clone()
+			res, err := nzbFileFetcher.Do(req)
 			if err != nil {
 				return nil, err
 			}

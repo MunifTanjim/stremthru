@@ -1,6 +1,7 @@
 package newznabcache
 
 import (
+	"net/http"
 	"net/url"
 	"time"
 
@@ -13,7 +14,7 @@ type cachedSearcher struct {
 	cache cache.Cache[[]newznab_client.Newz]
 }
 
-func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, log *logger.Logger) ([]newznab_client.Newz, error) {
+func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, headers http.Header, log *logger.Logger) ([]newznab_client.Newz, error) {
 	apiKey := query.Get("apikey")
 	query.Del("apikey")
 	encQuery := query.Encode()
@@ -32,7 +33,7 @@ func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, log 
 		}
 	} else {
 		start := time.Now()
-		items, err = idxr.Search(query)
+		items, err = idxr.Search(query, headers)
 		if err == nil {
 			if log != nil {
 				log.Debug("indexer search completed", "indexer", idxr.GetId(), "query", encQuery, "duration", time.Since(start).String(), "count", len(items))

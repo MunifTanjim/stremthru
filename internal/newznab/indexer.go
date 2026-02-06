@@ -90,9 +90,18 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 				return
 			}
 
+			var headers http.Header
+			switch {
+			case q.HasMovies():
+				headers = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeMovie)
+			case q.HasTVShows():
+				headers = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeTV)
+			default:
+				headers = config.Newz.IndexerRequestHeader.Query.Get(config.NewzIndexerRequestQueryTypeAny)
+			}
 			query := q.ToValues()
 			query.Set("apikey", apikey)
-			items, err := newznabcache.Search.Do(client, query, log)
+			items, err := newznabcache.Search.Do(client, query, headers, log)
 			resultCh <- searchResult{indexer: idxr, items: items, err: err}
 		}(idxr)
 	}
