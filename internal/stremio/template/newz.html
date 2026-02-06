@@ -222,10 +222,10 @@
       const idx = match[1];
       const urlInput = document.getElementById(`indexers[${idx}].url`);
       if (urlInput) {
-        const isTorbox = typeSelect.value === 'torbox';
-        urlInput.disabled = isTorbox;
-        urlInput.required = !isTorbox;
-        if (isTorbox) {
+        const isURLDisabled = typeSelect.value === 'torbox' || typeSelect.value === 'stremthru';
+        urlInput.disabled = isURLDisabled;
+        urlInput.required = !isURLDisabled;
+        if (isURLDisabled) {
           urlInput.value = '';
         }
       }

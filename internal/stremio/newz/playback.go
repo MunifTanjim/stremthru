@@ -84,7 +84,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			if config.NewzNZBLinkMode.Redirect(hostname) {
 				addParams.Link = nzbUrl
 			} else if config.NewzNZBLinkMode.Proxy(hostname) {
-				nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), config.NewzNZBMaxFileSize, log)
+				nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
 				if err != nil {
 					return &stremResult{
 						error_level: logger.LevelError,
@@ -259,7 +259,7 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, nzbUrl strin
 		return
 	}
 
-	nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), config.NewzNZBMaxFileSize, log)
+	nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
 	if err != nil {
 		log.Error("failed to fetch nzb", "error", err)
 		redirectToStaticVideo(w, r, "", store_video.StoreVideoNameDownloadFailed)
