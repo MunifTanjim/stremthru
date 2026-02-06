@@ -150,6 +150,11 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 				}
 			}
 
+			indexerName := item.Indexer.Name
+			if indexerName == "" {
+				indexerName = indexer.Name
+			}
+
 			data := &stremio_transformer.StreamExtractorResult{
 				Result: pttr,
 
@@ -159,7 +164,7 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 				Age:      item.Age(),
 				Category: stremType,
 				Hash:     item.GetHash(),
-				Indexer:  indexer.Name,
+				Indexer:  indexerName,
 				TTitle:   item.Title,
 			}
 			if item.Size > 0 {

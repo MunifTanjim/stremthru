@@ -44,7 +44,8 @@ type Newz struct {
 
 	DownloadLink string // Direct NZB download URL
 
-	Hash string
+	Hash    string
+	Indexer ChannelItemIndexer
 
 	LockedDownload bool
 	LockedProvider string
@@ -67,11 +68,17 @@ type Indexer interface {
 	Search(query url.Values, headers http.Header) ([]Newz, error)
 }
 
+type ChannelItemIndexer struct {
+	Host string `xml:"host,attr"`
+	Name string `xml:"name,attr"`
+}
+
 type ChannelItem struct {
 	znab.ChannelItem
 	Size       int64                 `xml:"size"`
 	Comments   string                `xml:"comments"`
 	Grabs      int                   `xml:"grabs"`
+	Indexer    ChannelItemIndexer    `xml:"indexer"`
 	Attributes znab.ChannelItemAttrs `xml:"http://www.newznab.com/DTD/2010/feeds/attributes/ attr"`
 }
 
@@ -121,6 +128,7 @@ func (o ChannelItem) ToNewz() *Newz {
 	nzb.Episode = o.Attributes.Get(znab.NewznabAttrNameEpisode)
 
 	nzb.DownloadLink = o.Enclosure.URL
+	nzb.Indexer = o.Indexer
 
 	return nzb
 }
@@ -153,7 +161,11 @@ func (c *Client) Search(query url.Values, headers http.Header) ([]Newz, error) {
 		if item.Size == 0 && item.Enclosure.Length == 0 {
 			continue
 		}
-		result = append(result, *item.ToNewz())
+		newz := item.ToNewz()
+		if newz.Indexer.Host == "" {
+			newz.Indexer.Host = c.BaseURL.Host
+		}
+		result = append(result, *newz)
 	}
 	return result, nil
 }

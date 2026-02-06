@@ -162,8 +162,13 @@ func convertToFeedItem(n newznab_client.Newz, indexer *newznab_indexer.NewznabIn
 		Episode:     n.Episode,
 		Category:    category,
 	}
-	item.Indexer.ID = indexer.GetHost()
-	item.Indexer.Name = indexer.Name
+	item.Indexer = ChannelItemIndexer(n.Indexer)
+	if item.Indexer.Host == "" {
+		item.Indexer.Host = indexer.GetHost()
+	}
+	if item.Indexer.Name == "" {
+		item.Indexer.Name = indexer.Name
+	}
 	return item
 }
 
