@@ -206,7 +206,7 @@ func (ud *UserData) GetRequestContext(r *http.Request) (*Ctx, error) {
 		if !ud.IsStremThruStore() {
 			return ctx, &userDataError{storeCode: []string{"no configured store"}}
 		}
-		pool, err := usenetmanager.GetPool(log)
+		pool, err := usenetmanager.GetPool()
 		if err != nil {
 			return ctx, &userDataError{storeCode: []string{fmt.Errorf("no configured store, failed to check usenet provider: %w", err).Error()}}
 		}

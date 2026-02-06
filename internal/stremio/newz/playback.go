@@ -247,7 +247,7 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, nzbUrl strin
 
 	log.Debug("starting direct NNTP stream")
 
-	pool, err := usenetmanager.GetPool(log)
+	pool, err := usenetmanager.GetPool()
 	if err != nil {
 		log.Error("failed to get global NNTP pool", "error", err)
 		redirectToStaticVideo(w, r, "", store_video.StoreVideoName500)

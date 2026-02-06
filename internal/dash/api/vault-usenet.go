@@ -21,6 +21,7 @@ type UsenetServerResponse struct {
 	Priority       int    `json:"priority"`
 	IsBackup       bool   `json:"is_backup"`
 	MaxConnections int    `json:"max_connections"`
+	Disabled       bool   `json:"disabled"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
 }
@@ -37,6 +38,7 @@ func toUsenetServerResponse(item *usenet_server.UsenetServer) UsenetServerRespon
 		Priority:       item.Priority,
 		IsBackup:       item.IsBackup,
 		MaxConnections: item.MaxConnections,
+		Disabled:       item.Disabled,
 		CreatedAt:      item.CAt.Format(time.RFC3339),
 		UpdatedAt:      item.UAt.Format(time.RFC3339),
 	}
@@ -350,6 +352,45 @@ func handlePingUsenetServer(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func handleToggleUsenetServer(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	server, err := usenet_server.GetById(id)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	if server == nil {
+		ErrorNotFound(r).WithMessage("usenet server not found").Send(w, r)
+		return
+	}
+
+	providerId := server.ProviderId()
+
+	if !server.Disabled {
+		if err := usenetmanager.LockServer(providerId); err != nil {
+			ErrorLocked(r).WithMessage("cannot disable server with active connections").Send(w, r)
+			return
+		}
+		defer usenetmanager.UnlockServer(providerId)
+	}
+
+	if err := usenet_server.SetDisabled(id, !server.Disabled); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	if !server.Disabled {
+		usenetmanager.RemoveServer(providerId)
+	} else {
+		usenetmanager.AddServer(server.Id)
+	}
+
+	server.Disabled = !server.Disabled
+
+	SendData(w, r, 200, toUsenetServerResponse(server))
+}
+
 func AddVaultUsenetEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
@@ -379,6 +420,14 @@ func AddVaultUsenetEndpoints(router *http.ServeMux) {
 			handleUpdateUsenetServer(w, r)
 		case http.MethodDelete:
 			handleDeleteUsenetServer(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+	router.HandleFunc("/vault/usenet/servers/{id}/toggle", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleToggleUsenetServer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}
