@@ -929,6 +929,14 @@ func PrintConfig(state *AppState) {
 			if !Feature.HasVault() {
 				disabled = " (disabled)"
 			}
+		case FeatureStremioList:
+			if !Feature.HasStremioList() {
+				disabled = " (disabled)"
+			}
+		case FeatureStremioNewz:
+			if !Feature.HasStremioNewz() {
+				disabled = " (disabled)"
+			}
 		default:
 			if !Feature.IsEnabled(feature) {
 				disabled = " (disabled)"
@@ -941,6 +949,8 @@ func PrintConfig(state *AppState) {
 		switch feature {
 		case FeatureStremioList:
 			l.Println("       public max list count: " + strconv.Itoa(Stremio.List.PublicMaxListCount))
+		case FeatureStremioNewz:
+			l.Println("       indexer max timeout: " + Stremio.Newz.IndexerMaxTimeout.String())
 		case FeatureStremioStore:
 			l.Println("       catalog item limit: " + strconv.Itoa(Stremio.Store.CatalogItemLimit))
 			l.Println("       catalog cache time: " + Stremio.Store.CatalogCacheTime.String())
@@ -1062,6 +1072,17 @@ func PrintConfig(state *AppState) {
 		}
 	}
 	l.Println()
+
+	if Feature.HasVault() {
+		l.Println(" Newz:")
+		l.Println("         nzb cache size: " + util.ToSize(NewzNZBCacheSize))
+		l.Println("          nzb cache ttl: " + NewzNZBCacheTTL.String())
+		l.Println("      nzb max file size: " + util.ToSize(NewzNZBMaxFileSize))
+		l.Println("     segment cache size: " + util.ToSize(NewzSegmentCacheSize))
+		l.Println("     stream buffer size: " + util.ToSize(NewzStreamBufferSize))
+		l.Println("   max conn. per stream: " + strconv.Itoa(NewzMaxConnectionPerStream))
+		l.Println()
+	}
 
 	l.Println(" Instance ID:")
 	l.Println("   " + InstanceId)
