@@ -317,7 +317,9 @@ func (p *Pool) StreamLargestFile(
 		return nil, errors.New("NZB has no files")
 	}
 
-	largestFileIdx := nzbDoc.GetLargestFileIdx()
+	largestFileIdx := nzbDoc.GetLargestFileIdx(func(filename string) bool {
+		return !isVideoFile(filename) && !IsArchiveFile(filename)
+	})
 
 	p.Log.Trace("found largest file", "idx", largestFileIdx)
 

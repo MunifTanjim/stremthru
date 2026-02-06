@@ -137,10 +137,13 @@ func (n *NZB) GetMeta(metaType string) string {
 	return ""
 }
 
-func (n *NZB) GetLargestFileIdx() int {
+func (n *NZB) GetLargestFileIdx(skip func(filename string) bool) int {
 	largestIdx := -1
 	largestSize := int64(0)
 	for i := range n.Files {
+		if skip != nil && skip(n.Files[i].GetName()) {
+			continue
+		}
 		size := n.Files[i].TotalSize()
 		if size > largestSize {
 			largestSize = size
