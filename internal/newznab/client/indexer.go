@@ -44,7 +44,8 @@ type Newz struct {
 
 	DownloadLink string // Direct NZB download URL
 
-	Hash string
+	Hash    string
+	Indexer ChannelItemIndexer
 
 	LockedDownload bool
 	LockedProvider string
@@ -67,12 +68,25 @@ type Indexer interface {
 	Search(query url.Values, headers http.Header) ([]Newz, error)
 }
 
+type ChannelItemIndexer struct {
+	Host string `xml:"host,attr"`
+	Name string `xml:"name,attr"`
+}
+
+type ChannelItemProwlarrIndexer struct {
+	ID   string `xml:"id,attr"`
+	Type string `xml:"type,attr"` // private
+	Name string `xml:",chardata"`
+}
+
 type ChannelItem struct {
 	znab.ChannelItem
-	Size       int64                 `xml:"size"`
-	Comments   string                `xml:"comments"`
-	Grabs      int                   `xml:"grabs"`
-	Attributes znab.ChannelItemAttrs `xml:"http://www.newznab.com/DTD/2010/feeds/attributes/ attr"`
+	Size            int64                      `xml:"size"`
+	Comments        string                     `xml:"comments"`
+	Grabs           int                        `xml:"grabs"`
+	Indexer         ChannelItemIndexer         `xml:"indexer"`
+	ProwlarrIndexer ChannelItemProwlarrIndexer `xml:"prowlarrindexer"`
+	Attributes      znab.ChannelItemAttrs      `xml:"http://www.newznab.com/DTD/2010/feeds/attributes/ attr"`
 }
 
 func (o ChannelItem) ToNewz() *Newz {
@@ -121,6 +135,13 @@ func (o ChannelItem) ToNewz() *Newz {
 	nzb.Episode = o.Attributes.Get(znab.NewznabAttrNameEpisode)
 
 	nzb.DownloadLink = o.Enclosure.URL
+	nzb.Indexer = o.Indexer
+	if nzb.Indexer.Name == "" {
+		nzb.Indexer.Name = o.Attributes.Get("hydraIndexerName")
+	}
+	if nzb.Indexer.Name == "" {
+		nzb.Indexer.Name = o.ProwlarrIndexer.Name
+	}
 
 	return nzb
 }
@@ -153,7 +174,11 @@ func (c *Client) Search(query url.Values, headers http.Header) ([]Newz, error) {
 		if item.Size == 0 && item.Enclosure.Length == 0 {
 			continue
 		}
-		result = append(result, *item.ToNewz())
+		newz := item.ToNewz()
+		if newz.Indexer.Host == "" {
+			newz.Indexer.Host = c.BaseURL.Host
+		}
+		result = append(result, *newz)
 	}
 	return result, nil
 }

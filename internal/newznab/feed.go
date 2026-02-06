@@ -10,8 +10,28 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
+type ChannelItemIndexer struct {
+	Host string `xml:"host,attr"`
+	Name string `xml:"name,attr"`
+}
+
+type jsonChannelItemIndexer struct {
+	Attributes struct {
+		Host string `json:"host"`
+		Name string `json:"name"`
+	} `json:"@attributes"`
+}
+
+func (i ChannelItemIndexer) MarshalJSON() ([]byte, error) {
+	ji := jsonChannelItemIndexer{}
+	ji.Attributes.Host = i.Host
+	ji.Attributes.Name = i.Name
+	return json.Marshal(ji)
+}
+
 type ChannelItem struct {
 	znab.ChannelItem
+	Indexer    ChannelItemIndexer    `xml:"indexer" json:"indexer"`
 	Attributes znab.ChannelItemAttrs `xml:"newznab:attr" json:"attr"`
 }
 
@@ -37,10 +57,7 @@ type FeedItem struct {
 	Size    int64
 	Year    int
 
-	Indexer struct {
-		ID   string
-		Name string
-	}
+	Indexer ChannelItemIndexer
 }
 
 func (fi FeedItem) toChannelItem() ChannelItem {
@@ -84,9 +101,6 @@ func (fi FeedItem) toChannelItem() ChannelItem {
 	if fi.Password {
 		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.NewznabAttrNamePassword, Value: "1"})
 	}
-	if fi.Indexer.Name != "" {
-		attrs = append(attrs, znab.ChannelItemAttr{Name: "indexer", Value: fi.Indexer.Name})
-	}
 
 	return ChannelItem{
 		ChannelItem: znab.ChannelItem{
@@ -103,6 +117,7 @@ func (fi FeedItem) toChannelItem() ChannelItem {
 				Type:   "application/x-nzb",
 			},
 		},
+		Indexer:    fi.Indexer,
 		Attributes: attrs,
 	}
 }
