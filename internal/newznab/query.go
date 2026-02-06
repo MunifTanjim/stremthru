@@ -24,6 +24,10 @@ type Query struct {
 }
 
 func (query Query) HasTVShows() bool {
+	if query.Type == string(znab.FunctionSearchTV) {
+		return true
+	}
+
 	for _, cat := range query.Categories {
 		if CategoryTV.ID <= cat && cat < 6000 {
 			return true
@@ -33,6 +37,10 @@ func (query Query) HasTVShows() bool {
 }
 
 func (query Query) HasMovies() bool {
+	if query.Type == string(znab.FunctionSearchMovie) {
+		return true
+	}
+
 	for _, cat := range query.Categories {
 		if CategoryMovies.ID <= cat && cat < 3000 {
 			return true
