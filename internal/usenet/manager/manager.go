@@ -53,14 +53,10 @@ func (m *Manager) getProviderAcquiredCount(serverId string) int {
 	return pool.GetAcquiredConnectionCount(serverId)
 }
 
-func GetPool(log *logger.Logger) (*usenet_pool.Pool, error) {
-	if log == nil {
-		log = logger.Scoped("usenet/pool/manager")
-	}
-
+func GetPool() (*usenet_pool.Pool, error) {
 	var initErr error
 	globalManager.initOnce.Do(func() {
-		globalManager.log = log
+		globalManager.log = logger.Scoped("usenet/manager")
 		initErr = globalManager.initialize()
 	})
 
@@ -153,7 +149,7 @@ func (m *Manager) initialize() error {
 }
 
 func (m *Manager) rebuildPool() error {
-	servers, err := usenet_server.GetAll()
+	servers, err := usenet_server.GetAllEnabled()
 	if err != nil {
 		m.log.Error("failed to get servers from vault", "error", err)
 		return err
