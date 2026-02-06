@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 
 export type UsenetServer = {
   created_at: string;
+  disabled: boolean;
   host: string;
   id: string;
   is_backup: boolean;
@@ -97,7 +98,17 @@ export function useUsenetServerMutation() {
     mutationFn: pingUsenetServer,
   });
 
-  return { create, ping, remove, update };
+  const toggle = useMutation({
+    mutationFn: toggleUsenetServer,
+    onSuccess: async (data, _, __, ctx) => {
+      ctx.client.setQueryData<UsenetServer[]>(
+        ["/vault/usenet/servers"],
+        (list) => list?.map((item) => (item.id === data.id ? data : item)),
+      );
+    },
+  });
+
+  return { create, ping, remove, toggle, update };
 }
 
 export function useUsenetServers() {
@@ -127,6 +138,13 @@ async function pingUsenetServer(params: PingUsenetServerParams) {
   const { data } = await api<PingUsenetServerResponse>(
     "POST /vault/usenet/servers/ping",
     { body: params },
+  );
+  return data;
+}
+
+async function toggleUsenetServer(id: string) {
+  const { data } = await api<UsenetServer>(
+    `POST /vault/usenet/servers/${id}/toggle`,
   );
   return data;
 }

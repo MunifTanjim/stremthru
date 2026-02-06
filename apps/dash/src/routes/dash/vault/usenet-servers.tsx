@@ -4,6 +4,7 @@ import {
   CheckCircle,
   Pencil,
   Plus,
+  Power,
   ShieldCheck,
   Trash2,
   XCircle,
@@ -56,6 +57,7 @@ declare module "@/components/data-table" {
     UsenetServer: {
       onEdit: (item: UsenetServer) => void;
       removeServer: ReturnType<typeof useUsenetServerMutation>["remove"];
+      toggleServer: ReturnType<typeof useUsenetServerMutation>["toggle"];
     };
   }
 
@@ -113,6 +115,23 @@ const columns: ColumnDef<UsenetServer>[] = [
   col.accessor("max_connections", {
     header: "Max Conn",
   }),
+  col.accessor("disabled", {
+    cell: ({ getValue }) => {
+      const disabled = getValue();
+      return disabled ? (
+        <span className="flex items-center gap-1 text-red-500">
+          <XCircle className="size-4" />
+          Disabled
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-green-500">
+          <CheckCircle className="size-4" />
+          Enabled
+        </span>
+      );
+    },
+    header: "Status",
+  }),
   col.accessor("updated_at", {
     cell: ({ getValue }) => {
       const date = DateTime.fromISO(getValue());
@@ -122,10 +141,44 @@ const columns: ColumnDef<UsenetServer>[] = [
   }),
   col.display({
     cell: (c) => {
-      const { onEdit, removeServer } = c.table.options.meta!.ctx;
+      const { onEdit, removeServer, toggleServer } = c.table.options.meta!.ctx;
       const item = c.row.original;
       return (
         <div className="flex gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={toggleServer.isPending}
+                onClick={() => {
+                  toast.promise(toggleServer.mutateAsync(item.id), {
+                    error(err: APIError) {
+                      console.error(err);
+                      return {
+                        closeButton: true,
+                        message: err.message,
+                      };
+                    },
+                    loading: item.disabled ? "Enabling..." : "Disabling...",
+                    success: {
+                      closeButton: true,
+                      message: item.disabled
+                        ? "Enabled successfully!"
+                        : "Disabled successfully!",
+                    },
+                  });
+                }}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <Power
+                  className={item.disabled ? "text-red-500" : "text-green-500"}
+                />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {item.disabled ? "Enable" : "Disable"}
+            </TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -439,7 +492,8 @@ export const Route = createFileRoute("/dash/vault/usenet-servers")({
 
 function RouteComponent() {
   const usenetServers = useUsenetServers();
-  const { remove: removeServer } = useUsenetServerMutation();
+  const { remove: removeServer, toggle: toggleServer } =
+    useUsenetServerMutation();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editItem, setEditItem] = useState<null | UsenetServer>(null);
@@ -459,6 +513,7 @@ function RouteComponent() {
       ctx: {
         onEdit: onEditItem,
         removeServer,
+        toggleServer,
       },
     },
   });

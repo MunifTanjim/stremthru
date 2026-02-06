@@ -40,6 +40,7 @@ type UsenetServer struct {
 	Priority       int
 	IsBackup       bool
 	MaxConnections int
+	Disabled       bool
 	CAt            db.Timestamp
 	UAt            db.Timestamp
 }
@@ -93,6 +94,7 @@ var Column = struct {
 	Priority       string
 	IsBackup       string
 	MaxConnections string
+	Disabled       string
 	CAt            string
 	UAt            string
 }{
@@ -107,6 +109,7 @@ var Column = struct {
 	Priority:       "priority",
 	IsBackup:       "is_backup",
 	MaxConnections: "max_conn",
+	Disabled:       "disabled",
 	CAt:            "cat",
 	UAt:            "uat",
 }
@@ -123,6 +126,7 @@ var columns = []string{
 	Column.Priority,
 	Column.IsBackup,
 	Column.MaxConnections,
+	Column.Disabled,
 	Column.CAt,
 	Column.UAt,
 }
@@ -144,6 +148,7 @@ var query_upsert = fmt.Sprintf(
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Priority, Column.Priority),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.IsBackup, Column.IsBackup),
 		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.MaxConnections, Column.MaxConnections),
+		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Disabled, Column.Disabled),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
 )
@@ -161,6 +166,7 @@ func (s *UsenetServer) Upsert() error {
 		s.Priority,
 		s.IsBackup,
 		s.MaxConnections,
+		s.Disabled,
 	)
 	return err
 }
@@ -183,7 +189,34 @@ func GetAll() ([]UsenetServer, error) {
 	items := []UsenetServer{}
 	for rows.Next() {
 		item := UsenetServer{}
-		if err := rows.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+var query_get_all_enabled = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = %s ORDER BY %s ASC, %s DESC`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.Disabled, db.BooleanFalse,
+	Column.Priority,
+	Column.UAt,
+)
+
+func GetAllEnabled() ([]UsenetServer, error) {
+	rows, err := db.Query(query_get_all_enabled)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []UsenetServer{}
+	for rows.Next() {
+		item := UsenetServer{}
+		if err := rows.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -202,7 +235,7 @@ func GetById(id string) (*UsenetServer, error) {
 	row := db.QueryRow(query_get_by_id, id)
 
 	item := UsenetServer{}
-	if err := row.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Name, &item.Host, &item.Port, &item.Username, &item.Password, &item.TLS, &item.TLSSkipVerify, &item.Priority, &item.IsBackup, &item.MaxConnections, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -219,5 +252,18 @@ var query_delete = fmt.Sprintf(
 
 func Delete(id string) error {
 	_, err := db.Exec(query_delete, id)
+	return err
+}
+
+var query_set_disabled = fmt.Sprintf(
+	`UPDATE %s SET %s = ?, %s = %s WHERE %s = ?`,
+	TableName,
+	Column.Disabled,
+	Column.UAt, db.CurrentTimestamp,
+	Column.Id,
+)
+
+func SetDisabled(id string, disabled bool) error {
+	_, err := db.Exec(query_set_disabled, disabled, id)
 	return err
 }
