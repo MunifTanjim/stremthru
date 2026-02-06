@@ -41,7 +41,7 @@ func (sti stremThruIndexer) Capabilities() znab.Caps {
 }
 
 func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
-	indexers, err := newznab_indexer.GetAll()
+	indexers, err := newznab_indexer.GetAllEnabled()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch indexers: %w", err)
 	}

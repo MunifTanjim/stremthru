@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 
 export type NewznabIndexer = {
   created_at: string;
+  disabled: boolean;
   id: number;
   name: string;
   rate_limit_config_id: null | string;
@@ -68,7 +69,17 @@ export function useNewznabIndexerMutation() {
     mutationFn: testNewznabIndexer,
   });
 
-  return { create, remove, test, update };
+  const toggle = useMutation({
+    mutationFn: toggleNewznabIndexer,
+    onSuccess: async (data, _, __, ctx) => {
+      ctx.client.setQueryData<NewznabIndexer[]>(
+        ["/vault/newznab/indexers"],
+        (items) => items?.map((item) => (item.id == data.id ? data : item)),
+      );
+    },
+  });
+
+  return { create, remove, test, toggle, update };
 }
 
 export function useNewznabIndexers() {
@@ -97,6 +108,13 @@ async function getNewznabIndexers() {
 async function testNewznabIndexer(id: number) {
   const { data } = await api<NewznabIndexer>(
     `POST /vault/newznab/indexers/${id}/test`,
+  );
+  return data;
+}
+
+async function toggleNewznabIndexer(id: number) {
+  const { data } = await api<NewznabIndexer>(
+    `POST /vault/newznab/indexers/${id}/toggle`,
   );
   return data;
 }
