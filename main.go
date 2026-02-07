@@ -57,6 +57,7 @@ func main() {
 	endpoint.AddTorznabEndpoints(mux)
 	endpoint.AddNewznabEndpoints(mux)
 	endpoint.AddExperimentEndpoints(mux)
+	endpoint.AddEndpoints(mux)
 
 	handler := shared.RootServerContext(mux)
 

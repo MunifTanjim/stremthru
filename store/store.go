@@ -397,6 +397,36 @@ type GetNewzData struct {
 	Files  []NewzFile `json:"files"`
 }
 
+type ListNewzParams struct {
+	Ctx
+	Limit    int // min 1, max 500, default 100
+	Offset   int // default 0
+	ClientIP string
+}
+
+type ListNewzDataItem struct {
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  NewzStatus `json:"status"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
+type ListNewzData struct {
+	Items      []ListNewzDataItem `json:"items"`
+	TotalItems int                `json:"total_items"`
+}
+
+type RemoveNewzParams struct {
+	Ctx
+	Id string
+}
+
+type RemoveNewzData struct {
+	Id string `json:"id"`
+}
+
 type GenerateNewzLinkParams struct {
 	Ctx
 	Link     string
@@ -409,8 +439,11 @@ type GenerateNewzLinkData struct {
 
 type NewzStore interface {
 	GetName() StoreName
+	GetUser(params *GetUserParams) (*User, error)
 	CheckNewz(params *CheckNewzParams) (*CheckNewzData, error)
 	AddNewz(params *AddNewzParams) (*AddNewzData, error)
 	GetNewz(params *GetNewzParams) (*GetNewzData, error)
+	ListNewz(params *ListNewzParams) (*ListNewzData, error)
+	RemoveNewz(params *RemoveNewzParams) (*RemoveNewzData, error)
 	GenerateNewzLink(params *GenerateNewzLinkParams) (*GenerateNewzLinkData, error)
 }
