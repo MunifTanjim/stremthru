@@ -77,7 +77,7 @@ func handleCreateStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if len(errs) > 0 {
-		ErrorBadRequest(r, "").Append(errs...).Send(w, r)
+		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return
 	}
 
@@ -87,12 +87,12 @@ func handleCreateStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if existing != nil {
-		ErrorBadRequest(r, "link already exists").Send(w, r)
+		ErrorBadRequest(r).WithMessage("link already exists").Send(w, r)
 		return
 	}
 
 	if !request.SyncConfig.Watched.Direction.IsValid() {
-		ErrorBadRequest(r, "invalid sync direction").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid sync direction").Send(w, r)
 		return
 	}
 
@@ -119,7 +119,7 @@ func handleGetStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -145,12 +145,12 @@ func handleUpdateStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
 	if !request.SyncConfig.Watched.Direction.IsValid() {
-		ErrorBadRequest(r, "invalid sync direction").Send(w, r)
+		ErrorBadRequest(r).WithMessage("invalid sync direction").Send(w, r)
 		return
 	}
 
@@ -172,7 +172,7 @@ func handleDeleteStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -193,7 +193,7 @@ func handleSyncStremioStremioLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 
@@ -210,7 +210,7 @@ func handleResetStremioStremioLinkSyncState(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if link == nil {
-		ErrorNotFound(r, "").Send(w, r)
+		ErrorNotFound(r).Send(w, r)
 		return
 	}
 

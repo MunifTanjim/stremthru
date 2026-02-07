@@ -10,6 +10,7 @@ import {
   LogOut,
   MagnetIcon,
   Moon,
+  NewspaperIcon,
   Settings,
   Sparkles,
   Sun,
@@ -281,6 +282,27 @@ function useNavItems(): NavItem[] {
     items.push(torrents);
 
     if (server?.feature.vault) {
+      const usenet: NavItem = {
+        icon: NewspaperIcon,
+        items: [
+          {
+            path: "/dash/usenet/config",
+            title: "Config",
+          },
+          {
+            path: "/dash/usenet/nzb",
+            title: "NZB",
+          },
+          {
+            path: "/dash/usenet/queue",
+            title: "Queue 🧪",
+          },
+        ],
+        path: "/dash/usenet",
+        title: "Usenet",
+      };
+      items.push(usenet);
+
       const vault: NavItem = {
         icon: Lock,
         items: [
@@ -305,6 +327,14 @@ function useNavItems(): NavItem[] {
       vault.items!.push({
         path: "/dash/vault/torznab-indexers",
         title: "Torznab Indexers",
+      });
+      vault.items!.push({
+        path: "/dash/vault/usenet-servers",
+        title: "Usenet Servers",
+      });
+      vault.items!.push({
+        path: "/dash/vault/newznab-indexers",
+        title: "Newznab Indexers",
       });
       items.push(vault);
 

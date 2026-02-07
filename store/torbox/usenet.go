@@ -1,11 +1,13 @@
 package torbox
 
 import (
+	"mime/multipart"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type CheckUsenetCachedDataItem struct {
@@ -47,6 +49,7 @@ const (
 
 type CreateUsenetDownloadParams struct {
 	Ctx
+	File           *multipart.FileHeader
 	Link           string
 	Name           string
 	Password       string
@@ -55,19 +58,39 @@ type CreateUsenetDownloadParams struct {
 }
 
 func (c APIClient) CreateUsenetDownload(params *CreateUsenetDownloadParams) (APIResponse[CreateUsenetDownloadData], error) {
-	form := &url.Values{}
-	form.Add("link", params.Link)
-	if params.Name != "" {
-		form.Add("name", params.Name)
+	if params.Link != "" {
+		form := &url.Values{}
+		form.Add("link", params.Link)
+		form.Add("as_queued", strconv.FormatBool(params.AsQueued))
+		if params.Name != "" {
+			form.Add("name", params.Name)
+		}
+		if params.Password != "" {
+			form.Add("password", params.Password)
+		}
+		if params.PostProcessing != 0 {
+			form.Add("post_processing", strconv.Itoa(int(params.PostProcessing-1)))
+		}
+		params.Form = form
+	} else {
+		form := &multipart.Form{}
+		form.File = map[string][]*multipart.FileHeader{
+			"file": {params.File},
+		}
+		form.Value = map[string][]string{
+			"as_queued": {strconv.FormatBool(params.AsQueued)},
+		}
+		if params.Name != "" {
+			form.Value["name"] = []string{params.Name}
+		}
+		if params.Password != "" {
+			form.Value["password"] = []string{params.Password}
+		}
+		if params.PostProcessing != 0 {
+			form.Value["post_processing"] = []string{strconv.Itoa(int(params.PostProcessing - 1))}
+		}
+		params.MultiPartForm = form
 	}
-	if params.Password != "" {
-		form.Add("password", params.Password)
-	}
-	if params.PostProcessing != 0 {
-		form.Add("post_processing", strconv.Itoa(int(params.PostProcessing-1)))
-	}
-	form.Add("as_queued", strconv.FormatBool(params.AsQueued))
-	params.Form = form
 	response := &Response[CreateUsenetDownloadData]{}
 	res, err := c.Request("POST", "/v1/api/usenet/createusenetdownload", params, response)
 	return newAPIResponse(res, response.Data, response.Detail), err
@@ -76,17 +99,27 @@ func (c APIClient) CreateUsenetDownload(params *CreateUsenetDownloadParams) (API
 type UsenetDownloadState = TorrentDownloadState
 
 type UsenetDownloadFile struct {
-	Id           int    `json:"id"`
-	MD5          string `json:"md5"`
-	Hash         string `json:"hash"`
-	Name         string `json:"name"`
-	Size         int64  `json:"size"`
-	Zipped       bool   `json:"zipped"`
-	S3Path       string `json:"s3_path"`
-	Infected     bool   `json:"infected"`
-	MimeType     string `json:"mimetype"`
-	ShortName    string `json:"short_name"`
-	AbsolutePath string `json:"absolute_path"`
+	Id                int    `json:"id"`
+	MD5               string `json:"md5"`
+	Hash              string `json:"hash"`
+	Name              string `json:"name"`
+	Size              int64  `json:"size"`
+	Zipped            bool   `json:"zipped"`
+	S3Path            string `json:"s3_path"`
+	Infected          bool   `json:"infected"`
+	MimeType          string `json:"mimetype"`
+	ShortName         string `json:"short_name"`
+	AbsolutePath      string `json:"absolute_path"`
+	OpensubtitlesHash string `json:"opensubtitles_hash"`
+}
+
+func (f UsenetDownloadFile) GetName() string {
+	return f.ShortName
+}
+
+func (f UsenetDownloadFile) GetPath() string {
+	path, _ := util.RemoveRootFolderFromPath(f.Name)
+	return path
 }
 
 type UsenetDownload struct {

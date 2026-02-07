@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"io"
 
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -39,13 +40,13 @@ func Encrypt(secret, value string) (string, error) {
 
 	nonce_and_ciphertext := aesGCM.Seal(nonce, nonce, []byte(value), nil)
 
-	return Base64EncodeByte(nonce_and_ciphertext), nil
+	return util.Base64EncodeByte(nonce_and_ciphertext), nil
 }
 
 func Decrypt(secret, value string) (string, error) {
 	key := derive32ByteKey(secret)
 
-	nonce_and_ciphertext, err := Base64DecodeToByte(value)
+	nonce_and_ciphertext, err := util.Base64DecodeToByte(value)
 	if err != nil {
 		return "", err
 	}

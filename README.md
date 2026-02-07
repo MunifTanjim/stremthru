@@ -256,6 +256,107 @@ Max number of upstream allowed on public instance.
 
 Max number of stores allowed on public instance.
 
+#### StremThru Newz Config
+
+##### `STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT`
+
+Max timeout for newz indexer requests, default `15s`. Minimum `2s`, maximum `60s`.
+
+#### Newz Config
+
+##### `STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM`
+
+Maximum number of concurrent connections per stream, default `8`.
+
+##### `STREMTHRU_NEWZ_NZB_CACHE_SIZE`
+
+Size of NZB file cache, default `512MB`.
+
+##### `STREMTHRU_NEWZ_NZB_CACHE_TTL`
+
+TTL for cached NZB files, default `24h`. Minimum `6h`.
+
+##### `STREMTHRU_NEWZ_NZB_LINK_MODE`
+
+Comma separated list of NZB link mode config, in `hostname:mode` format.
+
+| `mode`     | Description                 |
+| ---------- | --------------------------- |
+| `proxy`    | Act as a proxy for NZB file |
+| `redirect` | Redirect to NZB url         |
+
+If `hostname` is `*`, it is used as fallback. Default `*:proxy`.
+
+##### `STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE`
+
+Maximum NZB file size allowed, default `50MB`.
+
+##### `STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE`
+
+Size of Usenet segment cache, default `10GB`.
+
+##### `STREMTHRU_NEWZ_STREAM_BUFFER_SIZE`
+
+Buffer size for streaming Usenet content, default `200MB`.
+
+##### `STREMTHRU_NEWZ_QUERY_HEADER`
+
+Custom headers for indexer query requests.
+
+Format:
+
+```
+[query_type]
+:preset_name:
+Header-Name: Header-Value
+```
+
+`query_type` can be `*` (fallback), `movie`, `tv`.
+
+Available `preset_name`:
+
+- `chrome`
+- `prowlarr`
+- `radarr`
+- `sonarr`
+
+Example:
+
+```
+[*]
+:prowlarr:
+
+[movie]
+:radarr:
+
+[tv]
+:sonarr:
+Header-Name: Header-Value
+```
+
+##### `STREMTHRU_NEWZ_GRAB_HEADER`
+
+Custom headers for NZB file download requests.
+
+Format:
+
+```
+:preset_name:
+Header-Name: Header-Value
+```
+
+Available `preset_name`:
+
+- `chrome`
+- `nzbget`
+- `sabnzbd`
+
+Example:
+
+```
+:sabnzbd:
+```
+
 #### AniList Integration
 
 ##### `STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME`
@@ -625,6 +726,165 @@ Generate direct link for a file link.
 > [!NOTE]
 > The generated direct link should be valid for 12 hours.
 
+#### Add Newz
+
+**`POST /v0/store/newz`**
+
+Add NZB for download.
+
+**Request**:
+
+NZB Link:
+
+```json
+{
+  "link": "string"
+}
+```
+
+NZB File:
+
+`multipart/form-data` request with an NZB file in `file` field.
+
+**Response**:
+
+```json
+{
+  "data": {
+    "id": "string",
+    "hash": "string",
+    "status": "NewzStatus"
+  }
+}
+```
+
+#### List Newz
+
+**`GET /v0/store/newz`**
+
+List newz on user's account.
+
+**Query Parameter**:
+
+- `limit`: min `1`, max `500`, default `100`
+- `offset`: min `0`, default `0`
+
+**Response**:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "hash": "string",
+        "name": "string",
+        "size": "int",
+        "status": "NewzStatus",
+        "added_at": "datetime"
+      }
+    ],
+    "total_items": "int"
+  }
+}
+```
+
+#### Get Newz
+
+**`GET /v0/store/newz/{newzId}`**
+
+Get newz on user's account.
+
+**Path Parameter**:
+
+- `newzId`: newz id
+
+**Response**:
+
+```json
+{
+  "data": {
+    "id": "string",
+    "hash": "string",
+    "name": "string",
+    "size": "int",
+    "status": "NewzStatus",
+    "files": [
+      {
+        "index": "int",
+        "link": "string",
+        "name": "string",
+        "path": "string",
+        "size": "int",
+        "video_hash": "string"
+      }
+    ]
+  }
+}
+```
+
+#### Remove Newz
+
+**`DELETE /v0/store/newz/{newzId}`**
+
+Remove newz from user's account.
+
+**Path Parameter**:
+
+- `newzId`: newz id
+
+#### Check Newz
+
+**`GET /v0/store/newz/check`**
+
+Check NZB hashes.
+
+**Query Parameter**:
+
+- `hash`: comma separated hashes (min `1`, max `500`)
+
+**Response**:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "hash": "string",
+        "status": "NewzStatus"
+      }
+    ]
+  }
+}
+```
+
+#### Generate Newz Link
+
+**`POST /v0/store/newz/link/generate`**
+
+Generate direct link for a newz file link.
+
+**Request**:
+
+```json
+{
+  "link": "string"
+}
+```
+
+**Response**:
+
+```json
+{
+  "data": {
+    "link": "string"
+  }
+}
+```
+
+> [!NOTE]
+> The generated direct link should be valid for 12 hours.
+
 ### Meta
 
 #### Get ID Map
@@ -682,6 +942,14 @@ Extra Features for Stremio.
 - `uploading`
 - `failed`
 - `invalid`
+- `unknown`
+
+#### NewzStatus
+
+- `cached`
+- `queued`
+- `downloading`
+- `downloaded`
 - `unknown`
 
 #### UserSubscriptionStatus

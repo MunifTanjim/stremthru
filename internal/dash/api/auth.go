@@ -70,9 +70,9 @@ var sessionStorage = func() SessionStorage {
 	}
 
 	return cache.NewCache[Session](&cache.CacheConfig{
-		Lifetime:      7 * 24 * time.Hour,
-		Name:          "dash:session",
-		LocalCapacity: 8,
+		Lifetime: 7 * 24 * time.Hour,
+		Name:     "dash:session",
+		MaxSize:  8,
 	})
 }()
 
@@ -154,7 +154,7 @@ func HandleSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if password := config.AdminPassword.GetPassword(request.User); password == "" || password != request.Password {
-		ErrorUnauthorized(r, "Invalid Credentials").Send(w, r)
+		ErrorUnauthorized(r).WithMessage("Invalid Credentials").Send(w, r)
 		return
 	}
 

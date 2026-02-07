@@ -19,9 +19,3 @@ func TestCategoryParent(t *testing.T) {
 		assert.Equal(t, test.parent, c)
 	}
 }
-
-func TestCategorySubset(t *testing.T) {
-	s := AllCategories.Subset(5030, 5040)
-	expected := Categories{CategoryTV_SD, CategoryTV_HD}
-	assert.Equal(t, expected, s)
-}

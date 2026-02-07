@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -128,6 +129,7 @@ type StreamExtractorResult struct {
 	*ptt.Result
 
 	Addon     StreamExtractorResultAddon
+	Age       time.Duration
 	Category  string
 	Episode   int
 	File      StreamExtractorResultFile

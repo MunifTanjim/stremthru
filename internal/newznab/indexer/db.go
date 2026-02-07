@@ -1,0 +1,342 @@
+package newznab_indexer
+
+import (
+	"database/sql"
+	"fmt"
+	"net/url"
+	"strings"
+
+	"github.com/MunifTanjim/stremthru/core"
+	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/db"
+	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
+	"github.com/MunifTanjim/stremthru/internal/ratelimit"
+	rrl "github.com/nccapo/rate-limiter"
+)
+
+func encrypt(value string) (string, error) {
+	return core.Encrypt(config.VaultSecret, value)
+}
+
+func decrypt(value string) (string, error) {
+	return core.Decrypt(config.VaultSecret, value)
+}
+
+const TableName = "newznab_indexer"
+
+type IndexerType string
+
+const (
+	IndexerTypeGeneric IndexerType = "generic"
+)
+
+func (it IndexerType) IsValid() bool {
+	switch it {
+	case IndexerTypeGeneric:
+		return true
+	default:
+		return false
+	}
+}
+
+type NewznabIndexer struct {
+	Id                int64
+	Type              IndexerType
+	Name              string
+	URL               string
+	APIKey            string
+	RateLimitConfigId sql.NullString
+	Disabled          bool
+	CAt               db.Timestamp
+	UAt               db.Timestamp
+
+	host   string
+	apikey string
+}
+
+func (idxr *NewznabIndexer) GetHost() string {
+	if idxr.host == "" {
+		if u, err := url.Parse(idxr.URL); err == nil {
+			idxr.host = u.Host
+		}
+	}
+	return idxr.host
+}
+
+type newznabIndexerRateLimiter struct {
+	*ratelimit.Limiter
+	prefix string
+}
+
+func (rl *newznabIndexerRateLimiter) Try() (*rrl.RateLimitResult, error) {
+	return rl.Limiter.Try(rl.prefix)
+}
+
+func (rl *newznabIndexerRateLimiter) Wait() error {
+	return rl.Limiter.Wait(rl.prefix)
+}
+
+func (idxr NewznabIndexer) GetRateLimiter() (*newznabIndexerRateLimiter, error) {
+	if !idxr.RateLimitConfigId.Valid {
+		return nil, nil
+	}
+	rl, err := ratelimit.NewLimiterById(idxr.RateLimitConfigId.String)
+	if err != nil {
+		return nil, err
+	}
+	return &newznabIndexerRateLimiter{
+		Limiter: rl,
+		prefix:  fmt.Sprintf("newznab:%d", idxr.Id),
+	}, nil
+}
+
+func NewNewznabIndexer(url, apiKey string) (*NewznabIndexer, error) {
+	indexer := &NewznabIndexer{
+		Type: IndexerTypeGeneric,
+		URL:  url,
+	}
+	err := indexer.SetAPIKey(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	return indexer, nil
+}
+
+func (idxr *NewznabIndexer) SetAPIKey(apiKey string) error {
+	encAPIKey, err := encrypt(apiKey)
+	if err != nil {
+		return err
+	}
+	idxr.APIKey = encAPIKey
+	return nil
+}
+
+func (idxr *NewznabIndexer) GetAPIKey() (string, error) {
+	if idxr.APIKey == "" {
+		return "", nil
+	}
+	if idxr.apikey == "" {
+		apikey, err := decrypt(idxr.APIKey)
+		if err != nil {
+			return "", err
+		}
+		idxr.apikey = apikey
+	}
+	return idxr.apikey, nil
+}
+
+func (idxr *NewznabIndexer) Validate() error {
+	apiKey, err := idxr.GetAPIKey()
+	if err != nil {
+		return fmt.Errorf("failed to decrypt api key: %w", err)
+	}
+
+	client := newznab_client.NewClient(&newznab_client.ClientConfig{
+		BaseURL: idxr.URL,
+		APIKey:  apiKey,
+	})
+
+	caps, err := client.GetCaps()
+	if err != nil {
+		return fmt.Errorf("failed to fetch capabilities: %w", err)
+	}
+
+	if idxr.Name == "" && caps.Server.Title != "" {
+		idxr.Name = caps.Server.Title
+	}
+
+	return nil
+}
+
+var Column = struct {
+	Id                string
+	Type              string
+	Name              string
+	URL               string
+	APIKey            string
+	RateLimitConfigId string
+	Disabled          string
+	CAt               string
+	UAt               string
+}{
+	Id:                "id",
+	Type:              "type",
+	Name:              "name",
+	URL:               "url",
+	APIKey:            "api_key",
+	RateLimitConfigId: "rate_limit_config_id",
+	Disabled:          "disabled",
+	CAt:               "cat",
+	UAt:               "uat",
+}
+
+var columns = []string{
+	Column.Id,
+	Column.Type,
+	Column.Name,
+	Column.URL,
+	Column.APIKey,
+	Column.RateLimitConfigId,
+	Column.Disabled,
+	Column.CAt,
+	Column.UAt,
+}
+
+var columnsInsert = []string{
+	Column.Type,
+	Column.Name,
+	Column.URL,
+	Column.APIKey,
+	Column.RateLimitConfigId,
+}
+
+var query_get_all = fmt.Sprintf(
+	`SELECT %s FROM %s`,
+	strings.Join(columns, ", "),
+	TableName,
+)
+
+func GetAll() ([]NewznabIndexer, error) {
+	rows, err := db.Query(query_get_all)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []NewznabIndexer{}
+	for rows.Next() {
+		item := NewznabIndexer{}
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+var query_get_all_enabled = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = %s`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.Disabled,
+	db.BooleanFalse,
+)
+
+func GetAllEnabled() ([]NewznabIndexer, error) {
+	rows, err := db.Query(query_get_all_enabled)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []NewznabIndexer{}
+	for rows.Next() {
+		item := NewznabIndexer{}
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+var query_get_by_id = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ?`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.Id,
+)
+
+func GetById(id int64) (*NewznabIndexer, error) {
+	row := db.QueryRow(query_get_by_id, id)
+
+	item := NewznabIndexer{}
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &item, nil
+}
+
+var query_insert = fmt.Sprintf(
+	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
+	TableName,
+	db.JoinColumnNames(columnsInsert...),
+)
+
+func (idxr *NewznabIndexer) Insert() error {
+	result, err := db.Exec(query_insert,
+		idxr.Type,
+		idxr.Name,
+		idxr.URL,
+		idxr.APIKey,
+		idxr.RateLimitConfigId,
+	)
+	if err != nil {
+		return err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	idxr.Id = id
+	return nil
+}
+
+var query_update = fmt.Sprintf(
+	`UPDATE %s SET %s WHERE %s = ?`,
+	TableName,
+	strings.Join([]string{
+		fmt.Sprintf(`%s = ?`, Column.Name),
+		fmt.Sprintf(`%s = ?`, Column.URL),
+		fmt.Sprintf(`%s = ?`, Column.APIKey),
+		fmt.Sprintf(`%s = ?`, Column.RateLimitConfigId),
+		fmt.Sprintf(`%s = ?`, Column.Disabled),
+		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
+	}, ", "),
+	Column.Id,
+)
+
+func (idxr *NewznabIndexer) Update() error {
+	_, err := db.Exec(query_update,
+		idxr.Name,
+		idxr.URL,
+		idxr.APIKey,
+		idxr.RateLimitConfigId,
+		idxr.Disabled,
+		idxr.Id,
+	)
+	return err
+}
+
+var query_set_disabled = fmt.Sprintf(
+	`UPDATE %s SET %s = ?, %s = %s WHERE %s = ?`,
+	TableName,
+	Column.Disabled,
+	Column.UAt, db.CurrentTimestamp,
+	Column.Id,
+)
+
+func SetDisabled(id int64, disabled bool) error {
+	_, err := db.Exec(query_set_disabled, disabled, id)
+	return err
+}
+
+var query_delete = fmt.Sprintf(
+	`DELETE FROM %s WHERE %s = ?`,
+	TableName,
+	Column.Id,
+)
+
+func Delete(id int64) error {
+	_, err := db.Exec(query_delete, id)
+	return err
+}

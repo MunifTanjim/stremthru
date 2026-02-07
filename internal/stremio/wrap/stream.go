@@ -12,7 +12,6 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
 	stremio_torz "github.com/MunifTanjim/stremthru/internal/stremio/torz"
@@ -27,7 +26,7 @@ import (
 
 var lazyPullTorz = config.Stremio.Torz.LazyPull
 
-func (ud UserData) fetchStream(ctx *context.StoreContext, r *http.Request, rType, id string) (*stremio.StreamHandlerResponse, error) {
+func (ud UserData) fetchStream(ctx *Ctx, r *http.Request, rType, id string) (*stremio.StreamHandlerResponse, error) {
 	log := ctx.Log
 
 	eud := ud.GetEncoded()

@@ -6,7 +6,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
-	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 )
 
 func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
@@ -36,6 +35,12 @@ func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 			URL:  "/stremio/torz",
 		})
 	}
+	if config.Feature.HasStremioNewz() {
+		addons = append(addons, stremio_template.BaseDataStremThruAddon{
+			Name: "Newz",
+			URL:  "/stremio/newz",
+		})
+	}
 	if config.Feature.IsEnabled(config.FeatureStremioSidekick) {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "Sidekick",
@@ -46,8 +51,8 @@ func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 	return addons
 }
 
-func RedirectToConfigurePage[T any](w http.ResponseWriter, r *http.Request, addon string, ud stremio_userdata.UserData[T], tryInstall bool) {
-	url := shared.ExtractRequestBaseURL(r).JoinPath("stremio", addon, ud.GetEncoded(), "configure")
+func RedirectToConfigurePage(w http.ResponseWriter, r *http.Request, addon string, encodedUD string, tryInstall bool) {
+	url := shared.ExtractRequestBaseURL(r).JoinPath("stremio", addon, encodedUD, "configure")
 	if tryInstall {
 		w.Header().Add("hx-trigger", "try_install")
 	}

@@ -239,7 +239,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to unselect userdata", err)
 					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), false)
 						return
 					}
 				} else {
@@ -247,7 +247,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						LogError(r, "failed to load userdata", err)
 					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, false)
+						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), false)
 						return
 					}
 				}
@@ -259,7 +259,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to save userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -271,7 +271,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to copy userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -281,7 +281,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to delete userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), true)
 					return
 				}
 			}
@@ -379,7 +379,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud, td.SavedUserDataKey == "")
+		stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), td.SavedUserDataKey == "")
 		return
 	}
 

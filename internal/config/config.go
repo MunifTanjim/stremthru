@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	llog "github.com/MunifTanjim/stremthru/internal/logger/log"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
@@ -74,6 +73,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
 		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT":     "10",
+		"STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT":       "15s",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
@@ -82,6 +82,13 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT": "5",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_IP_CHECKER":                             "aws",
+		"STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM":         "8",
+		"STREMTHRU_NEWZ_NZB_CACHE_SIZE":                    "512MB",
+		"STREMTHRU_NEWZ_NZB_CACHE_TTL":                     "24h",
+		"STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE":                 "50MB",
+		"STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE":                "10GB",
+		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
+		"STREMTHRU_NEWZ_NZB_LINK_TYPE":                     "*:proxy",
 	},
 }
 
@@ -189,6 +196,17 @@ func (m AuthAdminMap) IsAdmin(userName string) bool {
 	return false
 }
 
+type SabnzbdAuthMap map[string]string // username -> apikey
+
+func (m SabnzbdAuthMap) GetUser(apikey string) string {
+	for user, key := range m {
+		if key == apikey {
+			return user
+		}
+	}
+	return ""
+}
+
 const (
 	StremioAddonSidekick string = "sidekick"
 	StremioAddonStore    string = "store"
@@ -200,6 +218,7 @@ const (
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
 	FeatureStremioList     string = "stremio_list"
+	FeatureStremioNewz     string = "stremio_newz"
 	FeatureStremioP2P      string = "stremio_p2p"
 	FeatureStremioSidekick string = "stremio_sidekick"
 	FeatureStremioStore    string = "stremio_store"
@@ -213,6 +232,7 @@ var features = []string{
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
 	FeatureStremioList,
+	FeatureStremioNewz,
 	FeatureStremioP2P,
 	FeatureStremioSidekick,
 	FeatureStremioStore,
@@ -244,6 +264,10 @@ func (f FeatureConfig) IsEnabled(name string) bool {
 
 func (f FeatureConfig) HasStremioList() bool {
 	return f.IsEnabled(FeatureStremioList)
+}
+
+func (f FeatureConfig) HasStremioNewz() bool {
+	return f.HasVault() && f.IsEnabled(FeatureStremioNewz)
 }
 
 func (f FeatureConfig) HasTorrentInfo() bool {
@@ -368,6 +392,7 @@ type Config struct {
 	ProxyAuthPassword           UserPasswordMap
 	AuthAdmin                   AuthAdminMap
 	AdminPassword               UserPasswordMap
+	SabnzbdAuth                 SabnzbdAuthMap
 	BuddyURL                    string
 	HasBuddy                    bool
 	PeerURL                     string
@@ -413,7 +438,7 @@ var config = func() Config {
 	proxyAuthPasswordMap := make(UserPasswordMap)
 
 	for _, cred := range proxyAuthCredList {
-		if basicAuth, err := core.ParseBasicAuth(cred); err == nil {
+		if basicAuth, err := util.ParseBasicAuth(cred); err == nil {
 			proxyAuthPasswordMap[basicAuth.Username] = basicAuth.Password
 		}
 	}
@@ -446,6 +471,16 @@ var config = func() Config {
 		adminPasswordMap[username] = password
 	}
 
+	sabnzbdAuthMap := make(SabnzbdAuthMap)
+	sabnzbdAuthList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_SABNZBD"), func(c rune) bool {
+		return c == ','
+	})
+	for _, entry := range sabnzbdAuthList {
+		if username, apikey, ok := strings.Cut(entry, ":"); ok && username != "" && apikey != "" {
+			sabnzbdAuthMap[username] = apikey
+		}
+	}
+
 	storeAlldebridTokenList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_AUTH"), func(c rune) bool {
 		return c == ','
 	})
@@ -469,7 +504,7 @@ var config = func() Config {
 	}
 
 	defaultPeerUri := ""
-	if peerUri, err := core.Base64Decode("aHR0cHM6Ly9zdHJlbXRocnUuMTMzNzcwMDEueHl6"); err == nil && buddyUrl == "" {
+	if peerUri, err := util.Base64Decode("aHR0cHM6Ly9zdHJlbXRocnUuMTMzNzcwMDEueHl6"); err == nil && buddyUrl == "" {
 		defaultPeerUri = peerUri
 	}
 	peerUri := getEnv("STREMTHRU_PEER_URI")
@@ -594,6 +629,7 @@ var config = func() Config {
 		ProxyAuthPassword:           proxyAuthPasswordMap,
 		AuthAdmin:                   authAdminMap,
 		AdminPassword:               adminPasswordMap,
+		SabnzbdAuth:                 sabnzbdAuthMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
 		HasBuddy:                    len(buddyUrl) > 0,
@@ -628,6 +664,7 @@ var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var AuthAdmin = config.AuthAdmin
 var AdminPassword = config.AdminPassword
+var SabnzbdAuth = config.SabnzbdAuth
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var HasBuddy = config.HasBuddy
@@ -892,6 +929,14 @@ func PrintConfig(state *AppState) {
 			if !Feature.HasVault() {
 				disabled = " (disabled)"
 			}
+		case FeatureStremioList:
+			if !Feature.HasStremioList() {
+				disabled = " (disabled)"
+			}
+		case FeatureStremioNewz:
+			if !Feature.HasStremioNewz() {
+				disabled = " (disabled)"
+			}
 		default:
 			if !Feature.IsEnabled(feature) {
 				disabled = " (disabled)"
@@ -904,6 +949,8 @@ func PrintConfig(state *AppState) {
 		switch feature {
 		case FeatureStremioList:
 			l.Println("       public max list count: " + strconv.Itoa(Stremio.List.PublicMaxListCount))
+		case FeatureStremioNewz:
+			l.Println("       indexer max timeout: " + Stremio.Newz.IndexerMaxTimeout.String())
 		case FeatureStremioStore:
 			l.Println("       catalog item limit: " + strconv.Itoa(Stremio.Store.CatalogItemLimit))
 			l.Println("       catalog cache time: " + Stremio.Store.CatalogCacheTime.String())
@@ -1025,6 +1072,17 @@ func PrintConfig(state *AppState) {
 		}
 	}
 	l.Println()
+
+	if Feature.HasVault() {
+		l.Println(" Newz:")
+		l.Println("         nzb cache size: " + util.ToSize(NewzNZBCacheSize))
+		l.Println("          nzb cache ttl: " + NewzNZBCacheTTL.String())
+		l.Println("      nzb max file size: " + util.ToSize(NewzNZBMaxFileSize))
+		l.Println("     segment cache size: " + util.ToSize(NewzSegmentCacheSize))
+		l.Println("     stream buffer size: " + util.ToSize(NewzStreamBufferSize))
+		l.Println("   max conn. per stream: " + strconv.Itoa(NewzMaxConnectionPerStream))
+		l.Println()
+	}
 
 	l.Println(" Instance ID:")
 	l.Println("   " + InstanceId)

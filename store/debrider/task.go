@@ -43,7 +43,7 @@ func (d *CreateDownloadTaskParamsData) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		defer f.Close()
-		encoded, err := core.Base64EncodeFile(f)
+		encoded, err := util.Base64EncodeFile(f)
 		if err != nil {
 			return nil, err
 		}

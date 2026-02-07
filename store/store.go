@@ -5,12 +5,9 @@ import (
 	"mime/multipart"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/anacrolix/torrent/metainfo"
 )
-
-type Ctx = request.Ctx
 
 type StoreName string
 
@@ -73,9 +70,11 @@ func (sn StoreName) IsValid() bool {
 	return ok
 }
 
-func (sn StoreName) Validate() (StoreName, *core.StoreError) {
+var ErrInvalidName = errors.New("invalid store name")
+
+func (sn StoreName) Validate() (StoreName, error) {
 	if !sn.IsValid() {
-		return sn, ErrorInvalidStoreName(string(sn))
+		return sn, ErrInvalidName
 	}
 	return sn, nil
 }
@@ -87,6 +86,21 @@ func (sc StoreCode) Name() StoreName {
 func (sc StoreCode) IsValid() bool {
 	_, ok := storeNameByCode[sc]
 	return ok
+}
+
+type Ctx = request.Ctx
+
+var (
+	_ File = (*MagnetFile)(nil)
+	_ File = (*NewzFile)(nil)
+)
+
+type File interface {
+	GetIdx() int
+	GetPath() string
+	GetName() string
+	GetSize() int64
+	GetLink() string
 }
 
 type UserSubscriptionStatus string
@@ -123,6 +137,26 @@ type MagnetFile struct {
 	Size      int64  `json:"size"`
 	VideoHash string `json:"video_hash,omitempty"`
 	Source    string `json:"source,omitempty"`
+}
+
+func (f *MagnetFile) GetIdx() int {
+	return f.Idx
+}
+
+func (f *MagnetFile) GetPath() string {
+	return f.Path
+}
+
+func (f *MagnetFile) GetName() string {
+	return f.Name
+}
+
+func (f *MagnetFile) GetSize() int64 {
+	return f.Size
+}
+
+func (f *MagnetFile) GetLink() string {
+	return f.Link
 }
 
 type MagnetStatus string
@@ -277,4 +311,139 @@ type Store interface {
 	ListMagnets(params *ListMagnetsParams) (*ListMagnetsData, error)
 	RemoveMagnet(params *RemoveMagnetParams) (*RemoveMagnetData, error)
 	GenerateLink(params *GenerateLinkParams) (*GenerateLinkData, error)
+}
+
+type NewzStatus string
+
+const (
+	NewzStatusCached      NewzStatus = "cached"
+	NewzStatusQueued      NewzStatus = "queued"
+	NewzStatusDownloading NewzStatus = "downloading"
+	NewzStatusProcessing  NewzStatus = "processing"
+	NewzStatusDownloaded  NewzStatus = "downloaded"
+	NewzStatusFailed      NewzStatus = "failed"
+	NewzStatusInvalid     NewzStatus = "invalid"
+	NewzStatusUnknown     NewzStatus = "unknown"
+)
+
+type CheckNewzParams struct {
+	Ctx
+	Hashes []string
+}
+
+type CheckNewzDataItem struct {
+	Hash   string     `json:"hash"`
+	Status NewzStatus `json:"status"`
+}
+
+type CheckNewzData struct {
+	Items []CheckNewzDataItem `json:"items"`
+}
+
+type AddNewzParams struct {
+	Ctx
+	File     *multipart.FileHeader
+	Link     string
+	ClientIP string
+}
+
+type AddNewzData struct {
+	Id     string     `json:"id"`
+	Hash   string     `json:"hash"`
+	Status NewzStatus `json:"status"`
+}
+
+type GetNewzParams struct {
+	Ctx
+	Id       string
+	ClientIP string
+}
+
+type NewzFile struct {
+	Idx       int    `json:"index"`
+	Link      string `json:"link,omitempty"`
+	Path      string `json:"path"`
+	Name      string `json:"name"`
+	Size      int64  `json:"size"`
+	VideoHash string `json:"video_hash,omitempty"`
+}
+
+func (f *NewzFile) GetIdx() int {
+	return f.Idx
+}
+
+func (f *NewzFile) GetPath() string {
+	return f.Path
+}
+
+func (f *NewzFile) GetName() string {
+	return f.Name
+}
+
+func (f *NewzFile) GetSize() int64 {
+	return f.Size
+}
+
+func (f *NewzFile) GetLink() string {
+	return f.Link
+}
+
+type GetNewzData struct {
+	Id     string     `json:"id"`
+	Hash   string     `json:"hash"`
+	Name   string     `json:"name"`
+	Size   int64      `json:"size"`
+	Status NewzStatus `json:"status"`
+	Files  []NewzFile `json:"files"`
+}
+
+type ListNewzParams struct {
+	Ctx
+	Limit    int // min 1, max 500, default 100
+	Offset   int // default 0
+	ClientIP string
+}
+
+type ListNewzDataItem struct {
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  NewzStatus `json:"status"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
+type ListNewzData struct {
+	Items      []ListNewzDataItem `json:"items"`
+	TotalItems int                `json:"total_items"`
+}
+
+type RemoveNewzParams struct {
+	Ctx
+	Id string
+}
+
+type RemoveNewzData struct {
+	Id string `json:"id"`
+}
+
+type GenerateNewzLinkParams struct {
+	Ctx
+	Link     string
+	ClientIP string
+}
+
+type GenerateNewzLinkData struct {
+	Link string `json:"link"`
+}
+
+type NewzStore interface {
+	GetName() StoreName
+	GetUser(params *GetUserParams) (*User, error)
+	CheckNewz(params *CheckNewzParams) (*CheckNewzData, error)
+	AddNewz(params *AddNewzParams) (*AddNewzData, error)
+	GetNewz(params *GetNewzParams) (*GetNewzData, error)
+	ListNewz(params *ListNewzParams) (*ListNewzData, error)
+	RemoveNewz(params *RemoveNewzParams) (*RemoveNewzData, error)
+	GenerateNewzLink(params *GenerateNewzLinkParams) (*GenerateNewzLinkData, error)
 }

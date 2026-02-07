@@ -11,15 +11,15 @@ import (
 )
 
 var pullCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
-	Lifetime:      1 * time.Hour,
-	Name:          "torrent_stream_syncinfo:pull",
-	LocalCapacity: 8192,
+	Lifetime: 1 * time.Hour,
+	Name:     "torrent_stream_syncinfo:pull",
+	MaxSize:  8192,
 })
 
 var pushCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
-	Lifetime:      1 * time.Hour,
-	Name:          "torrent_stream_syncinfo:push",
-	LocalCapacity: 8192,
+	Lifetime: 1 * time.Hour,
+	Name:     "torrent_stream_syncinfo:push",
+	MaxSize:  8192,
 })
 
 type TorrentStreamSyncInfo struct {

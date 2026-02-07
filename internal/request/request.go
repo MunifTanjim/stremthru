@@ -113,6 +113,9 @@ func (ctx Ctx) PrepareHeader(header *http.Header) {
 		return
 	}
 
+	if ua := ctx.Headers.Values("User-Agent"); len(ua) > 0 {
+		header.Del("User-Agent")
+	}
 	for key, values := range *ctx.Headers {
 		for _, value := range values {
 			header.Add(key, value)

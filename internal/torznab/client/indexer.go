@@ -22,9 +22,9 @@ type torzFileCached struct {
 }
 
 var torzFileCache = cache.NewCache[torzFileCached](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "torznab:indexer:file",
-	LocalCapacity: 5120,
+	Lifetime: 6 * time.Hour,
+	Name:     "torznab:indexer:file",
+	MaxSize:  5120,
 })
 
 type Torz struct {

@@ -14,8 +14,8 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/context"
 	"github.com/MunifTanjim/stremthru/internal/server"
+	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
 )
 
 func IsMethod(r *http.Request, method string) bool {
@@ -57,8 +57,8 @@ func ReadRequestBodyJSON[T any](r *http.Request, payload T) error {
 }
 
 type response struct {
-	Data  any         `json:"data,omitempty"`
-	Error *core.Error `json:"error,omitempty"`
+	Data  any   `json:"data,omitempty"`
+	Error error `json:"error,omitempty"`
 }
 
 func (res response) send(w http.ResponseWriter, r *http.Request, statusCode int) {
@@ -244,7 +244,7 @@ func ExtractRequestBaseURL(r *http.Request) *url.URL {
 	}
 }
 
-func GetClientIP(r *http.Request, ctx *context.StoreContext) string {
+func GetClientIP(r *http.Request, ctx *storecontext.Context) string {
 	if !ctx.IsProxyAuthorized {
 		return core.GetClientIP(r)
 	}

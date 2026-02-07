@@ -15,15 +15,15 @@ import (
 )
 
 var listCache = cache.NewCache[TVDBList](&cache.CacheConfig{
-	Lifetime:      6 * time.Hour,
-	Name:          "tvdb:list",
-	LocalCapacity: 1024,
+	Lifetime: 6 * time.Hour,
+	Name:     "tvdb:list",
+	MaxSize:  1024,
 })
 
 var listIdBySlugCache = cache.NewCache[string](&cache.CacheConfig{
-	Lifetime:      12 * time.Hour,
-	Name:          "tvdb:list-id-by-slug",
-	LocalCapacity: 2048,
+	Lifetime: 12 * time.Hour,
+	Name:     "tvdb:list-id-by-slug",
+	MaxSize:  2048,
 })
 
 func getListCacheKey(l *TVDBList) string {
