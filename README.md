@@ -204,10 +204,6 @@ e.g. `*:24h:8h`.
 
 If `store_name` is `*`, it is used as fallback.
 
-#### `STREMTHRU_PEER_URI`
-
-URI for peer StremThru instance, in format `https://:<pass>@<host>[:<port>]`.
-
 #### `STREMTHRU_REDIS_URI`
 
 URI for Redis, in format `redis://<user>:<pass>@<host>[:<port>][/<db>]`.
