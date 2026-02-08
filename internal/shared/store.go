@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/debridlink"
 	"github.com/MunifTanjim/stremthru/store/easydebrid"
 	"github.com/MunifTanjim/stremthru/store/offcloud"
+	"github.com/MunifTanjim/stremthru/store/qbittorrent"
 	"github.com/MunifTanjim/stremthru/store/pikpak"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
@@ -61,6 +62,9 @@ var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 	UserAgent:  config.StoreClientUserAgent,
 })
+var qbStore = qbittorrent.NewStoreClient(&qbittorrent.StoreClientConfig{
+	HTTPClient: config.DefaultHTTPClient,
+})
 
 func GetStore(name string) store.Store {
 	switch store.StoreName(name) {
@@ -82,6 +86,8 @@ func GetStore(name string) store.Store {
 		return rdStore
 	case store.StoreNameTorBox:
 		return tbStore
+	case store.StoreNameQBittorrent:
+		return qbStore
 	default:
 		return nil
 	}
@@ -107,6 +113,8 @@ func GetStoreByCode(code string) store.Store {
 		return rdStore
 	case store.StoreCodeTorBox:
 		return tbStore
+	case store.StoreCodeQBittorrent:
+		return qbStore
 	default:
 		return nil
 	}
