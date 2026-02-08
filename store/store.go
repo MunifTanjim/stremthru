@@ -21,8 +21,9 @@ const (
 	StoreNamePikPak     StoreName = "pikpak"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
-	StoreNameStremThru  StoreName = "stremthru"
-	StoreNameTorBox     StoreName = "torbox"
+	StoreNameStremThru   StoreName = "stremthru"
+	StoreNameTorBox      StoreName = "torbox"
+	StoreNameQBittorrent StoreName = "qbittorrent"
 )
 
 type StoreCode string
@@ -36,8 +37,9 @@ const (
 	StoreCodePikPak     StoreCode = "pp"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
-	StoreCodeStremThru  StoreCode = "st"
-	StoreCodeTorBox     StoreCode = "tb"
+	StoreCodeStremThru   StoreCode = "st"
+	StoreCodeTorBox      StoreCode = "tb"
+	StoreCodeQBittorrent StoreCode = "qb"
 )
 
 var storeCodeByName = map[StoreName]StoreCode{
@@ -49,8 +51,9 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNamePikPak:     StoreCodePikPak,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
-	StoreNameStremThru:  StoreCodeStremThru,
-	StoreNameTorBox:     StoreCodeTorBox,
+	StoreNameStremThru:   StoreCodeStremThru,
+	StoreNameTorBox:      StoreCodeTorBox,
+	StoreNameQBittorrent: StoreCodeQBittorrent,
 }
 
 var storeNameByCode = map[StoreCode]StoreName{
@@ -62,8 +65,9 @@ var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodePikPak:     StoreNamePikPak,
 	StoreCodePremiumize: StoreNamePremiumize,
 	StoreCodeRealDebrid: StoreNameRealDebrid,
-	StoreCodeStremThru:  StoreNameStremThru,
-	StoreCodeTorBox:     StoreNameTorBox,
+	StoreCodeStremThru:   StoreNameStremThru,
+	StoreCodeTorBox:      StoreNameTorBox,
+	StoreCodeQBittorrent: StoreNameQBittorrent,
 }
 
 func (sn StoreName) Code() StoreCode {
