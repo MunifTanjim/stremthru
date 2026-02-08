@@ -21,8 +21,10 @@ const (
 
 type ConnectionURI struct {
 	*url.URL
-	DriverName string
-	Dialect    DBDialect
+	DriverName    string
+	Dialect       DBDialect
+	MaxConnection int
+	MinConnection int
 }
 
 type DSNModifier func(u *url.URL, q *url.Values)
@@ -51,6 +53,17 @@ func (uri ConnectionURI) DSN(mods ...DSNModifier) string {
 		}
 		return dsn
 	case "postgresql":
+		q := u.Query()
+		if uri.MaxConnection != 0 {
+			q.Set("pool_max_conns", strconv.Itoa(uri.MaxConnection))
+		}
+		if uri.MinConnection != 0 {
+			q.Set("pool_min_conns", strconv.Itoa(uri.MinConnection))
+		}
+		for _, mod := range mods {
+			mod(u, &q)
+		}
+		u.RawQuery = q.Encode()
 		return u.String()
 	default:
 		return u.String()
@@ -80,6 +93,17 @@ func ParseConnectionURI(connection_uri string) (ConnectionURI, error) {
 	default:
 		return uri, errors.New("unsupported scheme: " + u.Scheme)
 	}
+
+	q := u.Query()
+	if q.Has("max_conns") {
+		uri.MaxConnection = util.MustParseInt(q.Get("max_conns"))
+		q.Del("max_conns")
+	}
+	if q.Has("min_conns") {
+		uri.MinConnection = util.MustParseInt(q.Get("min_conns"))
+		q.Del("min_conns")
+	}
+	u.RawQuery = q.Encode()
 
 	return uri, nil
 }

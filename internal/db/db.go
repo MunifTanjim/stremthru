@@ -1,19 +1,23 @@
 package db
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"net/url"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/mattn/go-sqlite3"
 )
 
 type DB struct {
 	*sql.DB
-	URI ConnectionURI
+	URI     ConnectionURI
+	onClose func() error
 }
 
 var db = &DB{}
@@ -169,18 +173,34 @@ func Ping() {
 }
 
 func Open() *DB {
-	database, err := sql.Open(connUri.DriverName, connUri.DSN(dsnModifiers...))
-	if err != nil {
-		log.Fatalf("[db] failed to open: %v\n", err)
+	switch connUri.Dialect {
+	case DBDialectSQLite:
+		database, err := sql.Open(connUri.DriverName, connUri.DSN(dsnModifiers...))
+		if err != nil {
+			log.Fatalf("[db] failed to open: %v\n", err)
+		}
+		db.DB = database
+	case DBDialectPostgres:
+		pool, err := pgxpool.New(context.Background(), connUri.DSN())
+		if err != nil {
+			log.Fatalf("[db] failed to create connection pool: %v\n", err)
+		}
+		db.DB = stdlib.OpenDBFromPool(pool)
+		db.onClose = func() error {
+			pool.Close()
+			return nil
+		}
 	}
-	*db = DB{
-		DB:  database,
-		URI: connUri,
-	}
+
+	db.URI = connUri
 
 	return db
 }
 
 func Close() error {
-	return db.Close()
+	err := db.Close()
+	if db.onClose != nil {
+		err = errors.Join(err, db.onClose())
+	}
+	return err
 }

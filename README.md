@@ -218,7 +218,7 @@ If provided, it'll be used for caching instead of in-memory storage.
 
 URI for Database, in format `<scheme>://<user>:<pass>@<host>[:<port>][/<db>]`.
 
-Supports `sqlite` and `postgresql`.
+Supports `sqlite` and `postgresql`. Supported query parameters: `max_conns`, `min_conns`.
 
 #### `STREMTHRU_FEATURE`
 
