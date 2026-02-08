@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.96.7](https://github.com/MunifTanjim/stremthru/compare/0.96.6...0.96.7) (2026-02-08)
+
+
+### Bug Fixes
+
+* **db:** allow setting min/max connections ([73f5ac0](https://github.com/MunifTanjim/stremthru/commit/73f5ac0a2e7351d261f4cca627f3f2ff07c45d97))
+
 ## [0.96.6](https://github.com/MunifTanjim/stremthru/compare/0.96.5...0.96.6) (2026-02-02)
 
 
