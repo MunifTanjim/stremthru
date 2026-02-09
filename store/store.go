@@ -23,7 +23,7 @@ const (
 	StoreNamePikPak     StoreName = "pikpak"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
-	StoreNameTorBox       StoreName = "torbox"
+	StoreNameTorBox      StoreName = "torbox"
 	StoreNameQBittorrent StoreName = "qbittorrent"
 )
 
@@ -38,7 +38,7 @@ const (
 	StoreCodePikPak     StoreCode = "pp"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
-	StoreCodeTorBox       StoreCode = "tb"
+	StoreCodeTorBox      StoreCode = "tb"
 	StoreCodeQBittorrent StoreCode = "qb"
 )
 
@@ -51,7 +51,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNamePikPak:     StoreCodePikPak,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
-	StoreNameTorBox:       StoreCodeTorBox,
+	StoreNameTorBox:      StoreCodeTorBox,
 	StoreNameQBittorrent: StoreCodeQBittorrent,
 }
 
@@ -64,7 +64,7 @@ var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodePikPak:     StoreNamePikPak,
 	StoreCodePremiumize: StoreNamePremiumize,
 	StoreCodeRealDebrid: StoreNameRealDebrid,
-	StoreCodeTorBox:       StoreNameTorBox,
+	StoreCodeTorBox:      StoreNameTorBox,
 	StoreCodeQBittorrent: StoreNameQBittorrent,
 }
 
