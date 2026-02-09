@@ -15,29 +15,69 @@ import (
 
 var DefaultHTTPClient = config.DefaultHTTPClient
 
+// pathMapping maps an internal (container) path prefix to an external (file server) path prefix.
+// This is needed when qBit's save path inside Docker doesn't match the file server's directory layout.
+// Example: internal="/downloads", external="/media/torrents" means
+// /downloads/Movie/file.mkv → /media/torrents/Movie/file.mkv
+type pathMapping struct {
+	From string // internal path prefix (e.g. "/downloads")
+	To   string // external path prefix (e.g. "/media/torrents", or "" to strip)
+}
+
+func (pm *pathMapping) apply(fullPath string) string {
+	trimmed := strings.TrimRight(pm.From, "/")
+	if strings.HasPrefix(fullPath, trimmed+"/") {
+		return strings.TrimRight(pm.To, "/") + strings.TrimPrefix(fullPath, trimmed)
+	}
+	if fullPath == trimmed {
+		return pm.To
+	}
+	// Prefix doesn't match; return the path unchanged
+	return fullPath
+}
+
 type qbitConfig struct {
-	URL         string // qBittorrent WebUI base URL
+	URL         string       // qBittorrent WebUI base URL
 	Username    string
 	Password    string
-	FileBaseURL string // HTTP file server base URL for serving downloaded files
+	FileBaseURL string       // HTTP file server base URL for serving downloaded files
+	PathMapping *pathMapping // optional Docker-style path mapping (internal:external)
 }
 
 func parseToken(token string) (*qbitConfig, error) {
-	parts := strings.SplitN(token, "|", 4)
-	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid qbittorrent token: expected 4 pipe-delimited parts (url|user|pass|file_base_url), got %d", len(parts))
+	parts := strings.SplitN(token, "|", 5)
+	if len(parts) < 4 {
+		return nil, fmt.Errorf("invalid qbittorrent token: expected 4 pipe-delimited parts (url|user|pass|file_base_url[|path_mapping]), got %d", len(parts))
 	}
-	for i, part := range parts {
-		if strings.TrimSpace(part) == "" {
+	for i := 0; i < 4; i++ {
+		if strings.TrimSpace(parts[i]) == "" {
 			return nil, fmt.Errorf("invalid qbittorrent token: part %d is empty", i)
 		}
 	}
-	return &qbitConfig{
+
+	cfg := &qbitConfig{
 		URL:         strings.TrimRight(parts[0], "/"),
 		Username:    parts[1],
 		Password:    parts[2],
 		FileBaseURL: strings.TrimRight(parts[3], "/"),
-	}, nil
+	}
+
+	// Optional 5th field: path mapping in "internal:external" format (Docker-style)
+	if len(parts) == 5 && parts[4] != "" {
+		mapParts := strings.SplitN(parts[4], ":", 2)
+		if len(mapParts) != 2 {
+			return nil, fmt.Errorf("invalid qbittorrent token: path_mapping must be 'from:to' format, got %q", parts[4])
+		}
+		if mapParts[0] == "" {
+			return nil, fmt.Errorf("invalid qbittorrent token: path_mapping 'from' is empty")
+		}
+		cfg.PathMapping = &pathMapping{
+			From: mapParts[0],
+			To:   mapParts[1],
+		}
+	}
+
+	return cfg, nil
 }
 
 type sessionEntry struct {
