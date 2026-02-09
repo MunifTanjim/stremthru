@@ -121,6 +121,10 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			return nil, err
 		}
 		magnet = &m
+		err = c.client.AddTorrentMagnet(cfg, magnet.RawLink)
+		if err != nil {
+			return nil, UpstreamErrorWithCause(err)
+		}
 	} else if params.Torrent != nil {
 		mi, _, err := params.GetTorrentMeta()
 		if err != nil {
@@ -131,13 +135,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			return nil, err
 		}
 		magnet = &m
+		err = c.client.AddTorrentFile(cfg, params.Torrent)
+		if err != nil {
+			return nil, UpstreamErrorWithCause(err)
+		}
 	} else {
 		return nil, fmt.Errorf("either magnet or torrent must be provided")
-	}
-
-	err = c.client.AddTorrentMagnet(cfg, magnet.RawLink)
-	if err != nil {
-		return nil, UpstreamErrorWithCause(err)
 	}
 
 	// Poll briefly for torrent metadata to become available
@@ -367,22 +370,29 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 		return nil, err
 	}
 
+	// Fetch all torrents to get accurate total count
+	torrents, err := c.client.GetTorrents(cfg, nil, 0, 0)
+	if err != nil {
+		return nil, UpstreamErrorWithCause(err)
+	}
+
+	totalItems := len(torrents)
+
 	limit := params.Limit
 	if limit <= 0 {
 		limit = 100
 	}
 
-	torrents, err := c.client.GetTorrents(cfg, nil, limit, params.Offset)
-	if err != nil {
-		return nil, UpstreamErrorWithCause(err)
-	}
+	startIdx := min(params.Offset, totalItems)
+	endIdx := min(startIdx+limit, totalItems)
+	page := torrents[startIdx:endIdx]
 
 	data := &store.ListMagnetsData{
 		Items:      []store.ListMagnetsDataItem{},
-		TotalItems: 0,
+		TotalItems: totalItems,
 	}
 
-	for _, t := range torrents {
+	for _, t := range page {
 		item := store.ListMagnetsDataItem{
 			Id:      t.Hash,
 			Hash:    strings.ToLower(t.Hash),
@@ -392,12 +402,6 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			AddedAt: t.GetAddedAt(),
 		}
 		data.Items = append(data.Items, item)
-	}
-
-	count := len(data.Items)
-	data.TotalItems = params.Offset + count
-	if count == limit {
-		data.TotalItems += 1
 	}
 
 	return data, nil
@@ -411,7 +415,7 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 
 	hash := strings.ToLower(params.Id)
 
-	err = c.client.DeleteTorrents(cfg, []string{hash}, false)
+	err = c.client.DeleteTorrents(cfg, []string{hash}, true)
 	if err != nil {
 		return nil, UpstreamErrorWithCause(err)
 	}
@@ -449,13 +453,18 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 		return nil, UpstreamErrorWithCause(err)
 	}
 
-	if fileIndex < 0 || fileIndex >= len(files) {
+	var file *TorrentFile
+	for i := range files {
+		if files[i].Index == fileIndex {
+			file = &files[i]
+			break
+		}
+	}
+	if file == nil {
 		apiErr := core.NewAPIError("file index out of range")
 		apiErr.StatusCode = http.StatusBadRequest
 		return nil, apiErr
 	}
-
-	file := files[fileIndex]
 
 	filePath := file.Name
 	if cfg.PathMapping != nil {
