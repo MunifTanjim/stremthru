@@ -419,6 +419,17 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	return &store.RemoveMagnetData{Id: params.Id}, nil
 }
 
+// buildFileURL constructs a file server URL by encoding each path segment individually.
+func buildFileURL(fileBaseURL, fileName string) string {
+	parts := strings.Split(fileName, "/")
+	encodedParts := make([]string, len(parts))
+	for i, p := range parts {
+		encodedParts[i] = url.PathEscape(p)
+	}
+	encodedPath := strings.Join(encodedParts, "/")
+	return fileBaseURL + "/" + encodedPath
+}
+
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
@@ -446,15 +457,24 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 
 	file := files[fileIndex]
 
-	// URL-encode each path segment individually
-	parts := strings.Split(file.Name, "/")
-	encodedParts := make([]string, len(parts))
-	for i, p := range parts {
-		encodedParts[i] = url.PathEscape(p)
+	filePath := file.Name
+	if cfg.PathMapping != nil {
+		// Fetch torrent save_path to construct the full internal path
+		torrents, err := c.client.GetTorrents(cfg, []string{hash}, 0, 0)
+		if err != nil {
+			return nil, UpstreamErrorWithCause(err)
+		}
+		if len(torrents) == 0 {
+			apiErr := core.NewAPIError("torrent not found")
+			apiErr.StatusCode = http.StatusNotFound
+			return nil, apiErr
+		}
+		savePath := strings.TrimRight(torrents[0].SavePath, "/")
+		fullInternalPath := savePath + "/" + file.Name
+		filePath = strings.TrimPrefix(cfg.PathMapping.apply(fullInternalPath), "/")
 	}
-	encodedPath := strings.Join(encodedParts, "/")
 
-	link := cfg.FileBaseURL + "/" + encodedPath
+	link := buildFileURL(cfg.FileBaseURL, filePath)
 
 	return &store.GenerateLinkData{Link: link}, nil
 }
