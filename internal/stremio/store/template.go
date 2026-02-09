@@ -48,6 +48,7 @@ func getStoreNameConfig(defaultValue string) configure.Config {
 		{Value: "offcloud", Label: "Offcloud"},
 		{Value: "pikpak", Label: "PikPak"},
 		{Value: "premiumize", Label: "Premiumize"},
+		{Value: "qbittorrent", Label: "qBittorrent"},
 		{Value: "realdebrid", Label: "RealDebrid"},
 		{Value: "torbox", Label: "TorBox"},
 	}
