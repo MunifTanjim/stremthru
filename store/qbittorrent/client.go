@@ -1,8 +1,10 @@
 package qbittorrent
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"golang.org/x/sync/singleflight"
 )
 
 var DefaultHTTPClient = config.DefaultHTTPClient
@@ -92,6 +95,7 @@ type APIClientConfig struct {
 type APIClient struct {
 	HTTPClient *http.Client
 	sessions   sync.Map // map[string]*sessionEntry
+	loginGroup singleflight.Group
 }
 
 func NewAPIClient(conf *APIClientConfig) *APIClient {
@@ -118,7 +122,13 @@ func (c *APIClient) getOrCreateSession(cfg *qbitConfig) (*http.Client, error) {
 		}
 	}
 
-	return c.login(cfg)
+	result, err, _ := c.loginGroup.Do(key, func() (interface{}, error) {
+		return c.login(cfg)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*http.Client), nil
 }
 
 func (c *APIClient) login(cfg *qbitConfig) (*http.Client, error) {
@@ -216,6 +226,69 @@ func (c *APIClient) doRequest(cfg *qbitConfig, method, path string, form url.Val
 		}
 
 		// Retry once on 403 (session expired)
+		if resp.StatusCode == http.StatusForbidden && attempt == 0 {
+			c.invalidateSession(cfg)
+			continue
+		}
+
+		return resp, respBody, nil
+	}
+	return nil, nil, fmt.Errorf("qbittorrent request failed after retry")
+}
+
+// doRequestMultipart sends a multipart/form-data POST request with file uploads.
+func (c *APIClient) doRequestMultipart(cfg *qbitConfig, path string, fileField string, file *multipart.FileHeader, fields map[string]string) (*http.Response, []byte, error) {
+	for attempt := 0; attempt < 2; attempt++ {
+		client, err := c.getOrCreateSession(cfg)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var buf bytes.Buffer
+		writer := multipart.NewWriter(&buf)
+
+		for k, v := range fields {
+			if err := writer.WriteField(k, v); err != nil {
+				return nil, nil, fmt.Errorf("failed to write field %s: %w", k, err)
+			}
+		}
+
+		part, err := writer.CreateFormFile(fileField, file.Filename)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create form file: %w", err)
+		}
+		f, err := file.Open()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to open file: %w", err)
+		}
+		if _, err = io.Copy(part, f); err != nil {
+			f.Close()
+			return nil, nil, fmt.Errorf("failed to copy file content: %w", err)
+		}
+		f.Close()
+
+		if err := writer.Close(); err != nil {
+			return nil, nil, err
+		}
+
+		reqURL := cfg.URL + path
+		req, err := http.NewRequest(http.MethodPost, reqURL, &buf)
+		if err != nil {
+			return nil, nil, err
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return resp, nil, err
+		}
+
 		if resp.StatusCode == http.StatusForbidden && attempt == 0 {
 			c.invalidateSession(cfg)
 			continue

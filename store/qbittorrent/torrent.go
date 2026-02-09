@@ -3,6 +3,7 @@ package qbittorrent
 import (
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -126,6 +127,23 @@ func (c *APIClient) AddTorrentMagnet(cfg *qbitConfig, magnetURI string) error {
 		"firstLastPiecePrio": {"true"},
 	}
 	resp, body, err := c.doRequest(cfg, "POST", "/api/v2/torrents/add", form)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return newQbitError(resp.StatusCode, body)
+	}
+	return nil
+}
+
+// AddTorrentFile calls POST /api/v2/torrents/add with a .torrent file upload.
+// Enables sequential download and first/last piece priority for streaming.
+func (c *APIClient) AddTorrentFile(cfg *qbitConfig, file *multipart.FileHeader) error {
+	fields := map[string]string{
+		"sequentialDownload": "true",
+		"firstLastPiecePrio": "true",
+	}
+	resp, body, err := c.doRequestMultipart(cfg, "/api/v2/torrents/add", "torrents", file, fields)
 	if err != nil {
 		return err
 	}
