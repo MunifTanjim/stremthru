@@ -19,9 +19,9 @@ import (
 	"github.com/MunifTanjim/stremthru/store/debridlink"
 	"github.com/MunifTanjim/stremthru/store/easydebrid"
 	"github.com/MunifTanjim/stremthru/store/offcloud"
-	"github.com/MunifTanjim/stremthru/store/qbittorrent"
 	"github.com/MunifTanjim/stremthru/store/pikpak"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
+	"github.com/MunifTanjim/stremthru/store/qbittorrent"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/stremthru"
 	"github.com/MunifTanjim/stremthru/store/torbox"
@@ -66,7 +66,7 @@ var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	UserAgent:  config.StoreClientUserAgent,
 })
 var qbStore = qbittorrent.NewStoreClient(&qbittorrent.StoreClientConfig{
-	HTTPClient: config.DefaultHTTPClient,
+	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("qbittorrent")),
 })
 
 func GetStore(name string) store.Store {
