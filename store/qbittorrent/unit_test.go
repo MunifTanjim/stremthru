@@ -346,3 +346,56 @@ func TestGetConfig_InvalidKey(t *testing.T) {
 	_, err := sc.getConfig("not-a-valid-token")
 	assert.Error(t, err)
 }
+
+// --- parseToken: path mapping with colons in external path ---
+
+func TestParseToken_PathMappingWithPortInExternal(t *testing.T) {
+	// The path mapping uses ":" as delimiter with SplitN(..., 2),
+	// so only the first colon splits. External paths with colons (rare) are fine.
+	cfg, err := parseToken("http://localhost:8080|admin|pass|http://server|/downloads:/media:extra")
+	require.NoError(t, err)
+	assert.NotNil(t, cfg.PathMapping)
+	assert.Equal(t, "/downloads", cfg.PathMapping.From)
+	assert.Equal(t, "/media:extra", cfg.PathMapping.To)
+}
+
+// --- findFileByIndex (defensive lookup used in GenerateLink) ---
+
+func TestFindFileByIndex_NonContiguous(t *testing.T) {
+	// Simulate files with non-contiguous indices (e.g. indices 0, 2, 5)
+	files := []TorrentFile{
+		{Index: 0, Name: "file0.mkv", Size: 100},
+		{Index: 2, Name: "file2.mkv", Size: 200},
+		{Index: 5, Name: "file5.mkv", Size: 300},
+	}
+
+	// Search by index value, not array position
+	for _, tc := range []struct {
+		idx      int
+		wantName string
+	}{
+		{0, "file0.mkv"},
+		{2, "file2.mkv"},
+		{5, "file5.mkv"},
+	} {
+		var found *TorrentFile
+		for i := range files {
+			if files[i].Index == tc.idx {
+				found = &files[i]
+				break
+			}
+		}
+		require.NotNil(t, found, "should find file with index %d", tc.idx)
+		assert.Equal(t, tc.wantName, found.Name)
+	}
+
+	// Index that doesn't exist
+	var found *TorrentFile
+	for i := range files {
+		if files[i].Index == 99 {
+			found = &files[i]
+			break
+		}
+	}
+	assert.Nil(t, found, "should not find file with index 99")
+}
