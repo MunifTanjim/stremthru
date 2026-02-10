@@ -11,34 +11,36 @@ import (
 )
 
 type VideoInfo struct {
-	Codec      string `json:"c,omitempty"`
-	Resolution string `json:"r,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+	Profile    string `json:"profile,omitempty"`
+	Resolution string `json:"resolution,omitempty"`
 }
 
 type AudioTrack struct {
-	Codec    string `json:"c,omitempty"`
-	Channels int    `json:"ch,omitempty"`
-	Layout   string `json:"cl,omitempty"`
-	Language string `json:"l,omitempty"`
+	Codec    string `json:"codec,omitempty"`
+	Channels int    `json:"channels,omitempty"`
+	Layout   string `json:"layout,omitempty"`
+	Language string `json:"language,omitempty"`
 }
 
 type SubtitleTrack struct {
-	Codec    string `json:"c,omitempty"`
-	Language string `json:"l,omitempty"`
+	Codec    string `json:"codec,omitempty"`
+	Language string `json:"language,omitempty"`
+	Title    string `json:"title,omitempty"`
 }
 
 type FormatInfo struct {
-	Name     string  `json:"n,omitempty"`
-	Duration float64 `json:"d,omitempty"`
-	Size     int64   `json:"s,omitempty"`
-	BitRate  int64   `json:"br,omitempty"`
+	Name     string  `json:"name,omitempty"`
+	Duration float64 `json:"duration,omitempty"`
+	Size     int64   `json:"size,omitempty"`
+	BitRate  int64   `json:"bitrate,omitempty"`
 }
 
 type MediaInfo struct {
-	Video    *VideoInfo      `json:"v,omitempty"`
-	Audio    []AudioTrack    `json:"a,omitempty"`
-	Subtitle []SubtitleTrack `json:"s,omitempty"`
-	Format   *FormatInfo     `json:"f,omitempty"`
+	Video    *VideoInfo      `json:"video,omitempty"`
+	Audio    []AudioTrack    `json:"audio,omitempty"`
+	Subtitle []SubtitleTrack `json:"subtitle,omitempty"`
+	Format   *FormatInfo     `json:"format,omitempty"`
 }
 
 func deriveResolution(width, height int) string {
@@ -58,9 +60,9 @@ func deriveResolution(width, height int) string {
 	}
 }
 
-func getLanguage(stream *ffprobe.Stream) string {
-	lang, _ := stream.TagList.GetString("language")
-	return lang
+func getTag(stream *ffprobe.Stream, key string) string {
+	val, _ := stream.TagList.GetString(key)
+	return val
 }
 
 func Probe(ctx context.Context, url string) (string, error) {
@@ -80,6 +82,7 @@ func Probe(ctx context.Context, url string) (string, error) {
 			if mi.Video == nil {
 				mi.Video = &VideoInfo{
 					Codec:      stream.CodecName,
+					Profile:    stream.Profile,
 					Resolution: deriveResolution(stream.Width, stream.Height),
 				}
 			}
@@ -88,12 +91,13 @@ func Probe(ctx context.Context, url string) (string, error) {
 				Codec:    stream.CodecName,
 				Channels: stream.Channels,
 				Layout:   stream.ChannelLayout,
-				Language: getLanguage(stream),
+				Language: getTag(stream, "language"),
 			})
 		case "subtitle":
 			mi.Subtitle = append(mi.Subtitle, SubtitleTrack{
 				Codec:    stream.CodecName,
-				Language: getLanguage(stream),
+				Language: getTag(stream, "language"),
+				Title:    getTag(stream, "title"),
 			})
 		}
 	}
