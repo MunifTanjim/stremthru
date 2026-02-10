@@ -124,6 +124,9 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 	"sync-torznab-indexer": {
 		Title: "Sync Torznab Indexer",
 	},
+	"probe-media": {
+		Title: "Probe Media",
+	},
 }
 
 func NewWorker(conf *WorkerConfig) *Worker {
@@ -883,6 +886,17 @@ func InitWorkers() func() {
 		RunExclusive: true,
 		ShouldSkip: func() bool {
 			return !torznab_indexer_syncinfo.HasSyncPending()
+		},
+	}); worker != nil {
+		workers = append(workers, worker)
+	}
+
+	if worker := InitMediaProberWorker(&WorkerConfig{
+		Disabled: worker_queue.MediaProberQueue.Disabled,
+		Name:     "probe-media",
+		Interval: 1 * time.Minute,
+		ShouldSkip: func() bool {
+			return worker_queue.MediaProberQueue.IsEmpty()
 		},
 	}); worker != nil {
 		workers = append(workers, worker)

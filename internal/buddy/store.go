@@ -46,6 +46,7 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 			Size:      f.Size,
 			Source:    source,
 			VideoHash: f.VideoHash,
+			MediaInfo: f.MediaInfo,
 		})
 	}
 	magnet_cache.Touch(s.GetName().Code(), hash, tsFiles, !cacheMiss, true)
@@ -330,6 +331,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 									Size:      f.Size,
 									Source:    f.Source,
 									VideoHash: f.VideoHash,
+									MediaInfo: f.MediaInfo,
 								})
 							}
 						}
