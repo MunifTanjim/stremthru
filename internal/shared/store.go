@@ -416,6 +416,17 @@ func GetQbitFileProgress(user string, hash string, fileIndex int) (*qbittorrent.
 	return qbStore.GetFileProgress(apiKey, hash, fileIndex)
 }
 
+// GetQbitSafeBytes returns the contiguous-from-start safe byte boundary for
+// a qBittorrent file. Unlike GetQbitFileProgress (total progress), this tracks
+// the sequential download frontier for accurate streaming pacing.
+func GetQbitSafeBytes(user, hash string, fileIndex int) (safeBytes int64, fileSize int64, done bool, err error) {
+	apiKey := config.StoreAuthToken.GetToken(user, "qbittorrent")
+	if apiKey == "" {
+		return 0, 0, false, errors.New("no qBittorrent API key for user")
+	}
+	return qbStore.GetSafeBytes(apiKey, hash, fileIndex)
+}
+
 // IsQbitFileRangeAvailable checks whether the byte range [start, end] within
 // a qBittorrent file is fully downloaded at the piece level.
 func IsQbitFileRangeAvailable(user, hash string, fileIndex int, start, end int64) (bool, error) {
