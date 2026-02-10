@@ -66,6 +66,7 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 	// pace streaming to match the download — preventing garbage bytes from
 	// pre-allocated regions while allowing seamless streaming-while-downloading.
 	var safeBytesFn shared.SafeBytesFunc
+	var isRangeAvailFn shared.IsRangeAvailableFunc
 	if info.QbitHash != "" {
 		safeBytesFn = func() (int64, bool) {
 			progress, err := shared.GetQbitFileProgress(info.User, info.QbitHash, info.QbitFileIdx)
@@ -77,10 +78,21 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 			safe := int64(float64(progress.Size) * progress.Progress)
 			return safe, progress.Progress >= 1.0
 		}
+		isRangeAvailFn = func(start, end int64) bool {
+			avail, err := shared.IsQbitFileRangeAvailable(info.User, info.QbitHash, info.QbitFileIdx, start, end)
+			if err != nil {
+				ctx.Log.Warn("[proxy] failed to check range availability", "error", err)
+				return false
+			}
+			if avail {
+				ctx.Log.Debug("[proxy] range verified available at piece level", "start", start, "end", end)
+			}
+			return avail
+		}
 		ctx.Log.Debug("[proxy] streaming with qbit progress awareness", "hash", info.QbitHash, "fileIdx", info.QbitFileIdx)
 	}
 
-	bytesWritten, err := shared.ProxyResponse(w, r, info.Link, info.TunnelType, safeBytesFn)
+	bytesWritten, err := shared.ProxyResponse(w, r, info.Link, info.TunnelType, safeBytesFn, isRangeAvailFn)
 	ctx.Log.Info("[proxy] connection closed", "user", info.User, "size", util.ToSize(bytesWritten), "error", err)
 }
 

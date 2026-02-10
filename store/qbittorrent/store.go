@@ -96,6 +96,16 @@ var fileProgressCache = cache.NewCache[FileProgressInfo](&cache.CacheConfig{
 	Lifetime: 10 * time.Second,
 })
 
+var pieceStatesCache = cache.NewCache[[]int](&cache.CacheConfig{
+	Name:     "qbit:pieceStates",
+	Lifetime: 10 * time.Second,
+})
+
+var torrentPropsCache = cache.NewCache[TorrentProperties](&cache.CacheConfig{
+	Name:     "qbit:torrentProps",
+	Lifetime: 1 * time.Hour,
+})
+
 // GetFileProgress returns the download progress (0.0–1.0) and total size for
 // a specific file in a torrent. Results are cached for 10 seconds.
 func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int) (*FileProgressInfo, error) {
@@ -121,6 +131,87 @@ func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int)
 		}
 	}
 	return nil, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
+}
+
+// IsFileRangeAvailable checks whether all pieces covering the byte range
+// [rangeStart, rangeEnd] within a file are fully downloaded. Uses piece states
+// from the qBittorrent API (cached 10s). The file's byte offset within the
+// torrent is computed exactly by summing preceding file sizes, giving precise
+// byte-to-piece mapping.
+func (c *StoreClient) IsFileRangeAvailable(apiKey, hash string, fileIndex int, rangeStart, rangeEnd int64) (bool, error) {
+	cfg, err := c.getConfig(apiKey)
+	if err != nil {
+		return false, err
+	}
+
+	// Get all files — needed for piece_range and to compute the file's
+	// byte offset within the torrent (files are concatenated in index order).
+	files, err := c.client.GetTorrentFiles(cfg, hash)
+	if err != nil {
+		return false, err
+	}
+	var file *TorrentFile
+	var fileOffset int64
+	for i := range files {
+		if files[i].Index == fileIndex {
+			file = &files[i]
+			break
+		}
+		fileOffset += files[i].Size
+	}
+	if file == nil {
+		return false, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
+	}
+	if file.Progress >= 1.0 {
+		return true, nil
+	}
+
+	// Get piece size from torrent properties.
+	props := &TorrentProperties{}
+	if !torrentPropsCache.Get(hash, props) {
+		p, err := c.client.GetTorrentProperties(cfg, hash)
+		if err != nil {
+			return false, err
+		}
+		props = p
+		torrentPropsCache.Add(hash, *props)
+	}
+	if props.PieceSize <= 0 {
+		return false, nil
+	}
+
+	// Get piece states.
+	var states []int
+	if !pieceStatesCache.Get(hash, &states) {
+		s, err := c.client.GetPieceStates(cfg, hash)
+		if err != nil {
+			return false, err
+		}
+		states = s
+		pieceStatesCache.Add(hash, states)
+	}
+
+	lp := file.PieceRange[1]
+	ps := props.PieceSize
+
+	if lp >= len(states) {
+		return false, nil
+	}
+
+	// Exact byte-to-piece mapping: file byte B corresponds to torrent byte
+	// (fileOffset + B), which falls in piece (fileOffset + B) / pieceSize.
+	firstNeeded := int((fileOffset + rangeStart) / ps)
+	lastNeeded := int((fileOffset + rangeEnd) / ps)
+	if lastNeeded > lp {
+		lastNeeded = lp
+	}
+
+	for p := firstNeeded; p <= lastNeeded; p++ {
+		if p >= len(states) || states[p] != 2 {
+			return false, nil
+		}
+	}
+	return true, nil
 }
 
 func progressToStatus(progress float64) store.MagnetStatus {
