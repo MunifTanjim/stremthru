@@ -43,11 +43,12 @@ func (t *TorrentInfo) GetAddedAt() time.Time {
 }
 
 type TorrentFile struct {
-	Index    int     `json:"index"`
-	Name     string  `json:"name"`
-	Size     int64   `json:"size"`
-	Progress float64 `json:"progress"`
-	Priority int     `json:"priority"`
+	Index      int     `json:"index"`
+	Name       string  `json:"name"`
+	Size       int64   `json:"size"`
+	Progress   float64 `json:"progress"`
+	Priority   int     `json:"priority"`
+	PieceRange [2]int  `json:"piece_range"`
 }
 
 func (f *TorrentFile) GetName() string {
@@ -151,6 +152,46 @@ func (c *APIClient) AddTorrentFile(cfg *qbitConfig, file *multipart.FileHeader) 
 		return newQbitError(resp.StatusCode, body)
 	}
 	return nil
+}
+
+// TorrentProperties holds properties from /api/v2/torrents/properties.
+type TorrentProperties struct {
+	PieceSize int64 `json:"piece_size"`
+}
+
+// GetTorrentProperties calls GET /api/v2/torrents/properties.
+func (c *APIClient) GetTorrentProperties(cfg *qbitConfig, hash string) (*TorrentProperties, error) {
+	form := url.Values{"hash": {hash}}
+	resp, body, err := c.doRequest(cfg, "GET", "/api/v2/torrents/properties", form)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, newQbitError(resp.StatusCode, body)
+	}
+	var props TorrentProperties
+	if err := json.Unmarshal(body, &props); err != nil {
+		return nil, err
+	}
+	return &props, nil
+}
+
+// GetPieceStates calls GET /api/v2/torrents/pieceStates.
+// Returns a slice of ints: 0=not downloaded, 1=downloading, 2=downloaded.
+func (c *APIClient) GetPieceStates(cfg *qbitConfig, hash string) ([]int, error) {
+	form := url.Values{"hash": {hash}}
+	resp, body, err := c.doRequest(cfg, "GET", "/api/v2/torrents/pieceStates", form)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, newQbitError(resp.StatusCode, body)
+	}
+	var states []int
+	if err := json.Unmarshal(body, &states); err != nil {
+		return nil, err
+	}
+	return states, nil
 }
 
 // DeleteTorrents calls POST /api/v2/torrents/delete.
