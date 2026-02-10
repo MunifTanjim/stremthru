@@ -75,7 +75,7 @@ func getRDWebDLsMeta(r *http.Request, ctx *Ctx, idr *ParsedId) stremio.Meta {
 				}
 				videoTitle := getMetaPreviewDescriptionForWebDL(dl.Host, dl.Filename, true) + "\n📄 " + dl.Filename
 				if shouldCreateProxyLink {
-					if proxyLink, err := shared.CreateProxyLink(r, stream.URL, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, dl.Filename); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, stream.URL, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, dl.Filename, nil); err == nil {
 						stream.URL = proxyLink
 						videoTitle = "✨ " + videoTitle
 					} else {
