@@ -5,7 +5,6 @@ package qbittorrent
 import (
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -45,17 +44,6 @@ const bbbHash = "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c"
 
 const qbitContainerName = "qbit-integ-test"
 
-// freePort asks the OS for an available port.
-func freePort() (int, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
-	return port, nil
-}
-
 type QBitIntegrationSuite struct {
 	suite.Suite
 	client      *APIClient
@@ -91,40 +79,6 @@ func startContainer(name string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// waitForHTTP polls a URL until it responds or times out.
-func waitForHTTP(url string, timeout time.Duration) error {
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		resp, err := http.Get(url)
-		if err == nil {
-			resp.Body.Close()
-			return nil
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	return fmt.Errorf("timed out waiting for %s", url)
-}
-
-// getQbitPassword extracts the temporary password from qBit container logs.
-func getQbitPassword(containerName string, timeout time.Duration) (string, error) {
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		out, err := exec.Command("docker", "logs", containerName).CombinedOutput()
-		if err == nil {
-			for _, line := range strings.Split(string(out), "\n") {
-				if strings.Contains(line, "temporary password") {
-					// Format: "...A temporary password is provided for this session: XXXXX"
-					parts := strings.Split(line, ": ")
-					if len(parts) >= 2 {
-						return strings.TrimSpace(parts[len(parts)-1]), nil
-					}
-				}
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
-	return "", fmt.Errorf("timed out waiting for qBit password in logs")
-}
 
 func (s *QBitIntegrationSuite) SetupSuite() {
 	s.client = NewAPIClient(&APIClientConfig{})
@@ -150,7 +104,7 @@ func (s *QBitIntegrationSuite) SetupSuite() {
 	// Auto-manage a qBit container
 	s.managedQbit = true
 
-	port, err := freePort()
+	port, err := FreePort()
 	s.Require().NoError(err, "could not find a free port")
 
 	// Create a temp dir for qBit downloads so the container has a writable volume
@@ -171,9 +125,9 @@ func (s *QBitIntegrationSuite) SetupSuite() {
 
 	// Wait for the WebUI to be ready and extract password
 	qbitURL := fmt.Sprintf("http://localhost:%d", port)
-	s.Require().NoError(waitForHTTP(qbitURL, 30*time.Second), "qBit WebUI did not become ready")
+	s.Require().NoError(WaitForHTTP(qbitURL, 30*time.Second), "qBit WebUI did not become ready")
 
-	pass, err := getQbitPassword(qbitContainerName, 30*time.Second)
+	pass, err := GetQbitPassword(qbitContainerName, 30*time.Second)
 	s.Require().NoError(err, "could not get qBit password from logs")
 
 	s.cfg = &qbitConfig{
@@ -202,7 +156,7 @@ func (s *QBitIntegrationSuite) TearDownSuite() {
 // startNginx starts an nginx container serving the given directory on a random free port.
 // Returns the nginx base URL and a cleanup function.
 func (s *QBitIntegrationSuite) startNginx(name string, hostDir string) (nginxURL string, cleanup func()) {
-	port, err := freePort()
+	port, err := FreePort()
 	s.Require().NoError(err, "could not find a free port for nginx")
 
 	_, err = startContainer(name,
@@ -218,7 +172,7 @@ func (s *QBitIntegrationSuite) startNginx(name string, hostDir string) (nginxURL
 	}
 
 	nginxURL = fmt.Sprintf("http://localhost:%d", port)
-	err = waitForHTTP(nginxURL, 10*time.Second)
+	err = WaitForHTTP(nginxURL, 10*time.Second)
 	s.Require().NoError(err, "nginx did not become ready")
 
 	return nginxURL, cleanup
@@ -285,6 +239,24 @@ func (s *QBitIntegrationSuite) TestE_GetTorrents() {
 	torrents, err = s.client.GetTorrents(s.cfg, []string{"0000000000000000000000000000000000000000"}, 0, 0)
 	s.Require().NoError(err)
 	s.Len(torrents, 0)
+}
+
+func (s *QBitIntegrationSuite) TestE1_GetTorrentCount() {
+	count, err := s.client.GetTorrentCount(s.cfg)
+	s.Require().NoError(err)
+
+	if count == -1 {
+		s.T().Log("GetTorrentCount returned -1: endpoint not available (qBit < 4.6.1), skipping")
+		return
+	}
+
+	s.GreaterOrEqual(count, 0, "count should be non-negative")
+
+	// Count should match the number of torrents from GetTorrents
+	torrents, err := s.client.GetTorrents(s.cfg, nil, 0, 0)
+	s.Require().NoError(err)
+	s.Equal(len(torrents), count, "count endpoint should match actual torrent count")
+	s.T().Logf("GetTorrentCount: %d (matches GetTorrents)", count)
 }
 
 func (s *QBitIntegrationSuite) TestF_GetTorrentFiles() {

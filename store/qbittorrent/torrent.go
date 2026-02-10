@@ -102,6 +102,26 @@ func (c *APIClient) GetTorrents(cfg *qbitConfig, hashes []string, limit, offset 
 	return torrents, nil
 }
 
+// GetTorrentCount calls GET /api/v2/torrents/count (qBit 4.6.1+).
+// Returns the total number of torrents, or -1 if the endpoint is not available.
+func (c *APIClient) GetTorrentCount(cfg *qbitConfig) (int, error) {
+	resp, body, err := c.doRequest(cfg, "GET", "/api/v2/torrents/count", nil)
+	if err != nil {
+		return -1, err
+	}
+	if resp.StatusCode == 404 {
+		return -1, nil
+	}
+	if resp.StatusCode != 200 {
+		return -1, newQbitError(resp.StatusCode, body)
+	}
+	var count int
+	if err := json.Unmarshal(body, &count); err != nil {
+		return -1, err
+	}
+	return count, nil
+}
+
 // GetTorrentFiles calls GET /api/v2/torrents/files
 func (c *APIClient) GetTorrentFiles(cfg *qbitConfig, hash string) ([]TorrentFile, error) {
 	form := url.Values{"hash": {hash}}
