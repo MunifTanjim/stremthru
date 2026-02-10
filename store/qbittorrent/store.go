@@ -92,24 +92,31 @@ type FileProgressInfo struct {
 }
 
 var fileProgressCache = cache.NewCache[FileProgressInfo](&cache.CacheConfig{
-	Name:     "qbit:fileProgress",
+	Name:     "store:qbittorrent:fileProgress",
 	Lifetime: 10 * time.Second,
 })
 
 var pieceStatesCache = cache.NewCache[[]int](&cache.CacheConfig{
-	Name:     "qbit:pieceStates",
-	Lifetime: 10 * time.Second,
+	Name:     "store:qbittorrent:pieceStates",
+	Lifetime: 3 * time.Second,
 })
 
 var torrentPropsCache = cache.NewCache[TorrentProperties](&cache.CacheConfig{
-	Name:     "qbit:torrentProps",
+	Name:     "store:qbittorrent:torrentProps",
 	Lifetime: 1 * time.Hour,
 })
+
+// instancePrefix extracts the qBittorrent URL from an API key token
+// for use as a cache key prefix, ensuring per-instance isolation.
+func instancePrefix(apiKey string) string {
+	url, _, _ := strings.Cut(apiKey, "|")
+	return url
+}
 
 // GetFileProgress returns the download progress (0.0–1.0) and total size for
 // a specific file in a torrent. Results are cached for 10 seconds.
 func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int) (*FileProgressInfo, error) {
-	cacheKey := hash + ":" + strconv.Itoa(fileIndex)
+	cacheKey := instancePrefix(apiKey) + ":" + hash + ":" + strconv.Itoa(fileIndex)
 	info := &FileProgressInfo{}
 	if fileProgressCache.Get(cacheKey, info) {
 		return info, nil
@@ -193,29 +200,30 @@ func (c *StoreClient) GetSafeBytes(apiKey, hash string, fileIndex int) (safeByte
 	}
 
 	// Get piece size
+	instanceKey := instancePrefix(apiKey) + ":" + hash
 	props := &TorrentProperties{}
-	if !torrentPropsCache.Get(hash, props) {
+	if !torrentPropsCache.Get(instanceKey, props) {
 		p, err := c.client.GetTorrentProperties(cfg, hash)
 		if err != nil {
 			return 0, 0, false, err
 		}
 		props = p
-		torrentPropsCache.Add(hash, *props)
+		torrentPropsCache.Add(instanceKey, *props)
 	}
 
-	// Get piece states (cached 10s)
+	// Get piece states (cached 3s)
 	var states []int
-	if !pieceStatesCache.Get(hash, &states) {
+	if !pieceStatesCache.Get(instanceKey, &states) {
 		s, err := c.client.GetPieceStates(cfg, hash)
 		if err != nil {
 			return 0, 0, false, err
 		}
 		states = s
-		pieceStatesCache.Add(hash, states)
+		pieceStatesCache.Add(instanceKey, states)
 	}
 
 	safe := computeSafeBytes(fileOffset, file.Size, props.PieceSize, states, file.PieceRange[0], file.PieceRange[1])
-	return safe, file.Size, false, nil
+	return safe, file.Size, safe >= file.Size, nil
 }
 
 // checkRangeAvailable is the pure logic for checking whether a byte range
@@ -281,14 +289,15 @@ func (c *StoreClient) IsFileRangeAvailable(apiKey, hash string, fileIndex int, r
 	}
 
 	// Get piece size from torrent properties.
+	instanceKey := instancePrefix(apiKey) + ":" + hash
 	props := &TorrentProperties{}
-	if !torrentPropsCache.Get(hash, props) {
+	if !torrentPropsCache.Get(instanceKey, props) {
 		p, err := c.client.GetTorrentProperties(cfg, hash)
 		if err != nil {
 			return false, err
 		}
 		props = p
-		torrentPropsCache.Add(hash, *props)
+		torrentPropsCache.Add(instanceKey, *props)
 	}
 	if props.PieceSize <= 0 {
 		return false, nil
@@ -296,13 +305,13 @@ func (c *StoreClient) IsFileRangeAvailable(apiKey, hash string, fileIndex int, r
 
 	// Get piece states.
 	var states []int
-	if !pieceStatesCache.Get(hash, &states) {
+	if !pieceStatesCache.Get(instanceKey, &states) {
 		s, err := c.client.GetPieceStates(cfg, hash)
 		if err != nil {
 			return false, err
 		}
 		states = s
-		pieceStatesCache.Add(hash, states)
+		pieceStatesCache.Add(instanceKey, states)
 	}
 
 	return checkRangeAvailable(fileOffset, props.PieceSize, states, file.PieceRange[1], rangeStart, rangeEnd), nil
@@ -599,22 +608,39 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 		return nil, err
 	}
 
-	// Fetch all torrents to get accurate total count
-	torrents, err := c.client.GetTorrents(cfg, nil, 0, 0)
-	if err != nil {
-		return nil, UpstreamErrorWithCause(err)
-	}
-
-	totalItems := len(torrents)
-
 	limit := params.Limit
 	if limit <= 0 {
 		limit = 100
 	}
+	offset := max(0, params.Offset)
 
-	startIdx := min(params.Offset, totalItems)
-	endIdx := min(startIdx+limit, totalItems)
-	page := torrents[startIdx:endIdx]
+	var page []TorrentInfo
+	var totalItems int
+
+	// Try server-side pagination via /api/v2/torrents/count (qBit 4.6.1+)
+	count, err := c.client.GetTorrentCount(cfg)
+	if err != nil {
+		return nil, UpstreamErrorWithCause(err)
+	}
+
+	if count >= 0 {
+		// Count endpoint available — use native pagination
+		totalItems = count
+		page, err = c.client.GetTorrents(cfg, nil, limit, offset)
+		if err != nil {
+			return nil, UpstreamErrorWithCause(err)
+		}
+	} else {
+		// Older qBit — fetch all and paginate in Go
+		torrents, err := c.client.GetTorrents(cfg, nil, 0, 0)
+		if err != nil {
+			return nil, UpstreamErrorWithCause(err)
+		}
+		totalItems = len(torrents)
+		startIdx := min(offset, totalItems)
+		endIdx := min(startIdx+limit, totalItems)
+		page = torrents[startIdx:endIdx]
+	}
 
 	data := &store.ListMagnetsData{
 		Items:      []store.ListMagnetsDataItem{},

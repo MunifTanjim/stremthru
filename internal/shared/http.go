@@ -214,8 +214,9 @@ func parseByteRange(rangeHeader string) (start int64, end int64, ok bool) {
 }
 
 // SafeBytesFunc returns the number of contiguous bytes from the start of the
-// file that are safe to serve, and whether the file is fully available.
-type SafeBytesFunc func() (safeBytes int64, done bool)
+// file that are safe to serve, the total file size, and whether the file is
+// fully available.
+type SafeBytesFunc func() (safeBytes int64, fileSize int64, done bool)
 
 // IsRangeAvailableFunc checks whether the byte range [start, end] within the
 // file is fully downloaded at the piece level. Used for Range seeks (e.g.
@@ -226,7 +227,7 @@ type IsRangeAvailableFunc func(start, end int64) bool
 const progressStallTimeout = 120 * time.Second
 
 func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc, isRangeAvailFn IsRangeAvailableFunc) (bytesWritten int64, err error) {
-	request, err := http.NewRequest(r.Method, url, nil)
+	request, err := http.NewRequestWithContext(r.Context(), r.Method, url, nil)
 	if err != nil {
 		e := ErrorInternalServerError(r, "failed to create request")
 		e.Cause = err
@@ -247,7 +248,7 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 	if safeBytesFn != nil {
 		if rangeHeader := request.Header.Get("Range"); rangeHeader != "" {
 			if start, end, ok := parseByteRange(rangeHeader); ok {
-				safeBytes, done := safeBytesFn()
+				safeBytes, fileSize, done := safeBytesFn()
 				if start >= safeBytes && !done {
 					// The Range start is beyond the sequential download frontier.
 					// Check if the specific byte range is available at piece level
@@ -255,7 +256,8 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 					if isRangeAvailFn != nil {
 						rangeEnd := end
 						if rangeEnd < 0 {
-							rangeEnd = start + 16*1024*1024 // estimate for open-ended ranges
+							// Open-ended range: check up to the file size
+							rangeEnd = fileSize - 1
 						}
 						if isRangeAvailFn(start, rangeEnd) {
 							rangeVerified = true
@@ -266,10 +268,10 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 						deadline := time.Now().Add(progressStallTimeout)
 						for start >= safeBytes && !done && time.Now().Before(deadline) {
 							time.Sleep(2 * time.Second)
-							safeBytes, done = safeBytesFn()
+							safeBytes, fileSize, done = safeBytesFn()
 						}
 						if start >= safeBytes && !done {
-							w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(safeBytes, 10))
+							w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(fileSize, 10))
 							w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
 							return 0, nil
 						}
@@ -320,7 +322,7 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 		default:
 		}
 
-		safeBytes, done := safeBytesFn()
+		safeBytes, _, done := safeBytesFn()
 		if safeBytes > lastSafe {
 			lastSafe = safeBytes
 			stallDeadline = time.Now().Add(progressStallTimeout)
