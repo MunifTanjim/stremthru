@@ -11,9 +11,14 @@ import (
 )
 
 type VideoInfo struct {
-	Codec      string `json:"codec,omitempty"`
-	Profile    string `json:"profile,omitempty"`
-	Resolution string `json:"resolution,omitempty"`
+	Codec          string `json:"codec,omitempty"`
+	Profile        string `json:"profile,omitempty"`
+	Resolution     string `json:"resolution,omitempty"`
+	BitDepth       int    `json:"bit_depth,omitempty"`
+	HDR            string `json:"hdr,omitempty"`
+	ColorSpace     string `json:"color_space,omitempty"`
+	ColorTransfer  string `json:"color_transfer,omitempty"`
+	ColorPrimaries string `json:"color_primaries,omitempty"`
 }
 
 type AudioTrack struct {
@@ -21,12 +26,15 @@ type AudioTrack struct {
 	Channels int    `json:"channels,omitempty"`
 	Layout   string `json:"layout,omitempty"`
 	Language string `json:"language,omitempty"`
+	Default  bool   `json:"default,omitempty"`
 }
 
 type SubtitleTrack struct {
 	Codec    string `json:"codec,omitempty"`
 	Language string `json:"language,omitempty"`
 	Title    string `json:"title,omitempty"`
+	Default  bool   `json:"default,omitempty"`
+	Forced   bool   `json:"forced,omitempty"`
 }
 
 type FormatInfo struct {
@@ -60,6 +68,31 @@ func deriveResolution(width, height int) string {
 	}
 }
 
+func deriveHDR(stream *ffprobe.Stream) string {
+	switch stream.CodecName {
+	case "dvhe", "dvh1", "dvav", "dva1":
+		return "DV"
+	}
+	if stream.Profile == "Dolby Vision" {
+		return "DV"
+	}
+	for _, sd := range stream.SideDataList {
+		switch sd.Type {
+		case "Dolby Vision Metadata", "DOVI configuration record":
+			return "DV"
+		case "HDR Dynamic Metadata SMPTE2094-40 (HDR10+)", "HDR10+ Dynamic Metadata":
+			return "HDR10+"
+		}
+	}
+	switch stream.ColorTransfer {
+	case "smpte2084":
+		return "HDR10"
+	case "arib-std-b67":
+		return "HLG"
+	}
+	return ""
+}
+
 func getTag(stream *ffprobe.Stream, key string) string {
 	val, _ := stream.TagList.GetString(key)
 	return val
@@ -80,11 +113,19 @@ func Probe(ctx context.Context, url string) (string, error) {
 		switch stream.CodecType {
 		case "video":
 			if mi.Video == nil {
-				mi.Video = &VideoInfo{
-					Codec:      stream.CodecName,
-					Profile:    stream.Profile,
-					Resolution: deriveResolution(stream.Width, stream.Height),
+				vi := &VideoInfo{
+					Codec:          stream.CodecName,
+					Profile:        stream.Profile,
+					Resolution:     deriveResolution(stream.Width, stream.Height),
+					ColorSpace:     stream.ColorSpace,
+					ColorTransfer:  stream.ColorTransfer,
+					ColorPrimaries: stream.ColorPrimaries,
 				}
+				if bd, err := strconv.Atoi(stream.BitsPerRawSample); err == nil && bd > 0 {
+					vi.BitDepth = bd
+				}
+				vi.HDR = deriveHDR(stream)
+				mi.Video = vi
 			}
 		case "audio":
 			mi.Audio = append(mi.Audio, AudioTrack{
@@ -92,12 +133,15 @@ func Probe(ctx context.Context, url string) (string, error) {
 				Channels: stream.Channels,
 				Layout:   stream.ChannelLayout,
 				Language: getTag(stream, "language"),
+				Default:  stream.Disposition.Default == 1,
 			})
 		case "subtitle":
 			mi.Subtitle = append(mi.Subtitle, SubtitleTrack{
 				Codec:    stream.CodecName,
 				Language: getTag(stream, "language"),
 				Title:    getTag(stream, "title"),
+				Default:  stream.Disposition.Default == 1,
+				Forced:   stream.Disposition.Forced == 1,
 			})
 		}
 	}
