@@ -122,6 +122,7 @@ type MagnetFile struct {
 	Name      string `json:"name"`
 	Size      int64  `json:"size"`
 	VideoHash string `json:"video_hash,omitempty"`
+	MediaInfo string `json:"media_info,omitempty"`
 	Source    string `json:"source,omitempty"`
 }
 
