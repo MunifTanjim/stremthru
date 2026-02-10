@@ -133,6 +133,91 @@ func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int)
 	return nil, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
 }
 
+// computeSafeBytes calculates the contiguous-from-start safe byte boundary
+// for a file within a torrent. This is the exact number of bytes from the
+// beginning of the file that are guaranteed to contain real data (not
+// pre-allocated zeros). Uses piece states for precision.
+func computeSafeBytes(fileOffset int64, fileSize int64, pieceSize int64, states []int, firstPiece, lastPiece int) int64 {
+	if pieceSize <= 0 || firstPiece >= len(states) {
+		return 0
+	}
+
+	// Walk forward from the file's first piece until we hit a non-downloaded piece.
+	for p := firstPiece; p <= lastPiece && p < len(states); p++ {
+		if states[p] != 2 {
+			// This piece is not fully downloaded. The safe boundary is the
+			// start of this piece minus the file's offset within the torrent.
+			safe := int64(p)*pieceSize - fileOffset
+			if safe < 0 {
+				return 0
+			}
+			if safe > fileSize {
+				return fileSize
+			}
+			return safe
+		}
+	}
+	// All pieces downloaded
+	return fileSize
+}
+
+// GetSafeBytes returns the number of contiguous bytes from the start of a file
+// that are fully downloaded. Unlike GetFileProgress which returns overall progress,
+// this specifically tracks the sequential frontier — safe for streaming without
+// hitting pre-allocated zero regions.
+func (c *StoreClient) GetSafeBytes(apiKey, hash string, fileIndex int) (safeBytes int64, fileSize int64, done bool, err error) {
+	cfg, err := c.getConfig(apiKey)
+	if err != nil {
+		return 0, 0, false, err
+	}
+
+	// Get files for piece ranges and file offset
+	files, err := c.client.GetTorrentFiles(cfg, hash)
+	if err != nil {
+		return 0, 0, false, err
+	}
+	var file *TorrentFile
+	var fileOffset int64
+	for i := range files {
+		if files[i].Index == fileIndex {
+			file = &files[i]
+			break
+		}
+		fileOffset += files[i].Size
+	}
+	if file == nil {
+		return 0, 0, false, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
+	}
+	if file.Progress >= 1.0 {
+		return file.Size, file.Size, true, nil
+	}
+
+	// Get piece size
+	props := &TorrentProperties{}
+	if !torrentPropsCache.Get(hash, props) {
+		p, err := c.client.GetTorrentProperties(cfg, hash)
+		if err != nil {
+			return 0, 0, false, err
+		}
+		props = p
+		torrentPropsCache.Add(hash, *props)
+	}
+
+	// Get piece states (cached 10s)
+	var states []int
+	if !pieceStatesCache.Get(hash, &states) {
+		s, err := c.client.GetPieceStates(cfg, hash)
+		if err != nil {
+			return 0, 0, false, err
+		}
+		states = s
+		pieceStatesCache.Add(hash, states)
+	}
+
+	safe := computeSafeBytes(fileOffset, file.Size, props.PieceSize, states, file.PieceRange[0], file.PieceRange[1])
+	return safe, file.Size, false, nil
+}
+
 // checkRangeAvailable is the pure logic for checking whether a byte range
 // within a file is fully downloaded. It takes pre-fetched data (no API calls)
 // so it can be unit tested deterministically.
