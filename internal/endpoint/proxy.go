@@ -63,8 +63,8 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var bytesWritten int64
-	if qbitHash := r.URL.Query().Get("qbit_hash"); qbitHash != "" {
-		bytesWritten, err = shared.ProxyQbitResponse(w, r, link, tunnelType, user, qbitHash)
+	if torrentHash := r.URL.Query().Get("torrent_hash"); torrentHash != "" {
+		bytesWritten, err = shared.ProxyTorrentResponse(w, r, link, tunnelType, user, torrentHash)
 	} else {
 		bytesWritten, err = shared.ProxyResponse(w, r, link, tunnelType)
 	}
