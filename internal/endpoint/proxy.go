@@ -30,22 +30,22 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, link, headers, tunnelType, err := shared.UnwrapProxyLinkToken(encodedToken)
+	info, err := shared.UnwrapProxyLinkToken(encodedToken)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	if headers != nil {
-		for k, v := range headers {
+	if info.Headers != nil {
+		for k, v := range info.Headers {
 			r.Header.Set(k, v)
 		}
 	}
 
-	if isGetReq && user != "" {
-		cpStore := contentProxyConnectionStore.WithScope(user)
+	if isGetReq && info.User != "" {
+		cpStore := contentProxyConnectionStore.WithScope(info.User)
 
-		if limit := config.ContentProxyConnectionLimit.Get(user); limit > 0 {
+		if limit := config.ContentProxyConnectionLimit.Get(info.User); limit > 0 {
 			activeConnectionCount, err := cpStore.Count()
 			if err != nil {
 				ctx.Log.Error("[proxy] failed to count connections", "error", err)
@@ -55,14 +55,33 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if err := cpStore.Set(ctx.RequestId, contentProxyConnection{IP: core.GetRequestIP(r), Link: link}); err != nil {
+		if err := cpStore.Set(ctx.RequestId, contentProxyConnection{IP: core.GetRequestIP(r), Link: info.Link}); err != nil {
 			ctx.Log.Error("[proxy] failed to record connection", "error", err)
 		} else {
 			defer cpStore.Del(ctx.RequestId)
 		}
 	}
-	bytesWritten, err := shared.ProxyResponse(w, r, link, tunnelType)
-	ctx.Log.Info("[proxy] connection closed", "user", user, "size", util.ToSize(bytesWritten), "error", err)
+
+	// For qBittorrent files, provide a progress callback so the proxy can
+	// pace streaming to match the download — preventing garbage bytes from
+	// pre-allocated regions while allowing seamless streaming-while-downloading.
+	var safeBytesFn shared.SafeBytesFunc
+	if info.QbitHash != "" {
+		safeBytesFn = func() (int64, bool) {
+			progress, err := shared.GetQbitFileProgress(info.User, info.QbitHash, info.QbitFileIdx)
+			if err != nil {
+				// On error, assume fully downloaded to avoid blocking forever.
+				ctx.Log.Warn("[proxy] failed to get qbit file progress, assuming done", "error", err)
+				return 0, true
+			}
+			safe := int64(float64(progress.Size) * progress.Progress)
+			return safe, progress.Progress >= 1.0
+		}
+		ctx.Log.Debug("[proxy] streaming with qbit progress awareness", "hash", info.QbitHash, "fileIdx", info.QbitFileIdx)
+	}
+
+	bytesWritten, err := shared.ProxyResponse(w, r, info.Link, info.TunnelType, safeBytesFn)
+	ctx.Log.Info("[proxy] connection closed", "user", info.User, "size", util.ToSize(bytesWritten), "error", err)
 }
 
 type proxifyLinksData struct {
@@ -152,7 +171,7 @@ func handleProxifyLinks(w http.ResponseWriter, r *http.Request) {
 			reqHeadersByBlob[reqHeadersBlob] = reqHeaders
 		}
 		filename := r.Form.Get("filename[" + idx + "]")
-		proxyLink, err := shared.CreateProxyLink(r, link, reqHeaders, config.TUNNEL_TYPE_AUTO, expiresIn, user, password, shouldEncrypt, filename)
+		proxyLink, err := shared.CreateProxyLink(r, link, reqHeaders, config.TUNNEL_TYPE_AUTO, expiresIn, user, password, shouldEncrypt, filename, nil)
 		if err != nil {
 			SendError(w, r, err)
 			return
