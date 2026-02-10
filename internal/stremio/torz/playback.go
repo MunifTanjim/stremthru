@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
@@ -18,6 +19,7 @@ import (
 	stremio_store "github.com/MunifTanjim/stremthru/internal/stremio/store"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
 	"golang.org/x/sync/singleflight"
 )
@@ -254,6 +256,14 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		stremLinkCache.Add(cacheKey, glRes.Link)
+
+		if config.Feature.IsEnabled(config.FeatureMediaProbe) && file != nil && storeCode == store.StoreCodeTorBox {
+			worker_queue.MediaProberQueue.Queue(worker_queue.MediaProberQueueItem{
+				Hash: magnet.Hash,
+				Path: file.Path,
+				Link: glRes.Link,
+			})
+		}
 
 		return &stremResult{
 			link: glRes.Link,

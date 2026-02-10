@@ -28,6 +28,7 @@ type File struct {
 	ASId      string `json:"asid,omitempty"`
 	Source    string `json:"src,omitempty"`
 	VideoHash string `json:"vhash,omitempty"`
+	MediaInfo string `json:"mi,omitempty"`
 
 	is_video *bool `json:"-"`
 }
@@ -107,6 +108,7 @@ func (arr Files) ToStoreMagnetFiles(hash string) []store.MagnetFile {
 			Size:      f.Size,
 			Source:    f.Source,
 			VideoHash: f.VideoHash,
+			MediaInfo: f.MediaInfo,
 		}
 		if !hasActualPath && strings.HasPrefix(f.Path, "/") {
 			hasActualPath = true
@@ -133,6 +135,7 @@ type TorrentStream struct {
 	ASId      string       `json:"asid"`
 	Source    string       `json:"src"`
 	VideoHash string       `json:"vhash,omitempty"`
+	MediaInfo string       `json:"mi,omitempty"`
 	CAt       db.Timestamp `json:"cat"`
 	UAt       db.Timestamp `json:"uat"`
 }
@@ -146,6 +149,7 @@ var Column = struct {
 	ASId      string
 	Source    string
 	VideoHash string
+	MediaInfo string
 	CAt       string
 	UAt       string
 }{
@@ -157,6 +161,7 @@ var Column = struct {
 	ASId:      "asid",
 	Source:    "src",
 	VideoHash: "vhash",
+	MediaInfo: "mi",
 	CAt:       "cat",
 	UAt:       "uat",
 }
@@ -170,6 +175,7 @@ var Columns = []string{
 	Column.ASId,
 	Column.Source,
 	Column.VideoHash,
+	Column.MediaInfo,
 	Column.CAt,
 	Column.UAt,
 }
@@ -331,7 +337,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		hashPlaceholders[i] = "?"
 	}
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', mi)) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -387,11 +393,12 @@ var record_streams_query_before_values = fmt.Sprintf(
 		Column.ASId,
 		Column.Source,
 		Column.VideoHash,
+		Column.MediaInfo,
 	),
 )
-var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 8, ","))
+var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 9, ","))
 var record_streams_query_on_conflict = fmt.Sprintf(
-	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s",
+	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s",
 	Column.Hash,
 	Column.Path,
 	fmt.Sprintf(
@@ -415,6 +422,10 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 		Column.VideoHash, Column.VideoHash, Column.VideoHash, Column.VideoHash,
 	),
 	fmt.Sprintf(
+		"%s = CASE WHEN ts.%s = '' THEN EXCLUDED.%s ELSE ts.%s END",
+		Column.MediaInfo, Column.MediaInfo, Column.MediaInfo, Column.MediaInfo,
+	),
+	fmt.Sprintf(
 		"%s = CASE WHEN (EXCLUDED.%s NOT IN ('dht','tor') AND ts.%s IN ('dht','tor')) OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
 		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
 	),
@@ -434,7 +445,7 @@ func Record(items []InsertData, discardIdx bool) error {
 		seenFileMap := map[string]struct{}{}
 
 		count := len(cItems)
-		args := make([]any, 0, count*8)
+		args := make([]any, 0, count*9)
 		for i := range cItems {
 			item := &cItems[i]
 			if !strings.HasPrefix(item.Path, "/") {
@@ -461,6 +472,7 @@ func Record(items []InsertData, discardIdx bool) error {
 					item.ASId,
 					item.Source,
 					item.VideoHash,
+					item.MediaInfo,
 				)
 			} else {
 				log.Debug("skipped duplicate file", "hash", item.Hash, "path", item.Path)
