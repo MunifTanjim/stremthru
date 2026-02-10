@@ -38,6 +38,11 @@ import (
 const testMagnet = "magnet:?xt=urn:btih:d160b8d8ea35a5b4e52837468fc8f03d55cef1f7&dn=ubuntu-24.04.3-desktop-amd64.iso"
 const testHash = "d160b8d8ea35a5b4e52837468fc8f03d55cef1f7"
 
+// Test magnet: Big Buck Bunny (public domain video, well-seeded, multi-file, has web seeds)
+// Contains: Big Buck Bunny.en.srt, Big Buck Bunny.mp4 (~276MB), poster.jpg
+const bbbMagnet = "magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F&xs=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2Fbig-buck-bunny.torrent"
+const bbbHash = "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c"
+
 const qbitContainerName = "qbit-integ-test"
 
 // freePort asks the OS for an available port.
@@ -55,7 +60,8 @@ type QBitIntegrationSuite struct {
 	suite.Suite
 	client      *APIClient
 	cfg         *qbitConfig
-	managedQbit bool // true if we started the qBit container
+	managedQbit bool   // true if we started the qBit container
+	downloadDir string // temp dir mounted as /downloads in the container
 }
 
 // waitForFiles polls until qBit has resolved the torrent metadata and files are available.
@@ -146,13 +152,19 @@ func (s *QBitIntegrationSuite) SetupSuite() {
 
 	port, err := freePort()
 	s.Require().NoError(err, "could not find a free port")
-	s.T().Logf("Starting qBittorrent container on port %d...", port)
+
+	// Create a temp dir for qBit downloads so the container has a writable volume
+	downloadDir, err := os.MkdirTemp("", "qbit-downloads-")
+	s.Require().NoError(err)
+	s.downloadDir = downloadDir
+	s.T().Logf("Starting qBittorrent container on port %d (downloads: %s)...", port, downloadDir)
 
 	_, err = startContainer(qbitContainerName,
 		"-p", fmt.Sprintf("%d:%d", port, port),
 		"-e", fmt.Sprintf("WEBUI_PORT=%d", port),
 		"-e", "PUID=1000",
 		"-e", "PGID=1000",
+		"-v", downloadDir+":/downloads",
 		"lscr.io/linuxserver/qbittorrent:latest",
 	)
 	s.Require().NoError(err, "failed to start qBit container")
@@ -174,13 +186,16 @@ func (s *QBitIntegrationSuite) SetupSuite() {
 }
 
 func (s *QBitIntegrationSuite) TearDownSuite() {
-	// Clean up test torrent
-	_ = s.client.DeleteTorrents(s.cfg, []string{testHash}, true)
+	// Clean up test torrents
+	_ = s.client.DeleteTorrents(s.cfg, []string{testHash, bbbHash}, true)
 
-	// Stop managed container
+	// Stop managed container and clean up download dir
 	if s.managedQbit {
 		s.T().Log("Stopping qBittorrent container...")
 		_ = exec.Command("docker", "rm", "-f", qbitContainerName).Run()
+		if s.downloadDir != "" {
+			os.RemoveAll(s.downloadDir)
+		}
 	}
 }
 
@@ -533,6 +548,131 @@ func (s *QBitIntegrationSuite) TestI_DeleteTorrent() {
 	torrents, err := s.client.GetTorrents(s.cfg, []string{testHash}, 0, 0)
 	s.Require().NoError(err)
 	s.Len(torrents, 0)
+}
+
+// --- Streaming / piece-level tests (Big Buck Bunny) ---
+
+// findVideoFile returns the largest file from the torrent's file list.
+func (s *QBitIntegrationSuite) findVideoFile(files []TorrentFile) *TorrentFile {
+	var best *TorrentFile
+	for i := range files {
+		if best == nil || files[i].Size > best.Size {
+			best = &files[i]
+		}
+	}
+	s.Require().NotNil(best)
+	return best
+}
+
+// TestJ_StreamingPieceAvailability is the core streaming-while-downloading test.
+// Adds Big Buck Bunny, waits for first+last pieces (fast — has web seeds),
+// pauses, then verifies piece-level range availability.
+func (s *QBitIntegrationSuite) TestJ_StreamingPieceAvailability() {
+	// Clean slate
+	_ = s.client.DeleteTorrents(s.cfg, []string{bbbHash}, true)
+	time.Sleep(500 * time.Millisecond)
+
+	// Add torrent (sequential + firstLastPiecePrio enabled by default)
+	err := s.client.AddTorrentMagnet(s.cfg, bbbMagnet)
+	s.Require().NoError(err)
+
+	// Wait for metadata
+	files := s.waitForFiles(bbbHash)
+	s.GreaterOrEqual(len(files), 2, "BBB should be multi-file")
+	video := s.findVideoFile(files)
+	s.True(strings.HasSuffix(video.Name, ".mp4"))
+	s.T().Logf("Video: %s (%d MB), pieces [%d, %d]",
+		video.Name, video.Size/1024/1024, video.PieceRange[0], video.PieceRange[1])
+
+	// Verify new APIs return data
+	props, err := s.client.GetTorrentProperties(s.cfg, bbbHash)
+	s.Require().NoError(err)
+	s.Greater(props.PieceSize, int64(0))
+	s.T().Logf("piece_size: %d KB", props.PieceSize/1024)
+
+	// Wait for first + last pieces of the video file to download.
+	// With web seeds this should take just a few seconds.
+	fp, lp := video.PieceRange[0], video.PieceRange[1]
+	var states []int
+	deadline := time.Now().Add(60 * time.Second)
+	for time.Now().Before(deadline) {
+		states, err = s.client.GetPieceStates(s.cfg, bbbHash)
+		if err == nil && lp < len(states) && states[fp] == 2 && states[lp] == 2 {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	s.Require().NotEmpty(states)
+	s.Equal(2, states[fp], "first piece should be downloaded")
+	s.Equal(2, states[lp], "last piece should be downloaded")
+
+	// Pause immediately to freeze state
+	err = s.client.PauseTorrents(s.cfg, []string{bbbHash})
+	s.Require().NoError(err)
+	time.Sleep(500 * time.Millisecond)
+
+	// Refresh piece states after pause
+	states, err = s.client.GetPieceStates(s.cfg, bbbHash)
+	s.Require().NoError(err)
+
+	downloaded := 0
+	for p := fp; p <= lp; p++ {
+		if states[p] == 2 {
+			downloaded++
+		}
+	}
+	totalPieces := lp - fp + 1
+	s.T().Logf("Paused at %d / %d pieces downloaded", downloaded, totalPieces)
+
+	// --- Range availability checks ---
+	sc := NewStoreClient(&StoreClientConfig{})
+	token := s.cfg.URL + "|" + s.cfg.Username + "|" + s.cfg.Password + "|" + s.cfg.FileBaseURL
+
+	// Start of file: available (first piece downloaded)
+	avail, err := sc.IsFileRangeAvailable(token, bbbHash, video.Index, 0, 1024)
+	s.Require().NoError(err)
+	s.True(avail, "first 1KB should be available")
+
+	// End of file: available (last piece downloaded via firstLastPiecePrio)
+	// This is the ffprobe case — reading MKV Cues / container metadata at EOF
+	avail, err = sc.IsFileRangeAvailable(token, bbbHash, video.Index, video.Size-100000, video.Size-1)
+	s.Require().NoError(err)
+	s.True(avail, "last 100KB should be available (ffprobe case)")
+
+	// Middle of file: find an undownloaded piece and confirm it's unavailable
+	if downloaded < totalPieces {
+		var fileOffset int64
+		for _, f := range files {
+			if f.Index == video.Index {
+				break
+			}
+			fileOffset += f.Size
+		}
+		for p := fp + 2; p < lp-1; p++ {
+			if states[p] != 2 {
+				byteInFile := int64(p)*props.PieceSize - fileOffset + props.PieceSize/2
+				if byteInFile > 0 && byteInFile < video.Size-props.PieceSize {
+					avail, err = sc.IsFileRangeAvailable(token, bbbHash, video.Index, byteInFile, byteInFile+1024)
+					s.Require().NoError(err)
+					s.False(avail, "piece %d (byte %d) should NOT be available", p, byteInFile)
+					s.T().Logf("Confirmed: middle byte %d (piece %d) unavailable", byteInFile, p)
+					break
+				}
+			}
+		}
+	}
+
+	// Progress should reflect partial download
+	progress, err := sc.GetFileProgress(token, bbbHash, video.Index)
+	s.Require().NoError(err)
+	s.Greater(progress.Size, int64(0))
+	if downloaded < totalPieces {
+		s.Less(progress.Progress, 1.0, "should be partial")
+	}
+	s.T().Logf("Progress: %.1f%%", progress.Progress*100)
+
+	// Cleanup
+	_ = s.client.DeleteTorrents(s.cfg, []string{bbbHash}, true)
 }
 
 func TestQBitIntegration(t *testing.T) {

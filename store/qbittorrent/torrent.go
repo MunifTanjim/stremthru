@@ -194,6 +194,52 @@ func (c *APIClient) GetPieceStates(cfg *qbitConfig, hash string) ([]int, error) 
 	return states, nil
 }
 
+// PauseTorrents calls POST /api/v2/torrents/stop (v5+) or /api/v2/torrents/pause (v4.x).
+func (c *APIClient) PauseTorrents(cfg *qbitConfig, hashes []string) error {
+	form := url.Values{
+		"hashes": {strings.Join(hashes, "|")},
+	}
+	// v5+ renamed pause → stop
+	resp, body, err := c.doRequest(cfg, "POST", "/api/v2/torrents/stop", form)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == 404 {
+		// Fall back to v4.x endpoint
+		resp, body, err = c.doRequest(cfg, "POST", "/api/v2/torrents/pause", form)
+		if err != nil {
+			return err
+		}
+	}
+	if resp.StatusCode != 200 {
+		return newQbitError(resp.StatusCode, body)
+	}
+	return nil
+}
+
+// ResumeTorrents calls POST /api/v2/torrents/start (v5+) or /api/v2/torrents/resume (v4.x).
+func (c *APIClient) ResumeTorrents(cfg *qbitConfig, hashes []string) error {
+	form := url.Values{
+		"hashes": {strings.Join(hashes, "|")},
+	}
+	// v5+ renamed resume → start
+	resp, body, err := c.doRequest(cfg, "POST", "/api/v2/torrents/start", form)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == 404 {
+		// Fall back to v4.x endpoint
+		resp, body, err = c.doRequest(cfg, "POST", "/api/v2/torrents/resume", form)
+		if err != nil {
+			return err
+		}
+	}
+	if resp.StatusCode != 200 {
+		return newQbitError(resp.StatusCode, body)
+	}
+	return nil
+}
+
 // DeleteTorrents calls POST /api/v2/torrents/delete.
 // deleteFiles controls whether downloaded data is also removed from disk.
 func (c *APIClient) DeleteTorrents(cfg *qbitConfig, hashes []string, deleteFiles bool) error {
