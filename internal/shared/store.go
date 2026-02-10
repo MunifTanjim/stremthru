@@ -250,15 +250,15 @@ func GenerateStremThruLink(r *http.Request, ctx *storecontext.Context, link stri
 				return nil, err
 			}
 
-			// For qBittorrent, append torrent hash and file index as query
-			// params so the proxy can check download progress.
+			// For torrent stores with raw file streams, append hash and file
+			// index so the proxy can pace streaming to download progress.
 			if ctx.Store.GetName() == store.StoreNameQBittorrent {
 				if hash, fileIdx, err := qbittorrent.ParseLockedFileLink(link); err == nil {
 					sep := "?"
 					if strings.Contains(proxyLink, "?") {
 						sep = "&"
 					}
-					proxyLink += sep + "qbit_hash=" + hash + "&qbit_fidx=" + strconv.Itoa(fileIdx)
+					proxyLink += sep + "torrent_hash=" + hash + "&torrent_fidx=" + strconv.Itoa(fileIdx)
 				}
 			}
 

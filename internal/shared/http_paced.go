@@ -1,3 +1,23 @@
+// http_paced.go — progress-aware proxy for streaming-while-downloading.
+//
+// Problem: torrent clients pre-allocate files at their full size on disk. A
+// file server (e.g. nginx) serving that file will happily return zero bytes
+// for regions that haven't been downloaded yet. Video players interpret those
+// zeros as corrupt data and crash or stall.
+//
+// Solution: this file wraps the normal proxy flow with download-progress
+// awareness. It tracks how far the torrent client has sequentially downloaded
+// ("safe bytes") and only forwards data up to that frontier, pausing when
+// the player catches up to the download. For non-sequential seeks (e.g.
+// ffprobe reading the moov atom at the end of a video file), it checks
+// piece-level availability before proxying — the firstLastPiecePrio flag
+// ensures the last piece is downloaded early, so these seeks usually succeed
+// immediately.
+//
+// The pacing logic is torrent-client agnostic. Store-specific entry points
+// (e.g. ProxyTorrentResponse for qBittorrent) wire up the progress callbacks
+// from their respective APIs.
+
 package shared
 
 import (
@@ -18,12 +38,10 @@ func parseByteRange(rangeHeader string) (start int64, end int64, ok bool) {
 		return 0, 0, false
 	}
 	spec := strings.TrimPrefix(rangeHeader, "bytes=")
-	// Take the first range only
 	if idx := strings.Index(spec, ","); idx >= 0 {
 		spec = spec[:idx]
 	}
 	if strings.HasPrefix(spec, "-") {
-		// Suffix range (-N), pass through without modification
 		return 0, 0, false
 	}
 	parts := strings.SplitN(spec, "-", 2)
@@ -41,38 +59,42 @@ func parseByteRange(rangeHeader string) (start int64, end int64, ok bool) {
 	return s, e, true
 }
 
-// SafeBytesFunc returns the number of contiguous bytes from the start of the
-// file that are safe to serve, the total file size, and whether the file is
-// fully available.
+// SafeBytesFunc returns how many contiguous bytes from file offset 0 are fully
+// downloaded and safe to serve, the total file size, and whether the download
+// is complete.
 type SafeBytesFunc func() (safeBytes int64, fileSize int64, done bool)
 
-// IsRangeAvailableFunc checks whether the byte range [start, end] within the
-// file is fully downloaded at the piece level. Used for Range seeks (e.g.
-// ffprobe reading container metadata at the end of a file) that fall outside
-// the contiguous-from-start region.
+// IsRangeAvailableFunc checks whether every piece covering [start, end] is
+// downloaded. This handles seeks outside the sequential frontier — typically
+// the last piece (moov atom) which qBittorrent downloads early via
+// firstLastPiecePrio.
 type IsRangeAvailableFunc func(start, end int64) bool
 
+// progressStallTimeout is how long we wait without any download progress
+// before giving up. Two minutes covers slow torrents with few seeders.
 const progressStallTimeout = 120 * time.Second
 
-// ProxyQbitResponse is the entry point for qBittorrent progress-aware proxy
-// streaming. It parses qBit query params, builds the progress callbacks, and
-// delegates to proxyResponsePaced.
-func ProxyQbitResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, user string, qbitHash string) (int64, error) {
-	qbitFileIdx := 0
-	if fidxStr := r.URL.Query().Get("qbit_fidx"); fidxStr != "" {
+// ProxyTorrentResponse is the entry point called from the proxy handler when
+// torrent_hash is present in the URL query. It builds progress callbacks from
+// the torrent store API and delegates to proxyResponsePaced.
+// Currently backed by qBittorrent, but the interface supports any torrent
+// client that can report piece-level download progress.
+func ProxyTorrentResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, user string, torrentHash string) (int64, error) {
+	fileIdx := 0
+	if fidxStr := r.URL.Query().Get("torrent_fidx"); fidxStr != "" {
 		if v, err := strconv.Atoi(fidxStr); err == nil {
-			qbitFileIdx = v
+			fileIdx = v
 		}
 	}
 	safeBytesFn := func() (int64, int64, bool) {
-		safe, fileSize, done, err := GetQbitSafeBytes(user, qbitHash, qbitFileIdx)
+		safe, fileSize, done, err := GetQbitSafeBytes(user, torrentHash, fileIdx)
 		if err != nil {
 			return 0, 0, true
 		}
 		return safe, fileSize, done
 	}
 	isRangeAvailFn := func(start, end int64) bool {
-		avail, err := IsQbitFileRangeAvailable(user, qbitHash, qbitFileIdx, start, end)
+		avail, err := IsQbitFileRangeAvailable(user, torrentHash, fileIdx, start, end)
 		if err != nil {
 			return false
 		}
@@ -81,10 +103,18 @@ func ProxyQbitResponse(w http.ResponseWriter, r *http.Request, url string, tunne
 	return proxyResponsePaced(w, r, url, tunnelType, safeBytesFn, isRangeAvailFn)
 }
 
-// proxyResponsePaced is a progress-aware variant of ProxyResponse for
-// streaming-while-downloading. It paces the proxy read to match the download
-// progress so pre-allocated zero bytes are never forwarded, and handles Range
-// seeks to non-contiguous regions via piece-level availability checks.
+// proxyResponsePaced proxies an HTTP response while pacing reads to match
+// the download progress reported by safeBytesFn.
+//
+// Flow:
+//  1. If the client sends a Range request beyond the sequential frontier,
+//     check piece-level availability first (handles ffprobe seeks to EOF).
+//     If available, proxy directly without pacing.
+//  2. If not yet available, poll safeBytesFn every 2s until the download
+//     catches up or progressStallTimeout is reached.
+//  3. During streaming, read from the upstream file server in 64KB chunks
+//     but never read past the safe byte frontier. When the player catches
+//     up, pause and wait for more data.
 func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc, isRangeAvailFn IsRangeAvailableFunc) (bytesWritten int64, err error) {
 	request, err := http.NewRequestWithContext(r.Context(), r.Method, url, nil)
 	if err != nil {
@@ -96,25 +126,18 @@ func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunn
 
 	copyHeaders(r.Header, request.Header, true)
 
-	// rangeVerified is set when we've confirmed (via piece-level check) that
-	// the requested Range is fully downloaded. In that case we skip pacing
-	// and proxy the response directly.
 	rangeVerified := false
 
-	// If the Range start is beyond the currently downloaded region, check
-	// piece-level availability first, then fall back to waiting for the
-	// sequential download to catch up.
 	if rangeHeader := request.Header.Get("Range"); rangeHeader != "" {
 		if start, end, ok := parseByteRange(rangeHeader); ok {
 			safeBytes, fileSize, done := safeBytesFn()
 			if start >= safeBytes && !done {
-				// The Range start is beyond the sequential download frontier.
-				// Check if the specific byte range is available at piece level
-				// (e.g. last piece downloaded via firstLastPiecePrio).
+				// Range starts beyond what's been sequentially downloaded.
+				// Check if those specific pieces are already available
+				// (common for the last piece due to firstLastPiecePrio).
 				if isRangeAvailFn != nil {
 					rangeEnd := end
 					if rangeEnd < 0 {
-						// Open-ended range: check up to the file size
 						rangeEnd = fileSize - 1
 					}
 					if isRangeAvailFn(start, rangeEnd) {
@@ -122,6 +145,8 @@ func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunn
 					}
 				}
 
+				// Not available at piece level — wait for sequential download
+				// to catch up.
 				if !rangeVerified {
 					deadline := time.Now().Add(progressStallTimeout)
 					for start >= safeBytes && !done && time.Now().Before(deadline) {
@@ -152,14 +177,14 @@ func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunn
 	copyHeaders(response.Header, w.Header(), false)
 	w.WriteHeader(response.StatusCode)
 
-	// Range was verified available at piece level — proxy directly.
+	// Pieces confirmed downloaded — no pacing needed.
 	if rangeVerified {
 		return io.Copy(w, response.Body)
 	}
 
-	// Progress-aware streaming: read from the upstream file server but pace
-	// to match the qBittorrent download so we never forward pre-allocated
-	// zero bytes.
+	// Paced copy: read from upstream but never past the safe byte frontier.
+	// When the player catches up to the download, pause until more data is
+	// available.
 	rangeStart := int64(0)
 	if rangeHeader := request.Header.Get("Range"); rangeHeader != "" {
 		if start, _, ok := parseByteRange(rangeHeader); ok {
@@ -172,7 +197,6 @@ func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunn
 	stallDeadline := time.Now().Add(progressStallTimeout)
 
 	for {
-		// Check for client disconnect.
 		select {
 		case <-r.Context().Done():
 			return bytesWritten, r.Context().Err()
