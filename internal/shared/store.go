@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -131,8 +132,6 @@ type proxyLinkTokenData struct {
 	EncLink    string            `json:"enc_link"`
 	EncFormat  string            `json:"enc_format"`
 	TunnelType config.TunnelType `json:"tunt,omitempty"`
-	QHash      string            `json:"qh,omitempty"`
-	QFIdx      int               `json:"qfi,omitempty"`
 }
 
 type proxyLinkData struct {
@@ -140,14 +139,6 @@ type proxyLinkData struct {
 	Value   string            `json:"v"`
 	Headers map[string]string `json:"reqh,omitempty"`
 	TunT    config.TunnelType `json:"tunt,omitempty"`
-	QHash   string            `json:"qh,omitempty"`
-	QFIdx   int               `json:"qfi,omitempty"`
-}
-
-// ProxyLinkOpts holds optional metadata to embed in a proxy link token.
-type ProxyLinkOpts struct {
-	QbitHash    string
-	QbitFileIdx int
 }
 
 // ProxyLinkInfo holds all data extracted from a proxy link token.
@@ -156,11 +147,9 @@ type ProxyLinkInfo struct {
 	Link       string
 	Headers    map[string]string
 	TunnelType config.TunnelType
-	QbitHash   string
-	QbitFileIdx int
 }
 
-func CreateProxyLink(r *http.Request, link string, headers map[string]string, tunnelType config.TunnelType, expiresIn time.Duration, user, password string, shouldEncrypt bool, filename string, opts *ProxyLinkOpts) (string, error) {
+func CreateProxyLink(r *http.Request, link string, headers map[string]string, tunnelType config.TunnelType, expiresIn time.Duration, user, password string, shouldEncrypt bool, filename string) (string, error) {
 	var encodedToken string
 
 	if !shouldEncrypt && expiresIn == 0 {
@@ -169,10 +158,6 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 			Value:   link,
 			Headers: headers,
 			TunT:    tunnelType,
-		}
-		if opts != nil {
-			pld.QHash = opts.QbitHash
-			pld.QFIdx = opts.QbitFileIdx
 		}
 		blob, err := json.Marshal(pld)
 		if err != nil {
@@ -206,10 +191,6 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 			EncLink:    encLink,
 			EncFormat:  encFormat,
 			TunnelType: tunnelType,
-		}
-		if opts != nil {
-			tokenData.QHash = opts.QbitHash
-			tokenData.QFIdx = opts.QbitFileIdx
 		}
 
 		claims := core.JWTClaims[proxyLinkTokenData]{
@@ -275,21 +256,21 @@ func GenerateStremThruLink(r *http.Request, ctx *storecontext.Context, link stri
 		if ctx.IsProxyAuthorized {
 			tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
 
-			// For qBittorrent, embed torrent hash and file index so the proxy
-			// can check download progress and cap partially-downloaded files.
-			var opts *ProxyLinkOpts
-			if ctx.Store.GetName() == store.StoreNameQBittorrent {
-				if hash, fileIdx, err := qbittorrent.ParseLockedFileLink(link); err == nil {
-					opts = &ProxyLinkOpts{
-						QbitHash:    hash,
-						QbitFileIdx: fileIdx,
-					}
-				}
-			}
-
-			proxyLink, err := CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, filename, opts)
+			proxyLink, err := CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, filename)
 			if err != nil {
 				return nil, err
+			}
+
+			// For qBittorrent, append torrent hash and file index as query
+			// params so the proxy can check download progress.
+			if ctx.Store.GetName() == store.StoreNameQBittorrent {
+				if hash, fileIdx, err := qbittorrent.ParseLockedFileLink(link); err == nil {
+					sep := "?"
+					if strings.Contains(proxyLink, "?") {
+						sep = "&"
+					}
+					proxyLink += sep + "qbit_hash=" + hash + "&qbit_fidx=" + strconv.Itoa(fileIdx)
+				}
 			}
 
 			data.Link = proxyLink
@@ -377,8 +358,6 @@ func UnwrapProxyLinkToken(encodedToken string) (*ProxyLinkInfo, error) {
 		proxyLink.User = user
 		proxyLink.TunT = claims.Data.TunnelType
 		proxyLink.Value = link
-		proxyLink.QHash = claims.Data.QHash
-		proxyLink.QFIdx = claims.Data.QFIdx
 
 		if hasHeaders {
 			proxyLink.Headers = map[string]string{}
@@ -397,12 +376,10 @@ func UnwrapProxyLinkToken(encodedToken string) (*ProxyLinkInfo, error) {
 
 func (p *proxyLinkData) toInfo() *ProxyLinkInfo {
 	return &ProxyLinkInfo{
-		User:        p.User,
-		Link:        p.Value,
-		Headers:     p.Headers,
-		TunnelType:  p.TunT,
-		QbitHash:    p.QHash,
-		QbitFileIdx: p.QFIdx,
+		User:       p.User,
+		Link:       p.Value,
+		Headers:    p.Headers,
+		TunnelType: p.TunT,
 	}
 }
 
