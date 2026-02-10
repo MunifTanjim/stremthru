@@ -133,6 +133,35 @@ func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int)
 	return nil, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
 }
 
+// checkRangeAvailable is the pure logic for checking whether a byte range
+// within a file is fully downloaded. It takes pre-fetched data (no API calls)
+// so it can be unit tested deterministically.
+//
+// fileOffset is the file's starting byte position within the torrent
+// (sum of all preceding files' sizes). pieceSize is the torrent's piece size.
+// states is the full torrent piece states array (0/1/2).
+// lastPiece is file.PieceRange[1].
+func checkRangeAvailable(fileOffset int64, pieceSize int64, states []int, lastPiece int, rangeStart, rangeEnd int64) bool {
+	if pieceSize <= 0 || lastPiece >= len(states) {
+		return false
+	}
+
+	// Exact byte-to-piece mapping: file byte B corresponds to torrent byte
+	// (fileOffset + B), which falls in piece (fileOffset + B) / pieceSize.
+	firstNeeded := int((fileOffset + rangeStart) / pieceSize)
+	lastNeeded := int((fileOffset + rangeEnd) / pieceSize)
+	if lastNeeded > lastPiece {
+		lastNeeded = lastPiece
+	}
+
+	for p := firstNeeded; p <= lastNeeded; p++ {
+		if p >= len(states) || states[p] != 2 {
+			return false
+		}
+	}
+	return true
+}
+
 // IsFileRangeAvailable checks whether all pieces covering the byte range
 // [rangeStart, rangeEnd] within a file are fully downloaded. Uses piece states
 // from the qBittorrent API (cached 10s). The file's byte offset within the
@@ -191,27 +220,7 @@ func (c *StoreClient) IsFileRangeAvailable(apiKey, hash string, fileIndex int, r
 		pieceStatesCache.Add(hash, states)
 	}
 
-	lp := file.PieceRange[1]
-	ps := props.PieceSize
-
-	if lp >= len(states) {
-		return false, nil
-	}
-
-	// Exact byte-to-piece mapping: file byte B corresponds to torrent byte
-	// (fileOffset + B), which falls in piece (fileOffset + B) / pieceSize.
-	firstNeeded := int((fileOffset + rangeStart) / ps)
-	lastNeeded := int((fileOffset + rangeEnd) / ps)
-	if lastNeeded > lp {
-		lastNeeded = lp
-	}
-
-	for p := firstNeeded; p <= lastNeeded; p++ {
-		if p >= len(states) || states[p] != 2 {
-			return false, nil
-		}
-	}
-	return true, nil
+	return checkRangeAvailable(fileOffset, props.PieceSize, states, file.PieceRange[1], rangeStart, rangeEnd), nil
 }
 
 func progressToStatus(progress float64) store.MagnetStatus {
