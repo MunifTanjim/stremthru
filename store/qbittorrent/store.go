@@ -10,6 +10,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -77,6 +78,49 @@ func (l LockedFileLink) create(hash string, fileIndex int) string {
 func (l LockedFileLink) parse() (hash string, fileIndex int, err error) {
 	encoded := strings.TrimPrefix(string(l), lockedFileLinkPrefix)
 	return l.decodeData(encoded)
+}
+
+// ParseLockedFileLink extracts the torrent hash and file index from a locked file link.
+func ParseLockedFileLink(link string) (hash string, fileIndex int, err error) {
+	return LockedFileLink(link).parse()
+}
+
+// FileProgressInfo holds download progress and size for a single file within a torrent.
+type FileProgressInfo struct {
+	Progress float64
+	Size     int64
+}
+
+var fileProgressCache = cache.NewCache[FileProgressInfo](&cache.CacheConfig{
+	Name:     "qbit:fileProgress",
+	Lifetime: 10 * time.Second,
+})
+
+// GetFileProgress returns the download progress (0.0–1.0) and total size for
+// a specific file in a torrent. Results are cached for 10 seconds.
+func (c *StoreClient) GetFileProgress(apiKey string, hash string, fileIndex int) (*FileProgressInfo, error) {
+	cacheKey := hash + ":" + strconv.Itoa(fileIndex)
+	info := &FileProgressInfo{}
+	if fileProgressCache.Get(cacheKey, info) {
+		return info, nil
+	}
+
+	cfg, err := c.getConfig(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	files, err := c.client.GetTorrentFiles(cfg, hash)
+	if err != nil {
+		return nil, err
+	}
+	for _, f := range files {
+		if f.Index == fileIndex {
+			info = &FileProgressInfo{Progress: f.Progress, Size: f.Size}
+			fileProgressCache.Add(cacheKey, *info)
+			return info, nil
+		}
+	}
+	return nil, fmt.Errorf("file index %d not found in torrent %s", fileIndex, hash)
 }
 
 func progressToStatus(progress float64) store.MagnetStatus {
