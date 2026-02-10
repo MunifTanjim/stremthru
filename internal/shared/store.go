@@ -141,25 +141,16 @@ type proxyLinkData struct {
 	TunT    config.TunnelType `json:"tunt,omitempty"`
 }
 
-// ProxyLinkInfo holds all data extracted from a proxy link token.
-type ProxyLinkInfo struct {
-	User       string
-	Link       string
-	Headers    map[string]string
-	TunnelType config.TunnelType
-}
-
 func CreateProxyLink(r *http.Request, link string, headers map[string]string, tunnelType config.TunnelType, expiresIn time.Duration, user, password string, shouldEncrypt bool, filename string) (string, error) {
 	var encodedToken string
 
 	if !shouldEncrypt && expiresIn == 0 {
-		pld := proxyLinkData{
+		blob, err := json.Marshal(proxyLinkData{
 			User:    user + ":" + password,
 			Value:   link,
 			Headers: headers,
 			TunT:    tunnelType,
-		}
-		blob, err := json.Marshal(pld)
+		})
 		if err != nil {
 			return "", err
 		}
@@ -187,18 +178,16 @@ func CreateProxyLink(r *http.Request, link string, headers map[string]string, tu
 			encFormat = "base64"
 		}
 
-		tokenData := &proxyLinkTokenData{
-			EncLink:    encLink,
-			EncFormat:  encFormat,
-			TunnelType: tunnelType,
-		}
-
 		claims := core.JWTClaims[proxyLinkTokenData]{
 			RegisteredClaims: jwt.RegisteredClaims{
 				Issuer:  "stremthru",
 				Subject: user,
 			},
-			Data: tokenData,
+			Data: &proxyLinkTokenData{
+				EncLink:    encLink,
+				EncFormat:  encFormat,
+				TunnelType: tunnelType,
+			},
 		}
 		if expiresIn != 0 {
 			claims.RegisteredClaims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(expiresIn))
@@ -296,32 +285,30 @@ func getUserCredsFromJWT(t *jwt.Token) (user, password string, err error) {
 	return user, password, nil
 }
 
-func UnwrapProxyLinkToken(encodedToken string) (*ProxyLinkInfo, error) {
+func UnwrapProxyLinkToken(encodedToken string) (user string, link string, headers map[string]string, tunnelType config.TunnelType, err error) {
 	proxyLink := &proxyLinkData{}
 	if found := proxyLinkTokenCache.Get(encodedToken, proxyLink); found {
-		return proxyLink.toInfo(), nil
+		return proxyLink.User, proxyLink.Value, proxyLink.Headers, proxyLink.TunT, nil
 	}
 
 	if encodedBlob, ok := strings.CutPrefix(encodedToken, "base64."); ok {
 		blob, err := util.Base64DecodeToByte(encodedBlob)
 		if err != nil {
-			return nil, err
+			return "", "", nil, "", err
 		}
 		if err := json.Unmarshal(blob, proxyLink); err != nil {
-			return nil, err
+			return "", "", nil, "", err
 		}
 		user, pass, _ := strings.Cut(proxyLink.User, ":")
 		if pass != config.Auth.GetPassword(user) {
 			err := core.NewAPIError("unauthorized")
 			err.StatusCode = http.StatusUnauthorized
-			return nil, err
+			return "", "", nil, "", err
 		}
 		proxyLink.User = user
 	} else {
 		claims := &core.JWTClaims[proxyLinkTokenData]{}
 		password := ""
-		var user string
-		var err error
 		_, err = core.ParseJWT(func(t *jwt.Token) (any, error) {
 			user, password, err = getUserCredsFromJWT(t)
 			return []byte(password), err
@@ -335,20 +322,20 @@ func UnwrapProxyLinkToken(encodedToken string) (*ProxyLinkInfo, error) {
 				err = rerr
 			}
 
-			return nil, err
+			return "", "", nil, "", err
 		}
 
 		var linkBlob string
 		if claims.Data.EncFormat == "base64" {
 			blob, err := util.Base64Decode(claims.Data.EncLink)
 			if err != nil {
-				return nil, err
+				return "", "", nil, "", err
 			}
 			linkBlob = blob
 		} else {
 			blob, err := core.Decrypt(password, claims.Data.EncLink)
 			if err != nil {
-				return nil, err
+				return "", "", nil, "", err
 			}
 			linkBlob = blob
 		}
@@ -371,16 +358,7 @@ func UnwrapProxyLinkToken(encodedToken string) (*ProxyLinkInfo, error) {
 
 	proxyLinkTokenCache.Add(encodedToken, *proxyLink)
 
-	return proxyLink.toInfo(), nil
-}
-
-func (p *proxyLinkData) toInfo() *ProxyLinkInfo {
-	return &ProxyLinkInfo{
-		User:       p.User,
-		Link:       p.Value,
-		Headers:    p.Headers,
-		TunnelType: p.TunT,
-	}
+	return proxyLink.User, proxyLink.Value, proxyLink.Headers, proxyLink.TunT, nil
 }
 
 // GetQbitFileProgress returns the download progress for a qBittorrent file.
