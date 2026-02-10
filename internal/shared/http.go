@@ -217,9 +217,15 @@ func parseByteRange(rangeHeader string) (start int64, end int64, ok bool) {
 // file that are safe to serve, and whether the file is fully available.
 type SafeBytesFunc func() (safeBytes int64, done bool)
 
+// IsRangeAvailableFunc checks whether the byte range [start, end] within the
+// file is fully downloaded at the piece level. Used for Range seeks (e.g.
+// ffprobe reading container metadata at the end of a file) that fall outside
+// the contiguous-from-start region.
+type IsRangeAvailableFunc func(start, end int64) bool
+
 const progressStallTimeout = 120 * time.Second
 
-func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc) (bytesWritten int64, err error) {
+func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc, isRangeAvailFn IsRangeAvailableFunc) (bytesWritten int64, err error) {
 	request, err := http.NewRequest(r.Method, url, nil)
 	if err != nil {
 		e := ErrorInternalServerError(r, "failed to create request")
@@ -230,22 +236,43 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 
 	copyHeaders(r.Header, request.Header, true)
 
+	// rangeVerified is set when we've confirmed (via piece-level check) that
+	// the requested Range is fully downloaded. In that case we skip pacing
+	// and proxy the response directly.
+	rangeVerified := false
+
 	// For progress-aware streaming: if the Range start is beyond the
-	// currently downloaded region, wait for the download to catch up.
+	// currently downloaded region, check piece-level availability first,
+	// then fall back to waiting for the sequential download to catch up.
 	if safeBytesFn != nil {
 		if rangeHeader := request.Header.Get("Range"); rangeHeader != "" {
-			if start, _, ok := parseByteRange(rangeHeader); ok {
+			if start, end, ok := parseByteRange(rangeHeader); ok {
 				safeBytes, done := safeBytesFn()
 				if start >= safeBytes && !done {
-					deadline := time.Now().Add(progressStallTimeout)
-					for start >= safeBytes && !done && time.Now().Before(deadline) {
-						time.Sleep(2 * time.Second)
-						safeBytes, done = safeBytesFn()
+					// The Range start is beyond the sequential download frontier.
+					// Check if the specific byte range is available at piece level
+					// (e.g. last piece downloaded via firstLastPiecePrio).
+					if isRangeAvailFn != nil {
+						rangeEnd := end
+						if rangeEnd < 0 {
+							rangeEnd = start + 16*1024*1024 // estimate for open-ended ranges
+						}
+						if isRangeAvailFn(start, rangeEnd) {
+							rangeVerified = true
+						}
 					}
-					if start >= safeBytes && !done {
-						w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(safeBytes, 10))
-						w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
-						return 0, nil
+
+					if !rangeVerified {
+						deadline := time.Now().Add(progressStallTimeout)
+						for start >= safeBytes && !done && time.Now().Before(deadline) {
+							time.Sleep(2 * time.Second)
+							safeBytes, done = safeBytesFn()
+						}
+						if start >= safeBytes && !done {
+							w.Header().Set("Content-Range", "bytes */"+strconv.FormatInt(safeBytes, 10))
+							w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+							return 0, nil
+						}
 					}
 				}
 			}
@@ -266,8 +293,9 @@ func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelTyp
 	copyHeaders(response.Header, w.Header(), false)
 	w.WriteHeader(response.StatusCode)
 
-	// No progress tracking — normal proxy.
-	if safeBytesFn == nil {
+	// No progress tracking, or the Range was verified available at piece level
+	// — proxy directly without pacing.
+	if safeBytesFn == nil || rangeVerified {
 		return io.Copy(w, response.Body)
 	}
 
