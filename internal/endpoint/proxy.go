@@ -62,41 +62,9 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// For qBittorrent files, use the paced proxy to match streaming to the
-	// download progress — preventing garbage bytes from pre-allocated regions.
-	// The torrent hash and file index are passed as URL query params by
-	// GenerateStremThruLink, keeping qBit-specific concerns out of the
-	// core proxy token.
 	var bytesWritten int64
-	qbitHash := r.URL.Query().Get("qbit_hash")
-	if qbitHash != "" {
-		qbitFileIdx := 0
-		if fidxStr := r.URL.Query().Get("qbit_fidx"); fidxStr != "" {
-			if v, err := strconv.Atoi(fidxStr); err == nil {
-				qbitFileIdx = v
-			}
-		}
-		safeBytesFn := func() (int64, int64, bool) {
-			safe, fileSize, done, err := shared.GetQbitSafeBytes(user, qbitHash, qbitFileIdx)
-			if err != nil {
-				ctx.Log.Warn("[proxy] failed to get qbit safe bytes, assuming done", "error", err)
-				return 0, 0, true
-			}
-			return safe, fileSize, done
-		}
-		isRangeAvailFn := func(start, end int64) bool {
-			avail, err := shared.IsQbitFileRangeAvailable(user, qbitHash, qbitFileIdx, start, end)
-			if err != nil {
-				ctx.Log.Warn("[proxy] failed to check range availability", "error", err)
-				return false
-			}
-			if avail {
-				ctx.Log.Debug("[proxy] range verified available at piece level", "start", start, "end", end)
-			}
-			return avail
-		}
-		ctx.Log.Debug("[proxy] streaming with qbit progress awareness", "hash", qbitHash, "fileIdx", qbitFileIdx)
-		bytesWritten, err = shared.ProxyResponsePaced(w, r, link, tunnelType, safeBytesFn, isRangeAvailFn)
+	if qbitHash := r.URL.Query().Get("qbit_hash"); qbitHash != "" {
+		bytesWritten, err = shared.ProxyQbitResponse(w, r, link, tunnelType, user, qbitHash)
 	} else {
 		bytesWritten, err = shared.ProxyResponse(w, r, link, tunnelType)
 	}

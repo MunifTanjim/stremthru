@@ -54,12 +54,38 @@ type IsRangeAvailableFunc func(start, end int64) bool
 
 const progressStallTimeout = 120 * time.Second
 
-// ProxyResponsePaced is a progress-aware variant of ProxyResponse for
-// qBittorrent streaming-while-downloading. It paces the proxy read to match
-// the download progress so pre-allocated zero bytes are never forwarded, and
-// handles Range seeks to non-contiguous regions (e.g. ffprobe reading moov
-// atoms at EOF) via piece-level availability checks.
-func ProxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc, isRangeAvailFn IsRangeAvailableFunc) (bytesWritten int64, err error) {
+// ProxyQbitResponse is the entry point for qBittorrent progress-aware proxy
+// streaming. It parses qBit query params, builds the progress callbacks, and
+// delegates to proxyResponsePaced.
+func ProxyQbitResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, user string, qbitHash string) (int64, error) {
+	qbitFileIdx := 0
+	if fidxStr := r.URL.Query().Get("qbit_fidx"); fidxStr != "" {
+		if v, err := strconv.Atoi(fidxStr); err == nil {
+			qbitFileIdx = v
+		}
+	}
+	safeBytesFn := func() (int64, int64, bool) {
+		safe, fileSize, done, err := GetQbitSafeBytes(user, qbitHash, qbitFileIdx)
+		if err != nil {
+			return 0, 0, true
+		}
+		return safe, fileSize, done
+	}
+	isRangeAvailFn := func(start, end int64) bool {
+		avail, err := IsQbitFileRangeAvailable(user, qbitHash, qbitFileIdx, start, end)
+		if err != nil {
+			return false
+		}
+		return avail
+	}
+	return proxyResponsePaced(w, r, url, tunnelType, safeBytesFn, isRangeAvailFn)
+}
+
+// proxyResponsePaced is a progress-aware variant of ProxyResponse for
+// streaming-while-downloading. It paces the proxy read to match the download
+// progress so pre-allocated zero bytes are never forwarded, and handles Range
+// seeks to non-contiguous regions via piece-level availability checks.
+func proxyResponsePaced(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType, safeBytesFn SafeBytesFunc, isRangeAvailFn IsRangeAvailableFunc) (bytesWritten int64, err error) {
 	request, err := http.NewRequestWithContext(r.Context(), r.Method, url, nil)
 	if err != nil {
 		e := ErrorInternalServerError(r, "failed to create request")
