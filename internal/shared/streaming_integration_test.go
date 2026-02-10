@@ -5,13 +5,11 @@ package shared
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,48 +22,6 @@ const bbbMagnet = "magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&
 const bbbHash = "dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c"
 
 const qbitContainerName = "qbit-streaming-integ-test"
-
-func freePort() (int, error) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, err
-	}
-	port := l.Addr().(*net.TCPAddr).Port
-	l.Close()
-	return port, nil
-}
-
-func waitForHTTP(url string, timeout time.Duration) error {
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		resp, err := http.Get(url)
-		if err == nil {
-			resp.Body.Close()
-			return nil
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
-	return fmt.Errorf("timed out waiting for %s", url)
-}
-
-func getQbitPassword(containerName string, timeout time.Duration) (string, error) {
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		out, err := exec.Command("docker", "logs", containerName).CombinedOutput()
-		if err == nil {
-			for _, line := range strings.Split(string(out), "\n") {
-				if strings.Contains(line, "temporary password") {
-					parts := strings.Split(line, ": ")
-					if len(parts) >= 2 {
-						return strings.TrimSpace(parts[len(parts)-1]), nil
-					}
-				}
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
-	return "", fmt.Errorf("timed out waiting for qBit password in logs")
-}
 
 // TestFFProbeWithRealProxy verifies that ffprobe can probe a partially
 // downloaded video file served through the real ProxyResponse function.
@@ -84,7 +40,7 @@ func TestFFProbeWithRealProxy(t *testing.T) {
 	}
 
 	// --- Start qBittorrent container ---
-	port, err := freePort()
+	port, err := qbittorrent.FreePort()
 	if err != nil {
 		t.Fatalf("could not find free port: %v", err)
 	}
@@ -110,11 +66,11 @@ func TestFFProbeWithRealProxy(t *testing.T) {
 	defer exec.Command("docker", "rm", "-f", qbitContainerName).Run()
 
 	qbitURL := fmt.Sprintf("http://localhost:%d", port)
-	if err := waitForHTTP(qbitURL, 30*time.Second); err != nil {
+	if err := qbittorrent.WaitForHTTP(qbitURL, 30*time.Second); err != nil {
 		t.Fatalf("qBit WebUI not ready: %v", err)
 	}
 
-	pass, err := getQbitPassword(qbitContainerName, 30*time.Second)
+	pass, err := qbittorrent.GetQbitPassword(qbitContainerName, 30*time.Second)
 	if err != nil {
 		t.Fatalf("could not get qBit password: %v", err)
 	}
@@ -183,12 +139,12 @@ func TestFFProbeWithRealProxy(t *testing.T) {
 	token := qbitURL + "|admin|" + pass + "|" + qbitURL
 
 	// SafeBytesFunc: reports contiguous bytes downloaded from start of file
-	safeBytesFn := SafeBytesFunc(func() (int64, bool) {
-		safe, _, done, err := sc.GetSafeBytes(token, bbbHash, video.Index)
+	safeBytesFn := SafeBytesFunc(func() (int64, int64, bool) {
+		safe, fileSize, done, err := sc.GetSafeBytes(token, bbbHash, video.Index)
 		if err != nil {
-			return 0, true // assume done on error
+			return 0, 0, true // assume done on error
 		}
-		return safe, done
+		return safe, fileSize, done
 	})
 
 	// IsRangeAvailableFunc: piece-level check for non-contiguous ranges

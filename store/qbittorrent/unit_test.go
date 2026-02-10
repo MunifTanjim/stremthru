@@ -399,3 +399,130 @@ func TestFindFileByIndex_NonContiguous(t *testing.T) {
 	}
 	assert.Nil(t, found, "should not find file with index 99")
 }
+
+// --- computeSafeBytes ---
+
+func TestComputeSafeBytes_AllDownloaded(t *testing.T) {
+	states := []int{2, 2, 2, 2, 2}
+	safe := computeSafeBytes(0, 5000, 1000, states, 0, 4)
+	assert.Equal(t, int64(5000), safe)
+}
+
+func TestComputeSafeBytes_NoneDownloaded(t *testing.T) {
+	states := []int{0, 0, 0, 0, 0}
+	safe := computeSafeBytes(0, 5000, 1000, states, 0, 4)
+	assert.Equal(t, int64(0), safe)
+}
+
+func TestComputeSafeBytes_PartialSequential(t *testing.T) {
+	// First 3 pieces downloaded, rest not
+	states := []int{2, 2, 2, 0, 0}
+	safe := computeSafeBytes(0, 5000, 1000, states, 0, 4)
+	assert.Equal(t, int64(3000), safe)
+}
+
+func TestComputeSafeBytes_FirstLastPiecePrio(t *testing.T) {
+	// First piece + last piece downloaded, gap in middle
+	states := []int{2, 0, 0, 0, 2}
+	safe := computeSafeBytes(0, 5000, 1000, states, 0, 4)
+	assert.Equal(t, int64(1000), safe, "only first piece is contiguous from start")
+}
+
+func TestComputeSafeBytes_FileNotAtPieceBoundary(t *testing.T) {
+	// File starts 500 bytes into piece 1 (fileOffset=1500 means piece0=1000 + 500 into piece1)
+	// Pieces 1,2 downloaded, piece 3 not
+	states := []int{2, 2, 2, 0, 2}
+	safe := computeSafeBytes(1500, 3000, 1000, states, 1, 4)
+	// Piece 3 starts at byte 3000, file starts at 1500 → safe = 3000 - 1500 = 1500
+	assert.Equal(t, int64(1500), safe)
+}
+
+func TestComputeSafeBytes_ZeroPieceSize(t *testing.T) {
+	states := []int{2, 2}
+	safe := computeSafeBytes(0, 2000, 0, states, 0, 1)
+	assert.Equal(t, int64(0), safe)
+}
+
+func TestComputeSafeBytes_FirstPieceBeyondStates(t *testing.T) {
+	states := []int{2, 2}
+	safe := computeSafeBytes(0, 2000, 1000, states, 5, 6)
+	assert.Equal(t, int64(0), safe)
+}
+
+func TestComputeSafeBytes_SinglePieceFile(t *testing.T) {
+	states := []int{0, 0, 2, 0}
+	// File occupies only piece 2
+	safe := computeSafeBytes(2000, 800, 1000, states, 2, 2)
+	assert.Equal(t, int64(800), safe, "single piece fully downloaded → full file size")
+}
+
+func TestComputeSafeBytes_SafeExceedsFileSize(t *testing.T) {
+	// File is smaller than a full piece
+	states := []int{2, 2}
+	safe := computeSafeBytes(0, 500, 1000, states, 0, 1)
+	assert.Equal(t, int64(500), safe, "should be clamped to file size")
+}
+
+func TestComputeSafeBytes_EmptyStates(t *testing.T) {
+	states := []int{}
+	safe := computeSafeBytes(0, 5000, 1000, states, 0, 4)
+	assert.Equal(t, int64(0), safe)
+}
+
+// --- checkRangeAvailable ---
+
+func TestCheckRangeAvailable_AllDownloaded(t *testing.T) {
+	states := []int{2, 2, 2, 2, 2}
+	assert.True(t, checkRangeAvailable(0, 1000, states, 4, 0, 4999))
+}
+
+func TestCheckRangeAvailable_NoneDownloaded(t *testing.T) {
+	states := []int{0, 0, 0, 0, 0}
+	assert.False(t, checkRangeAvailable(0, 1000, states, 4, 0, 999))
+}
+
+func TestCheckRangeAvailable_SinglePiece(t *testing.T) {
+	states := []int{0, 0, 2, 0, 0}
+	// Range falls entirely within piece 2
+	assert.True(t, checkRangeAvailable(0, 1000, states, 4, 2000, 2999))
+}
+
+func TestCheckRangeAvailable_SpansMultiplePieces(t *testing.T) {
+	states := []int{2, 2, 2, 0, 0}
+	// Range spans pieces 1-2 (downloaded)
+	assert.True(t, checkRangeAvailable(0, 1000, states, 4, 1000, 2999))
+	// Range spans pieces 2-3 (piece 3 not downloaded)
+	assert.False(t, checkRangeAvailable(0, 1000, states, 4, 2000, 3999))
+}
+
+func TestCheckRangeAvailable_LastPieceOnly(t *testing.T) {
+	// Only last piece downloaded (firstLastPiecePrio scenario)
+	states := []int{2, 0, 0, 0, 2}
+	assert.True(t, checkRangeAvailable(0, 1000, states, 4, 4000, 4999))
+	assert.False(t, checkRangeAvailable(0, 1000, states, 4, 3000, 4999))
+}
+
+func TestCheckRangeAvailable_WithFileOffset(t *testing.T) {
+	// File starts 500 bytes into the torrent
+	states := []int{2, 0, 2}
+	// File byte 0 = torrent byte 500 → piece 0. Piece 0 is downloaded.
+	assert.True(t, checkRangeAvailable(500, 1000, states, 2, 0, 499))
+	// File byte 500 = torrent byte 1000 → piece 1. Not downloaded.
+	assert.False(t, checkRangeAvailable(500, 1000, states, 2, 500, 999))
+}
+
+func TestCheckRangeAvailable_RangeEndBeyondLastPiece(t *testing.T) {
+	states := []int{2, 2, 2}
+	// lastNeeded would be 5, but lastPiece is 2, so clamped
+	assert.True(t, checkRangeAvailable(0, 1000, states, 2, 0, 5999))
+}
+
+func TestCheckRangeAvailable_ZeroPieceSize(t *testing.T) {
+	states := []int{2, 2}
+	assert.False(t, checkRangeAvailable(0, 0, states, 1, 0, 100))
+}
+
+func TestCheckRangeAvailable_LastPieceBeyondStates(t *testing.T) {
+	states := []int{2, 2}
+	assert.False(t, checkRangeAvailable(0, 1000, states, 5, 0, 5999))
+}
