@@ -415,3 +415,13 @@ func GetQbitFileProgress(user string, hash string, fileIndex int) (*qbittorrent.
 	}
 	return qbStore.GetFileProgress(apiKey, hash, fileIndex)
 }
+
+// IsQbitFileRangeAvailable checks whether the byte range [start, end] within
+// a qBittorrent file is fully downloaded at the piece level.
+func IsQbitFileRangeAvailable(user, hash string, fileIndex int, start, end int64) (bool, error) {
+	apiKey := config.StoreAuthToken.GetToken(user, "qbittorrent")
+	if apiKey == "" {
+		return false, errors.New("no qBittorrent API key for user")
+	}
+	return qbStore.IsFileRangeAvailable(apiKey, hash, fileIndex, start, end)
+}
