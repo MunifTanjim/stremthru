@@ -170,7 +170,7 @@ func TestFFProbeWithRealProxy(t *testing.T) {
 		servedRequests = append(servedRequests, r.Method+" "+r.Header.Get("Range"))
 		// Build upstream URL (file server)
 		upstream := fileServer.URL + r.URL.Path
-		ProxyResponsePaced(w, r, upstream, config.TUNNEL_TYPE_NONE, safeBytesFn, isRangeAvailFn)
+		proxyResponsePaced(w, r, upstream, config.TUNNEL_TYPE_NONE, safeBytesFn, isRangeAvailFn)
 	}))
 	defer proxy.Close()
 
