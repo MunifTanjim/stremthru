@@ -18,7 +18,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build --tags 'fts5' -o ./stremthru -a -ldflags '
 
 FROM alpine
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git ffmpeg
 
 WORKDIR /app
 
