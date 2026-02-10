@@ -184,12 +184,11 @@ func TestFFProbeWithRealProxy(t *testing.T) {
 
 	// SafeBytesFunc: reports contiguous bytes downloaded from start of file
 	safeBytesFn := SafeBytesFunc(func() (int64, bool) {
-		progress, err := sc.GetFileProgress(token, bbbHash, video.Index)
+		safe, _, done, err := sc.GetSafeBytes(token, bbbHash, video.Index)
 		if err != nil {
 			return 0, true // assume done on error
 		}
-		safe := int64(float64(progress.Size) * progress.Progress)
-		return safe, progress.Progress >= 1.0
+		return safe, done
 	})
 
 	// IsRangeAvailableFunc: piece-level check for non-contiguous ranges
