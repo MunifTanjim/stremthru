@@ -69,14 +69,13 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 	var isRangeAvailFn shared.IsRangeAvailableFunc
 	if info.QbitHash != "" {
 		safeBytesFn = func() (int64, bool) {
-			progress, err := shared.GetQbitFileProgress(info.User, info.QbitHash, info.QbitFileIdx)
+			safe, _, done, err := shared.GetQbitSafeBytes(info.User, info.QbitHash, info.QbitFileIdx)
 			if err != nil {
 				// On error, assume fully downloaded to avoid blocking forever.
-				ctx.Log.Warn("[proxy] failed to get qbit file progress, assuming done", "error", err)
+				ctx.Log.Warn("[proxy] failed to get qbit safe bytes, assuming done", "error", err)
 				return 0, true
 			}
-			safe := int64(float64(progress.Size) * progress.Progress)
-			return safe, progress.Progress >= 1.0
+			return safe, done
 		}
 		isRangeAvailFn = func(start, end int64) bool {
 			avail, err := shared.IsQbitFileRangeAvailable(info.User, info.QbitHash, info.QbitFileIdx, start, end)
