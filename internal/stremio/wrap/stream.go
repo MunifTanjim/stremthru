@@ -304,7 +304,7 @@ func (ud UserData) fetchStream(ctx *Ctx, r *http.Request, rType, id string) (*st
 				}
 
 				if ctx.IsProxyAuthorized {
-					if url, err := shared.CreateProxyLink(r, stream.URL, headers, config.TUNNEL_TYPE_AUTO, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, "", nil); err == nil && url != stream.URL {
+					if url, err := shared.CreateProxyLink(r, stream.URL, headers, config.TUNNEL_TYPE_AUTO, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, ""); err == nil && url != stream.URL {
 						stream.URL = url
 						stream.Name = "✨ " + stream.Name
 					}

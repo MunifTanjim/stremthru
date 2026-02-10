@@ -95,7 +95,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
 				if ctx.IsProxyAuthorized {
 					tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName, nil); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
 						data.Link = proxyLink
 					} else {
 						lerr = err
@@ -130,7 +130,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
 				if ctx.IsProxyAuthorized {
 					tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName, nil); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
 						data.Link = proxyLink
 					} else {
 						lerr = err

@@ -81,7 +81,7 @@ func getADWebDLsMeta(r *http.Request, ctx *Ctx, idr *ParsedId, eud string) strem
 			if shouldCreateProxyLink {
 				videoTitle = "✨ " + videoTitle
 				if isDirectLink {
-					if proxyLink, err := shared.CreateProxyLink(r, stream.URL, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, stream.BehaviorHints.Filename, nil); err == nil {
+					if proxyLink, err := shared.CreateProxyLink(r, stream.URL, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, stream.BehaviorHints.Filename); err == nil {
 						stream.URL = proxyLink
 					} else {
 						log.Error("failed to create proxy link, skipping file", "error", err, "store.name", storeName, "filename", stream.BehaviorHints.Filename)

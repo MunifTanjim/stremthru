@@ -65,11 +65,21 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 	// For qBittorrent files, provide a progress callback so the proxy can
 	// pace streaming to match the download — preventing garbage bytes from
 	// pre-allocated regions while allowing seamless streaming-while-downloading.
+	// The torrent hash and file index are passed as URL query params by
+	// GenerateStremThruLink, keeping qBit-specific concerns out of the
+	// core proxy token.
 	var safeBytesFn shared.SafeBytesFunc
 	var isRangeAvailFn shared.IsRangeAvailableFunc
-	if info.QbitHash != "" {
+	qbitHash := r.URL.Query().Get("qbit_hash")
+	qbitFileIdx := 0
+	if fidxStr := r.URL.Query().Get("qbit_fidx"); fidxStr != "" {
+		if v, err := strconv.Atoi(fidxStr); err == nil {
+			qbitFileIdx = v
+		}
+	}
+	if qbitHash != "" {
 		safeBytesFn = func() (int64, int64, bool) {
-			safe, fileSize, done, err := shared.GetQbitSafeBytes(info.User, info.QbitHash, info.QbitFileIdx)
+			safe, fileSize, done, err := shared.GetQbitSafeBytes(info.User, qbitHash, qbitFileIdx)
 			if err != nil {
 				// On error, assume fully downloaded to avoid blocking forever.
 				ctx.Log.Warn("[proxy] failed to get qbit safe bytes, assuming done", "error", err)
@@ -78,7 +88,7 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 			return safe, fileSize, done
 		}
 		isRangeAvailFn = func(start, end int64) bool {
-			avail, err := shared.IsQbitFileRangeAvailable(info.User, info.QbitHash, info.QbitFileIdx, start, end)
+			avail, err := shared.IsQbitFileRangeAvailable(info.User, qbitHash, qbitFileIdx, start, end)
 			if err != nil {
 				ctx.Log.Warn("[proxy] failed to check range availability", "error", err)
 				return false
@@ -88,7 +98,7 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 			}
 			return avail
 		}
-		ctx.Log.Debug("[proxy] streaming with qbit progress awareness", "hash", info.QbitHash, "fileIdx", info.QbitFileIdx)
+		ctx.Log.Debug("[proxy] streaming with qbit progress awareness", "hash", qbitHash, "fileIdx", qbitFileIdx)
 	}
 
 	bytesWritten, err := shared.ProxyResponse(w, r, info.Link, info.TunnelType, safeBytesFn, isRangeAvailFn)
@@ -182,7 +192,7 @@ func handleProxifyLinks(w http.ResponseWriter, r *http.Request) {
 			reqHeadersByBlob[reqHeadersBlob] = reqHeaders
 		}
 		filename := r.Form.Get("filename[" + idx + "]")
-		proxyLink, err := shared.CreateProxyLink(r, link, reqHeaders, config.TUNNEL_TYPE_AUTO, expiresIn, user, password, shouldEncrypt, filename, nil)
+		proxyLink, err := shared.CreateProxyLink(r, link, reqHeaders, config.TUNNEL_TYPE_AUTO, expiresIn, user, password, shouldEncrypt, filename)
 		if err != nil {
 			SendError(w, r, err)
 			return
