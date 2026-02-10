@@ -31,7 +31,7 @@ var logoByStoreCode = map[string]string{
 	"oc": "https://offcloud.com/images/apple-touch-icon-180x180.png",
 	"pm": "https://www.premiumize.me/apple-touch-icon.png",
 	"pp": "https://mypikpak.com/android-chrome-192x192.png",
-	"qb": "https://upload.wikimedia.org/wikipedia/commons/6/66/New_qBittorrent_Logo.svg",
+	"qb": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/New_qBittorrent_Logo.svg/256px-New_qBittorrent_Logo.svg.png",
 	"rd": "https://fcdn.real-debrid.com/0830/favicons/android-chrome-192x192.png",
 	"tb": "https://torbox.app/android-chrome-192x192.png",
 }
