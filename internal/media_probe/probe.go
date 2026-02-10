@@ -22,19 +22,23 @@ type VideoInfo struct {
 }
 
 type AudioTrack struct {
-	Codec    string `json:"codec,omitempty"`
-	Channels int    `json:"channels,omitempty"`
-	Layout   string `json:"layout,omitempty"`
-	Language string `json:"language,omitempty"`
-	Default  bool   `json:"default,omitempty"`
+	Codec      string `json:"codec,omitempty"`
+	Channels   int    `json:"channels,omitempty"`
+	Layout     string `json:"layout,omitempty"`
+	Language   string `json:"language,omitempty"`
+	Default    bool   `json:"default,omitempty"`
+	Dub        bool   `json:"dub,omitempty"`
+	Original   bool   `json:"original,omitempty"`
+	Commentary bool   `json:"commentary,omitempty"`
 }
 
 type SubtitleTrack struct {
-	Codec    string `json:"codec,omitempty"`
-	Language string `json:"language,omitempty"`
-	Title    string `json:"title,omitempty"`
-	Default  bool   `json:"default,omitempty"`
-	Forced   bool   `json:"forced,omitempty"`
+	Codec            string `json:"codec,omitempty"`
+	Language         string `json:"language,omitempty"`
+	Title            string `json:"title,omitempty"`
+	Default          bool   `json:"default,omitempty"`
+	Forced           bool   `json:"forced,omitempty"`
+	HearingImpaired  bool   `json:"hearing_impaired,omitempty"`
 }
 
 type FormatInfo struct {
@@ -129,19 +133,23 @@ func Probe(ctx context.Context, url string) (string, error) {
 			}
 		case "audio":
 			mi.Audio = append(mi.Audio, AudioTrack{
-				Codec:    stream.CodecName,
-				Channels: stream.Channels,
-				Layout:   stream.ChannelLayout,
-				Language: getTag(stream, "language"),
-				Default:  stream.Disposition.Default == 1,
+				Codec:      stream.CodecName,
+				Channels:   stream.Channels,
+				Layout:     stream.ChannelLayout,
+				Language:   getTag(stream, "language"),
+				Default:    stream.Disposition.Default == 1,
+				Dub:        stream.Disposition.Dub == 1,
+				Original:   stream.Disposition.Original == 1,
+				Commentary: stream.Disposition.Comment == 1,
 			})
 		case "subtitle":
 			mi.Subtitle = append(mi.Subtitle, SubtitleTrack{
-				Codec:    stream.CodecName,
-				Language: getTag(stream, "language"),
-				Title:    getTag(stream, "title"),
-				Default:  stream.Disposition.Default == 1,
-				Forced:   stream.Disposition.Forced == 1,
+				Codec:           stream.CodecName,
+				Language:        getTag(stream, "language"),
+				Title:           getTag(stream, "title"),
+				Default:         stream.Disposition.Default == 1,
+				Forced:          stream.Disposition.Forced == 1,
+				HearingImpaired: stream.Disposition.HearingImpaired == 1,
 			})
 		}
 	}
