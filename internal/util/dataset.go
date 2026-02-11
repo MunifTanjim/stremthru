@@ -3,6 +3,7 @@ package util
 import (
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -334,7 +335,7 @@ func (ds *Dataset) Init() error {
 	}
 
 	if err := ds.download(); err != nil {
-		return err
+		return fmt.Errorf("failed to download dataset: %w", err)
 	}
 
 	return nil

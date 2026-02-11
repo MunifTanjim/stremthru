@@ -167,6 +167,9 @@ func (ds JSONDataset[T]) processAll() error {
 
 	r := ds.NewReader(blob)
 	if r == nil {
+		if err := os.RemoveAll(filePath); err != nil {
+			ds.log.Error("failed to remove file", "error", err)
+		}
 		return errors.New("failed to create reader")
 	}
 
@@ -196,10 +199,16 @@ func (ds JSONDataset[T]) processDiff() error {
 
 	lastR := ds.NewReader(lastBlob)
 	if lastR == nil {
+		if err := os.RemoveAll(newFilePath); err != nil {
+			ds.log.Error("failed to remove last file", "error", err)
+		}
 		return errors.New("failed to create reader for last file")
 	}
 	newR := ds.NewReader(newBlob)
 	if newR == nil {
+		if err := os.RemoveAll(newFilePath); err != nil {
+			ds.log.Error("failed to remove new file", "error", err)
+		}
 		return errors.New("failed to create reader for new file")
 	}
 
