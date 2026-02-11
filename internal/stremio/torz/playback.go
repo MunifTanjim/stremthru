@@ -101,21 +101,28 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 					error_video: store_video.StoreVideoName500,
 				}, err
 			}
-			fileHeader, err := shared.FetchTorrentFile(link, 1024*1024)
-			if err != nil {
-				return &stremResult{
-					error_level: logger.LevelError,
-					error_log:   "failed to fetch torrent file",
-					error_video: store_video.StoreVideoName500,
-				}, err
-			}
-			amParams.Torrent = fileHeader
-			if _, _, err := amParams.GetTorrentMeta(); err != nil {
-				return &stremResult{
-					error_level: logger.LevelError,
-					error_log:   "invalid torrent file",
-					error_video: store_video.StoreVideoName500,
-				}, err
+			fileHeader, fetchErr := shared.FetchTorrentFile(link, 1024*1024)
+			if fetchErr != nil {
+				var magnetErr *shared.MagnetRedirectError
+				if errors.As(fetchErr, &magnetErr) {
+					// URL redirected to a magnet link — use it directly
+					amParams.Magnet = magnetErr.MagnetURI
+				} else {
+					return &stremResult{
+						error_level: logger.LevelError,
+						error_log:   "failed to fetch torrent file",
+						error_video: store_video.StoreVideoName500,
+					}, fetchErr
+				}
+			} else {
+				amParams.Torrent = fileHeader
+				if _, _, err := amParams.GetTorrentMeta(); err != nil {
+					return &stremResult{
+						error_level: logger.LevelError,
+						error_log:   "invalid torrent file",
+						error_video: store_video.StoreVideoName500,
+					}, err
+				}
 			}
 		}
 		amRes, err := ctx.Store.AddMagnet(amParams)
