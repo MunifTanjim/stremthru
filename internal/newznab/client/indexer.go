@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
@@ -57,7 +57,7 @@ func (n *Newz) Age() time.Duration {
 
 func (n *Newz) GetHash() string {
 	if n.Hash == "" {
-		n.Hash = shared.HashNZBDownloadLink(n.DownloadLink)
+		n.Hash = nzb_info.HashNZBFileLink(n.DownloadLink)
 	}
 	return n.Hash
 }

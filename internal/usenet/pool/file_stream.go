@@ -85,7 +85,7 @@ func NewFileStream(
 	}
 
 	segmentSizeRatio := float64(1)
-	if totalSegmentBytes := file.TotalSize(); totalSegmentBytes > 0 {
+	if totalSegmentBytes := file.Size(); totalSegmentBytes > 0 {
 		segmentSizeRatio = float64(fileSize) / float64(totalSegmentBytes)
 	}
 

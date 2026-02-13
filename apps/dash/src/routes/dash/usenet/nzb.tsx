@@ -1,37 +1,480 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, UploadIcon, XIcon } from "lucide-react";
+import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  Eye,
+  FileIcon,
+  FolderArchive,
+  PackageOpen,
+  RefreshCw,
+  Trash2,
+  Video,
+} from "lucide-react";
 import { DateTime } from "luxon";
 import prettyBytes from "pretty-bytes";
 import { useState } from "react";
 import { toast } from "sonner";
-import z from "zod";
 
-import { ParsedNZB, useNzbParseMutation } from "@/api/usenet";
-import { Form, useAppForm } from "@/components/form";
+import {
+  NZBContentFile,
+  NZBInfoItem,
+  useNzbInfo,
+  useNzbInfoMutation,
+} from "@/api/nzb-info";
+import { DataTable } from "@/components/data-table";
+import { useDataTable } from "@/components/data-table/use-data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  FileUploadDropzone,
-  FileUploadItem,
-  FileUploadItemDelete,
-  FileUploadItemMetadata,
-  FileUploadItemPreview,
-  FileUploadList,
-  FileUploadTrigger,
-} from "@/components/ui/file-upload";
-import { Spinner } from "@/components/ui/spinner";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { APIError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+declare module "@/components/data-table" {
+  export interface DataTableMetaCtx {
+    NzbInfo: {
+      removeItem: ReturnType<typeof useNzbInfoMutation>["remove"];
+      requeueItem: ReturnType<typeof useNzbInfoMutation>["requeue"];
+      setDetailItem: (item: null | NZBInfoItem) => void;
+    };
+  }
+
+  export interface DataTableMetaCtxKey {
+    NzbInfo: NZBInfoItem;
+  }
+}
+
+const col = createColumnHelper<NZBInfoItem>();
+
+const columns: ColumnDef<NZBInfoItem>[] = [
+  col.accessor("name", {
+    cell: ({ getValue }) => {
+      const name = getValue() || "<Unknown>";
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="block max-w-[300px] truncate">{name}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[500px] break-all">
+            {name}
+          </TooltipContent>
+        </Tooltip>
+      );
+    },
+    header: "Name",
+  }),
+  col.accessor("size", {
+    cell: ({ getValue }) => prettyBytes(getValue()),
+    header: "Size",
+  }),
+  col.accessor("file_count", {
+    cell: ({ getValue }) => getValue(),
+    header: "Files",
+  }),
+  col.accessor("streamable", {
+    cell: ({ getValue }) =>
+      getValue() ? (
+        <Badge className="bg-green-600" variant="default">
+          Yes
+        </Badge>
+      ) : (
+        <Badge variant="destructive">No</Badge>
+      ),
+    header: "Streamable",
+  }),
+  col.accessor("cached", {
+    cell: ({ getValue }) =>
+      getValue() ? (
+        <Badge className="bg-green-600" variant="default">
+          Yes
+        </Badge>
+      ) : (
+        <Badge variant="destructive">No</Badge>
+      ),
+    header: "Cached",
+  }),
+  col.accessor("created_at", {
+    cell: ({ getValue }) => {
+      const date = DateTime.fromISO(getValue());
+      return date.toLocaleString(DateTime.DATETIME_MED);
+    },
+    header: "Created At",
+  }),
+  col.display({
+    cell: (c) => {
+      const { removeItem, requeueItem, setDetailItem } =
+        c.table.options.meta!.ctx;
+      const item = c.row.original;
+      return (
+        <div className="flex gap-1">
+          <Button
+            onClick={() => setDetailItem(item)}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <Eye />
+          </Button>
+          <Button
+            disabled={!item.cached}
+            onClick={() =>
+              window.open(`/dash/api/usenet/nzb/${item.id}/xml`, "_blank")
+            }
+            size="icon-sm"
+            variant="ghost"
+          >
+            <ExternalLink />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button disabled={!item.url} size="icon-sm" variant="ghost">
+                <RefreshCw />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Re-queue NZB for processing?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="wrap-anywhere">
+                  This will re-process <strong>{item.name}</strong>.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    disabled={requeueItem.isPending}
+                    onClick={() => {
+                      toast.promise(requeueItem.mutateAsync(item.id), {
+                        error(err: APIError) {
+                          console.error(err);
+                          return {
+                            closeButton: true,
+                            message: err.message,
+                          };
+                        },
+                        loading: "Re-queuing...",
+                        success: {
+                          closeButton: true,
+                          message: "Re-queued successfully!",
+                        },
+                      });
+                    }}
+                  >
+                    Re-queue
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon-sm" variant="ghost">
+                <Trash2 className="text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete NZB Info?</AlertDialogTitle>
+                <AlertDialogDescription className="wrap-anywhere">
+                  This will permanently delete the NZB info for{" "}
+                  <strong>{item.name}</strong>. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction asChild>
+                  <Button
+                    disabled={removeItem.isPending}
+                    onClick={() => {
+                      toast.promise(removeItem.mutateAsync(item.id), {
+                        error(err: APIError) {
+                          console.error(err);
+                          return {
+                            closeButton: true,
+                            message: err.message,
+                          };
+                        },
+                        loading: "Deleting...",
+                        success: {
+                          closeButton: true,
+                          message: "Deleted successfully!",
+                        },
+                      });
+                    }}
+                    variant="destructive"
+                  >
+                    Delete
+                  </Button>
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      );
+    },
+    header: "",
+    id: "actions",
+  }),
+];
+
+function ContentFileIcon({ isPack, type }: { isPack: boolean; type: string }) {
+  switch (type) {
+    case "archive":
+      return isPack ? (
+        <PackageOpen className="size-4 text-amber-700" />
+      ) : (
+        <FolderArchive className="size-4 text-amber-500" />
+      );
+    case "video":
+      return <Video className="size-4 text-blue-500" />;
+    default:
+      return <FileIcon className="text-muted-foreground size-4" />;
+  }
+}
+
+function ContentFileNode({
+  depth,
+  file,
+  nzbId,
+  parentPath,
+}: {
+  depth: number;
+  file: NZBContentFile;
+  nzbId: string;
+  parentPath?: string;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const hasChildren = Boolean(file.files && file.files.length > 0);
+  const filePath = parentPath
+    ? parentPath + "::/" + file.name
+    : "/" + file.name;
+
+  return (
+    <div>
+      <div
+        className="hover:bg-muted/50 flex items-center gap-2 rounded px-2 py-1 text-sm"
+        style={{ paddingLeft: `${depth * 20 + 8}px` }}
+      >
+        {hasChildren ? (
+          <button
+            className="flex size-4 items-center justify-center"
+            onClick={() => setExpanded(!expanded)}
+            type="button"
+          >
+            {expanded ? (
+              <ChevronDown className="size-3" />
+            ) : (
+              <ChevronRight className="size-3" />
+            )}
+          </button>
+        ) : (
+          <span className="size-4" />
+        )}
+        <ContentFileIcon isPack={hasChildren} type={file.type} />
+        <Tooltip>
+          <TooltipTrigger className="flex-1 truncate text-left">
+            <span>{file.name}</span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[400px] break-all">
+            {file.name}
+          </TooltipContent>
+        </Tooltip>
+        <Badge className="text-xs" variant="outline">
+          {file.type}
+        </Badge>
+        <span className="text-muted-foreground text-xs">
+          {prettyBytes(file.size)}
+        </span>
+        <Badge
+          className={cn(
+            "text-xs",
+            file.streamable ? "bg-green-600" : "line-through",
+          )}
+          variant={file.streamable ? "default" : "destructive"}
+        >
+          Streamable
+        </Badge>
+        {!hasChildren && (
+          <Button
+            onClick={() =>
+              window.open(
+                `/dash/api/usenet/nzb/${nzbId}/download${filePath}`,
+                "_blank",
+              )
+            }
+            size="icon-sm"
+            variant="ghost"
+          >
+            <Download className="size-3" />
+          </Button>
+        )}
+      </div>
+      {hasChildren && expanded && (
+        <ContentFileTree
+          depth={depth + 1}
+          files={file.files!}
+          nzbId={nzbId}
+          parentPath={filePath}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContentFileTree({
+  depth = 0,
+  files,
+  nzbId,
+  parentPath,
+}: {
+  depth?: number;
+  files: NZBContentFile[];
+  nzbId: string;
+  parentPath?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      {files.map((file) => (
+        <div key={`${depth}-${file.name}`}>
+          <ContentFileNode
+            depth={depth}
+            file={file}
+            nzbId={nzbId}
+            parentPath={parentPath}
+          />
+          {file.parts && file.parts.length > 0 && (
+            <ContentFileTree
+              depth={depth}
+              files={file.parts}
+              nzbId={nzbId}
+              parentPath={parentPath}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NzbInfoDetailDialog({
+  item,
+  onClose,
+}: {
+  item: null | NZBInfoItem;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog onOpenChange={(open) => !open && onClose()} open={Boolean(item)}>
+      <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+        <DialogHeader className="max-w-full">
+          <DialogTitle className="break-all">{item?.name}</DialogTitle>
+        </DialogHeader>
+        {item && (
+          <div className="space-y-4 overflow-hidden">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground font-medium">Hash</div>
+                <div className="mt-1 break-all font-mono text-xs">
+                  {item.hash}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground font-medium">Size</div>
+                <div className="mt-1">{prettyBytes(item.size)}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground font-medium">
+                  Streamable
+                </div>
+                <div className="mt-1">
+                  {item.streamable ? (
+                    <Badge className="bg-green-600" variant="default">
+                      Yes
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">No</Badge>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground font-medium">Cached</div>
+                <div className="mt-1">
+                  {item.cached ? (
+                    <Badge className="bg-green-600" variant="default">
+                      Yes
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">No</Badge>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground font-medium">
+                  Password
+                </div>
+                <div className="mt-1">
+                  {item.password || (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground font-medium">User</div>
+                <div className="mt-1">{item.user}</div>
+              </div>
+              {item.url && (
+                <div className="col-span-2">
+                  <div className="text-muted-foreground font-medium">URL</div>
+                  <div className="mt-1 break-all text-xs">{item.url}</div>
+                </div>
+              )}
+              <div>
+                <div className="text-muted-foreground font-medium">
+                  File Count
+                </div>
+                <div className="mt-1">{item.file_count}</div>
+              </div>
+            </div>
+            {item.files && item.files.length > 0 && (
+              <div>
+                <div className="text-muted-foreground mb-2 text-sm font-medium">
+                  Files
+                </div>
+                <div className="rounded-md border p-2">
+                  <ContentFileTree files={item.files} nzbId={item.id} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export const Route = createFileRoute("/dash/usenet/nzb")({
   component: RouteComponent,
@@ -40,234 +483,44 @@ export const Route = createFileRoute("/dash/usenet/nzb")({
   },
 });
 
-function age(dateString: string): null | string {
-  return DateTime.fromISO(dateString)
-    .diffNow()
-    .negate()
-    .shiftTo("years", "months", "days", "hours")
-    .removeZeros()
-    .toHuman({
-      maximumFractionDigits: 0,
-      unitDisplay: "short",
-    });
-}
-
-function formatDate(dateString: string): string {
-  return DateTime.fromISO(dateString).toLocaleString(DateTime.DATETIME_MED);
-}
-
-const formSchema = z.object({
-  file: z
-    .file()
-    .max(5 * 1024 * 1024)
-    .nullable(),
-});
-
 function RouteComponent() {
-  const [parsedNzb, setParsedNzb] = useState<null | ParsedNZB>(null);
+  const nzbInfo = useNzbInfo();
+  const { remove: removeItem, requeue: requeueItem } = useNzbInfoMutation();
+  const [detailItem, setDetailItem] = useState<null | NZBInfoItem>(null);
 
-  const parse = useNzbParseMutation();
-
-  const form = useAppForm({
-    defaultValues: { file: null } as z.infer<typeof formSchema>,
-    onSubmit: async ({ value }) => {
-      setParsedNzb(null);
-
-      if (!value.file) {
-        return;
-      }
-
-      toast.promise(parse.mutateAsync(value.file), {
-        error(err: APIError) {
-          console.error(err);
-          return {
-            closeButton: true,
-            message: err.message,
-          };
-        },
-        loading: "Parsing NZB file...",
-        success(data) {
-          setParsedNzb(data);
-          return {
-            closeButton: true,
-            message: "NZB parsed successfully!",
-          };
-        },
-      });
+  const table = useDataTable({
+    columns,
+    data: nzbInfo.data ?? [],
+    initialState: {
+      columnPinning: { left: ["name"], right: ["actions"] },
     },
-    validators: {
-      onChange: formSchema,
+    meta: {
+      ctx: {
+        removeItem,
+        requeueItem,
+        setDetailItem,
+      },
     },
   });
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Parse NZB File</CardTitle>
-          <CardDescription>
-            Upload an NZB file to see its contents and metadata
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form className="flex flex-col gap-4" form={form}>
-            <form.AppField name="file">
-              {(field) => (
-                <field.FilePicker accept=".nzb" maxFiles={1}>
-                  {field.state.value ? (
-                    <FileUploadList>
-                      <FileUploadItem value={field.state.value}>
-                        <FileUploadItemPreview />
-                        <FileUploadItemMetadata />
-                        <FileUploadItemDelete asChild>
-                          <Button
-                            aria-label="Remove file"
-                            className="size-7"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <XIcon />
-                          </Button>
-                        </FileUploadItemDelete>
-                      </FileUploadItem>
-                    </FileUploadList>
-                  ) : (
-                    <FileUploadDropzone className="p-4">
-                      <div className="flex flex-row items-center gap-2 text-center">
-                        <div className="flex items-center justify-center rounded-full border p-2">
-                          <UploadIcon className="text-muted-foreground size-6" />
-                        </div>
-                        Drag & drop NZB file here or
-                        <FileUploadTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            Browse
-                          </Button>
-                        </FileUploadTrigger>
-                      </div>
-                    </FileUploadDropzone>
-                  )}
-                </field.FilePicker>
-              )}
-            </form.AppField>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">NZB Info</h2>
+      </div>
 
-            <div className="flex gap-2">
-              <Button
-                className="w-fit"
-                disabled={parse.isPending}
-                type="submit"
-              >
-                {parse.isPending ? (
-                  <Spinner />
-                ) : (
-                  <FileText className="size-4" />
-                )}
-                Parse NZB
-              </Button>
-            </div>
-          </Form>
-        </CardContent>
-      </Card>
-
-      {parsedNzb && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>NZB Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="text-muted-foreground font-medium">
-                    Total Size
-                  </div>
-                  <div className="mt-1">{prettyBytes(parsedNzb.size)}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground font-medium">
-                    File Count
-                  </div>
-                  <div className="mt-1">{parsedNzb.files.length}</div>
-                </div>
-                {Object.entries(parsedNzb.meta).map(([key, value]) => (
-                  <div key={key}>
-                    <div className="text-muted-foreground font-medium capitalize">
-                      {key}
-                    </div>
-                    <div className="mt-1">{value}</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Files</CardTitle>
-              <CardDescription>
-                {parsedNzb.files.length} file
-                {parsedNzb.files.length > 1 ? "s" : ""} in this NZB
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {parsedNzb.files.map((file) => (
-                  <div
-                    className="border-border rounded-lg border p-4"
-                    key={file.subject}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="flex-1 space-y-1">
-                        <h3 className="break-all font-medium">{file.name}</h3>
-                        {file.name !== file.subject && (
-                          <p className="text-muted-foreground text-sm">
-                            Subject: {file.subject}
-                          </p>
-                        )}
-                        <p className="text-muted-foreground text-sm">
-                          Posted by: {file.poster}
-                        </p>
-                      </div>
-                      <div className="ml-auto text-right text-sm">
-                        <div className="font-medium">
-                          {prettyBytes(file.size)}
-                        </div>
-                        <div className="text-muted-foreground">
-                          {file.segments.length} segment
-                          {file.segments.length > 1 ? "s" : ""}
-                        </div>
-                        {file.date && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <div className="text-muted-foreground">
-                                {age(file.date)}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">
-                              {formatDate(file.date)}
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </div>
-                    {file.groups.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {file.groups.map((group) => (
-                          <span
-                            className="bg-muted text-muted-foreground rounded px-2 py-1 text-xs"
-                            key={group}
-                          >
-                            {group}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </>
+      {nzbInfo.isLoading ? (
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      ) : nzbInfo.isError ? (
+        <div className="text-sm text-red-600">Error loading NZB info</div>
+      ) : (
+        <DataTable table={table} />
       )}
+
+      <NzbInfoDetailDialog
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+      />
     </div>
   );
 }

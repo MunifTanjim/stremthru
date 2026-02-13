@@ -41,7 +41,7 @@ func AddEndpoints(mux *http.ServeMux) {
 		dash_api.AddVaultStremioEndpoints(router)
 		dash_api.AddVaultTraktEndpoints(router)
 		dash_api.AddVaultTorznabEndpoints(router)
-		dash_api.AddUsenetNzbEndpoints(router)
+		dash_api.AddUsenetNZBEndpoints(router)
 		dash_api.AddUsenetConfigEndpoints(router)
 		dash_api.AddVaultUsenetEndpoints(router)
 		dash_api.AddVaultNewznabEndpoints(router)

@@ -20,6 +20,7 @@ import (
 	stremio_store_usenet "github.com/MunifTanjim/stremthru/internal/stremio/store/usenet"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"golang.org/x/sync/singleflight"
@@ -84,7 +85,7 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			if config.NewzNZBLinkMode.Redirect(hostname) {
 				addParams.Link = nzbUrl
 			} else if config.NewzNZBLinkMode.Proxy(hostname) {
-				nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
+				nzbFile, err := nzb_info.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
 				if err != nil {
 					return &stremResult{
 						error_level: logger.LevelError,
@@ -259,7 +260,7 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, nzbUrl strin
 		return
 	}
 
-	nzbFile, err := shared.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
+	nzbFile, err := nzb_info.FetchNZBFile(nzbUrl, r.PathValue("fileName"), log)
 	if err != nil {
 		log.Error("failed to fetch nzb", "error", err)
 		redirectToStaticVideo(w, r, "", store_video.StoreVideoNameDownloadFailed)

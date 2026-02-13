@@ -26,7 +26,7 @@ type UsenetFileInfo struct {
 	size int64
 }
 
-func (ufi *UsenetFileInfo) Name() string       { return ufi.f.GetName() }
+func (ufi *UsenetFileInfo) Name() string       { return ufi.f.Name() }
 func (ufi *UsenetFileInfo) Size() int64        { return ufi.size }
 func (ufi *UsenetFileInfo) Mode() fs.FileMode  { return 0644 }
 func (ufi *UsenetFileInfo) ModTime() time.Time { return time.Unix(ufi.f.Date, 0) }
@@ -57,7 +57,7 @@ func NewUsenetFS(ctx context.Context, conf *UsenetFSConfig) *UsenetFS {
 	}
 	for i := range conf.NZB.Files {
 		f := &conf.NZB.Files[i]
-		usenetFs.files[f.GetName()] = UsenetFileInfo{
+		usenetFs.files[f.Name()] = UsenetFileInfo{
 			f: f,
 		}
 	}

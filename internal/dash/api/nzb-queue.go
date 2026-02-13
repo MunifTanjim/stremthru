@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	nzb_queue "github.com/MunifTanjim/stremthru/internal/usenet/nzb_queue"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 )
 
-type NzbQueueItemResponse struct {
+type NZBQueueItemResponse struct {
 	Id        string `json:"id"`
 	User      string `json:"user"`
 	Name      string `json:"name"`
@@ -20,29 +20,33 @@ type NzbQueueItemResponse struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
-func toNzbQueueItemResponse(item *nzb_queue.NzbQueueItem) NzbQueueItemResponse {
-	return NzbQueueItemResponse{
-		Id:        item.Id,
-		User:      item.User,
-		Name:      item.Name,
-		URL:       item.URL,
-		Category:  item.Category,
-		Priority:  item.Priority,
-		Status:    string(item.Status),
-		Error:     item.Error,
-		CreatedAt: item.CAt.Format(time.RFC3339),
-		UpdatedAt: item.UAt.Format(time.RFC3339),
+func toNzbQueueItemResponse(entry *nzb_info.JobEntry) NZBQueueItemResponse {
+	errMsg := ""
+	if len(entry.Error) > 0 {
+		errMsg = entry.Error[len(entry.Error)-1]
+	}
+	return NZBQueueItemResponse{
+		Id:        entry.Key,
+		User:      entry.Payload.Data.User,
+		Name:      entry.Payload.Data.Name,
+		URL:       entry.Payload.Data.URL,
+		Category:  entry.Payload.Data.Category,
+		Priority:  entry.Priority,
+		Status:    entry.Status,
+		Error:     errMsg,
+		CreatedAt: entry.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: entry.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
 func handleGetNzbQueueItems(w http.ResponseWriter, r *http.Request) {
-	items, err := nzb_queue.GetAll()
+	items, err := nzb_info.GetAllJob()
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	data := make([]NzbQueueItemResponse, len(items))
+	data := make([]NZBQueueItemResponse, len(items))
 	for i, item := range items {
 		data[i] = toNzbQueueItemResponse(&item)
 	}
@@ -52,7 +56,7 @@ func handleGetNzbQueueItems(w http.ResponseWriter, r *http.Request) {
 
 func handleGetNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	item, err := nzb_queue.GetById(id)
+	item, err := nzb_info.GetJobById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -68,7 +72,7 @@ func handleGetNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 func handleDeleteNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
-	existing, err := nzb_queue.GetById(id)
+	existing, err := nzb_info.GetJobById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -78,7 +82,7 @@ func handleDeleteNzbQueueItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := nzb_queue.Delete(id); err != nil {
+	if err := nzb_info.DeleteJob(id); err != nil {
 		SendError(w, r, err)
 		return
 	}

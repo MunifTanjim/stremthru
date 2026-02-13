@@ -2,7 +2,6 @@ package usenet_pool
 
 import (
 	"cmp"
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -12,18 +11,11 @@ type archiveVolume struct {
 	name string
 }
 
-type archiveVolumeGroup struct {
+type archiveVolumeGroup[T any] struct {
 	BaseName  string   // e.g., "video" for video.part01.rar, video.part02.rar
 	FileType  FileType // RAR or 7z
-	Files     []ArchiveFile
+	Files     []T
 	TotalSize int64
-}
-
-func (g *archiveVolumeGroup) GetFirstVolumeName() string {
-	if len(g.Files) == 0 {
-		return ""
-	}
-	return filepath.Base(g.Files[0].Name())
 }
 
 func getArchiveBaseName(filename string) (baseName string, fileType FileType) {
@@ -52,8 +44,15 @@ func getArchiveBaseName(filename string) (baseName string, fileType FileType) {
 	return "", FileTypePlain
 }
 
-func groupArchiveVolumes(files []ArchiveFile) []archiveVolumeGroup {
-	groups := make(map[string]*archiveVolumeGroup)
+type simpleFile interface {
+	Name() string
+	Size() int64
+}
+
+func groupArchiveVolumes[T simpleFile](
+	files []T,
+) []archiveVolumeGroup[T] {
+	groups := make(map[string]*archiveVolumeGroup[T])
 
 	for _, f := range files {
 		baseName, fileType := getArchiveBaseName(f.Name())
@@ -64,20 +63,20 @@ func groupArchiveVolumes(files []ArchiveFile) []archiveVolumeGroup {
 		key := baseName + ":" + fileType.String()
 		if g, ok := groups[key]; ok {
 			g.Files = append(g.Files, f)
-			g.TotalSize += f.UnPackedSize()
+			g.TotalSize += f.Size()
 		} else {
-			groups[key] = &archiveVolumeGroup{
+			groups[key] = &archiveVolumeGroup[T]{
 				BaseName:  baseName,
 				FileType:  fileType,
-				Files:     []ArchiveFile{f},
-				TotalSize: f.UnPackedSize(),
+				Files:     []T{f},
+				TotalSize: f.Size(),
 			}
 		}
 	}
 
-	result := make([]archiveVolumeGroup, 0, len(groups))
+	result := make([]archiveVolumeGroup[T], 0, len(groups))
 	for _, group := range groups {
-		slices.SortStableFunc(group.Files, func(a, b ArchiveFile) int {
+		slices.SortStableFunc(group.Files, func(a, b T) int {
 			var volA, volB int
 			switch group.FileType {
 			case FileTypeRAR:
@@ -92,7 +91,7 @@ func groupArchiveVolumes(files []ArchiveFile) []archiveVolumeGroup {
 		result = append(result, *group)
 	}
 
-	slices.SortStableFunc(result, func(a, b archiveVolumeGroup) int {
+	slices.SortStableFunc(result, func(a, b archiveVolumeGroup[T]) int {
 		return cmp.Compare(b.TotalSize, a.TotalSize)
 	})
 

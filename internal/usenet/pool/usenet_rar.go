@@ -134,7 +134,7 @@ func (urf *UsenetRARFile) PackedSize() int64 {
 	return urf.packedSize
 }
 
-func (urf *UsenetRARFile) UnPackedSize() int64 {
+func (urf *UsenetRARFile) Size() int64 {
 	return urf.unPackedSize
 }
 
@@ -173,7 +173,7 @@ func NewUsenetRARArchive(ufs *UsenetFS) *RARArchive {
 	volumes := []archiveVolume{}
 	for i := range ufs.nzb.Files {
 		file := &ufs.nzb.Files[i]
-		name := file.GetName()
+		name := file.Name()
 		n := GetRARVolumeNumber(name)
 		if n < 0 {
 			continue

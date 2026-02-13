@@ -11,7 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	ti "github.com/MunifTanjim/stremthru/internal/torrent_info"
-	nzb_queue "github.com/MunifTanjim/stremthru/internal/usenet/nzb_queue"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -107,9 +107,8 @@ func handleSabnzbdAddUrl(w http.ResponseWriter, r *http.Request, user string) {
 
 	password := q.Get("password")
 
-	item := nzb_queue.NewNzbQueueItem(user, nzbName, nzbURL, category, priority, password)
-
-	if err := item.Insert(); err != nil {
+	id, err := nzb_info.QueueJob(user, nzbName, nzbURL, category, priority, password)
+	if err != nil {
 		log.Error("failed to insert sabnzbd nzb queue item", "error", err)
 		shared.SendHTML(w, http.StatusInternalServerError, *bytes.NewBuffer([]byte("Internal Server Error")))
 		return
@@ -117,7 +116,7 @@ func handleSabnzbdAddUrl(w http.ResponseWriter, r *http.Request, user string) {
 
 	shared.SendJSON(w, r, http.StatusOK, SabnzbdAddUrlResponse{
 		Status: true,
-		NzoIds: []string{"SABnzbd_nzo_" + item.Id},
+		NzoIds: []string{"SABnzbd_nzo_" + id},
 	})
 }
 

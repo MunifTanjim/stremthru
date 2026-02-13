@@ -133,7 +133,7 @@ func NewUsenetSevenZipArchive(ufs *UsenetFS) *SevenZipArchive {
 	volumes := []archiveVolume{}
 	for i := range ufs.nzb.Files {
 		file := &ufs.nzb.Files[i]
-		name := file.GetName()
+		name := file.Name()
 		n := Get7zVolumeNumber(name)
 		if n < 0 {
 			continue
