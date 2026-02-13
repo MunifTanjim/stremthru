@@ -54,6 +54,10 @@ func (idr *ParsedId) getStoreCode() string {
 		if idr.isST {
 			if idr.storeCode == "" {
 				idr.code = "st"
+			} else if idr.storeCode == "st" {
+				if idr.isUsenet {
+					idr.code = string(idr.storeCode) + "-usenet"
+				}
 			} else if idr.isDeprecated {
 				idr.code = "st:" + string(idr.storeCode)
 			} else {
@@ -89,7 +93,13 @@ func parseId(id string) (*ParsedId, error) {
 		scParts := strings.Split(storeCode, "-")
 		if scParts[0] == "st" {
 			r.isST = true
-			r.storeCode = store.StoreCode(scParts[1])
+			switch scParts[1] {
+			case "usenet":
+				r.storeCode = store.StoreCodeStremThru
+				r.isUsenet = true
+			default:
+				r.storeCode = store.StoreCode(scParts[1])
+			}
 			if len(scParts) > 2 {
 				switch scParts[2] {
 				case "usenet":

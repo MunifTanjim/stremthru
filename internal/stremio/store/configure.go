@@ -51,7 +51,11 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 	}
 
 	idr := ParsedId{isST: ud.StoreName == ""}
-	idr.storeName = store.StoreName(ud.StoreName)
+	if idr.isST && ud.EnableUsenet {
+		idr.storeName = store.StoreNameStremThru
+	} else {
+		idr.storeName = store.StoreName(ud.StoreName)
+	}
 	idr.storeCode = idr.storeName.Code()
 	ctx, err := ud.GetRequestContext(r, &idr)
 	if err != nil {

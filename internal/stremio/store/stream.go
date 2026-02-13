@@ -347,7 +347,6 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	streams := make([]*stremio.Stream, len(matchers))
 	for i, matcher := range matchers {
 		wg.Go(func() {
-
 			cInfo, err := getStoreContentInfo(matcher.Store, matcher.StoreToken, matcher.MagnetId, matcher.ClientIP, matcher.IdR)
 			if err != nil {
 				errs[i] = err
