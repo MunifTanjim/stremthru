@@ -158,6 +158,9 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 		var wg sync.WaitGroup
 		for i, cMissingHashes := range slices.Collect(slices.Chunk(missingHashes, 100)) {
+			if i > 0 && i%5 == 0 {
+				time.Sleep(1 * time.Second)
+			}
 			wg.Go(func() {
 				ctcParams := &CheckTorrentsCachedParams{
 					Hashes:    cMissingHashes,
