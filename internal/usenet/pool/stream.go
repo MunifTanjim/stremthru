@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -47,7 +48,7 @@ func (p *Pool) streamFile(
 		return nil, errors.New("file has no segments")
 	}
 
-	p.Log.Trace("found file", "idx", fileIdx, "name", file.GetName(), "segment_count", file.SegmentCount())
+	p.Log.Trace("found file", "idx", fileIdx, "name", file.Name(), "segment_count", file.SegmentCount())
 
 	firstSegment, err := p.fetchFirstSegment(ctx, file)
 	if err != nil {
@@ -55,7 +56,7 @@ func (p *Pool) streamFile(
 	}
 
 	fileBytes := firstSegment.Body
-	filename := file.GetName()
+	filename := file.Name()
 	fileType := DetectFileType(fileBytes, filename)
 
 	p.Log.Trace("file type detected", "type", fileType, "filename", filename)
@@ -93,7 +94,7 @@ func (p *Pool) streamPlainFile(
 	file *nzb.File,
 	config *StreamConfig,
 ) (*Stream, error) {
-	filename := file.GetName()
+	filename := file.Name()
 
 	p.Log.Trace("creating stream", "stream_type", "plain", "filename", filename, "segment_count", file.SegmentCount())
 
@@ -156,7 +157,7 @@ func (p *Pool) streamArchiveFile(
 
 func (p *Pool) streamVideoFromArchive(videos []ArchiveFile, archiveType FileType) (*Stream, error) {
 	file := slices.MaxFunc(videos, func(a, b ArchiveFile) int {
-		return cmp.Compare(a.UnPackedSize(), b.UnPackedSize())
+		return cmp.Compare(a.Size(), b.Size())
 	})
 
 	p.Log.Trace("stream archive file - target selected", "type", archiveType, "filename", file.Name())
@@ -173,12 +174,12 @@ func (p *Pool) streamVideoFromArchive(videos []ArchiveFile, archiveType FileType
 	return &Stream{
 		ReadSeekCloser: r,
 		Name:           file.Name(),
-		Size:           file.UnPackedSize(),
+		Size:           file.Size(),
 		ContentType:    GetContentType(file.Name()),
 	}, nil
 }
 
-func (p *Pool) streamNestedArchive(archiveGroups []archiveVolumeGroup) (*Stream, error) {
+func (p *Pool) streamNestedArchive(archiveGroups []archiveVolumeGroup[ArchiveFile]) (*Stream, error) {
 	var lastErr error
 	for i := range archiveGroups {
 		group := &archiveGroups[i]
@@ -203,7 +204,7 @@ func (p *Pool) streamNestedArchive(archiveGroups []archiveVolumeGroup) (*Stream,
 	return nil, fmt.Errorf("no streamable content found in nested archives")
 }
 
-func (p *Pool) tryStreamNestedArchiveGroup(group *archiveVolumeGroup) (*Stream, error) {
+func (p *Pool) tryStreamNestedArchiveGroup(group *archiveVolumeGroup[ArchiveFile]) (*Stream, error) {
 	for _, f := range group.Files {
 		if !f.IsStreamable() {
 			return nil, fmt.Errorf("inner archive part %s is not streamable", f.Name())
@@ -215,9 +216,9 @@ func (p *Pool) tryStreamNestedArchiveGroup(group *archiveVolumeGroup) (*Stream, 
 	var innerArchive Archive
 	switch group.FileType {
 	case FileTypeRAR:
-		innerArchive = NewRARArchive(afs, group.GetFirstVolumeName())
+		innerArchive = NewRARArchive(afs, filepath.Base(group.Files[0].Name()))
 	case FileType7z:
-		innerArchive = NewSevenZipArchive(afs.toAfero(), group.GetFirstVolumeName())
+		innerArchive = NewSevenZipArchive(afs.toAfero(), filepath.Base(group.Files[0].Name()))
 	default:
 		afs.Close()
 		return nil, fmt.Errorf("unsupported inner archive type: %s", group.FileType)
@@ -333,11 +334,196 @@ func (p *Pool) StreamFileByName(
 	config *StreamConfig,
 ) (*Stream, error) {
 	for i := range nzbDoc.Files {
-		if strings.EqualFold(nzbDoc.Files[i].GetName(), filename) {
+		if strings.EqualFold(nzbDoc.Files[i].Name(), filename) {
 			return p.streamFile(ctx, nzbDoc, i, config)
 		}
 	}
 	return nil, fmt.Errorf("no file matching '%s' found", filename)
+}
+
+func (p *Pool) streamTargetFromArchive(
+	archive Archive,
+	targetParts []string,
+	archiveType FileType,
+) (*Stream, error) {
+	files, err := archive.GetFiles()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get archive files: %w", err)
+	}
+
+	targetName := strings.Trim(targetParts[0], "/")
+	remainingParts := targetParts[1:]
+
+	for _, f := range files {
+		if !strings.EqualFold(f.Name(), targetName) {
+			continue
+		}
+
+		if len(remainingParts) == 0 {
+			if !f.IsStreamable() {
+				return nil, fmt.Errorf("file %s is not streamable", f.Name())
+			}
+			r, err := f.Open()
+			if err != nil {
+				return nil, fmt.Errorf("failed to open %s: %w", f.Name(), err)
+			}
+			return &Stream{
+				ReadSeekCloser: r,
+				Name:           f.Name(),
+				Size:           f.Size(),
+				ContentType:    GetContentType(f.Name()),
+			}, nil
+		}
+
+		if !f.IsStreamable() {
+			return nil, fmt.Errorf("inner archive %s is not streamable", f.Name())
+		}
+
+		innerFileType := DetectArchiveFileTypeByExtension(f.Name())
+
+		archiveGroups := groupArchiveVolumes(files)
+		var matchedGroup *archiveVolumeGroup[ArchiveFile]
+		for i := range archiveGroups {
+			for _, gf := range archiveGroups[i].Files {
+				if strings.EqualFold(gf.Name(), targetName) {
+					matchedGroup = &archiveGroups[i]
+					break
+				}
+			}
+			if matchedGroup != nil {
+				break
+			}
+		}
+
+		archiveFiles := []ArchiveFile{f}
+		archiveFileType := innerFileType
+		if matchedGroup != nil {
+			for _, mf := range matchedGroup.Files {
+				if !mf.IsStreamable() {
+					return nil, fmt.Errorf("inner archive part %s is not streamable", mf.Name())
+				}
+			}
+			archiveFiles = matchedGroup.Files
+			archiveFileType = matchedGroup.FileType
+		}
+
+		var innerArchive Archive
+		afs := NewArchiveFS(archiveFiles)
+		switch archiveFileType {
+		case FileTypeRAR:
+			innerArchive = NewRARArchive(afs, filepath.Base(archiveFiles[0].Name()))
+		case FileType7z:
+			innerArchive = NewSevenZipArchive(afs.toAfero(), filepath.Base(archiveFiles[0].Name()))
+		default:
+			afs.Close()
+			return nil, fmt.Errorf("unsupported inner archive type: %s", archiveFileType)
+		}
+		innerFileType = archiveFileType
+
+		if err := innerArchive.Open(""); err != nil {
+			innerArchive.Close()
+			return nil, fmt.Errorf("failed to open inner archive: %w", err)
+		}
+
+		if !innerArchive.IsStreamable() {
+			innerArchive.Close()
+			return nil, fmt.Errorf("non-streamable inner %s archive", innerFileType)
+		}
+
+		stream, err := p.streamTargetFromArchive(innerArchive, remainingParts, innerFileType)
+		if err != nil {
+			innerArchive.Close()
+			return nil, err
+		}
+
+		return &Stream{
+			ReadSeekCloser: &nestedArchiveStream{
+				ReadSeekCloser: stream.ReadSeekCloser,
+				innerArchive:   innerArchive,
+			},
+			Name:        stream.Name,
+			Size:        stream.Size,
+			ContentType: stream.ContentType,
+		}, nil
+	}
+
+	return nil, fmt.Errorf("no file matching '%s' found in archive", targetName)
+}
+
+func (p *Pool) StreamByContentPath(
+	ctx context.Context,
+	nzbDoc *nzb.NZB,
+	contentPath []string,
+	config *StreamConfig,
+) (*Stream, error) {
+	if len(contentPath) == 0 || contentPath[0] == "" {
+		return nil, fmt.Errorf("invalid content path: %s", strings.Join(contentPath, "::"))
+	}
+
+	if config == nil {
+		config = &StreamConfig{}
+	}
+
+	if len(contentPath) == 1 {
+		filename := strings.Trim(contentPath[0], "/")
+		for i := range nzbDoc.Files {
+			if strings.EqualFold(nzbDoc.Files[i].Name(), filename) {
+				return p.streamPlainFile(&nzbDoc.Files[i], config)
+			}
+		}
+		return nil, fmt.Errorf("no file matching '%s' found", filename)
+	}
+
+	archiveName := strings.Trim(contentPath[0], "/")
+	var archiveFile *nzb.File
+	for i := range nzbDoc.Files {
+		if strings.EqualFold(nzbDoc.Files[i].Name(), archiveName) {
+			archiveFile = &nzbDoc.Files[i]
+			break
+		}
+	}
+	if archiveFile == nil {
+		return nil, fmt.Errorf("no archive file matching '%s' found", archiveName)
+	}
+
+	firstSegment, err := p.fetchFirstSegment(ctx, archiveFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch archive header: %w", err)
+	}
+	fileType := DetectFileType(firstSegment.Body, archiveFile.Name())
+
+	ufs := NewUsenetFS(ctx, &UsenetFSConfig{
+		NZB:               nzbDoc,
+		Pool:              p,
+		SegmentBufferSize: config.SegmentBufferSize,
+	})
+
+	var archive Archive
+	switch fileType {
+	case FileTypeRAR:
+		archive = NewUsenetRARArchive(ufs)
+	case FileType7z:
+		archive = NewUsenetSevenZipArchive(ufs)
+	default:
+		return nil, fmt.Errorf("file '%s' is not an archive", archiveName)
+	}
+
+	if err := archive.Open(config.Password); err != nil {
+		return nil, fmt.Errorf("failed to open archive: %w", err)
+	}
+
+	if !archive.IsStreamable() {
+		archive.Close()
+		return nil, fmt.Errorf("non-streamable %s archive", fileType)
+	}
+
+	stream, err := p.streamTargetFromArchive(archive, contentPath[1:], fileType)
+	if err != nil {
+		archive.Close()
+		return nil, err
+	}
+
+	return stream, nil
 }
 
 type StreamSegmentsConfig struct {

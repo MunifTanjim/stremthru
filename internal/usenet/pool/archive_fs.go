@@ -22,7 +22,7 @@ type Archive interface {
 
 type ArchiveFile interface {
 	Name() string
-	UnPackedSize() int64
+	Size() int64
 	PackedSize() int64
 	IsStreamable() bool
 	Open() (io.ReadSeekCloser, error)
@@ -77,7 +77,7 @@ func (afs *ArchiveFS) Open(name string) (fs.File, error) {
 	return &ArchiveVirtualFile{
 		ReadSeekCloser: r,
 		name:           name,
-		size:           af.UnPackedSize(),
+		size:           af.Size(),
 	}, nil
 }
 
@@ -91,7 +91,7 @@ func (afs *ArchiveFS) Stat(name string) (os.FileInfo, error) {
 
 	return &ArchiveVirtualFileInfo{
 		name: name,
-		size: af.UnPackedSize(),
+		size: af.Size(),
 	}, nil
 }
 

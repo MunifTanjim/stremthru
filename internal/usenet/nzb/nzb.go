@@ -58,7 +58,7 @@ type File struct {
 	messageIds []string `xml:"-"`
 }
 
-func (f *File) GetName() string {
+func (f *File) Name() string {
 	return f.name
 }
 
@@ -116,7 +116,7 @@ func ParseBytes(data []byte) (*NZB, error) {
 
 func (n *NZB) TotalSize() (bytes int64) {
 	for i := range n.Files {
-		bytes += n.Files[i].TotalSize()
+		bytes += n.Files[i].Size()
 	}
 	return bytes
 }
@@ -141,10 +141,10 @@ func (n *NZB) GetLargestFileIdx(skip func(filename string) bool) int {
 	largestIdx := -1
 	largestSize := int64(0)
 	for i := range n.Files {
-		if skip != nil && skip(n.Files[i].GetName()) {
+		if skip != nil && skip(n.Files[i].Name()) {
 			continue
 		}
-		size := n.Files[i].TotalSize()
+		size := n.Files[i].Size()
 		if size > largestSize {
 			largestSize = size
 			largestIdx = i
@@ -153,7 +153,7 @@ func (n *NZB) GetLargestFileIdx(skip func(filename string) bool) int {
 	return largestIdx
 }
 
-func (f *File) TotalSize() int64 {
+func (f *File) Size() int64 {
 	if f.totalSize == 0 {
 		var bytes int64
 		for i := range f.Segments {

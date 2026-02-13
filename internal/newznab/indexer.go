@@ -15,7 +15,7 @@ import (
 	newznabcache "github.com/MunifTanjim/stremthru/internal/newznab/cache"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
 	newznab_indexer "github.com/MunifTanjim/stremthru/internal/newznab/indexer"
-	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
@@ -223,7 +223,7 @@ func (sti stremThruIndexer) UnwrapLink(id string) (*url.URL, error) {
 }
 
 func (sti stremThruIndexer) Download(link string) (io.ReadCloser, http.Header, error) {
-	file, err := shared.FetchNZBFile(link, "", log)
+	file, err := nzb_info.FetchNZBFile(link, "", log)
 	if err != nil {
 		return nil, nil, err
 	}

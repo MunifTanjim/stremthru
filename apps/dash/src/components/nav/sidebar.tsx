@@ -294,8 +294,12 @@ function useNavItems(): NavItem[] {
             title: "NZB",
           },
           {
-            path: "/dash/usenet/queue",
-            title: "Queue 🧪",
+            path: "/dash/usenet/nzb-inspector",
+            title: "NZB Inspector",
+          },
+          {
+            path: "/dash/usenet/nzb-queue",
+            title: "NZB Queue",
           },
         ],
         path: "/dash/usenet",

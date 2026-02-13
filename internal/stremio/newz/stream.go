@@ -17,6 +17,7 @@ import (
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	znabsearch "github.com/MunifTanjim/stremthru/internal/znab/search"
 	"github.com/MunifTanjim/stremthru/store"
@@ -325,7 +326,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			wStream.R.Store.Name = ""
 			wStream.R.Store.IsCached = false
 			wStream.R.Store.IsProxied = false
-			wasPreviouslySelected := shared.IsNZBCached(wStream.R.Hash)
+			wasPreviouslySelected := nzb_info.IsNZBFileCached(wStream.R.Hash)
 			stream, err := streamTemplate.Execute(wStream.Stream, wStream.R)
 			if err != nil {
 				SendError(w, r, err)

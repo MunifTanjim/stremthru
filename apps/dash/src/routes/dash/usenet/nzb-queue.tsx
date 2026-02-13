@@ -185,7 +185,7 @@ const columns: ColumnDef<NzbQueueItem>[] = [
   }),
 ];
 
-export const Route = createFileRoute("/dash/usenet/queue")({
+export const Route = createFileRoute("/dash/usenet/nzb-queue")({
   component: RouteComponent,
   staticData: {
     crumb: "Queue",

@@ -50,7 +50,7 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, int64(1234567890), file1.Date)
 	assert.Len(t, file1.Groups, 2)
 	assert.Equal(t, 2, file1.SegmentCount())
-	assert.Equal(t, int64(950000), file1.TotalSize())
+	assert.Equal(t, int64(950000), file1.Size())
 }
 
 func TestParse_WithoutHead(t *testing.T) {
