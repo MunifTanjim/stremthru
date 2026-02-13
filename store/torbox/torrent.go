@@ -48,17 +48,18 @@ type CheckTorrentsCachedData []CheckTorrentsCachedDataItem
 
 type CheckTorrentsCachedParams struct {
 	Ctx
-	Hashes    []string
-	ListFiles bool
+	Hashes    []string `json:"hashes"`
+	ListFiles bool     `json:"-"`
 }
 
 func (c APIClient) CheckTorrentsCached(params *CheckTorrentsCachedParams) (APIResponse[CheckTorrentsCachedData], error) {
-	form := &url.Values{"hash": params.Hashes}
-	form.Add("format", "list")
-	form.Add("list_files", strconv.FormatBool(params.ListFiles))
-	params.Form = form
+	params.JSON = params
+	params.Query = &url.Values{
+		"format":     {"list"},
+		"list_files": {strconv.FormatBool(params.ListFiles)},
+	}
 	response := &Response[CheckTorrentsCachedData]{}
-	res, err := c.Request("GET", "/v1/api/torrents/checkcached", params, response)
+	res, err := c.Request("POST", "/v1/api/torrents/checkcached", params, response)
 	return newAPIResponse(res, response.Data, response.Detail), err
 }
 
