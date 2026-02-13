@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.96.8](https://github.com/MunifTanjim/stremthru/compare/0.96.7...0.96.8) (2026-02-13)
+
+
+### Bug Fixes
+
+* **animeapi:** process newly added column in dataset ([476bd7a](https://github.com/MunifTanjim/stremthru/commit/476bd7ad4d01a60337c056c92b40601d5dd50b65))
+* **store/torbox:** sleep 1s after each 500 hash check ([addcf53](https://github.com/MunifTanjim/stremthru/commit/addcf5358e4cf99e9fe73d674306424fe74ec64c))
+* **util:** auto delete corrupted json dataset file ([b2ea49d](https://github.com/MunifTanjim/stremthru/commit/b2ea49d5d74af451e88a8ef0183a1361cf79f33c))
+
 ## [0.96.7](https://github.com/MunifTanjim/stremthru/compare/0.96.6...0.96.7) (2026-02-08)
 
 
