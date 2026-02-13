@@ -722,6 +722,176 @@ Generate direct link for a file link.
 > [!NOTE]
 > The generated direct link should be valid for 12 hours.
 
+#### Add Newz
+
+**`POST /v0/store/newz`**
+
+Add NZB for download.
+
+**Request**:
+
+NZB Link:
+
+```json
+{
+  "link": "string"
+}
+```
+
+NZB File:
+
+`multipart/form-data` request with an NZB file in `file` field.
+
+**Response**:
+
+```json
+{
+  "data": {
+    "id": "string",
+    "hash": "string",
+    "status": "NewzStatus"
+  }
+}
+```
+
+#### List Newz
+
+**`GET /v0/store/newz`**
+
+List newz on user's account.
+
+**Query Parameter**:
+
+- `limit`: min `1`, max `500`, default `100`
+- `offset`: min `0`, default `0`
+
+**Response**:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "id": "string",
+        "hash": "string",
+        "name": "string",
+        "size": "int",
+        "status": "NewzStatus",
+        "added_at": "datetime"
+      }
+    ],
+    "total_items": "int"
+  }
+}
+```
+
+#### Get Newz
+
+**`GET /v0/store/newz/{newzId}`**
+
+Get newz on user's account.
+
+**Path Parameter**:
+
+- `newzId`: newz id
+
+**Response**:
+
+```json
+{
+  "data": {
+    "id": "string",
+    "hash": "string",
+    "name": "string",
+    "size": "int",
+    "status": "NewzStatus",
+    "files": [
+      {
+        "index": "int",
+        "link": "string",
+        "name": "string",
+        "path": "string",
+        "size": "int",
+        "video_hash": "string"
+      }
+    ],
+    "added_at": "datetime"
+  }
+}
+```
+
+#### Remove Newz
+
+**`DELETE /v0/store/newz/{newzId}`**
+
+Remove newz from user's account.
+
+**Path Parameter**:
+
+- `newzId`: newz id
+
+#### Check Newz
+
+**`GET /v0/store/newz/check`**
+
+Check NZB hashes.
+
+**Query Parameter**:
+
+- `hash`: comma separated hashes (min `1`, max `500`)
+
+**Response**:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "hash": "string",
+        "status": "NewzStatus",
+        "files": [
+          {
+            "index": "int",
+            "link": "string",
+            "name": "string",
+            "path": "string",
+            "size": "int",
+            "video_hash": "string"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Generate Newz Link
+
+**`POST /v0/store/newz/link/generate`**
+
+Generate direct link for a newz file link.
+
+**Request**:
+
+```json
+{
+  "link": "string"
+}
+```
+
+**Response**:
+
+```json
+{
+  "data": {
+    "link": "string"
+  }
+}
+```
+
+> [!NOTE]
+> The generated direct link should be valid for 12 hours.
+
 ### Meta
 
 #### Get ID Map
@@ -777,6 +947,17 @@ Extra Features for Stremio.
 - `processing`
 - `downloaded`
 - `uploading`
+- `failed`
+- `invalid`
+- `unknown`
+
+#### NewzStatus
+
+- `cached`
+- `queued`
+- `downloading`
+- `processing`
+- `downloaded`
 - `failed`
 - `invalid`
 - `unknown`

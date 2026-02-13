@@ -20,6 +20,7 @@ const (
 	StoreNamePikPak     StoreName = "pikpak"
 	StoreNamePremiumize StoreName = "premiumize"
 	StoreNameRealDebrid StoreName = "realdebrid"
+	StoreNameStremThru  StoreName = "stremthru"
 	StoreNameTorBox     StoreName = "torbox"
 )
 
@@ -34,6 +35,7 @@ const (
 	StoreCodePikPak     StoreCode = "pp"
 	StoreCodePremiumize StoreCode = "pm"
 	StoreCodeRealDebrid StoreCode = "rd"
+	StoreCodeStremThru  StoreCode = "st"
 	StoreCodeTorBox     StoreCode = "tb"
 )
 
@@ -46,6 +48,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNamePikPak:     StoreCodePikPak,
 	StoreNamePremiumize: StoreCodePremiumize,
 	StoreNameRealDebrid: StoreCodeRealDebrid,
+	StoreNameStremThru:  StoreCodeStremThru,
 	StoreNameTorBox:     StoreCodeTorBox,
 }
 
@@ -58,6 +61,7 @@ var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodePikPak:     StoreNamePikPak,
 	StoreCodePremiumize: StoreNamePremiumize,
 	StoreCodeRealDebrid: StoreNameRealDebrid,
+	StoreCodeStremThru:  StoreNameStremThru,
 	StoreCodeTorBox:     StoreNameTorBox,
 }
 
@@ -334,6 +338,7 @@ type CheckNewzParams struct {
 type CheckNewzDataItem struct {
 	Hash   string     `json:"hash"`
 	Status NewzStatus `json:"status"`
+	Files  []NewzFile `json:"files"`
 }
 
 type CheckNewzData struct {
@@ -389,12 +394,43 @@ func (f *NewzFile) GetLink() string {
 }
 
 type GetNewzData struct {
-	Id     string     `json:"id"`
-	Hash   string     `json:"hash"`
-	Name   string     `json:"name"`
-	Size   int64      `json:"size"`
-	Status NewzStatus `json:"status"`
-	Files  []NewzFile `json:"files"`
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  NewzStatus `json:"status"`
+	Files   []NewzFile `json:"files"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
+type ListNewzParams struct {
+	Ctx
+	Limit    int // min 1, max 500, default 100
+	Offset   int // default 0
+	ClientIP string
+}
+
+type ListNewzDataItem struct {
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  NewzStatus `json:"status"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
+type ListNewzData struct {
+	Items      []ListNewzDataItem `json:"items"`
+	TotalItems int                `json:"total_items"`
+}
+
+type RemoveNewzParams struct {
+	Ctx
+	Id string
+}
+
+type RemoveNewzData struct {
+	Id string `json:"id"`
 }
 
 type GenerateNewzLinkParams struct {
@@ -409,8 +445,11 @@ type GenerateNewzLinkData struct {
 
 type NewzStore interface {
 	GetName() StoreName
+	GetUser(params *GetUserParams) (*User, error)
 	CheckNewz(params *CheckNewzParams) (*CheckNewzData, error)
 	AddNewz(params *AddNewzParams) (*AddNewzData, error)
 	GetNewz(params *GetNewzParams) (*GetNewzData, error)
+	ListNewz(params *ListNewzParams) (*ListNewzData, error)
+	RemoveNewz(params *RemoveNewzParams) (*RemoveNewzData, error)
 	GenerateNewzLink(params *GenerateNewzLinkParams) (*GenerateNewzLinkData, error)
 }

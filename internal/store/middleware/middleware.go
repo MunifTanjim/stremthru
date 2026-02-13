@@ -107,3 +107,16 @@ func RequireStore(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func EnsureNewzStore(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := storecontext.Get(r)
+
+		if _, ok := ctx.Store.(store.NewzStore); !ok {
+			server.ErrorBadRequest(r).WithMessage("store does not support newz").Send(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
