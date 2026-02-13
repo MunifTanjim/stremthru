@@ -245,37 +245,69 @@ type contentInfo struct {
 
 func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp string, idr *ParsedId) (*contentInfo, error) {
 	if idr.isUsenet {
-		if s.GetName() != store.StoreNameTorBox {
+		switch s.GetName() {
+		case store.StoreNameStremThru:
+			newzStore, ok := s.(store.NewzStore)
+			if !ok {
+				return nil, nil
+			}
+			params := &store.GetNewzParams{
+				Id: id,
+			}
+			params.APIKey = storeToken
+			newz, err := newzStore.GetNewz(params)
+			if err != nil {
+				return nil, err
+			}
+			cInfo := &store.GetMagnetData{
+				AddedAt: newz.AddedAt,
+				Hash:    newz.Hash,
+				Id:      newz.Id,
+				Name:    newz.Name,
+				Size:    newz.Size,
+				Status:  store.MagnetStatus(newz.Status),
+			}
+			for _, f := range newz.Files {
+				cInfo.Files = append(cInfo.Files, store.MagnetFile{
+					Idx:       f.Idx,
+					Path:      f.Path,
+					Name:      f.Name,
+					Size:      f.Size,
+					Link:      f.Link,
+					VideoHash: f.VideoHash,
+				})
+			}
+			return &contentInfo{cInfo, ""}, nil
+		case store.StoreNameTorBox:
+			params := &stremio_store_usenet.GetNewsParams{
+				Id: id,
+			}
+			params.APIKey = storeToken
+			news, err := stremio_store_usenet.GetNews(params, s.GetName())
+			if err != nil {
+				return nil, err
+			}
+			cInfo := &store.GetMagnetData{
+				AddedAt: news.AddedAt,
+				Hash:    news.Hash,
+				Id:      news.Id,
+				Name:    news.Name,
+				Size:    news.Size,
+				Status:  news.Status,
+			}
+			for _, f := range news.Files {
+				cInfo.Files = append(cInfo.Files, store.MagnetFile{
+					Idx:       f.Idx,
+					Name:      f.Name,
+					Size:      f.Size,
+					Link:      f.Link,
+					VideoHash: f.VideoHash,
+				})
+			}
+			return &contentInfo{cInfo, news.GetLargestFileName()}, nil
+		default:
 			return nil, nil
 		}
-
-		params := &stremio_store_usenet.GetNewsParams{
-			Id: id,
-		}
-		params.APIKey = storeToken
-		news, err := stremio_store_usenet.GetNews(params, s.GetName())
-		if err != nil {
-			return nil, err
-		}
-		cInfo := &store.GetMagnetData{
-			AddedAt: news.AddedAt,
-			Hash:    news.Hash,
-			Id:      news.Id,
-			Name:    news.Name,
-			Size:    news.Size,
-			Status:  news.Status,
-		}
-		for _, f := range news.Files {
-			cInfo.Files = append(cInfo.Files, store.MagnetFile{
-				Idx:       f.Idx,
-				Name:      f.Name,
-				Size:      f.Size,
-				Link:      f.Link,
-				VideoHash: f.VideoHash,
-			})
-
-		}
-		return &contentInfo{cInfo, news.GetLargestFileName()}, nil
 	}
 
 	if idr.isWebDL {

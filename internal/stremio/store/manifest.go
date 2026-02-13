@@ -71,6 +71,15 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 			names := []string{}
 			if user, err := util.ParseBasicAuth(ud.StoreToken); err == nil {
 				if password := config.ProxyAuthPassword.GetPassword(user.Username); password != "" && password == user.Password {
+					if ud.EnableUsenet {
+						storeName := store.StoreNameStremThru
+						storeCode := storeName.Code()
+
+						usenetCode := string(storeCode) + "-usenet"
+						idPrefixes = append(idPrefixes, getIdPrefix(usenetCode))
+						catalogs = append(catalogs, getManifestCatalog(usenetCode, ud.HideCatalog))
+					}
+
 					for _, name := range config.StoreAuthToken.ListStores(user.Username) {
 						storeName := store.StoreName(name)
 						storeCode := storeName.Code()

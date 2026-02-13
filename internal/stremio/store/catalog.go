@@ -52,50 +52,80 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 
 	idPrefix := getIdPrefix(idStoreCode)
 
-	cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
-	if !catalogCache.Get(cacheKey, &items) {
-		storeName := s.GetName()
-
-		offset := 0
-		hasMore := true
-		for hasMore && offset < max_fetch_list_items {
-			start := time.Now()
-			params := &stremio_store_usenet.ListNewsParams{
-				Limit:    fetch_list_limit,
-				Offset:   offset,
+	switch s.GetName() {
+	case store.StoreNameStremThru:
+		if newzStore, ok := s.(store.NewzStore); ok {
+			params := &store.ListNewzParams{
 				ClientIP: clientIp,
+				Limit:    max_fetch_list_items,
 			}
 			params.APIKey = storeToken
-			res, err := stremio_store_usenet.ListNews(params, storeName)
+			res, err := newzStore.ListNewz(params)
 			if err != nil {
-				log.Error("failed to list news", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
-				break
+				log.Error("failed to list newz", "error", err, "store.name", s.GetName())
+				return items
 			}
-			count := len(res.Items)
-			log.Debug("fetched news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
-			start = time.Now()
 			for i := range res.Items {
 				item := &res.Items[i]
-				if item.Status == store.MagnetStatusDownloaded {
+				if item.Status == store.NewzStatusDownloaded {
 					cItem := CachedCatalogItem{stremio.MetaPreview{
 						Id:          idPrefix + item.Id,
 						Type:        ContentTypeOther,
 						Name:        item.Name,
 						PosterShape: stremio.MetaPosterShapePoster,
 					}, item.Hash}
-					cItem.Description = getMetaPreviewDescriptionForUsenet(cItem.Hash, item.Name, item.GetLargestFileName())
+					cItem.Description = getMetaPreviewDescriptionForUsenet(cItem.Hash, item.Name, "")
 					items = append(items, cItem)
 				}
 			}
-			log.Debug("processed news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
-
-			offset += fetch_list_limit
-			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
-
-			time.Sleep(500 * time.Millisecond)
 		}
-		catalogCache.Add(cacheKey, items)
+	default:
+		cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
+		if !catalogCache.Get(cacheKey, &items) {
+			storeName := s.GetName()
+
+			offset := 0
+			hasMore := true
+			for hasMore && offset < max_fetch_list_items {
+				start := time.Now()
+				params := &stremio_store_usenet.ListNewsParams{
+					Limit:    fetch_list_limit,
+					Offset:   offset,
+					ClientIP: clientIp,
+				}
+				params.APIKey = storeToken
+				res, err := stremio_store_usenet.ListNews(params, storeName)
+				if err != nil {
+					log.Error("failed to list news", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
+					break
+				}
+				count := len(res.Items)
+				log.Debug("fetched news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
+
+				start = time.Now()
+				for i := range res.Items {
+					item := &res.Items[i]
+					if item.Status == store.MagnetStatusDownloaded {
+						cItem := CachedCatalogItem{stremio.MetaPreview{
+							Id:          idPrefix + item.Id,
+							Type:        ContentTypeOther,
+							Name:        item.Name,
+							PosterShape: stremio.MetaPosterShapePoster,
+						}, item.Hash}
+						cItem.Description = getMetaPreviewDescriptionForUsenet(cItem.Hash, item.Name, item.GetLargestFileName())
+						items = append(items, cItem)
+					}
+				}
+				log.Debug("processed news", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
+
+				offset += fetch_list_limit
+				hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
+
+				time.Sleep(500 * time.Millisecond)
+			}
+			catalogCache.Add(cacheKey, items)
+		}
 	}
 
 	return items
@@ -313,10 +343,12 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 
 	ctx, err := ud.GetRequestContext(r, idr)
 	if err != nil || ctx.Store == nil {
-		if err != nil {
-			LogError(r, "failed to get request context", err)
+		msg := "failed to get request context"
+		if err == nil {
+			msg = "failed to get store context"
 		}
-		shared.ErrorBadRequest(r, "").Send(w, r)
+		LogError(r, msg, err)
+		shared.ErrorBadRequest(r, msg).Send(w, r)
 		return
 	}
 

@@ -125,7 +125,10 @@ func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*Ctx, erro
 		}
 	}
 
-	if storeToken != "" {
+	if idr.storeName == store.StoreNameStremThru {
+		ctx.Store = shared.GetStore(string(idr.storeName))
+		ctx.StoreAuthToken = ud.StoreToken
+	} else if storeToken != "" {
 		ctx.Store = shared.GetStore(string(idr.storeName))
 		ctx.StoreAuthToken = storeToken
 	}
