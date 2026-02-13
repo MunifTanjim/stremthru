@@ -22,6 +22,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/pikpak"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
+	"github.com/MunifTanjim/stremthru/store/stremthru"
 	"github.com/MunifTanjim/stremthru/store/torbox"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -58,6 +59,7 @@ var rdStore = realdebrid.NewStoreClient(&realdebrid.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("realdebrid")),
 	UserAgent:  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
 })
+var stStore = stremthru.NewStoreClient(&stremthru.StoreClientConfig{})
 var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 	UserAgent:  config.StoreClientUserAgent,
@@ -81,6 +83,8 @@ func GetStore(name string) store.Store {
 		return pmStore
 	case store.StoreNameRealDebrid:
 		return rdStore
+	case store.StoreNameStremThru:
+		return stStore
 	case store.StoreNameTorBox:
 		return tbStore
 	default:
@@ -106,6 +110,8 @@ func GetStoreByCode(code string) store.Store {
 		return pmStore
 	case store.StoreCodeRealDebrid:
 		return rdStore
+	case store.StoreCodeStremThru:
+		return stStore
 	case store.StoreCodeTorBox:
 		return tbStore
 	default:

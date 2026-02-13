@@ -582,17 +582,17 @@ func (c *StoreClient) GetNewz(params *store.GetNewzParams) (*store.GetNewzData, 
 	}
 	und := &res.Data
 	data := &store.GetNewzData{
-		Id:     strconv.Itoa(und.Id),
-		Hash:   und.Hash,
-		Name:   und.Name,
-		Size:   und.Size,
-		Status: store.NewzStatusUnknown,
-	}
-	if und.DownloadState == TorrentDownloadStateDownloading {
-		data.Status = store.NewzStatusDownloading
+		Id:      strconv.Itoa(und.Id),
+		Hash:    und.Hash,
+		Name:    und.Name,
+		Size:    und.Size,
+		Status:  store.NewzStatusUnknown,
+		AddedAt: und.GetAddedAt(),
 	}
 	if und.DownloadFinished && und.DownloadPresent {
 		data.Status = store.NewzStatusDownloaded
+	} else if und.Progress > 0 {
+		data.Status = store.NewzStatusDownloading
 	}
 	for i := range und.Files {
 		f := &und.Files[i]
@@ -606,6 +606,66 @@ func (c *StoreClient) GetNewz(params *store.GetNewzParams) (*store.GetNewzData, 
 		}
 		data.Files = append(data.Files, file)
 	}
+	return data, nil
+}
+
+func (c *StoreClient) ListNewz(params *store.ListNewzParams) (*store.ListNewzData, error) {
+	res, err := c.client.ListUsenetDownload(&ListUsenetDownloadParams{
+		Ctx:         params.Ctx,
+		BypassCache: true,
+		Limit:       params.Limit,
+		Offset:      params.Offset,
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := &store.ListNewzData{
+		Items:      []store.ListNewzDataItem{},
+		TotalItems: 0,
+	}
+	for _, und := range res.Data {
+		item := store.ListNewzDataItem{
+			Id:      strconv.Itoa(und.Id),
+			Hash:    und.Hash,
+			Name:    und.Name,
+			Size:    und.Size,
+			Status:  store.NewzStatusUnknown,
+			AddedAt: und.GetAddedAt(),
+		}
+		if und.DownloadFinished && und.DownloadPresent {
+			item.Status = store.NewzStatusDownloaded
+		} else if und.Progress > 0 {
+			item.Status = store.NewzStatusDownloading
+		}
+		data.Items = append(data.Items, item)
+	}
+	count := len(data.Items)
+	// torbox returns 1 extra item
+	if count > params.Limit {
+		data.Items = data.Items[0:params.Limit]
+		count = params.Limit
+	}
+	data.TotalItems = params.Offset + count
+	if count == params.Limit {
+		data.TotalItems += 1
+	}
+	return data, nil
+}
+
+func (c *StoreClient) RemoveNewz(params *store.RemoveNewzParams) (*store.RemoveNewzData, error) {
+	id, err := strconv.Atoi(params.Id)
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.client.ControlUsenetDownload(&ControlUsenetDownloadParams{
+		Ctx:       params.Ctx,
+		UsenetId:  id,
+		Operation: ControlUsenetDownloadOperationDelete,
+	})
+	if err != nil {
+		return nil, err
+	}
+	data := &store.RemoveNewzData{Id: params.Id}
 	return data, nil
 }
 
