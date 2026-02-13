@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/animetosho"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
+	"github.com/MunifTanjim/stremthru/internal/job"
 	"github.com/MunifTanjim/stremthru/internal/job_log"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -30,9 +31,17 @@ func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make(map[string]*WorkerDetails, len(worker.WorkerDetailsById))
+	data := make(map[string]*WorkerDetails, len(worker.WorkerDetailsById)+len(job.JobDetailsById))
 
 	for name, details := range worker.WorkerDetailsById {
+		data[name] = &WorkerDetails{
+			Id:       details.Id,
+			Title:    details.Title,
+			Interval: details.Interval,
+		}
+	}
+
+	for name, details := range job.JobDetailsById {
 		data[name] = &WorkerDetails{
 			Id:       details.Id,
 			Title:    details.Title,
@@ -55,9 +64,19 @@ func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, data)
 }
 
+func isValidWorkerOrJobId(name string) bool {
+	if _, ok := worker.WorkerDetailsById[name]; ok {
+		return true
+	}
+	if _, ok := job.JobDetailsById[name]; ok {
+		return true
+	}
+	return false
+}
+
 func handleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
-	if _, ok := worker.WorkerDetailsById[name]; !ok {
+	if !isValidWorkerOrJobId(name) {
 		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
@@ -73,7 +92,7 @@ func handleGetWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 
 func handlePurgeWorkerJobLogs(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
-	if _, ok := worker.WorkerDetailsById[name]; !ok {
+	if !isValidWorkerOrJobId(name) {
 		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
@@ -164,7 +183,7 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		SendData(w, r, 200, files)
 	default:
-		if _, ok := worker.WorkerDetailsById[name]; ok {
+		if isValidWorkerOrJobId(name) {
 			ErrorBadRequest(r).WithMessage("worker does not support temporary files").Send(w, r)
 		} else {
 			ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
@@ -174,7 +193,7 @@ func handleGetWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 
 func handleDeleteWorkerJobLog(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
-	if _, ok := worker.WorkerDetailsById[name]; !ok {
+	if !isValidWorkerOrJobId(name) {
 		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}
@@ -200,7 +219,7 @@ func handleWorkerJobLog(w http.ResponseWriter, r *http.Request) {
 
 func handlePurgeWorkerTemporaryFiles(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("id")
-	if _, ok := worker.WorkerDetailsById[name]; !ok {
+	if !isValidWorkerOrJobId(name) {
 		ErrorBadRequest(r).WithMessage("invalid worker id").Send(w, r)
 		return
 	}

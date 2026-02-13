@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/endpoint"
+	"github.com/MunifTanjim/stremthru/internal/job"
 	"github.com/MunifTanjim/stremthru/internal/posthog"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
@@ -42,6 +43,9 @@ func main() {
 
 	stopWorkers := worker.InitWorkers()
 	defer stopWorkers()
+
+	stopJobs := job.InitJobs()
+	defer stopJobs()
 
 	mux := http.NewServeMux()
 

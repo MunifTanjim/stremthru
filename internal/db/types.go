@@ -83,6 +83,52 @@ func (t *DateOnly) Scan(value any) error {
 	return nil
 }
 
+type JSONB[T any] struct {
+	blob []byte
+	Data T
+	Null bool
+}
+
+func (jb *JSONB[T]) IsZero() bool {
+	return jb.Null
+}
+
+func (jb *JSONB[T]) marshal() (err error) {
+	if jb.Null {
+		jb.blob = nil
+		return nil
+	}
+	jb.blob, err = json.Marshal(jb.Data)
+	return err
+}
+
+func (jb *JSONB[T]) unmarshal() error {
+	if len(jb.blob) == 0 || (len(jb.blob) == 4 && string(jb.blob) == "null") {
+		jb.Null = true
+		return nil
+	}
+	return json.Unmarshal(jb.blob, &jb.Data)
+}
+
+func (jb JSONB[T]) Value() (driver.Value, error) {
+	err := jb.marshal()
+	return jb.blob, err
+}
+
+func (jb *JSONB[T]) Scan(value any) error {
+	switch v := value.(type) {
+	case []byte:
+		jb.blob = v
+	case string:
+		jb.blob = []byte(v)
+	case nil:
+		jb.blob = nil
+	default:
+		return errors.New("failed to convert value")
+	}
+	return jb.unmarshal()
+}
+
 type NullString struct {
 	String string
 }
