@@ -68,6 +68,8 @@ func main() {
 	addr := ":" + config.Port
 	if config.Environment == config.EnvDev {
 		addr = "localhost" + addr
+	} else {
+		addr = config.Host + addr
 	}
 	server := &http.Server{Addr: addr, Handler: handler}
 

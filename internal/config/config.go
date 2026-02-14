@@ -61,6 +61,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_LANDING_PAGE":                           "{}",
 		"STREMTHRU_LOG_FORMAT":                             "json",
 		"STREMTHRU_LOG_LEVEL":                              "INFO",
+		"STREMTHRU_HOST":                                   "0.0.0.0",
 		"STREMTHRU_PORT":                                   "8080",
 		"STREMTHRU_STORE_CONTENT_PROXY":                    "*:true",
 		"STREMTHRU_STORE_TUNNEL":                           "*:true",
@@ -387,6 +388,7 @@ type Config struct {
 	LogLevel  llog.Level
 	LogFormat string
 
+	Host                        string
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
 	ProxyAuthPassword           UserPasswordMap
@@ -625,6 +627,7 @@ var config = func() Config {
 		LogLevel:  logLevel,
 		LogFormat: logFormat,
 
+		Host:                        getEnv("STREMTHRU_HOST"),
 		Port:                        getEnv("STREMTHRU_PORT"),
 		ProxyAuthPassword:           proxyAuthPasswordMap,
 		AuthAdmin:                   authAdminMap,
@@ -660,6 +663,7 @@ var config = func() Config {
 var LogLevel = config.LogLevel
 var LogFormat = config.LogFormat
 
+var Host = config.Host
 var Port = config.Port
 var ProxyAuthPassword = config.ProxyAuthPassword
 var AuthAdmin = config.AuthAdmin
@@ -742,6 +746,7 @@ func PrintConfig(state *AppState) {
 	l.Println("====== StremThru =======")
 	l.Printf(" Time: %v\n", ServerStartTime.Format(time.RFC3339))
 	l.Printf(" Version: %v\n", Version)
+	l.Printf(" Host: %v\n", Host)
 	l.Printf(" Port: %v\n", Port)
 	if Environment != "" {
 		l.Printf(" Env: %v\n", Environment)
