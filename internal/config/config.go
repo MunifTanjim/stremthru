@@ -206,6 +206,7 @@ const (
 	FeatureStremioTorz     string = "stremio_torz"
 	FeatureStremioWrap     string = "stremio_wrap"
 	FeatureVault           string = "vault"
+	FeatureMediaProbe      string = "media_probe"
 )
 
 var features = []string{
@@ -219,6 +220,7 @@ var features = []string{
 	FeatureStremioTorz,
 	FeatureStremioWrap,
 	FeatureVault,
+	FeatureMediaProbe,
 }
 
 type FeatureConfig struct {
@@ -484,7 +486,7 @@ var config = func() Config {
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI")
 
 	feature := FeatureConfig{
-		disabled: []string{FeatureAnime, FeatureStremioP2P},
+		disabled: []string{FeatureAnime, FeatureStremioP2P, FeatureMediaProbe},
 	}
 	for _, name := range strings.FieldsFunc(strings.TrimSpace(getEnv("STREMTHRU_FEATURE")), func(c rune) bool {
 		return c == ','
