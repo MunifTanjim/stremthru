@@ -7,6 +7,8 @@
   "scripts": {
     "dash:dev": "pnpm run -F dash dev",
     "dash:build": "pnpm run -F dash build",
+    "docs:dev": "pnpm run -F docs dev",
+    "docs:build": "pnpm run -F docs build",
     "lint:commit:current": "commitlint --edit",
     "lint:staged": "lint-staged",
     "test": "echo \"Error: no test specified\" && exit 1",

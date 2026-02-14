@@ -6,6 +6,8 @@
 ## Build artifacts
 build
 dist
+docs/.vitepress/cache
+docs/.vitepress/dist
 
 ## Logs
 logs
