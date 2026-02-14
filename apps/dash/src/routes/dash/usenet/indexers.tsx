@@ -377,10 +377,10 @@ function NewznabIndexerFormSheet({
   );
 }
 
-export const Route = createFileRoute("/dash/vault/newznab-indexers")({
+export const Route = createFileRoute("/dash/usenet/indexers")({
   component: RouteComponent,
   staticData: {
-    crumb: "Newznab Indexers",
+    crumb: "Indexers",
   },
 });
 
@@ -428,7 +428,7 @@ function RouteComponent() {
         <div className="text-muted-foreground text-sm">Loading...</div>
       ) : newznabIndexers.isError ? (
         <div className="text-sm text-red-600">
-          Error loading Newznab indexers
+          Error loading Newznab Indexers
         </div>
       ) : (
         <DataTable table={table} />

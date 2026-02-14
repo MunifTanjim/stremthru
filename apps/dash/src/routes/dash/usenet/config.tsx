@@ -224,12 +224,12 @@ function PoolInfoCard() {
               <Item className="bg-muted/50 flex items-center gap-4 rounded-md px-3 py-2 text-sm">
                 <ItemContent>
                   <ItemTitle>
-                    Add provider in{" "}
+                    Add a{" "}
                     <Link
                       className="text-primary underline underline-offset-4"
-                      to="/dash/vault/usenet-servers"
+                      to="/dash/usenet/servers"
                     >
-                      Vault
+                      Usenet Server
                     </Link>
                   </ItemTitle>
                 </ItemContent>
