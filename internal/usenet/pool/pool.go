@@ -396,6 +396,18 @@ func (p *Pool) HasProvider(serverId string) bool {
 	return false
 }
 
+func (p *Pool) HasActiveConnections() bool {
+	p.providersMutex.RLock()
+	defer p.providersMutex.RUnlock()
+
+	for _, provider := range p.providers {
+		if provider.Stat().AcquiredResources() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *Pool) GetAcquiredConnectionCount(providerId string) int {
 	p.providersMutex.RLock()
 	defer p.providersMutex.RUnlock()
@@ -406,4 +418,58 @@ func (p *Pool) GetAcquiredConnectionCount(providerId string) int {
 		}
 	}
 	return 0
+}
+
+type ProviderInfo struct {
+	ID                string         `json:"id"`
+	State             nntp.PoolState `json:"state"`
+	Priority          int            `json:"priority"`
+	IsBackup          bool           `json:"is_backup"`
+	MaxConnections    int            `json:"max_connections"`
+	TotalConnections  int            `json:"total_connections"`
+	ActiveConnections int            `json:"active_connections"`
+	IdleConnections   int            `json:"idle_connections"`
+}
+
+type PoolInfo struct {
+	TotalProviders    int            `json:"total_providers"`
+	MaxConnections    int            `json:"max_connections"`
+	ActiveConnections int            `json:"active_connections"`
+	IdleConnections   int            `json:"idle_connections"`
+	Providers         []ProviderInfo `json:"providers"`
+}
+
+func (p *Pool) GetPoolInfo() PoolInfo {
+	p.providersMutex.RLock()
+	defer p.providersMutex.RUnlock()
+
+	info := PoolInfo{
+		Providers: make([]ProviderInfo, 0, len(p.providers)),
+	}
+
+	for _, provider := range p.providers {
+		stat := provider.Stat()
+
+		pi := ProviderInfo{
+			ID:                provider.Id(),
+			State:             provider.GetState(),
+			Priority:          provider.priority,
+			IsBackup:          provider.isBackup,
+			MaxConnections:    int(provider.MaxSize()),
+			TotalConnections:  int(stat.TotalResources()),
+			ActiveConnections: int(stat.AcquiredResources()),
+			IdleConnections:   int(stat.IdleResources()),
+		}
+
+		if provider.IsOnline() {
+			info.MaxConnections += pi.MaxConnections
+			info.ActiveConnections += pi.ActiveConnections
+			info.IdleConnections += pi.IdleConnections
+		}
+		info.Providers = append(info.Providers, pi)
+	}
+
+	info.TotalProviders = len(info.Providers)
+
+	return info
 }
