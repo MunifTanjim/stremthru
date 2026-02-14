@@ -483,10 +483,10 @@ function UsenetServerFormSheet({
   );
 }
 
-export const Route = createFileRoute("/dash/vault/usenet-servers")({
+export const Route = createFileRoute("/dash/usenet/servers")({
   component: RouteComponent,
   staticData: {
-    crumb: "Usenet Servers",
+    crumb: "Servers",
   },
 });
 
@@ -533,7 +533,7 @@ function RouteComponent() {
       {usenetServers.isLoading ? (
         <div className="text-muted-foreground text-sm">Loading...</div>
       ) : usenetServers.isError ? (
-        <div className="text-sm text-red-600">Error loading Usenet servers</div>
+        <div className="text-sm text-red-600">Error loading Usenet Servers</div>
       ) : (
         <DataTable table={table} />
       )}

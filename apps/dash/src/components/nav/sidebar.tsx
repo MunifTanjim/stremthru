@@ -290,6 +290,14 @@ function useNavItems(): NavItem[] {
             title: "Config",
           },
           {
+            path: "/dash/usenet/indexers",
+            title: "Indexers",
+          },
+          {
+            path: "/dash/usenet/servers",
+            title: "Servers",
+          },
+          {
             path: "/dash/usenet/nzb",
             title: "NZB",
           },
@@ -331,14 +339,6 @@ function useNavItems(): NavItem[] {
       vault.items!.push({
         path: "/dash/vault/torznab-indexers",
         title: "Torznab Indexers",
-      });
-      vault.items!.push({
-        path: "/dash/vault/usenet-servers",
-        title: "Usenet Servers",
-      });
-      vault.items!.push({
-        path: "/dash/vault/newznab-indexers",
-        title: "Newznab Indexers",
       });
       items.push(vault);
 
