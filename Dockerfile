@@ -1,4 +1,14 @@
-FROM golang:1.25 AS builder
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+
+RUN apk add zig
+
+COPY --from=xx / /
+
+ARG TARGETOS TARGETARCH TARGETPLATFORM
+
+RUN xx-apk add musl-dev
 
 WORKDIR /workspace
 
@@ -14,7 +24,10 @@ COPY *.go ./
 
 COPY apps/dash/.output/public/ ./internal/dash/fs/
 
-RUN CGO_ENABLED=1 GOOS=linux go build --tags 'fts5' -o ./stremthru -a -ldflags '-linkmode external -extldflags "-static"'
+ENV CGO_ENABLED=1
+ENV XX_GO_PREFER_C_COMPILER=zig
+RUN xx-go build --tags 'fts5' -ldflags='-s -w -linkmode external -extldflags "-static"' -o stremthru
+RUN xx-verify --static stremthru
 
 FROM alpine
 
