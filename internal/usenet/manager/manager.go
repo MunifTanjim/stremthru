@@ -103,6 +103,18 @@ func IsServerLocked(serverId string) bool {
 	return locked
 }
 
+func IsPoolInUse() bool {
+	pool := globalManager.getPool()
+	if pool == nil {
+		return false
+	}
+	return pool.HasActiveConnections()
+}
+
+func RebuildPool() error {
+	return globalManager.rebuildPool()
+}
+
 func IsServerInUse(serverId string) bool {
 	if IsServerLocked(serverId) {
 		return true

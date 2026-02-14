@@ -21,6 +21,25 @@ export type UsenetConfig = {
   stream_buffer_size: string;
 };
 
+export type UsenetPoolInfo = {
+  active_connections: number;
+  idle_connections: number;
+  max_connections: number;
+  providers: UsenetPoolProviderInfo[];
+  total_providers: number;
+};
+
+export type UsenetPoolProviderInfo = {
+  active_connections: number;
+  id: string;
+  idle_connections: number;
+  is_backup: boolean;
+  max_connections: number;
+  priority: number;
+  state: "auth_failed" | "connecting" | "disabled" | "offline" | "online";
+  total_connections: number;
+};
+
 type ParsedNZBFile = {
   date: string;
   groups: string[];
@@ -43,6 +62,18 @@ export function useNzbParseMutation() {
   });
 }
 
+export function useRebuildUsenetPoolMutation() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api<UsenetPoolInfo>("POST /usenet/pool/rebuild");
+      return data;
+    },
+    onSuccess: async (_, __, ___, ctx) => {
+      await ctx.client.invalidateQueries({ queryKey: ["/usenet/pool"] });
+    },
+  });
+}
+
 export function useUsenetConfig() {
   return useQuery({
     queryFn: async () => {
@@ -51,6 +82,18 @@ export function useUsenetConfig() {
     },
     queryKey: ["/usenet/config"],
     staleTime: Infinity,
+  });
+}
+
+export function useUsenetPoolInfo() {
+  return useQuery({
+    queryFn: async () => {
+      const { data } = await api<UsenetPoolInfo>("/usenet/pool");
+      return data;
+    },
+    queryKey: ["/usenet/pool"],
+    refetchInterval: 10_000,
+    staleTime: 5_000,
   });
 }
 
