@@ -139,6 +139,9 @@ func (o ChannelItem) ToNewz() *Newz {
 	if nzb.Indexer.Name == "" {
 		nzb.Indexer.Name = o.Attributes.Get("hydraIndexerName")
 	}
+	if nzb.Indexer.Host == "" {
+		nzb.Indexer.Host = o.Attributes.Get("hydraIndexerHost")
+	}
 	if nzb.Indexer.Name == "" {
 		nzb.Indexer.Name = o.ProwlarrIndexer.Name
 	}
@@ -158,6 +161,8 @@ type SearchResponse struct {
 
 func (c *Client) Search(query url.Values, headers http.Header) ([]Newz, error) {
 	params := &Ctx{}
+	params.APIKey = query.Get("apikey")
+	query.Del("apikey")
 	params.Query = &query
 	params.Headers = &headers
 

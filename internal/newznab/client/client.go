@@ -50,7 +50,7 @@ func NewClient(conf *ClientConfig) *Client {
 	c.BaseURL = util.MustParseURL(conf.BaseURL)
 
 	c.reqQuery = func(query *url.Values, params request.Context) {
-		query.Set("apikey", c.apiKey)
+		query.Set("apikey", params.GetAPIKey(c.apiKey))
 	}
 
 	c.reqHeader = func(header *http.Header, params request.Context) {
