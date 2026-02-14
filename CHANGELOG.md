@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.96.9](https://github.com/MunifTanjim/stremthru/compare/0.96.8...0.96.9) (2026-02-14)
+
+
+### Bug Fixes
+
+* **store/torbox:** use POST for checkcached ([67a6729](https://github.com/MunifTanjim/stremthru/commit/67a6729888028094f222fd51967e9b0b9d842d60))
+
 ## [0.96.8](https://github.com/MunifTanjim/stremthru/compare/0.96.7...0.96.8) (2026-02-13)
 
 
