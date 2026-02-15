@@ -200,7 +200,7 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 	}
 
 	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
-		td.IsAuthed = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
+		td.IsAuthed = config.UserAuth.GetPassword(cookie.User()) == cookie.Pass()
 	}
 
 	for i := range ud.Indexers {

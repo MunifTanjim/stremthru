@@ -251,7 +251,7 @@ func getUserCredsFromJWT(t *jwt.Token) (user, password string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	password = config.ProxyAuthPassword.GetPassword(user)
+	password = config.UserAuth.GetPassword(user)
 	return user, password, nil
 }
 
@@ -270,7 +270,7 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 			return "", "", nil, "", err
 		}
 		user, pass, _ := strings.Cut(proxyLink.User, ":")
-		if pass != config.ProxyAuthPassword.GetPassword(user) {
+		if pass != config.UserAuth.GetPassword(user) {
 			err := core.NewAPIError("unauthorized")
 			err.StatusCode = http.StatusUnauthorized
 			return "", "", nil, "", err

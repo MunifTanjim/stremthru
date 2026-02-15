@@ -71,7 +71,7 @@ func main() {
 	}
 	server := &http.Server{Addr: addr, Handler: handler}
 
-	if len(config.ProxyAuthPassword) == 0 {
+	if len(config.UserAuth) == 0 {
 		server.SetKeepAlivesEnabled(false)
 	}
 

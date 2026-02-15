@@ -76,7 +76,7 @@ func getTemplateData(cookie *CookieValue, w http.ResponseWriter, r *http.Request
 	}
 
 	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
-		td.HasAuthAdmin = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
+		td.HasAuthAdmin = config.UserAuth.GetPassword(cookie.User()) == cookie.Pass()
 	}
 
 	if cookie != nil && !cookie.IsExpired {

@@ -49,7 +49,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
   if (tokenDescElem) {
 		const descByStore = {
 			"*": "API Key",
-			"": "StremThru Basic Auth Token (base64 encoded) from <a href='https://github.com/MunifTanjim/stremthru?tab=readme-ov-file#configuration' target='_blank'><code>STREMTHRU_PROXY_AUTH</code></a>",
+			"": "StremThru Basic Auth Token (base64 encoded) from <a href='https://github.com/MunifTanjim/stremthru?tab=readme-ov-file#configuration' target='_blank'><code>STREMTHRU_AUTH</code></a>",
 			ad: "AllDebrid <a href='https://alldebrid.com/apikeys' target='_blank'>API Key</a>",
 			dr: "Debrider <a href='https://debrider.app/dashboard/account#:~:text=Use%20EasyDebrid-,API%20Key,-Generate%20a%20secret' target='_blank'>API Key</a>",
 			dl: "DebridLink <a href='https://debrid-link.com/webapp/apikey' target='_blank'>API Key</a>",

@@ -125,14 +125,14 @@ Comma separated list of tunnel config, in `hostname:tunnel_config` format.
 If `hostname` is `*`, and `tunnel_config` is `false`, only explicitly enabled hostnames
 will be tunneled.
 
-#### `STREMTHRU_PROXY_AUTH`
+#### `STREMTHRU_AUTH`
 
 Comma separated list of credentials, in the following formats:
 
 - plain text credentials, e.g. `username:password`
 - or base64 encoded credentials, e.g. `dXNlcm5hbWU6cGFzc3dvcmQ=`
 
-These will be used for proxy authorization.
+These will be used for dashboard login, proxy authorization etc.
 
 #### `STREMTHRU_AUTH_ADMIN`
 
@@ -429,13 +429,13 @@ Secret for encrypting sensitive data.
 
 Basic auth header, e.g. `Basic dXNlcm5hbWU6cGFzc3dvcmQ=`
 
-`X-StremThru-Authorization` header is checked against `STREMTHRU_PROXY_AUTH` config.
+`X-StremThru-Authorization` header is checked against `STREMTHRU_AUTH` config.
 
 ### Proxy
 
 #### Proxify Links
 
-Authorization is checked against `STREMTHRU_PROXY_AUTH` config.
+Authorization is checked against `STREMTHRU_AUTH` config.
 
 If `token` query parameter is present, the proxified link will not be encrypted.
 e.g. `dXNlcm5hbWU6cGFzc3dvcmQ=`
@@ -977,7 +977,7 @@ git clone https://github.com/MunifTanjim/stremthru
 cd stremthru
 
 # configure
-export STREMTHRU_PROXY_AUTH=username:password
+export STREMTHRU_AUTH=username:password
 
 # run
 make run
@@ -991,7 +991,7 @@ make build
 
 ```sh
 docker run --name stremthru -p 8080:8080 \
-  -e STREMTHRU_PROXY_AUTH=username:password \
+  -e STREMTHRU_AUTH=username:password \
   muniftanjim/stremthru
 ```
 
