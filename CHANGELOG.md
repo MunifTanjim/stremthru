@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.97.0](https://github.com/MunifTanjim/stremthru/compare/0.96.9...0.97.0) (2026-02-15)
+
+
+### Features
+
+* add link to dash on site ([9c90c3a](https://github.com/MunifTanjim/stremthru/commit/9c90c3a38ddc756d0061a3e2af0d72604ba78919))
+* **cache:** add persistent and disk backed cache ([b1aa0e8](https://github.com/MunifTanjim/stremthru/commit/b1aa0e8f89aae54295d65e76584f1b048561adc7))
+* **config:** add STREMTHRU_AUTH config ([e102bc6](https://github.com/MunifTanjim/stremthru/commit/e102bc6cc2ac1e85cc126604b3f147e5a1a2539d))
+* **config:** print newz config at startup ([8dea2b8](https://github.com/MunifTanjim/stremthru/commit/8dea2b8e30e5c4e29a065ae1e0167be647c367cd))
+* **dash/usenet:** add nzb page ([1e20901](https://github.com/MunifTanjim/stremthru/commit/1e209019240f260575914294bf549f924df9271a))
+* **job:** add job queue ([956b71f](https://github.com/MunifTanjim/stremthru/commit/956b71fe40b1ae14a26f87941c20fff51332d6e5))
+* **newznab:** add api endpoint ([0396ef3](https://github.com/MunifTanjim/stremthru/commit/0396ef3b9f2742041f70b3c62e9b3581b2ee6fd5))
+* **newznab:** add client ([e0bca72](https://github.com/MunifTanjim/stremthru/commit/e0bca7271786c35d31224f58c9da693c8f51e97c))
+* **newznab:** add config for request header ([6835ceb](https://github.com/MunifTanjim/stremthru/commit/6835cebcc5666d1a4eabc32956699e3106456ce5))
+* **newznab:** add node for indexer ([807de1e](https://github.com/MunifTanjim/stremthru/commit/807de1e356f966a6dae788f05986060ee6cc557e))
+* **nntp:** add client ([9799d6d](https://github.com/MunifTanjim/stremthru/commit/9799d6df4969e1700789b7b13f69556e51065f56))
+* **store/torbox:** implement NewzStore ([d01d37d](https://github.com/MunifTanjim/stremthru/commit/d01d37db2b4d3ed6719ca8f2c9a1ec643486ed69))
+* **store:** add endpoints for newz store ([86b8171](https://github.com/MunifTanjim/stremthru/commit/86b81712360f4f476439db3f32ae2180689224bc))
+* **stremio/newz:** add initial implementation ([922ac42](https://github.com/MunifTanjim/stremthru/commit/922ac42ada8062743bd27ce7915f8c5df6734965))
+* **stremio/newz:** support stremthru as indexer ([38c8ab8](https://github.com/MunifTanjim/stremthru/commit/38c8ab8c703d74f604e6c111f1be0b5f7c485e19))
+* **stremio/newz:** support torbox as indexer ([8e5d8dc](https://github.com/MunifTanjim/stremthru/commit/8e5d8dc4527f98590e1728579c65cfcf27e05651))
+* **stremio/store:** add stremthru usenet support ([137a9ea](https://github.com/MunifTanjim/stremthru/commit/137a9eae43ae6f8c40e1623dd3c419a0f2afe0d6))
+* **usenet:** add nzb management ([d16eb3f](https://github.com/MunifTanjim/stremthru/commit/d16eb3fb4c0ecc2bdce25eeb61d8b6c8e88daf70))
+* **usenet:** add nzb parser ([e38e82c](https://github.com/MunifTanjim/stremthru/commit/e38e82cddb0adb5b8ba7efd19378650625094edd))
+* **usenet:** add nzb queue ([7ff577e](https://github.com/MunifTanjim/stremthru/commit/7ff577e7789f662a1899d2c80815c09627a9e84e))
+* **usenet:** add pool and stream ([d637276](https://github.com/MunifTanjim/stremthru/commit/d63727612a783453e8e8ff1aa08423cef209ed14))
+* **usenet:** add sabnzbd compatible endpoint ([32072af](https://github.com/MunifTanjim/stremthru/commit/32072afe19d9ccbf93bfd1b866f23d4fdfb30b11))
+* **usenet:** rearrange dashboard pages ([74bfdc8](https://github.com/MunifTanjim/stremthru/commit/74bfdc89fc6ca14ea82f80e8eb22fc61b0746f59))
+* **usenet:** show connection pool state in dash ([7bd1d0c](https://github.com/MunifTanjim/stremthru/commit/7bd1d0c3d33571df04e5cc4c6cc197ff54a038af))
+* **usenet:** show newz config in dashboard ([66938cf](https://github.com/MunifTanjim/stremthru/commit/66938cfa0d0a589dfea653cb50628f71519375ae))
+* **usenet:** support toggling newznab indexer ([47bd211](https://github.com/MunifTanjim/stremthru/commit/47bd211639726ee77faffc57ee9d1bad3d102ddd))
+* **usenet:** support toggling usenet server ([f56347b](https://github.com/MunifTanjim/stremthru/commit/f56347bb3ada76b25c7f805f8f554941b192a747))
+* **vault:** add newznab indexer ([7a32ba0](https://github.com/MunifTanjim/stremthru/commit/7a32ba0eaaec2b94fd23141ea83960ade3f1e924))
+* **vault:** add usenet server ([f429849](https://github.com/MunifTanjim/stremthru/commit/f42984974dcf886e77ed921af5d75d9f35c78c93))
+
+
+### Bug Fixes
+
+* **newznab:** fix nzbhydra2 integration ([f896221](https://github.com/MunifTanjim/stremthru/commit/f89622179ab9e3691598109b5a9a18a5696d4539))
+* **stremio/store:** ignore sample file in stream list ([3b85672](https://github.com/MunifTanjim/stremthru/commit/3b856723acb47cb89d4a9da3eca69182958dafe3))
+* **stremio/transformer:** update extractor for comet ([6a1a602](https://github.com/MunifTanjim/stremthru/commit/6a1a6027f8bbaa1121a8525bfba602b67ea6531a))
+* **stremio:** try to always add filename to proxied links ([b11c1d3](https://github.com/MunifTanjim/stremthru/commit/b11c1d3f732669a6351c149adbdb64208d358279))
+* **usenet:** correctly pick streamable largest file ([e413c67](https://github.com/MunifTanjim/stremthru/commit/e413c673357a8d90a5a99bfa1bc496f4f4a71783))
+* **usenet:** fix max nzb size check for missing content-length ([6aea330](https://github.com/MunifTanjim/stremthru/commit/6aea3303efcf3a4482868c6d80dd23a5e65f7f7d))
+
 ## [0.96.9](https://github.com/MunifTanjim/stremthru/compare/0.96.8...0.96.9) (2026-02-14)
 
 
