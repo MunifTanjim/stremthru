@@ -1,6 +1,7 @@
 package endpoint
 
 import (
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -244,12 +245,18 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 		if payload.Magnet != "" {
 			data, err = addMagnet(ctx, payload.Magnet, nil)
 		} else if payload.Torrent != "" {
-			fileHeader, err := shared.FetchTorrentFile(payload.Torrent, 1024*1024)
-			if err != nil {
-				shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(err).Send(w, r)
-				return
+			fileHeader, fetchErr := shared.FetchTorrentFile(payload.Torrent, 1024*1024)
+			if fetchErr != nil {
+				var magnetErr *shared.MagnetRedirectError
+				if errors.As(fetchErr, &magnetErr) {
+					data, err = addMagnet(ctx, magnetErr.MagnetURI, nil)
+				} else {
+					shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(fetchErr).Send(w, r)
+					return
+				}
+			} else {
+				data, err = addMagnet(ctx, "", fileHeader)
 			}
-			data, err = addMagnet(ctx, "", fileHeader)
 		}
 
 	case strings.Contains(contentType, "multipart/form-data"):
