@@ -37,7 +37,7 @@ func extractProxyAuthToken(r *http.Request, readQuery bool) (token string, hasTo
 func GetProxyAuthorization(r *http.Request, readQuery bool) (isAuthorized bool, user, pass string) {
 	token, hasToken := extractProxyAuthToken(r, readQuery)
 	auth, err := util.ParseBasicAuth(token)
-	isAuthorized = hasToken && err == nil && config.ProxyAuthPassword.GetPassword(auth.Username) == auth.Password
+	isAuthorized = hasToken && err == nil && config.UserAuth.GetPassword(auth.Username) == auth.Password
 	user = auth.Username
 	pass = auth.Password
 	return isAuthorized, user, pass

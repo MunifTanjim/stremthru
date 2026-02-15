@@ -19,7 +19,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	isAuthed := false
 	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
-		isAuthed = config.ProxyAuthPassword.GetPassword(cookie.User()) == cookie.Pass()
+		isAuthed = config.UserAuth.GetPassword(cookie.User()) == cookie.Pass()
 	}
 
 	ud, err := getUserData(r, isAuthed)

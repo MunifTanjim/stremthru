@@ -389,7 +389,7 @@ type Config struct {
 
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
-	ProxyAuthPassword           UserPasswordMap
+	UserAuth                    UserPasswordMap
 	AuthAdmin                   AuthAdminMap
 	AdminPassword               UserPasswordMap
 	SabnzbdAuth                 SabnzbdAuthMap
@@ -432,14 +432,19 @@ func parseUri(uri string) (parsedUrl, parsedToken string) {
 }
 
 var config = func() Config {
-	proxyAuthCredList := strings.FieldsFunc(getEnv("STREMTHRU_PROXY_AUTH"), func(c rune) bool {
+	authCredStr := getEnv("STREMTHRU_AUTH")
+	if authCredStr == "" {
+		// deprecated
+		authCredStr = getEnv("STREMTHRU_PROXY_AUTH")
+	}
+	authCredList := strings.FieldsFunc(authCredStr, func(c rune) bool {
 		return c == ','
 	})
-	proxyAuthPasswordMap := make(UserPasswordMap)
+	authPasswordMap := make(UserPasswordMap)
 
-	for _, cred := range proxyAuthCredList {
+	for _, cred := range authCredList {
 		if basicAuth, err := util.ParseBasicAuth(cred); err == nil {
-			proxyAuthPasswordMap[basicAuth.Username] = basicAuth.Password
+			authPasswordMap[basicAuth.Username] = basicAuth.Password
 		}
 	}
 
@@ -453,15 +458,15 @@ var config = func() Config {
 			username, password, _ := strings.Cut(admin, ":")
 			authAdminMap[username] = true
 			adminPasswordMap[username] = password
-		} else if password := proxyAuthPasswordMap.GetPassword(admin); password != "" {
+		} else if password := authPasswordMap.GetPassword(admin); password != "" {
 			authAdminMap[admin] = true
 			adminPasswordMap[admin] = password
 		}
 	}
 	if len(authAdminMap) == 0 {
-		for username := range proxyAuthPasswordMap {
+		for username := range authPasswordMap {
 			authAdminMap[username] = true
-			adminPasswordMap[username] = proxyAuthPasswordMap[username]
+			adminPasswordMap[username] = authPasswordMap[username]
 		}
 	}
 	if len(adminPasswordMap) == 0 {
@@ -626,7 +631,7 @@ var config = func() Config {
 		LogFormat: logFormat,
 
 		Port:                        getEnv("STREMTHRU_PORT"),
-		ProxyAuthPassword:           proxyAuthPasswordMap,
+		UserAuth:                    authPasswordMap,
 		AuthAdmin:                   authAdminMap,
 		AdminPassword:               adminPasswordMap,
 		SabnzbdAuth:                 sabnzbdAuthMap,
@@ -661,7 +666,7 @@ var LogLevel = config.LogLevel
 var LogFormat = config.LogFormat
 
 var Port = config.Port
-var ProxyAuthPassword = config.ProxyAuthPassword
+var UserAuth = config.UserAuth
 var AuthAdmin = config.AuthAdmin
 var AdminPassword = config.AdminPassword
 var SabnzbdAuth = config.SabnzbdAuth
@@ -706,7 +711,7 @@ var IsTrusted = func() bool {
 var DataDir = config.DataDir
 var VaultSecret = config.VaultSecret
 
-var IsPublicInstance = len(ProxyAuthPassword) == 0
+var IsPublicInstance = len(UserAuth) == 0
 
 func getRedactedURI(uri string) (string, error) {
 	u, err := url.Parse(uri)
@@ -801,7 +806,7 @@ func PrintConfig(state *AppState) {
 
 	if !IsPublicInstance {
 		l.Println(" Users:")
-		for user := range ProxyAuthPassword {
+		for user := range UserAuth {
 			stores := StoreAuthToken.ListStores(user)
 			preferredStore := StoreAuthToken.GetPreferredStore(user)
 			if len(stores) == 0 {
