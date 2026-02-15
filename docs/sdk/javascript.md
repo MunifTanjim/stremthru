@@ -32,7 +32,3 @@ const st = new StremThru({
 
 - [npm package](https://www.npmjs.com/package/stremthru)
 - [Source code](https://github.com/MunifTanjim/stremthru/tree/main/sdk/js)
-
-::: info
-Detailed API documentation coming soon — contributions welcome.
-:::

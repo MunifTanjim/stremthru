@@ -27,15 +27,8 @@ export default defineConfig({
       {
         text: "Getting Started",
         items: [
-          {
-            text: "Introduction",
-            link: "/getting-started/introduction",
-          },
-          {
-            text: "Installation",
-            link: "/getting-started/installation",
-          },
-          { text: "Quick Start", link: "/getting-started/quick-start" },
+          { text: "Introduction", link: "/getting-started/introduction" },
+          { text: "Installation", link: "/getting-started/installation" },
         ],
       },
       {
@@ -46,9 +39,14 @@ export default defineConfig({
             text: "Environment Variables",
             link: "/configuration/environment-variables",
           },
+          {
+            text: "Database & Cache",
+            link: "/configuration/database-and-cache",
+          },
+          { text: "Stremio Addons", link: "/configuration/stremio-addons" },
+          { text: "Integrations", link: "/configuration/integrations" },
           { text: "Features", link: "/configuration/features" },
-          { text: "Usenet", link: "/configuration/usenet" },
-          { text: "Database & Redis", link: "/configuration/database" },
+          { text: "Newz", link: "/configuration/newz" },
         ],
       },
       {
@@ -70,6 +68,7 @@ export default defineConfig({
           { text: "Proxy", link: "/api/proxy" },
           { text: "Store", link: "/api/store" },
           { text: "Newz", link: "/api/newz" },
+          { text: "Torz", link: "/api/torz" },
           { text: "Meta", link: "/api/meta" },
         ],
       },
@@ -77,13 +76,13 @@ export default defineConfig({
         text: "Integrations",
         items: [
           { text: "Overview", link: "/integrations/" },
-          { text: "TMDB", link: "/integrations/tmdb" },
-          { text: "Trakt", link: "/integrations/trakt" },
           { text: "AniList", link: "/integrations/anilist" },
+          { text: "GitHub", link: "/integrations/github" },
           { text: "Letterboxd", link: "/integrations/letterboxd" },
           { text: "MDBList", link: "/integrations/mdblist" },
+          { text: "TMDB", link: "/integrations/tmdb" },
           { text: "TVDB", link: "/integrations/tvdb" },
-          { text: "GitHub", link: "/integrations/github" },
+          { text: "Trakt", link: "/integrations/trakt" },
         ],
       },
       {
@@ -94,24 +93,24 @@ export default defineConfig({
           { text: "Python", link: "/sdk/python" },
         ],
       },
-      {
-        text: "Deployment",
-        items: [
-          { text: "Overview", link: "/deployment/" },
-          { text: "Docker", link: "/deployment/docker" },
-          { text: "Reverse Proxy", link: "/deployment/reverse-proxy" },
-          {
-            text: "Cloudflare WARP",
-            link: "/deployment/cloudflare-warp",
-          },
-        ],
-      },
     ],
 
     socialLinks: [
       {
         icon: "github",
         link: "https://github.com/MunifTanjim/stremthru",
+      },
+      {
+        icon: "discord",
+        link: "https://go.muniftanjim.dev/discord",
+      },
+      {
+        icon: "buymeacoffee",
+        link: "https://buymeacoffee.com/muniftanjim",
+      },
+      {
+        icon: "patreon",
+        link: "https://www.patreon.com/muniftanjim",
       },
     ],
 

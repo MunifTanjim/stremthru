@@ -7,11 +7,14 @@ hero:
   tagline: Proxy, debrid store integrations, Stremio addons, and more — all in one self-hosted service.
   actions:
     - theme: brand
-      text: Get Started
+      text: 🚀 Get Started
       link: /getting-started/introduction
     - theme: alt
-      text: View on GitHub
+      text: ⭐ View on GitHub
       link: https://github.com/MunifTanjim/stremthru
+    - theme: alt
+      text: 💜 Donate
+      link: https://buymeacoffee.com/MunifTanjim
 
 features:
   - title: Store Integrations

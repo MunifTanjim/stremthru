@@ -26,7 +26,3 @@ st = StremThru(base_url="http://127.0.0.1:8080", auth="user:pass")
 
 - [PyPI package](https://pypi.org/project/stremthru/)
 - [Source code](https://github.com/MunifTanjim/stremthru/tree/main/sdk/py)
-
-::: info
-Detailed API documentation coming soon — contributions welcome.
-:::

@@ -4,10 +4,15 @@ The Proxy API creates proxified URLs that route content through StremThru.
 
 ## Authentication
 
-Authorization is checked against the [`STREMTHRU_PROXY_AUTH`](/configuration/environment-variables#stremthru-proxy-auth) configuration.
+Authorization is checked against the [`STREMTHRU_AUTH`](/configuration/environment-variables#stremthru-auth) configuration.
 
-- If the `token` query parameter is present, the proxified link will **not** be encrypted.
-- If the `X-StremThru-Authorization` header is present, the proxified link will be encrypted.
+If the `token` query parameter is present, the proxified link will _**not**_ be encrypted.
+
+If the `X-StremThru-Authorization` header is present, the proxified link will be encrypted.
+
+::: warning
+Either `token` query parameter or `X-StremThru-Authorization` header must be present for proxifying urls.
+:::
 
 ## Endpoints
 
@@ -41,7 +46,3 @@ Proxify one or more URLs via form body.
   "total_items": "int"
 }
 ```
-
-::: info
-Detailed documentation coming soon — contributions welcome.
-:::

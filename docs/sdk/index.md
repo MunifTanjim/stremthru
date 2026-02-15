@@ -1,6 +1,6 @@
 # SDKs
 
-StremThru provides official SDKs for JavaScript and Python, enabling programmatic access to the StremThru API.
+StremThru provides official SDKs for various programming languages.
 
 ## Available SDKs
 

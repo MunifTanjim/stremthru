@@ -1,4 +1,4 @@
-# Newz Addon
+# StremThru Newz
 
 The Newz addon searches Newznab-compatible indexers and streams Usenet content directly in Stremio.
 
@@ -9,33 +9,17 @@ The Newz addon searches Newznab-compatible indexers and streams Usenet content d
 - Search Newznab-compatible indexers for content
 - Stream Usenet content via NNTP
 - NZB parsing and download management
-- Connection pooling for concurrent streams
 
 ## Prerequisites
 
 The Newz addon requires:
 
-- `vault` and `stremio_newz` [feature flags](../configuration/features) enabled
-- At least one NNTP server configured via the dashboard
-- At least one Newznab indexer configured via the dashboard
+- `vault` [feature](../configuration/features)
+- At least one Usenet Server configured via the dashboard
+- At least one Newznab Indexer configured via the dashboard
 
 ## Configuration
 
-| Environment Variable                         | Description                      |
-| -------------------------------------------- | -------------------------------- |
-| `STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT` | Max timeout for indexer requests |
+Check [documentation](/configuration/stremio-addons#stremthru-newz).
 
-See [Usenet Configuration](../configuration/usenet) for all Newz-related environment variables.
-
-## Topics
-
-This page will cover:
-
-- Newznab indexer configuration
-- NNTP server setup
-- Streaming behavior and buffering
-- NZB caching
-
-::: info
-Detailed documentation coming soon — contributions welcome.
-:::
+See [Newz Configuration](../configuration/newz) for all Newz-related environment variables.

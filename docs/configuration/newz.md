@@ -1,26 +1,12 @@
-# Usenet
+# Newz (Usenet)
 
-Configuration for StremThru's Usenet (Newz) functionality.
+Configuration for StremThru's Newz (Usenet) functionality.
 
 ## Feature Flag
 
-The Usenet feature requires the `stremio_newz` feature flag, which in turn requires `vault`.
-
-```sh
-STREMTHRU_FEATURE=+vault,+stremio_newz
-```
+The Newz feature requires the `vault` feature.
 
 See [Features](./features) for more details on feature flags.
-
-## Stremio Newz
-
-### `STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT`
-
-Max timeout for newz indexer requests.
-
-- **Default:** `15s`
-- **Minimum:** `2s`
-- **Maximum:** `60s`
 
 ## Newz
 
@@ -30,11 +16,27 @@ Maximum number of concurrent connections per stream.
 
 - **Default:** `8`
 
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM=8
+```
+
 ### `STREMTHRU_NEWZ_NZB_CACHE_SIZE`
 
 Size of the NZB file cache.
 
 - **Default:** `512MB`
+
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_NZB_CACHE_SIZE=512MB
+```
+
+::: info
+Disk backed cache. Make sure you have enough disk space.
+:::
 
 ### `STREMTHRU_NEWZ_NZB_CACHE_TTL`
 
@@ -42,6 +44,12 @@ TTL for cached NZB files.
 
 - **Default:** `24h`
 - **Minimum:** `6h`
+
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_NZB_CACHE_TTL=24h
+```
 
 ### `STREMTHRU_NEWZ_NZB_LINK_MODE`
 
@@ -56,11 +64,23 @@ If `hostname` is `*`, it is used as fallback.
 
 - **Default:** `*:proxy`
 
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_NZB_LINK_MODE=*:proxy
+```
+
 ### `STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE`
 
 Maximum NZB file size allowed.
 
 - **Default:** `50MB`
+
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE=50MB
+```
 
 ### `STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE`
 
@@ -68,11 +88,27 @@ Size of the Usenet segment cache.
 
 - **Default:** `10GB`
 
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE=10GB
+```
+
+::: info
+Disk backed cache. Make sure you have enough disk space.
+:::
+
 ### `STREMTHRU_NEWZ_STREAM_BUFFER_SIZE`
 
 Buffer size for streaming Usenet content.
 
 - **Default:** `200MB`
+
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_STREAM_BUFFER_SIZE=200MB
+```
 
 ### `STREMTHRU_NEWZ_QUERY_HEADER`
 
@@ -97,7 +133,8 @@ Header-Name: Header-Value
 
 **Example:**
 
-```
+```sh
+STREMTHRU_NEWZ_QUERY_HEADER="
 [*]
 :prowlarr:
 
@@ -107,6 +144,7 @@ Header-Name: Header-Value
 [tv]
 :sonarr:
 Header-Name: Header-Value
+"
 ```
 
 ### `STREMTHRU_NEWZ_GRAB_HEADER`
@@ -128,6 +166,6 @@ Header-Name: Header-Value
 
 **Example:**
 
-```
-:sabnzbd:
+```sh
+STREMTHRU_NEWZ_GRAB_HEADER=":sabnzbd:"
 ```

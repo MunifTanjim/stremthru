@@ -8,11 +8,25 @@ Complete reference for all StremThru environment variables.
 
 Base URL for StremThru. Used for generating callback URLs and links.
 
+- **Default:** `http://localhost:8080`
+
+**Example:**
+
+```sh
+STREMTHRU_BASE_URL=http://localhost:8080
+```
+
 ### `STREMTHRU_PORT`
 
 Port to listen on.
 
 - **Default:** `8080`
+
+**Example:**
+
+```sh
+STREMTHRU_PORT=8080
+```
 
 ### `STREMTHRU_LOG_LEVEL`
 
@@ -27,6 +41,12 @@ Log level for the application.
 | `ERROR` | Errors only                       |
 | `FATAL` | Fatal errors only                 |
 
+**Example:**
+
+```sh
+STREMTHRU_LOG_LEVEL=INFO
+```
+
 ### `STREMTHRU_LOG_FORMAT`
 
 Log output format.
@@ -36,17 +56,27 @@ Log output format.
 | `json` | JSON format **(default)** |
 | `text` | Plain text format         |
 
+**Example:**
+
+```sh
+STREMTHRU_LOG_FORMAT=json
+```
+
 ### `STREMTHRU_DATA_DIR`
 
-Directory for StremThru data files (database, etc.).
+Directory for StremThru data files (cache, database, temporary files etc.).
 
-### `STREMTHRU_HTTP_PROXY`
+- **Default:** `./data`
 
-HTTP proxy URL. Used for tunneling traffic when configured.
+**Example:**
+
+```sh
+STREMTHRU_DATA_DIR=./data
+```
 
 ## Authentication {#authentication}
 
-### `STREMTHRU_PROXY_AUTH`
+### `STREMTHRU_AUTH`
 
 Comma-separated list of credentials for proxy authorization. Supports two formats:
 
@@ -56,15 +86,17 @@ Comma-separated list of credentials for proxy authorization. Supports two format
 **Example:**
 
 ```sh
-STREMTHRU_PROXY_AUTH=user1:pass1,user2:pass2
+STREMTHRU_AUTH=user1:pass1,user2:pass2
 ```
 
 ### `STREMTHRU_AUTH_ADMIN`
 
-Comma-separated list of admin usernames.
+Comma-separated list of admin usernames or credentials.
+
+**Example:**
 
 ```sh
-STREMTHRU_AUTH_ADMIN=admin_user
+STREMTHRU_AUTH_ADMIN=user1,user3:pass3
 ```
 
 ## Store {#store}
@@ -92,32 +124,21 @@ If `username` is `*`, it is used as a fallback for users without explicit store 
 **Example:**
 
 ```sh
-STREMTHRU_STORE_AUTH=user1:realdebrid:rd-token,user2:torbox:tb-key
+STREMTHRU_STORE_AUTH=user1:realdebrid:rd-api-token,user2:torbox:tb-api-key
 ```
 
-### `STREMTHRU_STORE_TUNNEL`
+### `STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME`
 
-Comma-separated list of tunnel configuration for stores in `store_name:tunnel_config` format.
-
-::: warning
-Only used when using StremThru to interact with the Store. Not affected by `STREMTHRU_TUNNEL`.
-StremThru will _try_ to automatically adjust `STREMTHRU_TUNNEL` to reflect `STREMTHRU_STORE_TUNNEL`.
-:::
-
-| `tunnel_config` | Description         |
-| --------------- | ------------------- |
-| `true`          | Enable tunneling    |
-| `false`         | Disable tunneling   |
-| `api`           | Enable for API only |
+Comma-separated list of stale time for cached/uncached content in `store_name:cached_stale_time:uncached_stale_time` format.
 
 If `store_name` is `*`, it is used as a fallback.
 
-When enabled, `STREMTHRU_HTTP_PROXY` is used to tunnel traffic for the store.
+- **Default:** `*:24h:8h`
 
 **Example:**
 
 ```sh
-STREMTHRU_STORE_TUNNEL=realdebrid:true,*:false
+STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME=*:24h:8h
 ```
 
 ### `STREMTHRU_STORE_CONTENT_PROXY`
@@ -131,42 +152,13 @@ Comma-separated list of store content proxy configuration in `store_name:content
 
 If `store_name` is `*`, it is used as a fallback.
 
+- **Default:** `*:true`
+
 **Example:**
 
 ```sh
 STREMTHRU_STORE_CONTENT_PROXY=*:true
 ```
-
-### `STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME`
-
-Comma-separated list of stale time for cached/uncached content in `store_name:cached_stale_time:uncached_stale_time` format.
-
-If `store_name` is `*`, it is used as a fallback.
-
-**Example:**
-
-```sh
-STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME=*:24h:8h
-```
-
-## Tunnel
-
-### `STREMTHRU_TUNNEL`
-
-::: warning
-Cannot override `STREMTHRU_STORE_TUNNEL`.
-:::
-
-Comma-separated list of tunnel configuration in `hostname:tunnel_config` format.
-
-| `tunnel_config` | Description                        |
-| --------------- | ---------------------------------- |
-| `true`          | Enable with `STREMTHRU_HTTP_PROXY` |
-| `false`         | Disable                            |
-
-If `hostname` is `*` and `tunnel_config` is `false`, only explicitly enabled hostnames will be tunneled.
-
-## Content Proxy {#content-proxy}
 
 ### `STREMTHRU_CONTENT_PROXY_CONNECTION_LIMIT`
 
@@ -176,138 +168,103 @@ If `username` is `*`, it is used as a fallback.
 
 If `connection_limit` is `0`, no limit is applied.
 
-## Stremio Addons
+- **Default:** `*:0`
 
-### `STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT`
+**Example:**
 
-Maximum number of items to fetch for store catalog.
+```sh
+STREMTHRU_CONTENT_PROXY_CONNECTION_LIMIT=*:0
+```
 
-### `STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME`
+## Tunnel
 
-Cache time for store catalog.
+### `STREMTHRU_HTTP_PROXY`
 
-### `STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT`
+HTTP proxy URL. Used for tunneling traffic when configured.
 
-Maximum number of upstreams allowed on public instance.
+**Example:**
 
-### `STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT`
+```sh
+STREMTHRU_HTTP_PROXY=http://proxy:8080
+```
 
-Maximum number of stores allowed on public instance.
+### `STREMTHRU_TUNNEL`
 
-### `STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT`
+Comma-separated list of tunnel configuration in `hostname:tunnel_config` format.
 
-Max timeout for newz indexer requests.
+| `tunnel_config` | Description                        |
+| --------------- | ---------------------------------- |
+| `true`          | Enable with `STREMTHRU_HTTP_PROXY` |
+| `false`         | Disable                            |
+| `<url>`         | Enable with specified `url`        |
 
-- **Default:** `15s`
-- **Minimum:** `2s`
-- **Maximum:** `60s`
+If `hostname` is `*` and `tunnel_config` is `false`, only explicitly enabled hostnames will be tunneled.
 
-### `STREMTHRU_STREMIO_TORZ_LAZY_PULL`
+**Example:**
 
-If `true`, Torz will pull from the public database in the background, so on first query it returns fewer results but responds faster.
+```sh
+STREMTHRU_TUNNEL=*:false,example.com:true
+```
 
-### `STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT`
+::: warning
+Cannot override `STREMTHRU_STORE_TUNNEL`.
+:::
 
-Maximum number of stores allowed on public instance for Torz.
+### `STREMTHRU_STORE_TUNNEL`
 
-### `STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT`
+Comma-separated list of tunnel configuration for stores in `store_name:tunnel_config` format.
 
-Maximum number of lists allowed on public instance.
+| `tunnel_config` | Description         |
+| --------------- | ------------------- |
+| `true`          | Enable tunneling    |
+| `false`         | Disable tunneling   |
+| `api`           | Enable for API only |
 
-## Integrations {#integrations}
+If `store_name` is `*`, it is used as a fallback.
 
-### AniList
+When enabled, `STREMTHRU_HTTP_PROXY` is used to tunnel traffic for the store.
 
-#### `STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME`
+- **Default:** `*:true`
 
-Stale time for AniList list data. Example: `12h`.
+**Example:**
 
-### GitHub
+```sh
+STREMTHRU_STORE_TUNNEL=realdebrid:true,*:false
+```
 
-#### `STREMTHRU_INTEGRATION_GITHUB_USER`
+::: warning
+Only used when using StremThru to interact with the Store. Not affected by `STREMTHRU_TUNNEL`.
+StremThru will _try_ to automatically adjust `STREMTHRU_TUNNEL` to reflect `STREMTHRU_STORE_TUNNEL`.
+:::
 
-GitHub username.
-
-#### `STREMTHRU_INTEGRATION_GITHUB_TOKEN`
-
-GitHub Personal Access Token.
-
-### Letterboxd
-
-No environment variables required. Letterboxd integration works with public profiles.
-
-### MDBList
-
-#### `STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME`
-
-Stale time for MDBList list data. Example: `12h`.
-
-### TMDB
-
-TMDB integration requires an [Access Token](https://www.themoviedb.org/settings/api).
-
-#### `STREMTHRU_INTEGRATION_TMDB_ACCESS_TOKEN`
-
-API Read Access Token for TMDB.
-
-#### `STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME`
-
-Stale time for TMDB list data. Example: `12h`.
-
-### Trakt
-
-Trakt integration requires an [OAuth App](https://trakt.tv/oauth/applications).
-
-The Redirect URI should point to the `/auth/trakt.tv/callback` endpoint of your [`STREMTHRU_BASE_URL`](#stremthru-base-url).
-
-#### `STREMTHRU_INTEGRATION_TRAKT_CLIENT_ID`
-
-Client ID for Trakt OAuth App.
-
-#### `STREMTHRU_INTEGRATION_TRAKT_CLIENT_SECRET`
-
-Client Secret for Trakt OAuth App.
-
-#### `STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME`
-
-Stale time for Trakt list data. Example: `12h`.
-
-### TVDB
-
-TVDB integration requires an [API Key](https://www.thetvdb.com/dashboard/account/apikey).
-
-#### `STREMTHRU_INTEGRATION_TVDB_API_KEY`
-
-API Key for TVDB.
-
-#### `STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME`
-
-Stale time for TVDB list data. Example: `12h`.
-
-## Usenet {#usenet}
-
-See [Usenet Configuration](./usenet) for all `STREMTHRU_NEWZ_*` environment variables.
-
-## Security
+## Vault
 
 ### `STREMTHRU_VAULT_SECRET`
 
 Secret for encrypting sensitive data.
 
-## Database & Redis {#database-redis}
+**Example:**
 
-See [Database & Redis](./database) for details.
+```sh
+STREMTHRU_VAULT_SECRET=my-super-secret-vault-key
+```
 
-### `STREMTHRU_DATABASE_URI`
+## Database & Cache
 
-URI for the database. See [Database & Redis](./database).
+See [Database & Cache](./database-and-cache) for details.
 
-### `STREMTHRU_REDIS_URI`
+## Stremio Addons
 
-URI for Redis. See [Database & Redis](./database).
+See [Stremio Addons](./stremio-addons) for all `STREMTHRU_STREMIO_*` environment variables.
 
-## Feature Flags
+## Integrations
 
-### `STREMTHRU_FEATURE`
+See [Integrations](./integrations) for all `STREMTHRU_INTEGRATION_*` environment variables.
+
+## Features
 
 See [Features](./features) for details.
+
+## Newz
+
+See [Newz Configuration](./newz) for all `STREMTHRU_NEWZ_*` environment variables.

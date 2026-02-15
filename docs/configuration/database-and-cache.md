@@ -1,4 +1,4 @@
-# Database & Redis
+# Database & Cache
 
 StremThru supports SQLite and PostgreSQL for persistent storage, and Redis for caching.
 
@@ -9,6 +9,8 @@ StremThru supports SQLite and PostgreSQL for persistent storage, and Redis for c
 URI for the database connection.
 
 **Format:** `<scheme>://<user>:<pass>@<host>[:<port>][/<db>]`
+
+- **Default:** `sqlite://./data/stremthru.db`
 
 **Supported schemes:**
 
@@ -24,11 +26,19 @@ URI for the database connection.
 | `max_conns` | Maximum number of connections |
 | `min_conns` | Minimum number of connections |
 
-### SQLite (Default)
+#### SQLite
+
+::: tip
+SQLite is the recommended database for the vast majority of the users. You don't really need PostgreSQL.
+:::
 
 SQLite is used by default with no configuration required. The database file is stored in the data directory.
 
-### PostgreSQL
+```sh
+STREMTHRU_DATABASE_URI=sqlite://./data/stremthru.db
+```
+
+#### PostgreSQL
 
 To use PostgreSQL, set the database URI:
 
@@ -51,7 +61,6 @@ services:
     ports:
       - 8080:8080
     environment:
-      STREMTHRU_PROXY_AUTH: user:pass
       STREMTHRU_DATABASE_URI: postgresql://stremthru:stremthru@postgres:5432/stremthru
     depends_on:
       - postgres
@@ -66,15 +75,21 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
 ```
 
-## Redis
+## Cache
 
-### `STREMTHRU_REDIS_URI`
+### Redis
+
+::: tip
+Redis is completely optional, it is not required for StremThru to function properly.
+:::
+
+#### `STREMTHRU_REDIS_URI`
 
 URI for Redis connection.
 
 **Format:** `redis://<user>:<pass>@<host>[:<port>][/<db>]`
 
-If provided, Redis is used for caching instead of in-memory storage. This is recommended for production deployments.
+If provided, Redis is used for caching instead of in-memory storage.
 
 **Example:**
 
@@ -91,11 +106,10 @@ services:
     ports:
       - 8080:8080
     environment:
-      STREMTHRU_PROXY_AUTH: user:pass
       STREMTHRU_REDIS_URI: redis://redis:6379
     depends_on:
       - redis
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
 ```

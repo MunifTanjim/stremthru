@@ -6,27 +6,9 @@ The Torz addon integrates torrent indexers with StremThru, providing torrent sea
 
 ## Overview
 
-- Torrent indexer integration
-- P2P support
-- Lazy pull from public database
 - Multi-store support
+- Torrent indexer integration
 
 ## Configuration
 
-| Environment Variable                            | Description                             |
-| ----------------------------------------------- | --------------------------------------- |
-| `STREMTHRU_STREMIO_TORZ_LAZY_PULL`              | Pull from public database in background |
-| `STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT` | Max stores on public instance           |
-
-## Topics
-
-This page will cover:
-
-- Torrent indexer configuration
-- P2P support
-- Lazy pull behavior
-- Public instance limits
-
-::: info
-Detailed documentation coming soon — contributions welcome.
-:::
+Check [documentation](/configuration/stremio-addons#stremthru-torz).

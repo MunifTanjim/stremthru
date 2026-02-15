@@ -1,8 +1,10 @@
 # Newz API
 
-The Newz API provides endpoints for managing Usenet (NZB) content through StremThru's store interface.
+The Newz API provides endpoints for managing Usenet content through StremThru's store interface.
 
-## NewzStatus
+## Enums
+
+### NewzStatus
 
 | Value         | Description                 |
 | ------------- | --------------------------- |
@@ -31,7 +33,9 @@ Add an NZB for download.
 }
 ```
 
-**Request** (NZB file upload): `multipart/form-data` with an NZB file in the `file` field.
+**Request** (NZB file upload):
+
+`multipart/form-data` with an NZB file in the `file` field.
 
 **Response:**
 
@@ -182,7 +186,7 @@ Generate a direct link for a newz file link.
 }
 ```
 
-::: tip
+::: info Note
 The generated direct link should be valid for 12 hours.
 :::
 
@@ -190,18 +194,8 @@ The generated direct link should be valid for 12 hours.
 
 **`GET /v0/newznab/api`**
 
-StremThru exposes a Newznab-compatible API endpoint that can be used with tools like Prowlarr, Radarr, and Sonarr.
+StremThru exposes a Newznab-compatible API endpoint that can be used with tools like Prowlarr, Radarr, Sonarr etc.
 
-**Authentication:** Uses the same proxy auth credentials, passed via the `apikey` query parameter.
-
-**Supported operations:**
-
-| `t` parameter | Description      |
-| ------------- | ---------------- |
-| `caps`        | Get capabilities |
-| `search`      | General search   |
-| `tvsearch`    | TV search        |
-| `movie`       | Movie search     |
-| `get`         | Download NZB     |
+**Authentication:** Uses the `STREMTHRU_AUTH` credentials, passed via the `apikey` query parameter.
 
 **Output format:** Controlled by the `o` query parameter (`xml` default, `json` supported).

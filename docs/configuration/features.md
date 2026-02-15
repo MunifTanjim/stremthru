@@ -17,13 +17,13 @@ Set the `STREMTHRU_FEATURE` environment variable with a comma-separated list of 
 Enable a specific opt-in feature:
 
 ```sh
-STREMTHRU_FEATURE=+some_feature
+STREMTHRU_FEATURE=+feature_a
 ```
 
 Disable a specific opt-out feature:
 
 ```sh
-STREMTHRU_FEATURE=-some_feature
+STREMTHRU_FEATURE=-feature_b
 ```
 
 Combine multiple flags:
@@ -38,16 +38,16 @@ Use the `+` and `-` prefix syntax to selectively toggle features without affecti
 
 ## Available Features
 
-| Feature            | Description                 | Notes            |
-| ------------------ | --------------------------- | ---------------- |
-| `anime`            | Anime support               |                  |
-| `dmm_hashlist`     | DMM hashlist support        |                  |
-| `imdb_title`       | IMDB title support          |                  |
-| `stremio_list`     | Stremio List addon          |                  |
-| `stremio_newz`     | Stremio Newz addon (Usenet) | Requires `vault` |
-| `stremio_p2p`      | Stremio P2P support         |                  |
-| `stremio_sidekick` | Stremio Sidekick addon      |                  |
-| `stremio_store`    | Stremio Store addon         |                  |
-| `stremio_torz`     | Stremio Torz addon          |                  |
-| `stremio_wrap`     | Stremio Wrap addon          |                  |
-| `vault`            | Vault for encrypted secrets |                  |
+| Feature            | Description                 | Default  | Notes            |
+| ------------------ | --------------------------- | -------- | ---------------- |
+| `anime`            | Anime support               | Disabled |                  |
+| `dmm_hashlist`     | DMM hashlist support        | Enabled  |                  |
+| `imdb_title`       | IMDB title support          | Enabled  |                  |
+| `stremio_list`     | Stremio List addon          | Enabled  |                  |
+| `stremio_newz`     | Stremio Newz addon (Usenet) | Enabled  | Requires `vault` |
+| `stremio_p2p`      | Stremio P2P support         | Disabled |                  |
+| `stremio_sidekick` | Stremio Sidekick addon      | Enabled  |                  |
+| `stremio_store`    | Stremio Store addon         | Enabled  |                  |
+| `stremio_torz`     | Stremio Torz addon          | Enabled  |                  |
+| `stremio_wrap`     | Stremio Wrap addon          | Enabled  |                  |
+| `vault`            | Vault for encrypted secrets | Enabled  |                  |

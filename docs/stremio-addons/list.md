@@ -1,4 +1,4 @@
-# List Addon
+# StremThru List
 
 The List addon generates Stremio catalogs from external list providers like Trakt, TMDB, AniList, Letterboxd, MDBList, and TVDB.
 
@@ -8,7 +8,6 @@ The List addon generates Stremio catalogs from external list providers like Trak
 
 - Generate Stremio catalogs from external lists
 - Multiple list provider support
-- Automatic list syncing
 
 ## Supported Providers
 
@@ -23,19 +22,4 @@ The List addon generates Stremio catalogs from external list providers like Trak
 
 ## Configuration
 
-| Environment Variable                           | Description                  |
-| ---------------------------------------------- | ---------------------------- |
-| `STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT` | Max lists on public instance |
-
-## Topics
-
-This page will cover:
-
-- Adding list providers
-- Catalog generation and syncing
-- Public instance limits
-- Provider-specific setup
-
-::: info
-Detailed documentation coming soon — contributions welcome.
-:::
+Check [documentation](/configuration/stremio-addons#stremthru-list).

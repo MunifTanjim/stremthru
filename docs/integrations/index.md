@@ -4,15 +4,15 @@ StremThru integrates with several external services for content metadata, list m
 
 ## Available Integrations
 
-| Integration                | Used By                | Auth Required         |
-| -------------------------- | ---------------------- | --------------------- |
-| [TMDB](./tmdb)             | List addon, ID mapping | Access Token          |
-| [Trakt](./trakt)           | List addon             | OAuth App             |
-| [AniList](./anilist)       | List addon             | No                    |
-| [Letterboxd](./letterboxd) | List addon             | No                    |
-| [MDBList](./mdblist)       | List addon             | No                    |
-| [TVDB](./tvdb)             | List addon, ID mapping | API Key               |
-| [GitHub](./github)         | Various                | Personal Access Token |
+| Integration                | Used By                       | Auth Required         |
+| -------------------------- | ----------------------------- | --------------------- |
+| [AniList](./anilist)       | List addon                    | No                    |
+| [GitHub](./github)         | Various                       | Personal Access Token |
+| [Letterboxd](./letterboxd) | List addon                    | No                    |
+| [MDBList](./mdblist)       | List addon                    | No                    |
+| [TMDB](./tmdb)             | List addon, ID mapping        | Access Token          |
+| [TVDB](./tvdb)             | List addon, ID mapping        | API Key               |
+| [Trakt](./trakt)           | List addon, Dashboard - Vault | OAuth App             |
 
 ## Configuration
 
