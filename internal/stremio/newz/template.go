@@ -237,6 +237,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/newz", func(td *TemplateData) *TemplateData {
 		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
+		td.IsPublic = config.IsPublicInstance
 		td.IsTrusted = config.IsTrusted
 
 		td.CanAuthorize = !IsPublicInstance

@@ -239,6 +239,10 @@
 
       <section class="text-center">
         <small>
+          {{if not .IsPublic -}}
+          <a href="/dash" class="secondary">💻 Dash</a>
+          ·
+          {{- end}}
           <a href="https://github.com/MunifTanjim/stremthru" class="secondary" target="_blank">⭐️ GitHub</a>
           ·
           <a href="https://buymeacoffee.com/muniftanjim" class="secondary" target="_blank">💜 Donate</a>

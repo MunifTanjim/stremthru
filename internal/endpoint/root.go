@@ -30,6 +30,7 @@ type RootTemplateData struct {
 	Version     string                    `json:"-"`
 	Addons      []rootTemplateDataAddon   `json:"-"`
 	Sections    []rootTemplateDataSection `json:"sections"`
+	IsPublic    bool                      `json:"-"`
 	IsTrusted   bool                      `json:"-"`
 }
 
@@ -58,6 +59,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		Version:     config.Version,
 		Addons:      []rootTemplateDataAddon{},
 		Sections:    rootTemplateData.Sections,
+		IsPublic:    config.IsPublicInstance,
 		IsTrusted:   config.IsTrusted,
 	}
 	addons := stremio_shared.GetStremThruAddons()

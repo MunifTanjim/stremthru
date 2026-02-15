@@ -70,6 +70,7 @@ func (td *TemplateData) HasError() bool {
 var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/configure", func(td *TemplateData) *TemplateData {
 		td.Version = config.Version
+		td.IsPublic = config.IsPublicInstance
 		td.IsTrusted = config.IsTrusted
 		return td
 	}, template.FuncMap{}, "configure.html", "configure_*.html")

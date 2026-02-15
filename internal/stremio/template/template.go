@@ -17,6 +17,7 @@ type BaseData struct {
 	NavTitle        string
 	Version         string
 	StremThruAddons []BaseDataStremThruAddon
+	IsPublic        bool
 	IsTrusted       bool
 }
 
@@ -30,6 +31,7 @@ func GetExecutor[T any](name string, prepare func(data *T) *T, funcMap template.
 	tmpl := template.Must(template.New("stremio").Funcs(funcMap).ParseFS(templateFs, patterns...))
 	return func(data *T, name string) (bytes.Buffer, error) {
 		var buf bytes.Buffer
+		data = prepare(data)
 		err := tmpl.ExecuteTemplate(&buf, name, prepare(data))
 		return buf, err
 	}
