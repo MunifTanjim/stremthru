@@ -199,7 +199,7 @@ func (ds JSONDataset[T]) processDiff() error {
 
 	lastR := ds.NewReader(lastBlob)
 	if lastR == nil {
-		if err := os.RemoveAll(newFilePath); err != nil {
+		if err := os.RemoveAll(lastFilePath); err != nil {
 			ds.log.Error("failed to remove last file", "error", err)
 		}
 		return errors.New("failed to create reader for last file")
