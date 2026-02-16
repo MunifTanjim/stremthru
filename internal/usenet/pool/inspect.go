@@ -2,6 +2,7 @@ package usenet_pool
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 
 	"github.com/MunifTanjim/stremthru/internal/logger"
@@ -18,11 +19,17 @@ const (
 	NZBContentFileTypeOther   NZBContentFileType = "other"
 )
 
+const (
+	NZBContentFileErrorArticleNotFound = "article_not_found"
+	NZBContentFileErrorOpenFailed      = "open_failed"
+)
+
 type NZBContentFile struct {
 	Type       NZBContentFileType `json:"t"`
 	Name       string             `json:"n"`
 	Size       int64              `json:"s"`
 	Streamable bool               `json:"strm"`
+	Errors     []string           `json:"errs,omitempty"`
 	Files      []NZBContentFile   `json:"files,omitempty"`
 	Parts      []NZBContentFile   `json:"parts,omitempty"`
 }
@@ -133,6 +140,11 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 
 		if err := archive.Open(password); err != nil {
 			inspectLog.Warn("failed to open archive", "error", err, "name", name)
+			if errors.Is(err, ErrArticleNotFound) {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorArticleNotFound)
+			} else {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			}
 			content.Files = append(content.Files, entry)
 			continue
 		}
@@ -142,6 +154,11 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			files, err := archive.GetFiles()
 			if err != nil {
 				inspectLog.Warn("failed to get archive files", "name", name, "error", err)
+				if errors.Is(err, ErrArticleNotFound) {
+					entry.Errors = append(entry.Errors, NZBContentFileErrorArticleNotFound)
+				} else {
+					entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+				}
 			} else {
 				entry.Files = p.inspectArchiveFiles(files, password)
 			}
@@ -239,6 +256,11 @@ func (p *Pool) inspectArchiveFiles(files []ArchiveFile, password string) []NZBCo
 
 		if err := innerArchive.Open(""); err != nil {
 			inspectLog.Warn("failed to open nested archive", "error", err, "name", name)
+			if errors.Is(err, ErrArticleNotFound) {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorArticleNotFound)
+			} else {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			}
 			afs.Close()
 			result = append(result, entry)
 			continue
@@ -248,6 +270,11 @@ func (p *Pool) inspectArchiveFiles(files []ArchiveFile, password string) []NZBCo
 		if entry.Streamable {
 			if innerFiles, err := innerArchive.GetFiles(); err != nil {
 				inspectLog.Warn("failed to get nested archive files", "error", err, "name", name)
+				if errors.Is(err, ErrArticleNotFound) {
+					entry.Errors = append(entry.Errors, NZBContentFileErrorArticleNotFound)
+				} else {
+					entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+				}
 			} else {
 				innerContentFiles := make([]NZBContentFile, len(innerFiles))
 				for j, f := range innerFiles {

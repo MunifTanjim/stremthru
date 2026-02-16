@@ -1,6 +1,7 @@
 package endpoint
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/newznab"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
@@ -135,10 +137,37 @@ func handleNewznabGet(w http.ResponseWriter, r *http.Request, o string) {
 	}
 }
 
+func handleNewznabGetNZB(w http.ResponseWriter, r *http.Request) {
+	if !isNewznabRequestAuthed(r) {
+		server.ErrorForbidden(r).Send(w, r)
+		return
+	}
+
+	nzbId := r.PathValue("nzbId")
+	if nzbId == "" {
+		server.ErrorNotFound(r).Send(w, r)
+		return
+	}
+
+	hash := nzb_info.HashNZBFileLink(config.BaseURL.JoinPath("/v0/newznab/getnzb", nzbId).String())
+	file := nzb_info.GetCachedNZBFile(hash)
+	if file == nil {
+		server.ErrorNotFound(r).Send(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/x-nzb")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(file.Blob)))
+	w.WriteHeader(http.StatusOK)
+	w.Write(file.Blob)
+}
+
 func AddNewznabEndpoints(mux *http.ServeMux) {
 	if !config.Feature.HasVault() {
 		return
 	}
 
 	mux.HandleFunc("/v0/newznab/api", handleNewznab)
+	mux.HandleFunc("/v0/newznab/getnzb/{nzbId}", handleNewznabGetNZB)
 }

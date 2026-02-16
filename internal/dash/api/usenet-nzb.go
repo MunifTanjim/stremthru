@@ -2,15 +2,19 @@ package dash_api
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
 	usenet_pool "github.com/MunifTanjim/stremthru/internal/usenet/pool"
+	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/rs/xid"
 )
 
 type NzbSegmentResponse struct {
@@ -79,8 +83,8 @@ func handleParseNZB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10MB limit
-	if err := r.ParseMultipartForm(5 << 20); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, config.NewzNZBMaxFileSize)
+	if err := r.ParseMultipartForm(util.ToBytes("10MB")); err != nil {
 		SendError(w, r, err)
 		return
 	}
@@ -123,6 +127,7 @@ type NZBContentFileResponse struct {
 	Name       string                   `json:"name"`
 	Size       int64                    `json:"size"`
 	Streamable bool                     `json:"streamable"`
+	Errors     []string                 `json:"errors,omitempty"`
 	Files      []NZBContentFileResponse `json:"files,omitempty"`
 	Parts      []NZBContentFileResponse `json:"parts,omitempty"`
 }
@@ -149,6 +154,7 @@ func toNZBContentFileResponse(file usenet_pool.NZBContentFile) NZBContentFileRes
 		Name:       file.Name,
 		Size:       file.Size,
 		Streamable: file.Streamable,
+		Errors:     file.Errors,
 	}
 	if len(file.Files) > 0 {
 		resp.Files = make([]NZBContentFileResponse, len(file.Files))
@@ -254,6 +260,116 @@ func handleGetNZBXML(w http.ResponseWriter, r *http.Request) {
 	w.Write(nzbFile.Blob)
 }
 
+func handleUploadNZB(w http.ResponseWriter, r *http.Request) {
+	ctx := GetReqCtx(r)
+
+	contentType := r.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "multipart/form-data") {
+		ErrorUnsupportedMediaType(r).Send(w, r)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, config.NewzNZBMaxFileSize)
+	if err := r.ParseMultipartForm(util.ToBytes("10MB")); err != nil {
+		SendError(w, r, err)
+		return
+	}
+	if r.MultipartForm.File == nil {
+		ErrorBadRequest(r).WithMessage("missing file").Send(w, r)
+		return
+	}
+	fileHeaders := r.MultipartForm.File["file"]
+	if len(fileHeaders) == 0 {
+		ErrorBadRequest(r).WithMessage("missing file").Send(w, r)
+		return
+	}
+	if len(fileHeaders) > 1 {
+		ErrorBadRequest(r).WithMessage("multiple files provided").Send(w, r)
+		return
+	}
+	fileHeader := fileHeaders[0]
+	file, err := fileHeader.Open()
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	defer file.Close()
+
+	blob, err := io.ReadAll(file)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	nzbDoc, err := nzb.ParseBytes(blob)
+	if err != nil {
+		if parseErr, ok := err.(*nzb.ParseError); ok {
+			ErrorBadRequest(r).WithMessage(parseErr.Error()).Send(w, r)
+			return
+		}
+		SendError(w, r, err)
+		return
+	}
+
+	nzbId := xid.New().String()
+	link := config.BaseURL.JoinPath("/v0/newznab/getnzb/", nzbId)
+	linkQuery := link.Query()
+	apikey := util.Base64Encode(ctx.Session.User + ":" + config.AdminPassword.GetPassword(ctx.Session.User))
+	linkQuery.Set("apikey", apikey)
+	link.RawQuery = linkQuery.Encode()
+
+	filename := fileHeader.Filename
+	if !strings.HasSuffix(filename, ".nzb") {
+		filename += ".nzb"
+	}
+
+	nzbFile := nzb_info.NZBFile{
+		Blob: blob,
+		Name: filename,
+		Link: link.String(),
+		Mod:  time.Now(),
+	}
+
+	hash := nzb_info.HashNZBFileLink(nzbFile.Link)
+	if err := nzb_info.CacheNZBFile(hash, nzbFile); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	name := r.FormValue("name")
+	if name == "" {
+		name = filename
+	}
+
+	if err := nzb_info.Upsert(&nzb_info.NZBInfo{
+		Id:        nzbId,
+		Hash:      hash,
+		Name:      name,
+		Size:      nzbDoc.TotalSize(),
+		FileCount: nzbDoc.FileCount(),
+		Password:  "",
+		URL:       nzbFile.Link,
+		User:      ctx.Session.User,
+	}); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	queueId, err := nzb_info.QueueJob(ctx.Session.User, name, nzbFile.Link, "", 0, "")
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	queueItem, err := nzb_info.GetJobById(queueId)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	SendData(w, r, 200, toNzbQueueItemResponse(queueItem))
+}
+
 func handleRequeueNZB(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
@@ -349,6 +465,14 @@ func AddUsenetNZBEndpoints(router *http.ServeMux) {
 		switch r.Method {
 		case http.MethodPost:
 			handleParseNZB(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+	router.HandleFunc("/usenet/nzb/upload", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleUploadNZB(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}

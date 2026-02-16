@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, UploadIcon, XIcon } from "lucide-react";
+import { FileText, SaveIcon, UploadIcon, XIcon } from "lucide-react";
 import { DateTime } from "luxon";
 import prettyBytes from "pretty-bytes";
 import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { ParsedNZB, useNzbParseMutation } from "@/api/usenet";
+import {
+  ParsedNZB,
+  useNzbParseMutation,
+  useNzbUploadMutation,
+} from "@/api/usenet";
 import { Form, useAppForm } from "@/components/form";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +71,7 @@ function RouteComponent() {
   const [parsedNzb, setParsedNzb] = useState<null | ParsedNZB>(null);
 
   const parse = useNzbParseMutation();
+  const upload = useNzbUploadMutation();
 
   const form = useAppForm({
     defaultValues: { file: null } as z.infer<typeof formSchema>,
@@ -163,6 +168,47 @@ function RouteComponent() {
                 )}
                 Parse NZB
               </Button>
+              {parsedNzb && (
+                <form.Subscribe selector={(s) => s.values.file}>
+                  {(file) =>
+                    file ? (
+                      <Button
+                        className="w-fit"
+                        disabled={upload.isPending}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const name = parsedNzb.meta.title || file.name;
+                          toast.promise(upload.mutateAsync({ file, name }), {
+                            error(err: APIError) {
+                              console.error(err);
+                              return {
+                                closeButton: true,
+                                message: err.message,
+                              };
+                            },
+                            loading: "Uploading NZB file...",
+                            success() {
+                              return {
+                                closeButton: true,
+                                message: "NZB queued for processing!",
+                              };
+                            },
+                          });
+                        }}
+                        type="button"
+                        variant="secondary"
+                      >
+                        {upload.isPending ? (
+                          <Spinner />
+                        ) : (
+                          <SaveIcon className="size-4" />
+                        )}
+                        Save
+                      </Button>
+                    ) : null
+                  }
+                </form.Subscribe>
+              )}
             </div>
           </Form>
         </CardContent>

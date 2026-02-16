@@ -258,23 +258,25 @@ function PoolInfoCard() {
                       </div>
                     </Badge>
                   </ItemTitle>
-                  <ItemDescription className="flex flex-row flex-wrap gap-4">
-                    <div>
-                      <span>Priority: {provider.priority}</span>
-                    </div>
-                    {provider.is_backup && (
+                  <ItemDescription asChild>
+                    <div className="flex flex-row flex-wrap gap-4">
                       <div>
-                        <span>Backup</span>
+                        <span>Priority: {provider.priority}</span>
                       </div>
-                    )}
-                    <div>
-                      <span>
-                        {provider.active_connections}/{provider.max_connections}{" "}
-                        active
-                      </span>
-                    </div>
-                    <div>
-                      <span>{provider.idle_connections} idle</span>
+                      {provider.is_backup && (
+                        <div>
+                          <span>Backup</span>
+                        </div>
+                      )}
+                      <div>
+                        <span>
+                          {provider.active_connections}/
+                          {provider.max_connections} active
+                        </span>
+                      </div>
+                      <div>
+                        <span>{provider.idle_connections} idle</span>
+                      </div>
                     </div>
                   </ItemDescription>
                 </ItemContent>

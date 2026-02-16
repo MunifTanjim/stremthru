@@ -217,6 +217,10 @@ func FetchNZBFile(link string, name string, log *logger.Logger) (*NZBFile, error
 	})
 }
 
+func CacheNZBFile(hash string, file NZBFile) error {
+	return nzbFileCache.Add(hash, file)
+}
+
 func DeleteNZBFile(link string) {
 	cacheKey := HashNZBFileLink(link)
 	nzbFileCache.Remove(cacheKey)

@@ -46,6 +46,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -267,72 +275,95 @@ function ContentFileNode({
   nzbId: string;
   parentPath?: string;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const hasChildren = Boolean(file.files && file.files.length > 0);
   const filePath = parentPath
     ? parentPath + "::/" + file.name
     : "/" + file.name;
 
   return (
-    <div>
-      <div
-        className="hover:bg-muted/50 flex items-center gap-2 rounded px-2 py-1 text-sm"
-        style={{ paddingLeft: `${depth * 20 + 8}px` }}
-      >
-        {hasChildren ? (
-          <button
-            className="flex size-4 items-center justify-center"
-            onClick={() => setExpanded(!expanded)}
-            type="button"
-          >
-            {expanded ? (
-              <ChevronDown className="size-3" />
+    <>
+      <Item size="sm" variant="outline">
+        <ItemMedia>
+          <div className="flex h-10 flex-col justify-between">
+            <ContentFileIcon isPack={hasChildren} type={file.type} />
+            {hasChildren ? (
+              <button
+                className="flex size-4 shrink-0 items-center justify-center"
+                onClick={() => setExpanded(!expanded)}
+                type="button"
+              >
+                {expanded ? (
+                  <ChevronDown className="size-3" />
+                ) : (
+                  <ChevronRight className="size-3" />
+                )}
+              </button>
             ) : (
-              <ChevronRight className="size-3" />
+              <span className="size-4 shrink-0" />
             )}
-          </button>
-        ) : (
-          <span className="size-4" />
-        )}
-        <ContentFileIcon isPack={hasChildren} type={file.type} />
-        <Tooltip>
-          <TooltipTrigger className="flex-1 truncate text-left">
-            <span>{file.name}</span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-[400px] break-all">
-            {file.name}
-          </TooltipContent>
-        </Tooltip>
-        <Badge className="text-xs" variant="outline">
-          {file.type}
-        </Badge>
-        <span className="text-muted-foreground text-xs">
-          {prettyBytes(file.size)}
-        </span>
-        <Badge
-          className={cn(
-            "text-xs",
-            file.streamable ? "bg-green-600" : "line-through",
-          )}
-          variant={file.streamable ? "default" : "destructive"}
-        >
-          Streamable
-        </Badge>
-        {!hasChildren && (
-          <Button
-            onClick={() =>
-              window.open(
-                `/dash/api/usenet/nzb/${nzbId}/download${filePath}`,
-                "_blank",
-              )
-            }
-            size="icon-sm"
-            variant="ghost"
-          >
-            <Download className="size-3" />
-          </Button>
-        )}
-      </div>
+          </div>
+        </ItemMedia>
+        <ItemContent className="overflow-hidden">
+          <ItemTitle className="flex w-full justify-between">
+            <Tooltip>
+              <TooltipTrigger className="flex-1 truncate text-left">
+                <span>{file.name}</span>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[400px] break-all">
+                {file.name}
+              </TooltipContent>
+            </Tooltip>
+            <Badge className="text-xs" variant="outline">
+              {file.type}
+            </Badge>
+          </ItemTitle>
+          <ItemDescription asChild>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground text-xs">
+                  {prettyBytes(file.size)}
+                </span>
+                <Badge
+                  className={cn(
+                    "py-0",
+                    file.streamable ? "bg-green-600" : "line-through",
+                  )}
+                  variant={file.streamable ? "default" : "destructive"}
+                >
+                  Streamable
+                </Badge>
+                {file.errors?.map((error) => (
+                  <Badge className="py-0" key={error} variant="destructive">
+                    {error === "article_not_found"
+                      ? "Article Not Found"
+                      : error === "open_failed"
+                        ? "Open Failed"
+                        : error}
+                  </Badge>
+                ))}
+              </div>
+              <div className="ml-auto">
+                {!hasChildren && (
+                  <Button
+                    disabled={!file.streamable}
+                    onClick={() =>
+                      window.open(
+                        `/dash/api/usenet/nzb/${nzbId}/download${filePath}`,
+                        "_blank",
+                      )
+                    }
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <Download className="size-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </ItemDescription>
+        </ItemContent>
+      </Item>
       {hasChildren && expanded && (
         <ContentFileTree
           depth={depth + 1}
@@ -341,7 +372,7 @@ function ContentFileNode({
           parentPath={filePath}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -357,9 +388,9 @@ function ContentFileTree({
   parentPath?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" style={{ paddingLeft: `${depth * 20}px` }}>
       {files.map((file) => (
-        <div key={`${depth}-${file.name}`}>
+        <ItemGroup className="space-y-1" key={`${depth}-${file.name}`}>
           <ContentFileNode
             depth={depth}
             file={file}
@@ -374,7 +405,7 @@ function ContentFileTree({
               parentPath={parentPath}
             />
           )}
-        </div>
+        </ItemGroup>
       ))}
     </div>
   );
@@ -464,7 +495,7 @@ function NzbInfoDetailDialog({
                 <div className="text-muted-foreground mb-2 text-sm font-medium">
                   Files
                 </div>
-                <div className="rounded-md border p-2">
+                <div className="rounded-md border p-1">
                   <ContentFileTree files={item.files} nzbId={item.id} />
                 </div>
               </div>

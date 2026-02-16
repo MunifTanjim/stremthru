@@ -55,12 +55,16 @@ const (
 
 type Error struct {
 	Code       ErrorCode
+	Msg        string
 	Message    string
 	StatusCode int
 	Cause      error
 }
 
 func (e *Error) WithCause(err error) *Error {
+	if tperr, ok := err.(*textproto.Error); ok && tperr.Code == e.StatusCode && tperr.Msg == e.Msg {
+		return e
+	}
 	e.Cause = err
 	return e
 }
@@ -69,7 +73,7 @@ func (e *Error) Error() string {
 	var err strings.Builder
 	err.WriteString(string(e.Code))
 	if e.StatusCode > 0 {
-		err.WriteString(fmt.Sprintf(" (code: %d)", e.StatusCode))
+		err.WriteString(fmt.Sprintf(" (%d %s)", e.StatusCode, e.Msg))
 	}
 	if e.Message != "" {
 		err.WriteString(" ")
@@ -154,7 +158,8 @@ func NewCommandError(cmd string, statusCode int, message string) *Error {
 
 	return &Error{
 		Code:       code,
-		Message:    fmt.Sprintf("%s failed: %s", cmd, message),
+		Msg:        message,
+		Message:    fmt.Sprintf("%s failed", cmd),
 		StatusCode: statusCode,
 	}
 }

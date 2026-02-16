@@ -3,6 +3,7 @@ package usenet_pool
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"sync"
@@ -16,6 +17,7 @@ import (
 )
 
 var ErrNoProvidersAvailable = errors.New("usenet: no available providers")
+var ErrArticleNotFound = errors.New("usenet: article not found")
 
 type ProviderConfig struct {
 	nntp.PoolConfig
@@ -255,6 +257,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 						p.Log.Trace("fetch segment - switching to backup providers", "segment_num", segment.Number, "message_id", messageId)
 						continue
 					}
+					break
 				}
 				errs = append(errs, err)
 				failedAttempts++
@@ -313,7 +316,18 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 			return &segmentData, nil
 		}
 
-		return nil, errors.New("failed to fetch segment " + strconv.Itoa(segment.Number) + " <" + messageId + "> after retries: " + errors.Join(errs...).Error())
+		allArticleNotFound := len(errs) > 0
+		for _, e := range errs {
+			if e != nil && !isArticleNotFoundError(e) {
+				allArticleNotFound = false
+				break
+			}
+		}
+		retryErr := errors.Join(errs...)
+		if allArticleNotFound {
+			return nil, fmt.Errorf("%w: failed to fetch segment %d <%s> after retries: %s", ErrArticleNotFound, segment.Number, messageId, retryErr.Error())
+		}
+		return nil, errors.New("failed to fetch segment " + strconv.Itoa(segment.Number) + " <" + messageId + "> after retries: " + retryErr.Error())
 	})
 
 	if err != nil {

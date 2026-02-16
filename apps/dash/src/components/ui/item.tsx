@@ -129,9 +129,14 @@ function ItemTitle({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function ItemDescription({ className, ...props }: React.ComponentProps<"p">) {
+function ItemDescription({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"p"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot : "p";
   return (
-    <p
+    <Comp
       data-slot="item-description"
       className={cn(
         "text-muted-foreground line-clamp-2 text-balance text-sm font-normal leading-normal",

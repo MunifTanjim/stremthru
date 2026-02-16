@@ -67,7 +67,6 @@ export const FormFilePicker = Object.assign(function FormFile({
           return r.error.message;
         }}
         onValueChange={(files) => {
-          console.log("files", files);
           field.handleChange(files[0]);
         }}
         value={[field.state.value].filter(Boolean)}

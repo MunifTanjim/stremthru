@@ -62,6 +62,12 @@ export function useNzbParseMutation() {
   });
 }
 
+export function useNzbUploadMutation() {
+  return useMutation({
+    mutationFn: uploadNzbFile,
+  });
+}
+
 export function useRebuildUsenetPoolMutation() {
   return useMutation({
     mutationFn: async () => {
@@ -102,6 +108,17 @@ async function parseNzbFile(file: File) {
   formData.append("file", file);
 
   const { data } = await api<ParsedNZB>("POST /usenet/nzb/parse", {
+    body: formData,
+  });
+  return data;
+}
+
+async function uploadNzbFile({ file, name }: { file: File; name: string }) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("name", name);
+
+  const { data } = await api<{ id: string }>("POST /usenet/nzb/upload", {
     body: formData,
   });
   return data;

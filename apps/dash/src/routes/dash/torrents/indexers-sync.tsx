@@ -283,7 +283,6 @@ function RouteComponent() {
       },
     },
     onPaginationChange: (updater) => {
-      console.log("updater", updater);
       if (typeof updater === "function") {
         const newState = updater(pagination);
         setPagination(newState);

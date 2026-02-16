@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export type NZBContentFile = {
+  errors?: string[];
   files?: NZBContentFile[];
   name: string;
   parts?: NZBContentFile[];
