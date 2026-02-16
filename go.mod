@@ -65,7 +65,7 @@ require (
 )
 
 require (
-	github.com/MunifTanjim/go-ptt v0.13.1
+	github.com/MunifTanjim/go-ptt v0.14.1
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/dpotapov/slogpfx v0.0.0-20230917063348-41a73c95c536
 	github.com/dustin/go-humanize v1.0.1
