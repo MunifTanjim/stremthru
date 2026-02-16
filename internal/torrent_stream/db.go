@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/anime"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
@@ -424,6 +426,19 @@ var record_streams_query_on_conflict = fmt.Sprintf(
 	),
 )
 
+var recordSkipCount atomic.Int64
+var recordAllowCount atomic.Int64
+
+func GetRecordCacheStats() (skipped int64, allowed int64) {
+	return recordSkipCount.Load(), recordAllowCount.Load()
+}
+
+var prevRecordSourceCache = cache.NewLRUCache[string](&cache.CacheConfig{
+	Name:     "torrent_stream:prev_record_src",
+	Lifetime: 1 * time.Hour,
+	MaxSize:  200_000,
+})
+
 func Record(items []InsertData, discardIdx bool) error {
 	if len(items) == 0 {
 		return nil
@@ -432,6 +447,7 @@ func Record(items []InsertData, discardIdx bool) error {
 	errs := []error{}
 	for cItems := range slices.Chunk(items, 150) {
 		seenFileMap := map[string]struct{}{}
+		recordSrcByKey := map[string]string{}
 
 		count := len(cItems)
 		args := make([]any, 0, count*8)
@@ -452,6 +468,13 @@ func Record(items []InsertData, discardIdx bool) error {
 			key := item.Hash + ":" + item.Path
 			if _, seen := seenFileMap[key]; !seen {
 				seenFileMap[key] = struct{}{}
+				var prevRecordSource string
+				if prevRecordSourceCache.Get(key, &prevRecordSource) && (prevRecordSource == item.Source || prevRecordSource == "dht" || prevRecordSource == "tor") {
+					recordSkipCount.Add(1)
+					count--
+					continue
+				}
+				recordAllowCount.Add(1)
 				args = append(args,
 					item.Hash,
 					item.Path,
@@ -462,6 +485,7 @@ func Record(items []InsertData, discardIdx bool) error {
 					item.Source,
 					item.VideoHash,
 				)
+				recordSrcByKey[key] = item.Source
 			} else {
 				log.Debug("skipped duplicate file", "hash", item.Hash, "path", item.Path)
 				count--
@@ -476,6 +500,9 @@ func Record(items []InsertData, discardIdx bool) error {
 			errs = append(errs, err)
 		} else {
 			log.Debug("recorded torrent stream", "count", count)
+			for key, source := range recordSrcByKey {
+				prevRecordSourceCache.Add(key, source)
+			}
 		}
 	}
 

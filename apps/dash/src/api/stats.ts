@@ -26,6 +26,10 @@ type ServerStats = {
 };
 
 type TorrentsStats = {
+  cache: {
+    torrent_info: { allowed: number; skipped: number };
+    torrent_stream: { allowed: number; skipped: number };
+  };
   files: {
     total_count: number;
   };

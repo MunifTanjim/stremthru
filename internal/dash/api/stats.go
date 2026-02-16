@@ -15,6 +15,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/MunifTanjim/stremthru/internal/tvdb"
 )
@@ -24,11 +25,20 @@ var cachedTorrentsStats = cache.NewCachedValue(cache.CachedValueConfig[*torrent_
 	TTL: 6 * time.Hour,
 })
 
+type CacheStatsEntry struct {
+	Skipped int64 `json:"skipped"`
+	Allowed int64 `json:"allowed"`
+}
+
 type TorrentsStats struct {
 	TotalCount int `json:"total_count"`
 	Files      struct {
 		TotalCount int `json:"total_count"`
 	} `json:"files"`
+	Cache struct {
+		TorrentInfo   CacheStatsEntry `json:"torrent_info"`
+		TorrentStream CacheStatsEntry `json:"torrent_stream"`
+	} `json:"cache"`
 }
 
 func HandleGetTorrentsStats(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +56,12 @@ func HandleGetTorrentsStats(w http.ResponseWriter, r *http.Request) {
 	data := TorrentsStats{}
 	data.TotalCount = stats.TotalCount
 	data.Files.TotalCount = stats.Streams.TotalCount
+
+	tiSkipped, tiAllowed := torrent_info.GetUpsertCacheStats()
+	tsSkipped, tsAllowed := torrent_stream.GetRecordCacheStats()
+	data.Cache.TorrentInfo = CacheStatsEntry{Skipped: tiSkipped, Allowed: tiAllowed}
+	data.Cache.TorrentStream = CacheStatsEntry{Skipped: tsSkipped, Allowed: tsAllowed}
+
 	SendData(w, r, 200, data)
 }
 

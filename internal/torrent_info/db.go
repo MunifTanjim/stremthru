@@ -9,10 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
@@ -754,6 +756,19 @@ var query_upsert_on_conflict = fmt.Sprintf(
 
 var noTorrentInfo = !config.Feature.HasTorrentInfo()
 
+var upsertSkipCount atomic.Int64
+var upsertAllowCount atomic.Int64
+
+func GetUpsertCacheStats() (skipped int64, allowed int64) {
+	return upsertSkipCount.Load(), upsertAllowCount.Load()
+}
+
+var prevRecordSourceCache = cache.NewLRUCache[string](&cache.CacheConfig{
+	Name:     "torrent_info:prev_record_src",
+	Lifetime: 1 * time.Hour,
+	MaxSize:  100_000,
+})
+
 func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) error {
 	if len(items) == 0 {
 		return nil
@@ -765,6 +780,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 	for cItems := range slices.Chunk(items, 150) {
 		count := len(cItems)
 		seenHash := map[string]struct{}{}
+		recordSrcByHash := map[string]string{}
 		args := make([]any, 0, 7*count)
 		for _, t := range cItems {
 			if _, seen := seenHash[t.Hash]; seen {
@@ -798,6 +814,13 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				}
 			}
 
+			var prevRecordSource string
+			if prevRecordSourceCache.Get(t.Hash, &prevRecordSource) && (prevRecordSource == tSource || prevRecordSource == string(TorrentInfoSourceDHT)) {
+				upsertSkipCount.Add(1)
+				count--
+				continue
+			}
+
 			if t.TorrentTitle == "" || t.TorrentTitle == t.Hash || strings.HasPrefix(t.TorrentTitle, "magnet:?") {
 				count--
 				continue
@@ -808,7 +831,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				tCategory = category
 			}
 
+			upsertAllowCount.Add(1)
 			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Indexer, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
+			recordSrcByHash[t.Hash] = tSource
 		}
 
 		if noTorrentInfo || count == 0 {
@@ -824,6 +849,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			errs = append(errs, err)
 		} else {
 			log.Debug("upserted torrent info", "count", count)
+			for hash, source := range recordSrcByHash {
+				prevRecordSourceCache.Add(hash, source)
+			}
 		}
 	}
 
