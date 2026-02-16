@@ -96,6 +96,45 @@ export function TorrentCacheStatsCard() {
               )}
             </span>
           </div>
+          <div className="flex flex-1 flex-col justify-center gap-1 border-l border-t px-6 py-4 text-left 2xl:border-l 2xl:border-t-0 2xl:px-8 2xl:py-6">
+            <span className="text-muted-foreground text-nowrap text-xs">
+              Magnet Cache Written
+            </span>
+            <span className="text-lg font-bold leading-none 2xl:text-3xl">
+              {torzStats.isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                (torzStats.data?.cache.magnet_cache.allowed.toLocaleString() ??
+                0)
+              )}
+            </span>
+          </div>
+          <div className="flex flex-1 flex-col justify-center gap-1 border-l border-t px-6 py-4 text-left 2xl:border-l 2xl:border-t-0 2xl:px-8 2xl:py-6">
+            <span className="text-muted-foreground text-nowrap text-xs">
+              Magnet Cache Skipped
+            </span>
+            <span className="text-lg font-bold leading-none 2xl:text-3xl">
+              {torzStats.isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="flex items-end justify-between gap-1">
+                  <span>
+                    {torzStats.data?.cache.magnet_cache.skipped.toLocaleString() ??
+                      0}
+                  </span>{" "}
+                  <span className="text-sm">
+                    (
+                    {(
+                      100 *
+                      ((torzStats.data?.cache.magnet_cache.skipped || 1) /
+                        (torzStats.data?.cache.magnet_cache.allowed || 1))
+                    ).toFixed(2)}
+                    %)
+                  </span>
+                </div>
+              )}
+            </span>
+          </div>
         </div>
       </CardHeader>
     </Card>

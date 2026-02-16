@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
@@ -95,22 +97,47 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	return mcs, nil
 }
 
+var touchSkipCount atomic.Int64
+var touchAllowCount atomic.Int64
+
+func GetTouchCacheStats() (skipped int64, allowed int64) {
+	return touchSkipCount.Load(), touchAllowCount.Load()
+}
+
+var prevIsCachedCache = cache.NewLRUCache[bool](&cache.CacheConfig{
+	Name:     "magnet_cache:prev_is_cached",
+	Lifetime: 4 * time.Hour,
+	MaxSize:  200_000,
+})
+
+func touchCacheKey(storeCode store.StoreCode, hash string) string {
+	return string(storeCode) + ":" + hash
+}
+
 func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, isCached bool, skipFileTracking bool) {
-	buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
-	var result sql.Result
-	var err error
-	is_cached := db.BooleanFalse
-	if isCached {
-		is_cached = db.BooleanTrue
-	}
-	buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, " + is_cached + ") ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = " + db.CurrentTimestamp)
-	result, err = db.Exec(buf.String(), storeCode, hash)
-	if err == nil {
-		_, err = result.RowsAffected()
-	}
-	if err != nil {
-		mcLog.Error("failed to touch", "error", err)
-		return
+	cacheKey := touchCacheKey(storeCode, hash)
+	var prevIsCached bool
+	if prevIsCachedCache.Get(cacheKey, &prevIsCached) && prevIsCached == isCached {
+		touchSkipCount.Add(1)
+	} else {
+		touchAllowCount.Add(1)
+		buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
+		var result sql.Result
+		var err error
+		is_cached := db.BooleanFalse
+		if isCached {
+			is_cached = db.BooleanTrue
+		}
+		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, " + is_cached + ") ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = " + db.CurrentTimestamp)
+		result, err = db.Exec(buf.String(), storeCode, hash)
+		if err == nil {
+			_, err = result.RowsAffected()
+		}
+		if err != nil {
+			mcLog.Error("failed to touch", "error", err)
+			return
+		}
+		prevIsCachedCache.Add(cacheKey, isCached)
 	}
 	if !skipFileTracking {
 		torrent_stream.TrackFiles(storeCode, map[string]torrent_stream.Files{hash: files})
@@ -150,7 +177,18 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		}
 	}
 
+	hitCacheKeys := []string{}
+	missCacheKeys := []string{}
+
 	for hash, is_cached := range cached {
+		cacheKey := touchCacheKey(storeCode, hash)
+		var prevIsCached bool
+		if prevIsCachedCache.Get(cacheKey, &prevIsCached) && prevIsCached == is_cached {
+			touchSkipCount.Add(1)
+			continue
+		}
+
+		touchAllowCount.Add(1)
 		if !is_cached {
 			if miss_count > 0 {
 				miss_query.WriteString(",")
@@ -158,6 +196,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 			miss_query.WriteString(miss_placeholder)
 			miss_args = append(miss_args, storeCode, hash)
 			miss_count++
+			missCacheKeys = append(missCacheKeys, cacheKey)
 		} else {
 			if hit_count > 0 {
 				hit_query.WriteString(",")
@@ -165,6 +204,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 			hit_query.WriteString(hit_placeholder)
 			hit_args = append(hit_args, storeCode, hash)
 			hit_count++
+			hitCacheKeys = append(hitCacheKeys, cacheKey)
 		}
 	}
 
@@ -173,10 +213,15 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		_, err := db.Exec(hit_query.String(), hit_args...)
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
+		} else {
+			for _, key := range hitCacheKeys {
+				prevIsCachedCache.Add(key, true)
+			}
 		}
-		if !skipFileTracking {
-			torrent_stream.TrackFiles(storeCode, filesByHash)
-		}
+	}
+
+	if !skipFileTracking && len(filesByHash) > 0 {
+		torrent_stream.TrackFiles(storeCode, filesByHash)
 	}
 
 	if miss_count > 0 {
@@ -184,6 +229,10 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		_, err := db.Exec(miss_query.String(), miss_args...)
 		if err != nil {
 			mcLog.Error("failed to touch misses", "error", err)
+		} else {
+			for _, key := range missCacheKeys {
+				prevIsCachedCache.Add(key, false)
+			}
 		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
+	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
@@ -38,6 +39,7 @@ type TorrentsStats struct {
 	Cache struct {
 		TorrentInfo   CacheStatsEntry `json:"torrent_info"`
 		TorrentStream CacheStatsEntry `json:"torrent_stream"`
+		MagnetCache   CacheStatsEntry `json:"magnet_cache"`
 	} `json:"cache"`
 }
 
@@ -59,8 +61,10 @@ func HandleGetTorrentsStats(w http.ResponseWriter, r *http.Request) {
 
 	tiSkipped, tiAllowed := torrent_info.GetUpsertCacheStats()
 	tsSkipped, tsAllowed := torrent_stream.GetRecordCacheStats()
+	mcSkipped, mcAllowed := magnet_cache.GetTouchCacheStats()
 	data.Cache.TorrentInfo = CacheStatsEntry{Skipped: tiSkipped, Allowed: tiAllowed}
 	data.Cache.TorrentStream = CacheStatsEntry{Skipped: tsSkipped, Allowed: tsAllowed}
+	data.Cache.MagnetCache = CacheStatsEntry{Skipped: mcSkipped, Allowed: mcAllowed}
 
 	SendData(w, r, 200, data)
 }

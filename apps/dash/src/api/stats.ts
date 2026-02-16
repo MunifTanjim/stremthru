@@ -27,6 +27,7 @@ type ServerStats = {
 
 type TorrentsStats = {
   cache: {
+    magnet_cache: { allowed: number; skipped: number };
     torrent_info: { allowed: number; skipped: number };
     torrent_stream: { allowed: number; skipped: number };
   };
