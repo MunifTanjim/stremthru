@@ -36,6 +36,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	dash_api.AddWorkerEndpoints(router)
 	dash_api.AddTorznabIndexerSyncInfoEndpoints(router)
 	dash_api.AddRateLimitEndpoints(router)
+	dash_api.AddProxyEndpoints(router)
 
 	if config.Feature.HasVault() {
 		dash_api.AddVaultStremioEndpoints(router)

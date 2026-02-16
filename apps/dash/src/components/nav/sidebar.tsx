@@ -245,6 +245,10 @@ function useNavItems(): NavItem[] {
             path: "/dash/workers",
             title: "Workers",
           },
+          {
+            path: "/dash/proxy",
+            title: "Proxy",
+          },
         ],
         path: "/dash",
         title: "Dashboard",

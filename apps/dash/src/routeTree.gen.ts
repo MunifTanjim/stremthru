@@ -17,6 +17,7 @@ import { Route as DashUsenetRouteImport } from './routes/dash/usenet'
 import { Route as DashTorrentsRouteImport } from './routes/dash/torrents'
 import { Route as DashSyncRouteImport } from './routes/dash/sync'
 import { Route as DashSettingsRouteImport } from './routes/dash/settings'
+import { Route as DashProxyRouteImport } from './routes/dash/proxy'
 import { Route as DashLoginRouteImport } from './routes/dash/login'
 import { Route as DashListsRouteImport } from './routes/dash/lists'
 import { Route as DashVaultIndexRouteImport } from './routes/dash/vault/index'
@@ -77,6 +78,11 @@ const DashSyncRoute = DashSyncRouteImport.update({
 const DashSettingsRoute = DashSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => DashRoute,
+} as any)
+const DashProxyRoute = DashProxyRouteImport.update({
+  id: '/proxy',
+  path: '/proxy',
   getParentRoute: () => DashRoute,
 } as any)
 const DashLoginRoute = DashLoginRouteImport.update({
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/proxy': typeof DashProxyRoute
   '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/sync': typeof DashSyncRouteWithChildren
   '/dash/torrents': typeof DashTorrentsRouteWithChildren
@@ -222,6 +229,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/dash/login': typeof DashLoginRoute
+  '/dash/proxy': typeof DashProxyRoute
   '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/dash': typeof DashRouteWithChildren
   '/dash/lists': typeof DashListsRouteWithChildren
   '/dash/login': typeof DashLoginRoute
+  '/dash/proxy': typeof DashProxyRoute
   '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/sync': typeof DashSyncRouteWithChildren
   '/dash/torrents': typeof DashTorrentsRouteWithChildren
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/proxy'
     | '/dash/settings'
     | '/dash/sync'
     | '/dash/torrents'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dash/login'
+    | '/dash/proxy'
     | '/dash/workers'
     | '/dash'
     | '/dash/settings/ratelimit-configs'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/dash'
     | '/dash/lists'
     | '/dash/login'
+    | '/dash/proxy'
     | '/dash/settings'
     | '/dash/sync'
     | '/dash/torrents'
@@ -425,6 +437,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/dash/settings'
       preLoaderRoute: typeof DashSettingsRouteImport
+      parentRoute: typeof DashRoute
+    }
+    '/dash/proxy': {
+      id: '/dash/proxy'
+      path: '/proxy'
+      fullPath: '/dash/proxy'
+      preLoaderRoute: typeof DashProxyRouteImport
       parentRoute: typeof DashRoute
     }
     '/dash/login': {
@@ -678,6 +697,7 @@ const DashVaultRouteWithChildren = DashVaultRoute._addFileChildren(
 interface DashRouteChildren {
   DashListsRoute: typeof DashListsRouteWithChildren
   DashLoginRoute: typeof DashLoginRoute
+  DashProxyRoute: typeof DashProxyRoute
   DashSettingsRoute: typeof DashSettingsRouteWithChildren
   DashSyncRoute: typeof DashSyncRouteWithChildren
   DashTorrentsRoute: typeof DashTorrentsRouteWithChildren
@@ -690,6 +710,7 @@ interface DashRouteChildren {
 const DashRouteChildren: DashRouteChildren = {
   DashListsRoute: DashListsRouteWithChildren,
   DashLoginRoute: DashLoginRoute,
+  DashProxyRoute: DashProxyRoute,
   DashSettingsRoute: DashSettingsRouteWithChildren,
   DashSyncRoute: DashSyncRouteWithChildren,
   DashTorrentsRoute: DashTorrentsRouteWithChildren,
