@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -641,16 +643,19 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 		}
 
 		totalCount := 0
-		for {
+		maxIterations := 100
+		iteration := 0
+		for iteration < maxIterations {
+			iteration++
 			hashes, err := torrent_info.GetAniDBUnmappedHashes(batch_size)
 			if err != nil {
 				return err
 			}
 
+			var errs []error
 			var wg sync.WaitGroup
 			for cHashes := range slices.Chunk(hashes, chunk_size) {
 				wg.Go(func() {
-
 					panicHints := []string{}
 					defer func() {
 						if perr, stack := util.HandlePanic(recover(), true); perr != nil {
@@ -663,6 +668,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 					tInfoByHash, err := torrent_info.GetByHashes(cHashes)
 					if err != nil {
 						log.Error("failed to get torrent info", "error", err)
+						errs = append(errs, fmt.Errorf("failed to get torrent info: %w", err))
 						return
 					}
 					for hash, tInfo := range tInfoByHash {
@@ -684,6 +690,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 						anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, nil, 0, 1)
 						if err != nil {
 							log.Error("failed to search anidb title ids", "error", err, "title", tInfo.Title)
+							errs = append(errs, fmt.Errorf("failed to search anidb title ids: %w", err))
 							continue
 						}
 						if len(anidbTitleIds) == 0 {
@@ -699,6 +706,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 						tvdbMaps, err := anidb.GetTVDBEpisodeMaps(anidbId, true)
 						if err != nil {
 							log.Error("failed to get tvdb episode maps", "error", err, "anidb_id", anidbId)
+							errs = append(errs, fmt.Errorf("failed to get tvdb episode maps: %w", err))
 							continue
 						}
 
@@ -712,6 +720,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 						anidbTitles, err := tvdbMaps.GetAniDBTitles()
 						if err != nil {
 							log.Error("failed to get anidb titles from tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
+							errs = append(errs, fmt.Errorf("failed to get anidb titles from tvdb episode maps: %w", err))
 							continue
 						}
 
@@ -741,6 +750,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 						torrentMaps, err := prepareAniDBTorrentMaps(tvdbMaps, anidbTitles, tInfo)
 						if err != nil {
 							log.Error("failed to match anidb ids in tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
+							errs = append(errs, fmt.Errorf("failed to match anidb ids in tvdb episode maps: %w", err))
 							continue
 						}
 
@@ -766,6 +776,7 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 
 					if err := anidb.UpsertTorrents(items); err != nil {
 						log.Error("failed to map anidb torrent", "error", err)
+						errs = append(errs, fmt.Errorf("failed to map anidb torrent: %w", err))
 						return
 					}
 
@@ -782,7 +793,15 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 				break
 			}
 
+			if err := errors.Join(errs...); err != nil {
+				return err
+			}
+
 			time.Sleep(200 * time.Millisecond)
+		}
+
+		if iteration == maxIterations {
+			log.Warn("reached max iterations, stopping")
 		}
 
 		return nil
