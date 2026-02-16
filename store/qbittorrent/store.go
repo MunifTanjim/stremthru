@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -52,11 +53,11 @@ type LockedFileLink string
 const lockedFileLinkPrefix = "stremthru://store/qbittorrent/"
 
 func (l LockedFileLink) encodeData(hash string, fileIndex int) string {
-	return core.Base64Encode(hash + ":" + strconv.Itoa(fileIndex))
+	return util.Base64Encode(hash + ":" + strconv.Itoa(fileIndex))
 }
 
 func (l LockedFileLink) decodeData(encoded string) (hash string, fileIndex int, err error) {
-	decoded, err := core.Base64Decode(encoded)
+	decoded, err := util.Base64Decode(encoded)
 	if err != nil {
 		return "", 0, err
 	}
