@@ -632,7 +632,10 @@ var config = func() Config {
 
 	listenAddr := getEnv("STREMTHRU_LISTEN_ADDR")
 	if listenAddr == "" {
-		listenAddr = "127.0.0.1:" + getEnv("STREMTHRU_PORT")
+		listenAddr = ":" + getEnv("STREMTHRU_PORT")
+		if Environment == EnvDev {
+			listenAddr = "127.0.0.1" + listenAddr
+		}
 	}
 	return Config{
 		LogLevel:  logLevel,
