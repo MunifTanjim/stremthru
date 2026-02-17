@@ -314,7 +314,7 @@ func handleUploadNZB(w http.ResponseWriter, r *http.Request) {
 	nzbId := xid.New().String()
 	link := config.BaseURL.JoinPath("/v0/newznab/getnzb/", nzbId)
 	linkQuery := link.Query()
-	apikey := util.Base64Encode(ctx.Session.User + ":" + config.AdminPassword.GetPassword(ctx.Session.User))
+	apikey := util.Base64Encode(ctx.Session.User + ":" + config.Auth.GetPassword(ctx.Session.User))
 	linkQuery.Set("apikey", apikey)
 	link.RawQuery = linkQuery.Encode()
 

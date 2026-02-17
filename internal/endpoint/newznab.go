@@ -27,7 +27,7 @@ func isNewznabRequestAuthed(r *http.Request) bool {
 		return false
 	}
 
-	return config.UserAuth.GetPassword(auth.Username) == auth.Password
+	return config.Auth.GetPassword(auth.Username) == auth.Password
 }
 
 func handleNewznab(w http.ResponseWriter, r *http.Request) {

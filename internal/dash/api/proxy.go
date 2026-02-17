@@ -41,7 +41,7 @@ func handleProxifyLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := ctx.Session.User
-	password := config.UserAuth.GetPassword(user)
+	password := config.Auth.GetPassword(user)
 
 	expiresIn := 0 * time.Second
 	if payload.Exp != "" {

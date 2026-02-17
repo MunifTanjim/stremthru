@@ -44,7 +44,7 @@ func (ud *UserData) getIdPrefixes() []string {
 	if len(ud.idPrefixes) == 0 {
 		if ud.StoreName == "" {
 			if user, err := util.ParseBasicAuth(ud.StoreToken); err == nil {
-				if password := config.UserAuth.GetPassword(user.Username); password != "" && password == user.Password {
+				if password := config.Auth.GetPassword(user.Username); password != "" && password == user.Password {
 					for _, name := range config.StoreAuthToken.ListStores(user.Username) {
 						storeName := store.StoreName(name)
 						storeCode := "st-" + string(storeName.Code())
@@ -112,7 +112,7 @@ func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*Ctx, erro
 		if err != nil {
 			return ctx, &userDataError{storeToken: err.Error()}
 		}
-		password := config.UserAuth.GetPassword(user.Username)
+		password := config.Auth.GetPassword(user.Username)
 		if password != "" && password == user.Password {
 			ctx.IsProxyAuthorized = true
 			ctx.ProxyAuthUser = user.Username

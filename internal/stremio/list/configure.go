@@ -19,7 +19,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	isAuthed := false
 	if cookie, err := stremio_shared.GetAdminCookieValue(w, r); err == nil && !cookie.IsExpired {
-		isAuthed = config.UserAuth.GetPassword(cookie.User()) == cookie.Pass()
+		isAuthed = config.Auth.GetPassword(cookie.User()) == cookie.Pass()
 	}
 
 	ud, err := getUserData(r, isAuthed)
@@ -41,7 +41,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			if !IsPublicInstance {
 				user := r.Form.Get("user")
 				pass := r.Form.Get("pass")
-				if pass == "" || config.AdminPassword.GetPassword(user) != pass {
+				if pass == "" || config.Auth.GetPassword(user) != pass || !config.Auth.IsAdmin(user) {
 					td.AuthError = "Wrong Credential!"
 				} else {
 					stremio_shared.SetAdminCookie(w, user, pass)

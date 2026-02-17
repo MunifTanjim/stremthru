@@ -37,7 +37,7 @@ func extractProxyAuthToken(r *http.Request, readQuery bool) (token string, hasTo
 func GetProxyAuthorization(r *http.Request, readQuery bool) (isAuthorized bool, user, pass string) {
 	token, hasToken := extractProxyAuthToken(r, readQuery)
 	auth, err := util.ParseBasicAuth(token)
-	isAuthorized = hasToken && err == nil && config.UserAuth.GetPassword(auth.Username) == auth.Password
+	isAuthorized = hasToken && err == nil && config.Auth.GetPassword(auth.Username) == auth.Password
 	user = auth.Username
 	pass = auth.Password
 	return isAuthorized, user, pass
@@ -50,7 +50,7 @@ func AdminAuthed(next http.HandlerFunc) http.HandlerFunc {
 			ErrorUnauthorized(r).Send(w, r)
 			return
 		}
-		if auth, err := util.ParseBasicAuth(token); err != nil || config.AdminPassword.GetPassword(auth.Username) != auth.Password {
+		if auth, err := util.ParseBasicAuth(token); err != nil || config.Auth.GetPassword(auth.Username) != auth.Password || !config.Auth.IsAdmin(auth.Username) {
 			ErrorUnauthorized(r).Send(w, r)
 			return
 		}

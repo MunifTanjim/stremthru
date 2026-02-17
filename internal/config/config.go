@@ -178,22 +178,25 @@ func (m StoreAuthTokenMap) addStore(user, store string) {
 	m.setToken(user, "*", stores)
 }
 
-type UserPasswordMap map[string]string
+type AuthMap struct {
+	user_pass  map[string]string
+	admin_pass map[string]string
+	is_admin   map[string]bool
+}
 
-func (m UserPasswordMap) GetPassword(user string) string {
-	if password, ok := m[user]; ok {
+func (m AuthMap) GetPassword(user string) string {
+	if password, ok := m.user_pass[user]; ok {
+		return password
+	}
+	if password, ok := m.admin_pass[user]; ok {
 		return password
 	}
 	return ""
 }
 
-type AuthAdminMap map[string]bool
-
-func (m AuthAdminMap) IsAdmin(userName string) bool {
-	if isAdmin, ok := m[userName]; ok {
-		return isAdmin
-	}
-	return false
+func (m AuthMap) IsAdmin(user string) bool {
+	isAdmin, ok := m.is_admin[user]
+	return ok && isAdmin
 }
 
 type SabnzbdAuthMap map[string]string // username -> apikey
@@ -390,9 +393,7 @@ type Config struct {
 	ListenAddr                  string
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
-	UserAuth                    UserPasswordMap
-	AuthAdmin                   AuthAdminMap
-	AdminPassword               UserPasswordMap
+	Auth                        AuthMap
 	SabnzbdAuth                 SabnzbdAuthMap
 	BuddyURL                    string
 	HasBuddy                    bool
@@ -433,48 +434,50 @@ func parseUri(uri string) (parsedUrl, parsedToken string) {
 }
 
 var config = func() Config {
+	authMap := AuthMap{
+		user_pass:  map[string]string{},
+		admin_pass: map[string]string{},
+		is_admin:   map[string]bool{},
+	}
+
 	authCredStr := getEnv("STREMTHRU_AUTH")
 	if authCredStr == "" {
 		// deprecated
 		authCredStr = getEnv("STREMTHRU_PROXY_AUTH")
 	}
-	authCredList := strings.FieldsFunc(authCredStr, func(c rune) bool {
+	for _, cred := range strings.FieldsFunc(authCredStr, func(c rune) bool {
 		return c == ','
-	})
-	authPasswordMap := make(UserPasswordMap)
-
-	for _, cred := range authCredList {
+	}) {
 		if basicAuth, err := util.ParseBasicAuth(cred); err == nil {
-			authPasswordMap[basicAuth.Username] = basicAuth.Password
+			authMap.user_pass[basicAuth.Username] = basicAuth.Password
 		}
 	}
 
-	authAdminMap := AuthAdminMap{}
-	authAdminList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_ADMIN"), func(c rune) bool {
+	for _, admin := range strings.FieldsFunc(getEnv("STREMTHRU_AUTH_ADMIN"), func(c rune) bool {
 		return c == ','
-	})
-	adminPasswordMap := UserPasswordMap{}
-	for _, admin := range authAdminList {
+	}) {
 		if strings.Contains(admin, ":") {
-			username, password, _ := strings.Cut(admin, ":")
-			authAdminMap[username] = true
-			adminPasswordMap[username] = password
-		} else if password := authPasswordMap.GetPassword(admin); password != "" {
-			authAdminMap[admin] = true
-			adminPasswordMap[admin] = password
+			if basicAuth, err := util.ParseBasicAuth(admin); err == nil {
+				if authMap.GetPassword(basicAuth.Username) != "" {
+					log.Fatalf("password already set for user: %s", basicAuth.Username)
+				}
+				authMap.is_admin[basicAuth.Username] = true
+				authMap.admin_pass[basicAuth.Username] = basicAuth.Password
+			}
+		} else if password := authMap.GetPassword(admin); password != "" {
+			authMap.is_admin[admin] = true
 		}
 	}
-	if len(authAdminMap) == 0 {
-		for username := range authPasswordMap {
-			authAdminMap[username] = true
-			adminPasswordMap[username] = authPasswordMap[username]
+	if len(authMap.is_admin) == 0 {
+		for username := range authMap.user_pass {
+			authMap.is_admin[username] = true
 		}
 	}
-	if len(adminPasswordMap) == 0 {
+	if len(authMap.user_pass) == 0 {
 		username := "st-" + util.GenerateRandomString(7, util.CharSet.AlphaNumeric)
 		password := util.GenerateRandomString(27, util.CharSet.AlphaNumericMixedCase)
-		authAdminMap[username] = true
-		adminPasswordMap[username] = password
+		authMap.is_admin[username] = true
+		authMap.admin_pass[username] = password
 	}
 
 	sabnzbdAuthMap := make(SabnzbdAuthMap)
@@ -636,9 +639,7 @@ var config = func() Config {
 		LogFormat: logFormat,
 
 		ListenAddr:                  listenAddr,
-		UserAuth:                    authPasswordMap,
-		AuthAdmin:                   authAdminMap,
-		AdminPassword:               adminPasswordMap,
+		Auth:                        authMap,
 		SabnzbdAuth:                 sabnzbdAuthMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
@@ -671,9 +672,7 @@ var LogLevel = config.LogLevel
 var LogFormat = config.LogFormat
 
 var ListenAddr = config.ListenAddr
-var UserAuth = config.UserAuth
-var AuthAdmin = config.AuthAdmin
-var AdminPassword = config.AdminPassword
+var Auth = config.Auth
 var SabnzbdAuth = config.SabnzbdAuth
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
@@ -716,7 +715,7 @@ var IsTrusted = func() bool {
 var DataDir = config.DataDir
 var VaultSecret = config.VaultSecret
 
-var IsPublicInstance = len(UserAuth) == 0
+var IsPublicInstance = len(Auth.user_pass) == 0
 
 func getRedactedURI(uri string) (string, error) {
 	u, err := url.Parse(uri)
@@ -811,7 +810,7 @@ func PrintConfig(state *AppState) {
 
 	if !IsPublicInstance {
 		l.Println(" Users:")
-		for user := range UserAuth {
+		for user := range Auth.user_pass {
 			stores := StoreAuthToken.ListStores(user)
 			preferredStore := StoreAuthToken.GetPreferredStore(user)
 			if len(stores) == 0 {
@@ -856,8 +855,8 @@ func PrintConfig(state *AppState) {
 	}
 	l.Println()
 
-	if len(AdminPassword) == 1 {
-		for username, password := range AdminPassword {
+	if len(Auth.admin_pass) == 1 {
+		for username, password := range Auth.admin_pass {
 			if strings.HasPrefix(username, "st-") {
 				l.Println(" (Auto Generated) Admin Creds:")
 				l.Println("   " + username + ":" + password)

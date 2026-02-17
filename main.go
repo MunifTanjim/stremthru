@@ -67,7 +67,7 @@ func main() {
 
 	server := &http.Server{Addr: config.ListenAddr, Handler: handler}
 
-	if len(config.UserAuth) == 0 {
+	if config.IsPublicInstance {
 		server.SetKeepAlivesEnabled(false)
 	}
 

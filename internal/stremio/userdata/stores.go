@@ -83,7 +83,7 @@ func (ud *UserDataStores) Prepare(ctx *stremio_shared.Ctx) (err error, errField 
 		if err != nil {
 			return err, "token"
 		}
-		password := config.UserAuth.GetPassword(auth.Username)
+		password := config.Auth.GetPassword(auth.Username)
 		if password == "" || password != auth.Password {
 			return errors.New("invalid token"), "token"
 		} else {

@@ -41,7 +41,7 @@ func (i *Indexer) GetId() string {
 }
 
 func (i *Indexer) isValidAPIKey() bool {
-	password := config.UserAuth.GetPassword(i.user)
+	password := config.Auth.GetPassword(i.user)
 	return password != "" && password == i.pass
 }
 

@@ -41,7 +41,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			if !IsPublicInstance {
 				user := r.Form.Get("user")
 				pass := r.Form.Get("pass")
-				if pass == "" || config.AdminPassword.GetPassword(user) != pass {
+				if pass == "" || config.Auth.GetPassword(user) != pass || !config.Auth.IsAdmin(user) {
 					td.AuthError = "Wrong Credential!"
 				} else {
 					stremio_shared.SetAdminCookie(w, user, pass)

@@ -153,7 +153,7 @@ func HandleSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if password := config.AdminPassword.GetPassword(request.User); password == "" || password != request.Password {
+	if password := config.Auth.GetPassword(request.User); password == "" || password != request.Password || !config.Auth.IsAdmin(request.User) {
 		ErrorUnauthorized(r).WithMessage("Invalid Credentials").Send(w, r)
 		return
 	}

@@ -58,7 +58,7 @@ func invalidAPIKeyError() error {
 
 func (c *StoreClient) ensureAuthed(params *store.Ctx) (*util.BasicAuth, error) {
 	ba, err := util.ParseBasicAuth(params.APIKey)
-	if err != nil || ba.Password == "" || ba.Password != config.UserAuth.GetPassword(ba.Username) {
+	if err != nil || ba.Password == "" || ba.Password != config.Auth.GetPassword(ba.Username) {
 		return nil, invalidAPIKeyError()
 	}
 	return &ba, nil
@@ -455,7 +455,7 @@ func getUserCredsFromJWT(t *jwt.Token) (user, password string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	password = config.UserAuth.GetPassword(user)
+	password = config.Auth.GetPassword(user)
 	return user, password, nil
 }
 
