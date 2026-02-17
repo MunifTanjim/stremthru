@@ -125,22 +125,43 @@ type StreamExtractorResultRaw struct {
 	Description string
 }
 
+type StreamExtractorResultIndexer struct {
+	ID   string
+	Host string
+	Name string
+}
+
+type StreamExtractorResultKind = string
+
+const (
+	StreamExtractorResultKindTorz StreamExtractorResultKind = "torz"
+	StreamExtractorResultKindNewz StreamExtractorResultKind = "newz"
+)
+
 type StreamExtractorResult struct {
 	*ptt.Result
 
 	Addon     StreamExtractorResultAddon
-	Age       time.Duration
 	Category  string
+	Date      time.Time
 	Episode   int
 	File      StreamExtractorResultFile
 	Hash      string
+	Indexer   StreamExtractorResultIndexer `expr:"-"`
 	IsPrivate bool
+	Kind      StreamExtractorResultKind
 	Raw       StreamExtractorResultRaw
 	Season    int
 	Seeders   int
 	Store     StreamExtractorResultStore
 	TTitle    string `expr:"-"`
-	Indexer   string `expr:"-"`
+}
+
+func (r *StreamExtractorResult) Age() string {
+	if r.Date.IsZero() {
+		return ""
+	}
+	return time.Since(r.Date).String()
 }
 
 var language_to_code = map[string]string{

@@ -112,6 +112,7 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 
 	for i := range sQueries {
 		go func(sq indexerSearchQuery) {
+			sq.Query.Set("extended", "1")
 			items, err := newznabcache.Search.Do(sq.indexer, sq.Query, sq.Header, log)
 			resultCh <- searchResult{indexer: sq.indexer, items: items, err: err, is_exact: sq.IsExact}
 		}(sQueries[i])
@@ -162,11 +163,15 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 				Addon: stremio_transformer.StreamExtractorResultAddon{
 					Name: "Newz",
 				},
-				Age:      item.Age(),
 				Category: stremType,
+				Date:     item.Date,
 				Hash:     item.GetHash(),
-				Indexer:  indexerName,
-				TTitle:   item.Title,
+				Indexer: stremio_transformer.StreamExtractorResultIndexer{
+					Host: item.Indexer.Host,
+					Name: indexerName,
+				},
+				Kind:   stremio_transformer.StreamExtractorResultKindNewz,
+				TTitle: item.Title,
 			}
 			if item.Size > 0 {
 				data.Size = util.ToSize(item.Size)

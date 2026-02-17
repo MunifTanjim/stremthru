@@ -387,7 +387,11 @@ func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStrea
 					Result:    pttr,
 					Seeders:   item.Seeders,
 					IsPrivate: tInfo.Private || item.Private,
-					Indexer:   jackett.GetIndexerName(item.Indexer),
+					Indexer: stremio_transformer.StreamExtractorResultIndexer{
+						ID:   item.Indexer,
+						Name: jackett.GetIndexerName(item.Indexer),
+					},
+					Kind: stremio_transformer.StreamExtractorResultKindTorz,
 					Addon: stremio_transformer.StreamExtractorResultAddon{
 						Name: "Torz",
 					},
@@ -444,7 +448,11 @@ func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStrea
 				Seeders:   item.Seeders,
 				IsPrivate: item.Private,
 				Result:    pttr,
-				Indexer:   jackett.GetIndexerName(item.Indexer),
+				Indexer: stremio_transformer.StreamExtractorResultIndexer{
+					ID:   item.Indexer,
+					Name: jackett.GetIndexerName(item.Indexer),
+				},
+				Kind: stremio_transformer.StreamExtractorResultKindTorz,
 				Addon: stremio_transformer.StreamExtractorResultAddon{
 					Name: "Torz",
 				},
@@ -595,10 +603,14 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 			Result:    pttr,
 			Seeders:   tInfo.Seeders,
 			IsPrivate: tInfo.Private,
-			Indexer:   jackett.GetIndexerName(tInfo.Indexer),
+			Indexer: stremio_transformer.StreamExtractorResultIndexer{
+				ID:   tInfo.Indexer,
+				Name: jackett.GetIndexerName(tInfo.Indexer),
+			},
 			Addon: stremio_transformer.StreamExtractorResultAddon{
 				Name: "Torz",
 			},
+			Kind:     stremio_transformer.StreamExtractorResultKindTorz,
 			Category: stremType,
 			File: stremio_transformer.StreamExtractorResultFile{
 				Name: fName,
