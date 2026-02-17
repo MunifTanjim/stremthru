@@ -491,6 +491,9 @@ func Record(items []InsertData, discardIdx bool) error {
 				count--
 			}
 		}
+		if count == 0 {
+			continue
+		}
 		query := record_streams_query_before_values +
 			util.RepeatJoin(record_streams_query_values_placeholder, count, ",") +
 			record_streams_query_on_conflict
