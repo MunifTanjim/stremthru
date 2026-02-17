@@ -121,7 +121,7 @@ func (p *Pool) ensureMinSize(ctx context.Context) error {
 func (p *Pool) verifyProvider(provider *providerPool) {
 	c, err := provider.Acquire(context.Background())
 	if err != nil {
-		p.Log.Warn("disabling provider pool due to failed connection test", "error", err, "id", provider.Id())
+		p.Log.Error("marking provider pool offline due to failed connection test", "error", err, "id", provider.Id())
 		provider.SetState(nntp.PoolStateOffline)
 		return
 	}
@@ -130,14 +130,15 @@ func (p *Pool) verifyProvider(provider *providerPool) {
 	if len(p.requiredCapabilities) > 0 {
 		caps, err := c.Capabilities()
 		if err != nil {
+			p.Log.Error("marking provider pool offline due to failed capabilities test", "error", err, "id", provider.Id())
 			provider.SetState(nntp.PoolStateOffline)
 			return
 		}
 
 		for _, capability := range p.requiredCapabilities {
 			if !slices.Contains(caps.Capabilities, capability) {
+				p.Log.Warn("marking provider pool disabled due to missing required capability", "capability", capability, "id", provider.Id())
 				provider.SetState(nntp.PoolStateDisabled)
-				p.Log.Warn("disabling provider pool due to missing required capability", "capability", capability, "id", provider.Id())
 				return
 			}
 		}
@@ -257,6 +258,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 						p.Log.Trace("fetch segment - switching to backup providers", "segment_num", segment.Number, "message_id", messageId)
 						continue
 					}
+					errs = append(errs, err)
 					break
 				}
 				errs = append(errs, err)

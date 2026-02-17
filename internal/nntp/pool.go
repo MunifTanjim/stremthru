@@ -172,13 +172,13 @@ func (p *Pool) ensureMinSize(ctx context.Context) error {
 }
 
 func (p *Pool) handleConnectionFailure(errs ...error) {
-	p.Log.Trace("handleConnectionFailure", "error_count", len(errs))
+	p.Log.Error("connection failure", "err", errors.Join(errs...), "id", p.Id())
 
 	for _, err := range errs {
 		var nntpErr *Error
 		if errors.As(err, &nntpErr) {
 			if nntpErr.isAuthError() {
-				p.Log.Trace("handleConnectionFailure auth error", "error", nntpErr)
+				p.Log.Warn("connection failure - marking auth failed", "error", nntpErr, "id", p.Id())
 				p.SetState(PoolStateAuthFailed)
 				return
 			}
@@ -188,7 +188,7 @@ func (p *Pool) handleConnectionFailure(errs ...error) {
 	currentState := p.GetState()
 
 	if currentState == PoolStateOnline || currentState == PoolStateConnecting {
-		p.Log.Trace("handleConnectionFailure setting offline", "previous_state", currentState)
+		p.Log.Warn("connection failure - marking offline", "prev_state", currentState, "id", p.Id())
 		p.SetState(PoolStateOffline)
 		if currentState == PoolStateOnline {
 			p.destroyAllIdles()
@@ -215,7 +215,7 @@ func (p *Pool) doReconnect(ctx context.Context) bool {
 
 	c, err := p.pool.Acquire(reconnectCtx)
 	if err != nil {
-		p.Log.Warn("reconnection attempt failed", "host", p.config.Host, "error", err)
+		p.Log.Error("reconnection attempt failed", "error", err, "id", p.Id())
 		p.SetState(PoolStateOffline)
 		return false
 	}
