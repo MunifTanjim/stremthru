@@ -25,9 +25,12 @@ func ParseBasicAuth(token string) (BasicAuth, error) {
 			basicAuth.Password = password
 			basicAuth.Token = token
 		} else {
-			return basicAuth, errors.New("invalid token")
+			return basicAuth, errors.New("malformed token")
 		}
 	} else {
+		return basicAuth, errors.New("malformed token")
+	}
+	if basicAuth.Username == "" || basicAuth.Password == "" {
 		return basicAuth, errors.New("malformed token")
 	}
 	return basicAuth, nil
