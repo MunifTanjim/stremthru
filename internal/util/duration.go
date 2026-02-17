@@ -19,17 +19,20 @@ var durationFormatUnits = []struct {
 	{1, "s"},
 }
 
-func FormatDuration(d time.Duration) string {
+func FormatDuration(d time.Duration, maxParts int) string {
 	totalSeconds := int64(d.Seconds())
 	if totalSeconds == 0 {
 		return "0s"
 	}
 
-	var parts []string
+	parts := make([]string, 0, maxParts)
 	remaining := totalSeconds
 	for _, u := range durationFormatUnits {
 		if val := remaining / u.seconds; val > 0 {
 			parts = append(parts, strconv.FormatInt(val, 10)+u.suffix)
+			if len(parts) >= maxParts {
+				break
+			}
 			remaining %= u.seconds
 		}
 	}

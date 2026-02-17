@@ -27,7 +27,7 @@ func TestFormatDuration(t *testing.T) {
 			"2yr 3mo 2wk 4d 23h 59m 59s"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, FormatDuration(tt.duration))
+			assert.Equal(t, tt.expected, FormatDuration(tt.duration, 7))
 		})
 	}
 }

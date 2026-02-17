@@ -161,7 +161,7 @@ func (r *StreamExtractorResult) Age() string {
 	if r.Date.IsZero() {
 		return ""
 	}
-	return time.Since(r.Date).String()
+	return util.FormatDuration(time.Since(r.Date), 1)
 }
 
 var language_to_code = map[string]string{
