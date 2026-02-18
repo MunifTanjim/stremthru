@@ -261,25 +261,21 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
-	email_res, err := s.client.GetUserEmail(&GetUserEmailParams{
+	res, err := s.client.GetAccountInfo(&GetAccountInfoParams{
 		Ctx: params.Ctx,
 	})
 	if err != nil {
 		return nil, err
 	}
 	data := &store.User{
-		Id:                 email_res.Data.UserId,
-		Email:              email_res.Data.Email,
+		Id:                 res.Data.UserID,
 		SubscriptionStatus: store.UserSubscriptionStatusTrial,
 	}
-	stats_res, err := s.client.GetAccountStats(&GetAccountStatsParams{
-		Ctx: params.Ctx,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if stats_res.Data.ExpirationDate.After(time.Now()) {
+	if res.Data.IsPremium {
 		data.SubscriptionStatus = store.UserSubscriptionStatusPremium
+	}
+	if exp, err := time.Parse(time.DateOnly, res.Data.ExpirationDate); err == nil && !exp.After(time.Now()) {
+		data.SubscriptionStatus = store.UserSubscriptionStatusExpired
 	}
 	return data, nil
 }

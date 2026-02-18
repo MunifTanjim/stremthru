@@ -10,7 +10,7 @@ import (
 )
 
 type ResponseContainer struct {
-	Err string `json:"error"`
+	Err string `json:"error"` // NOAUTH
 }
 
 func (e *ResponseContainer) Error() string {

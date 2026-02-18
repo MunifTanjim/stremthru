@@ -64,6 +64,7 @@ func NewAPIClient(conf *APIClientConfig) *APIClient {
 
 	c.reqHeader = func(header *http.Header, params request.Context) {
 		header.Add("User-Agent", c.agent)
+		header.Set("Authorization", "Bearer "+params.GetAPIKey(c.apiKey))
 	}
 
 	c.authCache = cache.NewCache[cachedAuth](&cache.CacheConfig{

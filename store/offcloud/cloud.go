@@ -11,6 +11,51 @@ import (
 	"github.com/MunifTanjim/stremthru/store"
 )
 
+type GetCacheInfoParams struct {
+	Ctx
+	URLs         []string `json:"urls"`
+	IncludeFiles bool     `json:"includeFiles,omitempty"`
+}
+
+type GetCacheInfoDataItem struct {
+	Cached bool `json:"cached"`
+	Files  []struct {
+		Folder   []string `json:"folder"`
+		Filename string   `json:"filename"`
+	} `json:"files,omitempty"`
+}
+
+type GetCacheInfoData []GetCacheInfoDataItem
+
+type getCacheInfoData struct {
+	ResponseContainer
+	data GetCacheInfoData
+}
+
+func (c *getCacheInfoData) UnmarshalJSON(data []byte) error {
+	var rerr ResponseContainer
+
+	if err := json.Unmarshal(data, &rerr); err == nil {
+		c.ResponseContainer = rerr
+		return nil
+	}
+
+	var items GetCacheInfoData
+	if err := json.Unmarshal(data, &items); err == nil {
+		c.data = items
+		return nil
+	}
+
+	return core.NewAPIError("failed to parse response")
+}
+
+func (c APIClient) GetCacheInfo(params *GetCacheInfoParams) (APIResponse[GetCacheInfoData], error) {
+	params.JSON = params
+	response := &getCacheInfoData{}
+	res, err := c.Request("POST", "/api/cache/info", params, response)
+	return newAPIResponse(res, response.data), err
+}
+
 type CheckCacheParams struct {
 	Ctx
 	Hashes []string `json:"hashes"`
