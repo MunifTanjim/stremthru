@@ -566,10 +566,13 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				}
 				if matcher.IdR.isUsenet {
 					data.Addon.Name = "Usenet Store"
+					data.Kind = stremio_transformer.StreamExtractorResultKindNewz
 				} else if matcher.IdR.isWebDL {
 					data.Addon.Name = "WebDL Store"
 				} else {
 					data.Addon.Name = "Store"
+					data.IsPrivate = cInfo.Private
+					data.Kind = stremio_transformer.StreamExtractorResultKindTorz
 				}
 				if _, err := streamTemplate.Execute(&stream, data); err != nil {
 					log.Error("failed to execute stream template", "error", err)
