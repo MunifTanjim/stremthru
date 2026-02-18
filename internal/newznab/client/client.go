@@ -62,7 +62,7 @@ func NewClient(conf *ClientConfig) *Client {
 			res, err := c.getCaps(&GetCapsParams{})
 			return res.Data, err
 		},
-		TTL: 15 * time.Minute,
+		TTL: 4 * time.Hour,
 	})
 
 	return &c
@@ -133,9 +133,10 @@ func (c *Client) Request(method, path string, params request.Context, v request.
 			error.UpstreamCause = rerr
 		} else {
 			error.Cause = err
+			error.StatusCode = res.StatusCode
 		}
 		error.InjectReq(req)
-		return res, err
+		return res, error
 	}
 	return res, nil
 }
