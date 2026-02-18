@@ -38,15 +38,6 @@ func getQualityRank(input string) int64 {
 	if strings.Contains(quality, "bluray") {
 		return 98
 	}
-	if strings.Contains(quality, "br") {
-		return 96
-	}
-	if strings.Contains(quality, "bd") {
-		return 94
-	}
-	if strings.Contains(quality, "uhd") {
-		return 92
-	}
 
 	if strings.Contains(quality, "web") {
 		if strings.Contains(quality, "dl") {
@@ -56,6 +47,16 @@ func getQualityRank(input string) int64 {
 			return 85
 		}
 		return 80
+	}
+
+	if strings.Contains(quality, "br") {
+		return 96
+	}
+	if strings.Contains(quality, "bd") {
+		return 94
+	}
+	if strings.Contains(quality, "uhd") {
+		return 92
 	}
 
 	if strings.Contains(quality, "hd") {

@@ -252,3 +252,39 @@ func TestStreamFilter_Match_FileSize(t *testing.T) {
 		})
 	}
 }
+
+func TestStreamFilter_QualityRank(t *testing.T) {
+	for _, tc := range []struct {
+		input string
+		rank  int64
+	}{
+		{"BluRay-REMUX", 100},
+		{"Remux", 100},
+		{"BluRay-Mux", 99},
+		{"MUX", 99},
+		{"BluRay", 98},
+		{"BRRip", 96},
+		{"BDRip", 94},
+		{"BD", 94},
+		{"UHDRip", 92},
+		{"UHD", 92},
+		{"WEB-DL", 89},
+		{"WEBDL", 89},
+		{"WEB-Rip", 85},
+		{"WEBRip", 85},
+		{"WEB", 80},
+		{"HDRip", 79},
+		{"HDTV", 75},
+		{"DVDRip", 60},
+		{"DVD", 60},
+		{"SATRip", 59},
+		{"PDTV", 57},
+		{"PPV", 55},
+		{"CAM", 40},
+		{"TeleSync", 30},
+		{"SCR", 20},
+		{"Unknown", 0},
+	} {
+		assert.Equal(t, getQualityRank(tc.input), tc.rank)
+	}
+}
