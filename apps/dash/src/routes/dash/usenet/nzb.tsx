@@ -277,16 +277,23 @@ function ContentFileNode({
 }) {
   const [expanded, setExpanded] = useState(false);
   const hasChildren = Boolean(file.files && file.files.length > 0);
+  const isPack = Boolean(
+    file.type === "archive" && file.parts && file.parts.length > 0,
+  );
   const filePath = parentPath
     ? parentPath + "::/" + file.name
     : "/" + file.name;
 
   return (
     <>
-      <Item size="sm" variant="outline">
+      <Item
+        size="sm"
+        style={{ marginLeft: `${depth * 20}px` }}
+        variant="outline"
+      >
         <ItemMedia>
           <div className="flex h-10 flex-col justify-between">
-            <ContentFileIcon isPack={hasChildren} type={file.type} />
+            <ContentFileIcon isPack={isPack} type={file.type} />
             {hasChildren ? (
               <button
                 className="flex size-4 shrink-0 items-center justify-center"
@@ -388,7 +395,7 @@ function ContentFileTree({
   parentPath?: string;
 }) {
   return (
-    <div className="space-y-1" style={{ paddingLeft: `${depth * 20}px` }}>
+    <div className="space-y-1">
       {files.map((file) => (
         <ItemGroup className="space-y-1" key={`${depth}-${file.name}`}>
           <ContentFileNode
@@ -467,7 +474,7 @@ function NzbInfoDetailDialog({
                 <div className="text-muted-foreground font-medium">
                   Password
                 </div>
-                <div className="mt-1">
+                <div className="mt-1 break-all">
                   {item.password || (
                     <span className="text-muted-foreground">-</span>
                   )}

@@ -184,9 +184,9 @@ func isConnectionError(err error) bool {
 		return true
 	}
 
-	var nntpErr *textproto.Error
+	var nntpErr *Error
 	if ok := errors.As(err, &nntpErr); ok {
-		switch nntpErr.Code {
+		switch nntpErr.StatusCode {
 		case StatusServiceTemporarilyUnavailable, StatusServicePermanentlyUnavailable:
 			return true
 		default:

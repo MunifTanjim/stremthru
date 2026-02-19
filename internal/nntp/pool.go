@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math"
-	"net/textproto"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -314,15 +313,13 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 			p.Log.Trace("Acquire - connection acquired", "provider", p.Id())
 			return conn, nil
 		} else {
-			var tpErr *textproto.Error
-			var nntpErr *Error
-			if !errors.As(err, &tpErr) && !errors.As(err, &nntpErr) {
-				if isConnectionError(err) {
-					p.Log.Trace("Acquire - connection error, retrying", "error", err, "attempt", attempt+1)
+			if isConnectionError(err) {
+				p.Log.Trace("Acquire - connection error, retrying", "error", err, "attempt", attempt+1)
+				if conn != nil {
 					conn.Destroy()
-					errs = append(errs, err)
-					continue
 				}
+				errs = append(errs, err)
+				continue
 			}
 			p.handleConnectionFailure(err)
 			return nil, err
