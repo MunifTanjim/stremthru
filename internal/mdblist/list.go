@@ -36,6 +36,19 @@ type List struct {
 	refreshed_at time.Time `json:"-"`
 }
 
+type ExternalList struct {
+	Id       int       `json:"id"`
+	UserId   int       `json:"user_id"`
+	UserName string    `json:"user_name"`
+	Name     string    `json:"name"`
+	Updated  time.Time `json:"updated"`
+	Items    int       `json:"items"`
+	Movies   int       `json:"movies"`
+	Shows    int       `json:"shows"`
+	URL      string    `json:"url"`
+	Source   string    `json:"source"` // imdb / trakt
+}
+
 func (l *List) GetURL() string {
 	if l.UserName != "" && l.Slug != "" {
 		return "https://mdblist.com/lists/" + l.UserName + "/" + l.Slug
@@ -46,12 +59,12 @@ func (l *List) GetURL() string {
 	return ""
 }
 
-type fetchListData struct {
+type fetchListData[T any] struct {
 	ResponseContainer
-	data List
+	data T
 }
 
-func (d *fetchListData) UnmarshalJSON(data []byte) error {
+func (d *fetchListData[T]) UnmarshalJSON(data []byte) error {
 	var rerr ResponseContainer
 
 	if err := json.Unmarshal(data, &rerr); err == nil {
@@ -59,7 +72,7 @@ func (d *fetchListData) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	var items []List
+	var items []T
 	if err := json.Unmarshal(data, &items); err == nil {
 		d.data = items[0]
 		return nil
@@ -74,7 +87,7 @@ type FetchListByIdParams struct {
 }
 
 func (c APIClient) FetchListById(params *FetchListByIdParams) (APIResponse[List], error) {
-	response := &fetchListData{}
+	response := &fetchListData[List]{}
 	res, err := c.Request("GET", "/lists/"+strconv.Itoa(params.ListId), params, response)
 	return newAPIResponse(res, response.data), err
 }
@@ -86,7 +99,18 @@ type FetchListByNameParams struct {
 }
 
 func (c APIClient) FetchListByName(params *FetchListByNameParams) (APIResponse[List], error) {
-	response := &fetchListData{}
+	response := &fetchListData[List]{}
 	res, err := c.Request("GET", "/lists/"+params.UserName+"/"+params.Slug, params, response)
+	return newAPIResponse(res, response.data), err
+}
+
+type FetchExternalListByIdParams struct {
+	Ctx
+	ListId int
+}
+
+func (c APIClient) FetchExternalListById(params *FetchExternalListByIdParams) (APIResponse[ExternalList], error) {
+	response := &fetchListData[ExternalList]{}
+	res, err := c.Request("GET", "/external/lists/"+strconv.Itoa(params.ListId), params, response)
 	return newAPIResponse(res, response.data), err
 }

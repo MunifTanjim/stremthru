@@ -394,6 +394,15 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					if username != "" && slug != "" && !strings.Contains(slug, "/") {
 						list.UserName = username
 						list.Slug = slug
+					} else if username != "" && strings.HasPrefix(slug, "external/") {
+						id := strings.TrimPrefix(slug, "external/")
+						if !util.IsNumericString(id) {
+							udErr.list_urls[idx] = "Invalid List URL"
+							continue
+						}
+						list.Id = mdblist.ID_PREFIX_USER_EXTERNAL + id
+						list.UserName = username
+						list.Slug = slug
 					} else {
 						udErr.list_urls[idx] = "Invalid List URL"
 						continue
@@ -409,7 +418,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 							continue
 						}
 					}
-					list.Id = "~:watchlist:" + username
+					list.Id = mdblist.ID_PREFIX_USER_WATCHLIST + username
 					list.UserName = username
 					list.Slug = "watchlist/" + username
 				} else {

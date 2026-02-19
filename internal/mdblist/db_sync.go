@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var mdblistClient = NewAPIClient(&APIClientConfig{})
@@ -22,6 +23,7 @@ func syncList(l *MDBListList, apiKey string) error {
 	syncListMutex.Lock()
 	defer syncListMutex.Unlock()
 
+	isExternal := l.IsExternal()
 	isWatchlist := l.IsWatchlist()
 
 	var list *List
@@ -32,6 +34,31 @@ func syncList(l *MDBListList, apiKey string) error {
 			Name:     "Watchlist",
 			Slug:     "watchlist/" + userName,
 			Updated:  time.Now(),
+		}
+	} else if isExternal {
+		id := util.SafeParseInt(strings.TrimPrefix(l.Id, ID_PREFIX_USER_EXTERNAL), -1)
+		if id == -1 {
+			return errors.New("invalid external list id")
+		}
+		log.Debug("fetching external list by id", "id", id)
+		params := &FetchExternalListByIdParams{
+			ListId: id,
+		}
+		params.APIKey = apiKey
+		res, err := mdblistClient.FetchExternalListById(params)
+		if err != nil {
+			return err
+		}
+		list = &List{
+			Id:       res.Data.Id,
+			Items:    res.Data.Items,
+			Movies:   res.Data.Movies,
+			Name:     res.Data.Name,
+			Shows:    res.Data.Shows,
+			Slug:     "external/" + strconv.Itoa(res.Data.Id),
+			Updated:  res.Data.Updated,
+			UserId:   res.Data.UserId,
+			UserName: res.Data.UserName,
 		}
 	} else if l.Id != "" {
 		log.Debug("fetching list by id", "id", l.Id)
@@ -102,7 +129,7 @@ func syncList(l *MDBListList, apiKey string) error {
 			for i := range res.Data {
 				item := &res.Data[i]
 				l.Items = append(l.Items, MDBListItem{
-					IMDBId:         item.ImdbId,
+					IMDBId:         item.Ids.IMDB,
 					Adult:          item.Adult == 1,
 					Title:          item.Title,
 					Poster:         item.Poster,
@@ -110,11 +137,48 @@ func syncList(l *MDBListList, apiKey string) error {
 					Mediatype:      item.Mediatype,
 					ReleaseYear:    item.ReleaseYear,
 					SpokenLanguage: item.SpokenLanguage,
-					Genre:          item.Genre,
+					Genre:          item.Genres,
 
 					Rank:   i,
-					TmdbId: strconv.Itoa(item.Id),
-					TvdbId: strconv.Itoa(item.TvdbId),
+					TmdbId: strconv.Itoa(item.Ids.TMDB),
+					TvdbId: strconv.Itoa(item.Ids.TVDB),
+				})
+			}
+			hasMore = len(res.Data) == limit
+			offset += limit
+		}
+	} else if isExternal {
+		for hasMore {
+			params := &FetchExternalListItemsParams{
+				ListId: list.Id,
+				Limit:  limit,
+				Offset: offset,
+			}
+			params.APIKey = apiKey
+			res, err := mdblistClient.FetchExternalListItems(params)
+			if err != nil {
+				return err
+			}
+			for i := range res.Data {
+				item := &res.Data[i]
+				rank := item.Rank
+				if rank == 0 {
+					rank = i
+				}
+				l.Items = append(l.Items, MDBListItem{
+					IMDBId:         item.Ids.IMDB,
+					Adult:          item.Adult == 1,
+					Title:          item.Title,
+					Poster:         item.Poster,
+					Language:       item.Language,
+					Mediatype:      item.Mediatype,
+					ReleaseYear:    item.ReleaseYear,
+					SpokenLanguage: item.SpokenLanguage,
+					Genre:          item.Genres,
+
+					Rank:   rank,
+					TmdbId: strconv.Itoa(item.Ids.TMDB),
+					TvdbId: strconv.Itoa(item.Ids.TVDB),
 				})
 			}
 			hasMore = len(res.Data) == limit
@@ -140,7 +204,7 @@ func syncList(l *MDBListList, apiKey string) error {
 					rank = i
 				}
 				l.Items = append(l.Items, MDBListItem{
-					IMDBId:         item.ImdbId,
+					IMDBId:         item.Ids.IMDB,
 					Adult:          item.Adult == 1,
 					Title:          item.Title,
 					Poster:         item.Poster,
@@ -148,11 +212,11 @@ func syncList(l *MDBListList, apiKey string) error {
 					Mediatype:      item.Mediatype,
 					ReleaseYear:    item.ReleaseYear,
 					SpokenLanguage: item.SpokenLanguage,
-					Genre:          item.Genre,
+					Genre:          item.Genres,
 
 					Rank:   rank,
-					TmdbId: strconv.Itoa(item.Id),
-					TvdbId: strconv.Itoa(item.TvdbId),
+					TmdbId: strconv.Itoa(item.Ids.TMDB),
+					TvdbId: strconv.Itoa(item.Ids.TVDB),
 				})
 			}
 			hasMore = len(res.Data) == limit

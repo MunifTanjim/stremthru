@@ -35,9 +35,14 @@ type MDBListList struct {
 }
 
 const ID_PREFIX_USER_WATCHLIST = "~:watchlist:"
+const ID_PREFIX_USER_EXTERNAL = "~:external:"
 
 func (l *MDBListList) IsWatchlist() bool {
 	return strings.HasPrefix(l.Id, ID_PREFIX_USER_WATCHLIST)
+}
+
+func (l *MDBListList) IsExternal() bool {
+	return strings.HasPrefix(l.Id, ID_PREFIX_USER_EXTERNAL)
 }
 
 func (l *MDBListList) GetURL() string {

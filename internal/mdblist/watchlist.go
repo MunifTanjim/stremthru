@@ -28,7 +28,7 @@ func (c APIClient) FetchWatchlistItems(params *FetchWatchlistItemsParams) (APIRe
 	if params.Offset != 0 {
 		query.Set("offset", strconv.Itoa(params.Offset))
 	}
-	query.Set("append_to_response", "genre,poster")
+	query.Set("append_to_response", "genres,poster,description") // ratings
 	if params.Sort != "" {
 		query.Set("sort", params.Sort)
 	}

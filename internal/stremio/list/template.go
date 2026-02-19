@@ -179,7 +179,7 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 			Type:         "password",
 			Default:      ud.MDBListAPIkey,
 			Title:        "API Key",
-			Description:  `MDBList <a href="https://mdblist.com/preferences/#api_key_uid" target="_blank">API Key</a>`,
+			Description:  `MDBList <a href="https://mdblist.com/preferences/#api" target="_blank">API Key</a>`,
 			Autocomplete: "off",
 			Error:        udError.mdblist.api_key,
 		},
@@ -475,6 +475,10 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 					Examples: []string{
 						"/lists/garycrawfordgc/latest-tv-shows",
 					},
+				},
+				{
+					Pattern:  "/lists/{user_name}/external/{list_id}",
+					Examples: []string{},
 				},
 				{
 					Pattern: "/watchlist/{own_user_name}",
