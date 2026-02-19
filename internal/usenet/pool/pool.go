@@ -16,6 +16,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
 )
 
+var ErrNoProvidersConfigured = errors.New("usenet: no providers configured")
 var ErrNoProvidersAvailable = errors.New("usenet: no available providers")
 var ErrArticleNotFound = errors.New("usenet: article not found")
 
@@ -159,7 +160,7 @@ func (p *Pool) GetConnection(ctx context.Context, excludeProvider []string, maxP
 	p.providersMutex.RLock()
 	if len(p.providers) == 0 {
 		p.providersMutex.RUnlock()
-		return nil, ErrNoProvidersAvailable
+		return nil, ErrNoProvidersConfigured
 	}
 	providers := make([]*providerPool, 0, len(p.providers))
 	for _, provider := range p.providers {
@@ -225,6 +226,24 @@ func (p *Pool) ensureConnectionGroup(conn *nntp.PooledConnection, groups ...stri
 	return errors.Join(errs...)
 }
 
+func (p *Pool) getProviderPriorities(useBackup bool) []int {
+	p.providersMutex.RLock()
+	defer p.providersMutex.RUnlock()
+	seen := map[int]struct{}{}
+	priorities := []int{}
+	for _, provider := range p.providers {
+		if provider.isBackup != useBackup {
+			continue
+		}
+		if _, ok := seen[provider.priority]; !ok {
+			seen[provider.priority] = struct{}{}
+			priorities = append(priorities, provider.priority)
+		}
+	}
+	slices.Sort(priorities)
+	return priorities
+}
+
 func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []string) (*SegmentData, error) {
 	messageId := segment.MessageId
 	if cachedData, ok := p.segmentCache.Get(messageId); ok {
@@ -236,25 +255,36 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 		var excludeProviders []string
 		errs := []error{}
 		failedAttempts := 0
-		currPriority := 0
 		useBackup := false
+		priorities := p.getProviderPriorities(useBackup)
+		priorityIdx := 0
+		currPriority := 0
+		if len(priorities) > 0 {
+			currPriority = priorities[0]
+		}
 
 		for failedAttempts < 3 {
-			if len(excludeProviders) > 0 || currPriority > 0 || useBackup {
+			if len(excludeProviders) > 0 || priorityIdx > 0 || useBackup {
 				p.Log.Trace("fetch segment - retry", "segment_num", segment.Number, "message_id", messageId, "failed_attempts", failedAttempts, "excluded_providers", len(excludeProviders), "curr_priority", currPriority, "use_backup", useBackup)
 			}
 
 			conn, err := p.GetConnection(context.Background(), excludeProviders, currPriority, useBackup)
 			if err != nil {
 				if errors.Is(err, ErrNoProvidersAvailable) {
-					if currPriority < 9 {
-						currPriority++
+					if priorityIdx+1 < len(priorities) {
+						priorityIdx++
+						currPriority = priorities[priorityIdx]
 						p.Log.Trace("fetch segment - expanding to lower priority", "segment_num", segment.Number, "message_id", messageId, "new_priority", currPriority, "use_backup", useBackup)
 						continue
 					}
 					if !useBackup && len(excludeProviders) > 0 {
 						useBackup = true
+						priorities = p.getProviderPriorities(useBackup)
+						priorityIdx = 0
 						currPriority = 0
+						if len(priorities) > 0 {
+							currPriority = priorities[0]
+						}
 						p.Log.Trace("fetch segment - switching to backup providers", "segment_num", segment.Number, "message_id", messageId)
 						continue
 					}
