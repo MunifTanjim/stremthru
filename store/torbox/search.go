@@ -48,9 +48,10 @@ type UsenetSearchByIDDataMetadata struct {
 }
 
 type UsenetSearchByIDDataNZB struct {
-	Hash     string `json:"hash"`
-	RawTitle string `json:"raw_title"`
-	Title    string `json:"title"`
+	Hash              string   `json:"hash"`
+	AlternativeHashes []string `json:"alternative_hashes"`
+	RawTitle          string   `json:"raw_title"`
+	Title             string   `json:"title"`
 	// TitleParsedData struct {
 	// 	Resolution string `json:"resolution"`
 	// 	Year       int    `json:"year"`

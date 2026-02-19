@@ -31,3 +31,32 @@ func TestFormatDuration(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDuration(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		input    string
+		expected time.Duration
+	}{
+		{"empty string", "", 0},
+		{"single day", "1d", 24 * time.Hour},
+		{"multiple days", "2d", 48 * time.Hour},
+		{"days and hours", "2d12h", 60 * time.Hour},
+		{"days and minutes", "1d30m", 24*time.Hour + 30*time.Minute},
+		{"days hours minutes", "1d2h30m", 26*time.Hour + 30*time.Minute},
+		{"minutes only", "30m", 30 * time.Minute},
+		{"hours and minutes", "2h30m", 2*time.Hour + 30*time.Minute},
+		{"hours and seconds", "1h30s", 1*time.Hour + 30*time.Second},
+		{"fractional days", "0.5d", 12 * time.Hour},
+		{"negative days", "-1d", -24 * time.Hour},
+		{"negative days and hours", "-2d12h", -60 * time.Hour},
+		{"positive sign", "+1d", 24 * time.Hour},
+		{"negative fractional days", "-0.5d", -12 * time.Hour},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dur, err := ParseDuration(tt.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, dur)
+		})
+	}
+}

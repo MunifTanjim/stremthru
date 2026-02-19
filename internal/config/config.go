@@ -270,7 +270,7 @@ func (f FeatureConfig) HasStremioList() bool {
 }
 
 func (f FeatureConfig) HasStremioNewz() bool {
-	return f.HasVault() && f.IsEnabled(FeatureStremioNewz)
+	return f.IsEnabled(FeatureStremioNewz)
 }
 
 func (f FeatureConfig) HasTorrentInfo() bool {

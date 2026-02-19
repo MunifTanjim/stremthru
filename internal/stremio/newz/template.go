@@ -14,6 +14,9 @@ import (
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 )
 
+var IsPublicInstance = config.IsPublicInstance
+var HasVault = config.Feature.HasVault()
+
 type Base = stremio_template.BaseData
 
 type TemplateDataIndexer struct {
@@ -84,27 +87,30 @@ func (td *TemplateData) HasFieldError() bool {
 	return false
 }
 
-func getIndexerTypeOptions() []configure.ConfigOption {
-	options := []configure.ConfigOption{
-		{
-			Value: string(stremio_userdata.NewzIndexerTypeGeneric),
-			Label: "Generic",
-		},
-		{
-			Value: string(stremio_userdata.NewzIndexerTypeStremThru),
-			Label: "StremThru",
-		},
-		{
-			Value: string(stremio_userdata.NewzIndexerTypeTorbox),
-			Label: "Torbox",
-		},
+var indexerTypeOptions = func() []configure.ConfigOption {
+	options := []configure.ConfigOption{}
+	if !IsPublicInstance {
+		options = append(options,
+			configure.ConfigOption{
+				Value: string(stremio_userdata.NewzIndexerTypeGeneric),
+				Label: "Generic",
+			},
+			configure.ConfigOption{
+				Value: string(stremio_userdata.NewzIndexerTypeStremThru),
+				Label: "StremThru",
+			},
+		)
 	}
+	options = append(options, configure.ConfigOption{
+		Value: string(stremio_userdata.NewzIndexerTypeTorbox),
+		Label: "Torbox",
+	})
 	return options
-}
+}()
 
 func newTemplateDataIndexer(index int, indexerType, name, url, apiKey string) TemplateDataIndexer {
 	if indexerType == "" {
-		indexerType = string(stremio_userdata.NewzIndexerTypeGeneric)
+		indexerType = indexerTypeOptions[0].Value
 	}
 	idx := strconv.Itoa(index)
 	isURLDisabled := indexerType == string(stremio_userdata.NewzIndexerTypeTorbox) || indexerType == string(stremio_userdata.NewzIndexerTypeStremThru)
@@ -114,7 +120,7 @@ func newTemplateDataIndexer(index int, indexerType, name, url, apiKey string) Te
 			Type:     configure.ConfigTypeSelect,
 			Default:  indexerType,
 			Title:    "Type",
-			Options:  getIndexerTypeOptions(),
+			Options:  indexerTypeOptions,
 			Required: true,
 		},
 		Name: configure.Config{
@@ -141,22 +147,26 @@ func newTemplateDataIndexer(index int, indexerType, name, url, apiKey string) Te
 	}
 }
 
-func getModeOptions() []configure.ConfigOption {
+var modeOptions = func() []configure.ConfigOption {
 	modes := []configure.ConfigOption{}
-	modes = append(modes, configure.ConfigOption{
-		Label: "Both",
-		Value: string(UserDataModeBoth),
-	})
+	if !IsPublicInstance && HasVault {
+		modes = append(modes, configure.ConfigOption{
+			Label: "Both",
+			Value: string(UserDataModeBoth),
+		})
+	}
 	modes = append(modes, configure.ConfigOption{
 		Label: "Debrid",
 		Value: string(UserDataModeDebrid),
 	})
-	modes = append(modes, configure.ConfigOption{
-		Label: "Stream",
-		Value: string(UserDataModeStream),
-	})
+	if !IsPublicInstance && HasVault {
+		modes = append(modes, configure.ConfigOption{
+			Label: "Stream",
+			Value: string(UserDataModeStream),
+		})
+	}
 	return modes
-}
+}()
 
 func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *TemplateData {
 	td := &TemplateData{
@@ -171,9 +181,9 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 		Mode: configure.Config{
 			Key:     "mode",
 			Type:    configure.ConfigTypeSelect,
-			Default: configure.ToCheckboxDefault(ud.CachedOnly),
+			Default: string(ud.Mode),
 			Title:   "Mode",
-			Options: getModeOptions(),
+			Options: modeOptions,
 		},
 		CachedOnly: configure.Config{
 			Key:     "cached",
@@ -237,7 +247,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 	return stremio_template.GetExecutor("stremio/newz", func(td *TemplateData) *TemplateData {
 		td.StremThruAddons = stremio_shared.GetStremThruAddons()
 		td.Version = config.Version
-		td.IsPublic = config.IsPublicInstance
+		td.IsPublic = IsPublicInstance
 		td.IsTrusted = config.IsTrusted
 
 		td.CanAuthorize = !IsPublicInstance

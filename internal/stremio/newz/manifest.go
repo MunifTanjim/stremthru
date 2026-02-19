@@ -15,7 +15,8 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 
 	id := shared.GetReversedHostname(r) + ".newz"
 	name := "StremThru Newz"
-	description := "Stremio Addon for Newz"
+	var description strings.Builder
+	description.WriteString("Stremio Addon for Newz")
 
 	if isConfigured {
 		storeHint := ""
@@ -33,19 +34,21 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 			storeHint = strings.ToUpper(storeHint)
 		}
 
-		description += " — " + storeHint
+		description.WriteString(" — " + storeHint + " ")
 
 		for i := range ud.Indexers {
 			if i > 0 {
-				description += " \n\n"
+				description.WriteString(" \n\n")
 			}
 			hostname := ""
-			if iUrl, err := url.Parse(ud.Indexers[i].URL); err == nil {
+			if ud.Indexers[i].URL == "" {
+				hostname = string(ud.Indexers[i].Type)
+			} else if iUrl, err := url.Parse(ud.Indexers[i].URL); err == nil {
 				hostname = iUrl.Host
 			} else {
 				hostname, _, _ = strings.Cut(strings.TrimPrefix(strings.TrimPrefix(ud.Indexers[i].URL, "http://"), "https://"), "/")
 			}
-			description += "(" + hostname + ")"
+			description.WriteString("(" + hostname + ")")
 		}
 	}
 
@@ -66,7 +69,7 @@ func GetManifest(r *http.Request, ud *UserData) *stremio.Manifest {
 	manifest := &stremio.Manifest{
 		ID:          id,
 		Name:        name,
-		Description: description,
+		Description: description.String(),
 		Version:     config.Version,
 		Resources: []stremio.Resource{
 			streamResource,

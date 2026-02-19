@@ -3,6 +3,7 @@ package newznab_torbox
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -60,16 +61,14 @@ func (i *Indexer) NewSearchQuery(fn func(caps *znab.Caps) newznab_client.Functio
 }
 
 func convertNZBToNewz(nzb *torbox.UsenetSearchByIDDataNZB) newznab_client.Newz {
-	now := time.Now()
-	var age time.Duration
-	if v, err := time.ParseDuration(nzb.Age); err == nil {
-		age = v
+	var date time.Time
+	if age, err := util.ParseDuration(nzb.Age); err == nil && age != 0 {
+		date = time.Now().Add(-age)
 	}
-	date := now.Add(-age)
 
 	categories := util.SliceMapIntToString(nzb.Categories)
 
-	return newznab_client.Newz{
+	newz := newznab_client.Newz{
 		Title:          nzb.RawTitle,
 		GUID:           nzb.Hash,
 		Size:           nzb.Size,
@@ -82,12 +81,21 @@ func convertNZBToNewz(nzb *torbox.UsenetSearchByIDDataNZB) newznab_client.Newz {
 		LockedDownload: true,
 		LockedProvider: string(store.StoreNameTorBox),
 	}
+
+	if nzb.Tracker != "Newznab" {
+		newz.Indexer.Name = nzb.Tracker
+	}
+
+	return newz
 }
 
 func (i *Indexer) Search(query url.Values, header http.Header) ([]newznab_client.Newz, error) {
 	imdbId := query.Get(znab.SearchParamIMDBId)
 	if imdbId == "" {
 		return nil, nil
+	}
+	if !strings.HasPrefix(imdbId, "tt") {
+		imdbId = "tt" + imdbId
 	}
 
 	params := &torbox.SearchUsenetByIDParams{

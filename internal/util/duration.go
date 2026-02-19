@@ -39,3 +39,63 @@ func FormatDuration(d time.Duration, maxParts int) string {
 
 	return strings.Join(parts, " ")
 }
+
+func ParseDuration(input string) (time.Duration, error) {
+	if input == "" {
+		return 0, nil
+	}
+
+	neg := false
+	start := 0
+	if input[0] == '-' || input[0] == '+' {
+		neg = input[0] == '-'
+		start = 1
+	}
+
+	var n int64
+	var hasDot bool
+	var dIdx int
+	for dIdx = start; dIdx < len(input); dIdx++ {
+		c := input[dIdx]
+		if c >= '0' && c <= '9' {
+			if !hasDot {
+				n = n*10 + int64(c-'0')
+			}
+			continue
+		}
+		if c == '.' && !hasDot {
+			hasDot = true
+			continue
+		}
+		break
+	}
+
+	if dIdx == start || dIdx >= len(input) || input[dIdx] != 'd' {
+		return time.ParseDuration(input)
+	}
+
+	var result time.Duration
+	if hasDot {
+		totalDays, err := strconv.ParseFloat(input[start:dIdx], 64)
+		if err != nil {
+			return 0, err
+		}
+		result = time.Duration(totalDays * 24 * float64(time.Hour))
+	} else {
+		result = time.Duration(n) * 24 * time.Hour
+	}
+
+	if dIdx+1 < len(input) {
+		d, err := time.ParseDuration(input[dIdx+1:])
+		if err != nil {
+			return 0, err
+		}
+		result += d
+	}
+
+	if neg {
+		result = -result
+	}
+
+	return result, nil
+}

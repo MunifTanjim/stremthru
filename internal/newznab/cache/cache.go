@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
 )
@@ -27,6 +28,10 @@ func (cs *cachedSearcher) Do(idxr newznab_client.Indexer, query url.Values, head
 	case "stremthru":
 	default:
 		cacheKey = id + ":" + encQuery
+	}
+
+	if config.IsPublicInstance {
+		cacheKey = ""
 	}
 
 	var items []newznab_client.Newz

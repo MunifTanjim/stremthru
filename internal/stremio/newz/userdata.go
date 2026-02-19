@@ -298,8 +298,12 @@ func getUserData(r *http.Request) (*UserData, error) {
 	}
 
 	if IsPublicInstance {
-		data.Indexers = data.Indexers[0:0]
-		data.Stores = data.Stores[0:0]
+		if len(data.Indexers) > 1 {
+			data.Indexers = data.Indexers[0:1]
+		}
+		if len(data.Stores) > 1 {
+			data.Stores = data.Stores[0:1]
+		}
 	}
 
 	return data, nil

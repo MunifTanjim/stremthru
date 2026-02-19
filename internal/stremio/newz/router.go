@@ -3,12 +3,9 @@ package stremio_newz
 import (
 	"net/http"
 
-	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 )
-
-var IsPublicInstance = config.IsPublicInstance
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/stremio/newz/configure", http.StatusFound)
