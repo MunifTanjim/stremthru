@@ -14,7 +14,7 @@ export type NewznabIndexer = {
 };
 
 type CreateNewznabIndexerParams = {
-  api_key: string;
+  api_key?: string;
   name: string;
   rate_limit_config_id: null | string;
   url: string;

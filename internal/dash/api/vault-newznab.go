@@ -81,12 +81,6 @@ func handleCreateNewznabIndexer(w http.ResponseWriter, r *http.Request) {
 			Message:  "missing url",
 		})
 	}
-	if request.APIKey == "" {
-		errs = append(errs, Error{
-			Location: "api_key",
-			Message:  "missing api_key",
-		})
-	}
 	if len(errs) > 0 {
 		ErrorBadRequest(r).Append(errs...).Send(w, r)
 		return

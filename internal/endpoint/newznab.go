@@ -164,7 +164,7 @@ func handleNewznabGetNZB(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddNewznabEndpoints(mux *http.ServeMux) {
-	if !config.Feature.HasVault() {
+	if config.IsPublicInstance || !config.Feature.HasVault() {
 		return
 	}
 
