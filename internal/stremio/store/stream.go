@@ -94,11 +94,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 		Streams: []stremio.Stream{},
 	}
 
-	eud, err := ud.GetEncoded()
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
+	eud := ud.GetEncoded()
 
 	var meta *stremio.Meta
 	season, episode := -1, -1

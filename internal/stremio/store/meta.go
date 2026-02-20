@@ -426,11 +426,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 
 	log := ctx.Log
 
-	eud, err := ud.GetEncoded()
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
+	eud := ud.GetEncoded()
 
 	if id == getStoreActionId(idStoreCode) {
 		res := stremio.MetaHandlerResponse{

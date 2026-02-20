@@ -1,0 +1,196 @@
+{{define "head"}}
+<style>
+  body {
+    justify-content: center;
+  }
+</style>
+{{end}}
+
+{{define "header"}}
+<h1>
+  {{.Title}}
+</h1>
+<div>
+  <p>{{.Description}}</p>
+</div>
+{{end}}
+
+{{define "main"}}
+
+{{if .CanAuthorize}}
+<div class="flex flex-row flex-wrap align-center justify-between mb-8">
+  <div>
+    {{template "saved_userdata_field.html" .}}
+  </div>
+  <div>
+    <button
+      class="secondary mb-0"
+      style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+      type="button"
+      hx-ext="htmx-modal"
+      data-modal="#auth_modal"
+      data-modal-on-open="onOpenAuthorize"
+      hx-target="body"
+      hx-post="configure"
+      hx-include="#configuration"
+      hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
+      hx-trigger="confirmed"
+      data-tooltip="Features Restricted to Admin"
+    >
+      {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
+    </button>
+  </div>
+</div>
+{{end}}
+
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
+<form
+  id="configuration"
+  {{if or (not .IsLockedMode) $hasSavedUserData}}
+  action="configure" method="post" hx-boost="true"
+  {{end}}
+  {{if or .IsRedacted (and .IsLockedMode (not .IsAuthed))}}inert{{end}}
+>
+  {{range .Configs}}
+    {{template "configure_config.html" .}}
+  {{end}}
+
+  {{template "configure_submit_button.html" .}}
+</form>
+
+{{if ne .ManifestURL ""}}
+<div id="manifest_url_section">
+  <label for="__manifest_url__">Manifest URL</label>
+  <fieldset role="group">
+    <input id="__manifest_url__" value="{{.ManifestURL}}" readonly />
+    <button type="button" onclick="copyManifestUrl()">Copy</button>
+  </fieldset>
+</div>
+{{end}}
+
+{{if .CanAuthorize}}
+<dialog id="auth_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>{{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}</span>
+      </h3>
+    </header>
+    <form>
+      {{if not .IsAuthed}}
+      <label for="user">User *</label>
+      <input type="text" name="user" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      <label for="user">Password *</label>
+      <input type="password" name="pass" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      {{if ne .AuthError ""}}
+      <small>{{.AuthError}}</small>
+      {{end}}
+      {{end}}
+      <button type="submit">Go</button>
+    </form>
+  </article>
+</dialog>
+{{end}}
+
+{{end}}
+
+{{define "foot"}}
+<script>
+  {{if and .CanAuthorize (ne .AuthError "")}}
+  htmx.on("htmx:load", function(evt) {
+    setTimeout(() => {
+      document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+    }, 200);
+  }, { once: true });
+  {{end}}
+
+  function onOpenAuthorize(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      {{if not .IsAuthed}}
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        user: modal.querySelector("[name='user']").value,
+        pass: modal.querySelector("[name='pass']").value,
+      }));
+      {{end}}
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataCopyModal(e, { modal, onClose, trigger }) {
+    selectElem = document.querySelector(`select[name='userdata_key']`);
+    modal.querySelector("[name='userdata_copy_name']").value = selectElem.options[selectElem.selectedIndex].label + " - Copy";
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        userdata_name: modal.querySelector("[name='userdata_copy_name']").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataSaveModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        userdata_name: modal.querySelector("[name='userdata_save_name']").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataDeleteModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function copyManifestUrl() {
+    const manifestUrl = document.querySelector("input#__manifest_url__")?.value;
+    if (!manifestUrl) {
+      return;
+    }
+    navigator.clipboard.writeText(manifestUrl);
+    return manifestUrl;
+  }
+
+  htmx.off("form#configuration", "try_install");
+  htmx.on("form#configuration", "try_install", function(evt) {
+    const manifestUrl = copyManifestUrl();
+    if (manifestUrl) {
+      window.location.href = manifestUrl.replace(/^.+:\/\//, 'stremio://');
+    }
+  });
+
+  htmx.off("form#configuration", "htmx:beforeRequest");
+  htmx.on("form#configuration", "htmx:beforeRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = true;
+    } else {
+      evt.detail.elt.ariaBusy = true;
+    }
+  });
+  htmx.off("form#configuration", "htmx:afterRequest");
+  htmx.on("form#configuration", "htmx:afterRequest", function(evt) {
+    if (evt.detail.elt.id === "configuration") {
+      evt.detail.elt.querySelector("button[type='submit']").ariaBusy = false;
+    } else {
+      evt.detail.elt.ariaBusy = false;
+    }
+  });
+  htmx.on("form#configuration", "change", function(evt) {
+    document.querySelector('#manifest_url_section')?.remove();
+  }, { once: true });
+
+  {{.Script}}
+</script>
+{{end}}
+
+{{template "layout.html" .}}

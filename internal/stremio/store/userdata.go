@@ -1,13 +1,14 @@
 package stremio_store
 
 import (
-	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -28,17 +29,26 @@ func (ud UserData) HasRequiredValues() bool {
 	return ud.StoreToken != ""
 }
 
-func (ud UserData) GetEncoded() (string, error) {
-	if ud.encoded != "" {
-		return ud.encoded, nil
-	}
-
-	blob, err := json.Marshal(ud)
-	if err != nil {
-		return "", err
-	}
-	return util.Base64Encode(string(blob)), nil
+func (ud *UserData) GetEncoded() string {
+	return ud.encoded
 }
+
+func (ud *UserData) SetEncoded(encoded string) {
+	ud.encoded = encoded
+}
+
+func (ud *UserData) Ptr() *UserData {
+	return ud
+}
+
+func (ud UserData) StripSecrets() UserData {
+	ud.StoreToken = ""
+	return ud
+}
+
+var udManager = stremio_userdata.NewManager[UserData](&stremio_userdata.ManagerConfig{
+	AddonName: "store",
+})
 
 func (ud *UserData) getIdPrefixes() []string {
 	if len(ud.idPrefixes) == 0 {
@@ -140,18 +150,19 @@ func (ud UserData) GetRequestContext(r *http.Request, idr *ParsedId) (*Ctx, erro
 
 func getUserData(r *http.Request) (*UserData, error) {
 	data := &UserData{}
+	data.SetEncoded(r.PathValue("userData"))
 
 	if IsMethod(r, http.MethodGet) || IsMethod(r, http.MethodHead) {
-		data.encoded = r.PathValue("userData")
+		if err := udManager.Resolve(data); err != nil {
+			if errors.Is(err, stremio_userdata.ErrUnsupportedUserdataFormat) {
+				return nil, server.ErrorBadRequest(r).WithMessage(err.Error())
+			} else {
+				return nil, err
+			}
+		}
 		if data.encoded == "" {
 			return data, nil
 		}
-		blob, err := util.Base64DecodeToByte(data.encoded)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(blob, data)
-		return data, err
 	}
 
 	if IsMethod(r, http.MethodPost) {
@@ -161,11 +172,6 @@ func getUserData(r *http.Request) (*UserData, error) {
 		data.HideStream = r.FormValue("hide_stream") == "on"
 		data.EnableWebDL = r.FormValue("enable_webdl") == "on"
 		data.EnableUsenet = r.FormValue("enable_usenet") == "on"
-		encoded, err := data.GetEncoded()
-		if err != nil {
-			return nil, err
-		}
-		data.encoded = encoded
 	}
 
 	return data, nil
