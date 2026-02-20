@@ -282,7 +282,7 @@ func (p *Pool) destroyAllIdles() {
 }
 
 func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
-	const maxRetries = 3
+	maxRetries := 3 + int(p.pool.Stat().IdleResources())
 
 	errs := []error{}
 	for attempt := range maxRetries {
@@ -301,6 +301,12 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 				Connection: res.Value(),
 				resource:   res,
 				pool:       p,
+			}
+
+			if conn.isStale() {
+				p.Log.Trace("Acquire - connection stale, destroying", "provider", p.Id())
+				conn.Destroy()
+				continue
 			}
 
 			// Health check using DATE command - simple, read-only, and widely supported.

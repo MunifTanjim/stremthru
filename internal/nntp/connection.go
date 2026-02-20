@@ -47,6 +47,7 @@ type Connection struct {
 	connected     bool
 	authenticated bool
 	currentGroup  string
+	staleAt       time.Time
 }
 
 func setTCPOptions(conn net.Conn, keepAliveTime time.Duration) error {
@@ -156,6 +157,7 @@ func (c *Connection) Connect(ctx context.Context, config *ConnectionConfig) erro
 	}
 
 	c.connected = true
+	c.staleAt = time.Now().Add(keepAliveTime)
 
 	if config.Username != "" {
 		if err := c.Authenticate(config.Username, config.Password); err != nil {
@@ -165,6 +167,10 @@ func (c *Connection) Connect(ctx context.Context, config *ConnectionConfig) erro
 	}
 
 	return nil
+}
+
+func (c *Connection) isStale() bool {
+	return !c.connected || time.Now().After(c.staleAt)
 }
 
 // Reference: RFC 3977 Section 5.4 (QUIT)
