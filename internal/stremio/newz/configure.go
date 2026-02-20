@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
@@ -23,8 +24,33 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	td := getTemplateData(ud, w, r)
 
-	if action := r.Header.Get("x-addon-configure-action"); action != "" {
+	action := r.Header.Get("x-addon-configure-action")
+	if config.Stremio.Locked && !td.IsAuthed && IsMethod(r, http.MethodPost) {
+		if action != "authorize" {
+			sendPage(w, r, td)
+			return
+		}
+	}
+
+	if action != "" {
 		switch action {
+		case "authorize":
+			if !IsPublicInstance {
+				user := r.Form.Get("user")
+				pass := r.Form.Get("pass")
+				if pass == "" || config.Auth.GetPassword(user) != pass || !config.Auth.IsAdmin(user) {
+					td.AuthError = "Wrong Credential!"
+				} else {
+					stremio_shared.SetAdminCookie(w, user, pass)
+					td.IsAuthed = true
+					if r.Header.Get("hx-request") == "true" {
+						w.Header().Add("hx-refresh", "true")
+					}
+				}
+			}
+		case "deauthorize":
+			stremio_shared.UnsetAdminCookie(w)
+			td.IsAuthed = false
 		case "add-indexer":
 			if td.IsAuthed {
 				td.Indexers = append(td.Indexers, newTemplateDataIndexer(len(td.Indexers), "", "", "", ""))
@@ -42,14 +68,62 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		case "remove-store":
 			end := max(len(td.Stores)-1, 1)
 			td.Stores = slices.Clone(td.Stores[0:end])
+		case "set-userdata-key":
+			if td.IsAuthed {
+				key := r.Form.Get("userdata_key")
+				if key == "" {
+					stremio_shared.RedirectToConfigurePage(w, r, "newz", "", false)
+					return
+				} else {
+					err := udManager.Load(key, ud)
+					if err != nil {
+						LogError(r, "failed to load userdata", err)
+					} else {
+						stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), false)
+						return
+					}
+				}
+			}
+		case "save-userdata":
+			if td.IsAuthed && !udManager.IsSaved(ud) && ud.HasRequiredValues() {
+				name := r.Form.Get("userdata_name")
+				err := udManager.Save(ud, name)
+				if err != nil {
+					LogError(r, "failed to save userdata", err)
+				} else {
+					stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), true)
+					return
+				}
+			}
+		case "copy-userdata":
+			if td.IsAuthed && udManager.IsSaved(ud) {
+				name := r.Form.Get("userdata_name")
+				ud.SetEncoded("")
+				err := udManager.Save(ud, name)
+				if err != nil {
+					LogError(r, "failed to copy userdata", err)
+				} else {
+					stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), false)
+					return
+				}
+			}
+		case "delete-userdata":
+			if td.IsAuthed && udManager.IsSaved(ud) {
+				err := udManager.Delete(ud)
+				if err != nil {
+					LogError(r, "failed to delete userdata", err)
+				} else {
+					eud := ""
+					if !config.Stremio.Locked {
+						eud = ud.GetEncoded()
+					}
+					stremio_shared.RedirectToConfigurePage(w, r, "newz", eud, false)
+					return
+				}
+			}
 		}
 
-		page, err := getPage(td)
-		if err != nil {
-			SendError(w, r, err)
-			return
-		}
-		SendHTML(w, 200, page)
+		sendPage(w, r, td)
 		return
 	}
 
@@ -109,6 +183,11 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	hasError := td.HasFieldError()
 
+	if IsMethod(r, http.MethodPost) && !td.IsAuthed && td.SavedUserDataKey != "" {
+		shared.ErrorForbidden(r).Send(w, r)
+		return
+	}
+
 	if IsMethod(r, http.MethodPost) && !hasError {
 		err = udManager.Sync(ud)
 		if err != nil {
@@ -116,7 +195,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), true)
+		stremio_shared.RedirectToConfigurePage(w, r, "newz", ud.GetEncoded(), td.SavedUserDataKey == "")
 		return
 	}
 
@@ -124,10 +203,5 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/newz/" + ud.GetEncoded() + "/manifest.json").String()
 	}
 
-	page, err := getPage(td)
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-	SendHTML(w, 200, page)
+	sendPage(w, r, td)
 }
