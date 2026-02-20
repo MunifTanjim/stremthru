@@ -17,8 +17,40 @@
 
 {{define "main"}}
 
+{{if .CanAuthorize}}
+<div class="flex flex-row flex-wrap align-center justify-between mb-8">
+  <div>
+    {{template "saved_userdata_field.html" .}}
+  </div>
+  <div>
+    <button
+      class="secondary mb-0"
+      style="font-size: 0.75rem; padding: 0.25em 0.75em;"
+      type="button"
+      hx-ext="htmx-modal"
+      data-modal="#auth_modal"
+      data-modal-on-open="onOpenAuthorize"
+      hx-target="body"
+      hx-post="configure"
+      hx-include="#configuration"
+      hx-headers='{"x-addon-configure-action":"{{if .IsAuthed}}de{{end}}authorize"}'
+      hx-trigger="confirmed"
+      data-tooltip="Features Restricted to Admin"
+    >
+      {{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}
+    </button>
+  </div>
+</div>
+{{end}}
+
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
 <form
-  id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false" 
+  id="configuration" data-has-store-stremthru="false"
+  {{if or (not .IsLockedMode) $hasSavedUserData}}
+  action="configure" method="post" hx-boost="true"
+  {{end}}
+  {{if or .IsRedacted (and .IsLockedMode (not .IsAuthed))}}inert{{end}}
 >
   <div id="stores" class="relative border border-dashed rounded-sm mb-8 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">
@@ -152,7 +184,7 @@
 
   {{template "configure_config.html" .FilterConfig}}
 
-  <button type="submit">Install</button>
+  {{template "configure_submit_button.html" .}}
 </form>
 
 {{if ne .ManifestURL ""}}
@@ -165,10 +197,89 @@
 </div>
 {{end}}
 
+{{if .CanAuthorize}}
+<dialog id="auth_modal">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" data-modal-close></button>
+      <h3>
+        <span>{{if .IsAuthed}}Deauthorize{{else}}Authorize{{end}}</span>
+      </h3>
+    </header>
+    <form>
+      {{if not .IsAuthed}}
+      <label for="user">User *</label>
+      <input type="text" name="user" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      <label for="user">Password *</label>
+      <input type="password" name="pass" required {{if ne .AuthError ""}}aria-invalid="true"{{end}}>
+      {{if ne .AuthError ""}}
+      <small>{{.AuthError}}</small>
+      {{end}}
+      {{end}}
+      <button type="submit">Go</button>
+    </form>
+  </article>
+</dialog>
+{{end}}
+
 {{end}}
 
 {{define "foot"}}
 <script>
+  {{if and .CanAuthorize (ne .AuthError "")}}
+  htmx.on("htmx:load", function(evt) {
+    setTimeout(() => {
+      document.querySelector("[data-modal-on-open='onOpenAuthorize']").click();
+    }, 200);
+  }, { once: true });
+  {{end}}
+
+  function onOpenAuthorize(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      {{if not .IsAuthed}}
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        user: modal.querySelector("[name='user']").value,
+        pass: modal.querySelector("[name='pass']").value,
+      }));
+      {{end}}
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataCopyModal(e, { modal, onClose, trigger }) {
+    selectElem = document.querySelector(`select[name='userdata_key']`);
+    modal.querySelector("[name='userdata_copy_name']").value = selectElem.options[selectElem.selectedIndex].label + " - Copy";
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        userdata_name: modal.querySelector("[name='userdata_copy_name']").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataSaveModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      trigger.setAttribute("hx-vals", JSON.stringify({
+        userdata_name: modal.querySelector("[name='userdata_save_name']").value,
+      }));
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
+  function onOpenUserDataDeleteModal(e, { modal, onClose, trigger }) {
+    modal.querySelector("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      onClose();
+      htmx.trigger(trigger, "confirmed");
+    }, { once: true });
+  }
+
   function copyManifestUrl() {
     const manifestUrl = document.querySelector("input#__manifest_url__")?.value;
     if (!manifestUrl) {

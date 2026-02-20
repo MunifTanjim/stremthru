@@ -56,6 +56,8 @@ type TemplateData struct {
 
 	SortConfig   configure.Config
 	FilterConfig configure.Config
+
+	stremio_userdata.TemplateDataUserData
 }
 
 func (td *TemplateData) HasIndexerError() bool {
@@ -195,6 +197,23 @@ func getTemplateData(ud *UserData, w http.ResponseWriter, r *http.Request) *Temp
 		td.Stores = append(td.Stores, StoreConfig{})
 	}
 
+	if udManager.IsSaved(ud) {
+		td.SavedUserDataKey = udManager.GetId(ud)
+	}
+	if td.IsAuthed {
+		if options, err := stremio_userdata.GetOptions("torz"); err != nil {
+			LogError(r, "failed to list saved userdata options", err)
+		} else {
+			td.SavedUserDataOptions = options
+		}
+	} else if td.SavedUserDataKey != "" {
+		if sud, err := stremio_userdata.Get[UserData]("torz", td.SavedUserDataKey); err != nil || sud == nil {
+			LogError(r, "failed to get saved userdata", err)
+		} else {
+			td.SavedUserDataOptions = []configure.ConfigOption{{Label: sud.Name, Value: td.SavedUserDataKey}}
+		}
+	}
+
 	return td
 }
 
@@ -223,10 +242,35 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		}
 		td.CanRemoveStore = len(td.Stores) > 1
 
+		td.IsLockedMode = config.Stremio.Locked
+		td.IsRedacted = !td.IsAuthed && td.SavedUserDataKey != ""
+		if td.IsRedacted {
+			redacted := "*******"
+			for i := range td.Indexers {
+				idx := &td.Indexers[i]
+				if idx.APIKey.Default != "" {
+					idx.APIKey.Default = redacted
+				}
+			}
+			for i := range td.Stores {
+				s := &td.Stores[i]
+				s.Token = redacted
+			}
+		}
+
 		return td
-	}, template.FuncMap{}, "configure_config.html", "torz.html")
+	}, template.FuncMap{}, "configure_config.html", "configure_submit_button.html", "saved_userdata_field.html", "torz.html")
 }()
 
 func getPage(td *TemplateData) (bytes.Buffer, error) {
 	return executeTemplate(td, "torz.html")
+}
+
+func sendPage(w http.ResponseWriter, r *http.Request, td *TemplateData) {
+	page, err := getPage(td)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, page)
 }

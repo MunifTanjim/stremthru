@@ -1,6 +1,7 @@
 package stremio_torz
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -172,6 +173,9 @@ func getUserData(r *http.Request) (*UserData, error) {
 
 	if IsMethod(r, http.MethodGet) || IsMethod(r, http.MethodHead) {
 		if err := udManager.Resolve(data); err != nil {
+			if errors.Is(err, stremio_userdata.ErrUnsupportedUserdataFormat) {
+				return nil, server.ErrorBadRequest(r).WithMessage(err.Error())
+			}
 			return nil, err
 		}
 		if data.encoded == "" {
