@@ -92,11 +92,10 @@ func (td *TemplateData) HasFieldError() bool {
 
 func getIndexerNameOptions() []configure.ConfigOption {
 	options := []configure.ConfigOption{
-		// {
-		// 	Disabled: true,
-		// 	Value:    string(stremio_userdata.IndexerNameGeneric),
-		// 	Label:    "Generic",
-		// },
+		{
+			Value: string(stremio_userdata.IndexerNameGeneric),
+			Label: "Generic",
+		},
 		{
 			Value: string(stremio_userdata.IndexerNameJackett),
 			Label: "Jackett",
