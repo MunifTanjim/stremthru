@@ -437,6 +437,9 @@ func getUserData(r *http.Request) (*UserData, error) {
 		}
 
 		if err := udManager.Resolve(data); err != nil {
+			if errors.Is(err, stremio_userdata.ErrUnsupportedUserdataFormat) {
+				return nil, server.ErrorBadRequest(r).WithMessage(err.Error())
+			}
 			return nil, err
 		}
 		if data.encoded == "" {

@@ -2,15 +2,19 @@ package stremio_userdata
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/google/uuid"
 )
+
+var ErrUnsupportedUserdataFormat = errors.New("unsupported userdata format")
 
 type Manager[T any] interface {
 	Delete(ud UserData[T]) error
@@ -82,6 +86,9 @@ func (m iManager[T]) Resolve(ud UserData[T]) (err error) {
 	}
 
 	if !strings.HasPrefix(encoded, "k.") {
+		if config.Stremio.Locked {
+			return ErrUnsupportedUserdataFormat
+		}
 		return m.decode(ud)
 	}
 

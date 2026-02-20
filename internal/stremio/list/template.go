@@ -678,6 +678,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 		}
 		td.LastListIndex = len(td.Lists) - 1
 
+		td.IsLockedMode = config.Stremio.Locked
 		td.IsRedacted = !td.IsAuthed && td.SavedUserDataKey != ""
 		if td.IsRedacted {
 			redacted := "*******"
@@ -704,4 +705,13 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 
 func getPage(td *TemplateData) (bytes.Buffer, error) {
 	return executeTemplate(td, "list.html")
+}
+
+func sendPage(w http.ResponseWriter, r *http.Request, td *TemplateData) {
+	page, err := getPage(td)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	SendHTML(w, 200, page)
 }

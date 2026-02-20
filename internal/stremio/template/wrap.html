@@ -47,9 +47,14 @@
 </div>
 {{end}}
 
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
 <form
-  id="configuration" action="configure" method="post" hx-boost="true"  data-has-store-stremthru="false" 
-  {{if .IsRedacted}}inert{{end}}
+  id="configuration" data-has-store-stremthru="false"
+  {{if or (not .IsLockedMode) $hasSavedUserData}}
+  action="configure" method="post" hx-boost="true" 
+  {{end}}
+  {{if or .IsRedacted (and .IsLockedMode (not .IsAuthed))}}inert{{end}}
 >
   {{template "configure_config.html" .IncludeTorz}}
 

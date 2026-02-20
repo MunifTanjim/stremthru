@@ -1,5 +1,15 @@
 # Stremio Addons
 
+### `STREMTHRU_STREMIO_LOCKED`
+
+If `true`, Stremio Addons can only be used by authorized users.
+
+**Example:**
+
+```sh
+STREMTHRU_STREMIO_LOCKED=true
+```
+
 ## StremThru List
 
 ### `STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT`

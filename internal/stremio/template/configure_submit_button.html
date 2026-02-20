@@ -1,3 +1,20 @@
-{{if not .IsRedacted}}
-<button type="submit">{{if eq .SavedUserDataKey ""}}Install{{else}}Update{{end}}</button>
+{{if and (not .IsRedacted) (or .IsAuthed  (not .IsLockedMode))}}
+{{- if eq .SavedUserDataKey "" -}}
+  {{- if .IsLockedMode -}}
+  <button type="button" class="w-full" onclick="
+  document.querySelector(`button[data-modal='#userdata_save_modal']`)?.click()
+  return false
+  ">
+    Save
+  </button>
+  {{- else -}}
+  <button type="submit">
+    Install
+  </button>
+  {{- end -}}
+{{- else -}}
+<button type="submit">
+  Update
+</button>
+{{- end -}}
 {{end}}

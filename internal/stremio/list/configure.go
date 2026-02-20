@@ -35,7 +35,15 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 
 	td := getTemplateData(ud, udErr, isAuthed, r)
 
-	if action := stremio_shared.GetConfigureAction(r); action != "" {
+	action := stremio_shared.GetConfigureAction(r)
+	if config.Stremio.Locked && !isAuthed && IsMethod(r, http.MethodPost) {
+		if action != "authorize" {
+			sendPage(w, r, td)
+			return
+		}
+	}
+
+	if action != "" {
 		switch action {
 		case "authorize":
 			if !IsPublicInstance {
@@ -115,14 +123,8 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			if td.IsAuthed {
 				key := r.Form.Get("userdata_key")
 				if key == "" {
-					ud.SetEncoded("")
-					err := udManager.Sync(ud)
-					if err != nil {
-						LogError(r, "failed to unselect userdata", err)
-					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), false)
-						return
-					}
+					stremio_shared.RedirectToConfigurePage(w, r, "list", "", false)
+					return
 				} else {
 					err := udManager.Load(key, ud)
 					if err != nil {
@@ -152,7 +154,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to copy userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
+					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), false)
 					return
 				}
 			}
@@ -162,7 +164,11 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to delete userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "list", ud.GetEncoded(), true)
+					eud := ""
+					if !config.Stremio.Locked {
+						eud = ud.GetEncoded()
+					}
+					stremio_shared.RedirectToConfigurePage(w, r, "list", eud, false)
 					return
 				}
 			}
@@ -184,12 +190,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			td = getTemplateData(ud, userDataError{}, td.IsAuthed, r)
 		}
 
-		page, err := getPage(td)
-		if err != nil {
-			SendError(w, r, err)
-			return
-		}
-		SendHTML(w, 200, page)
+		sendPage(w, r, td)
 		return
 	}
 
@@ -206,12 +207,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/list/" + ud.GetEncoded() + "/manifest.json").String()
 		}
 
-		page, err := getPage(td)
-		if err != nil {
-			SendError(w, r, err)
-			return
-		}
-		SendHTML(w, 200, page)
+		sendPage(w, r, td)
 		return
 	}
 
@@ -232,10 +228,5 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/list/" + ud.GetEncoded() + "/manifest.json").String()
 	}
 
-	page, err := getPage(td)
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-	SendHTML(w, 200, page)
+	sendPage(w, r, td)
 }

@@ -79,6 +79,17 @@ func SendError(w http.ResponseWriter, r *http.Request, err error) {
 	var e core.StremThruError
 	if sterr, ok := err.(core.StremThruError); ok {
 		e = sterr
+	} else if aerr, ok := err.(*server.APIError); ok {
+		e = &core.Error{
+			RequestId:  aerr.RequestId,
+			Type:       core.ErrorTypeAPI,
+			Code:       aerr.Code,
+			Msg:        aerr.Message,
+			Method:     aerr.Method,
+			Path:       aerr.Path,
+			StatusCode: aerr.StatusCode,
+			Cause:      aerr.Cause,
+		}
 	} else {
 		e = &core.Error{Cause: err}
 	}

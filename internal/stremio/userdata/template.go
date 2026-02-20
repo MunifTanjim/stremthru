@@ -6,4 +6,5 @@ type TemplateDataUserData struct {
 	SavedUserDataKey     string
 	SavedUserDataOptions []configure.ConfigOption
 	IsRedacted           bool
+	IsLockedMode         bool
 }

@@ -33,15 +33,17 @@ type stremioConfigNewz struct {
 }
 
 type StremioConfig struct {
-	List  stremioConfigList
-	Store stremioConfigStore
-	Torz  stremioConfigTorz
-	Wrap  stremioConfigWrap
-	Newz  stremioConfigNewz
+	Locked bool
+	List   stremioConfigList
+	Store  stremioConfigStore
+	Torz   stremioConfigTorz
+	Wrap   stremioConfigWrap
+	Newz   stremioConfigNewz
 }
 
 func parseStremio() StremioConfig {
 	stremio := StremioConfig{
+		Locked: !IsPublicInstance && strings.ToLower(getEnv("STREMTHRU_STREMIO_LOCKED")) == "true",
 		List: stremioConfigList{
 			PublicMaxListCount: util.MustParseInt(getEnv("STREMTHRU_STREMIO_LIST_PUBLIC_MAX_LIST_COUNT")),
 		},

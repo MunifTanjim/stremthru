@@ -20,7 +20,7 @@
     {{template "saved_userdata_field.html" .}}
     {{end}}
 
-    <div class="{{if .IsRedacted}}hidden{{end}}">
+    <div class="{{if or .IsRedacted (and .IsLockedMode (not .IsAuthed))}}hidden{{end}}">
       <div role="group" class="mb-0">
         <button
           class="secondary"
@@ -167,9 +167,14 @@
   </dialog>
 </div>
 
+{{ $hasSavedUserData := (ne .SavedUserDataKey "") }}
+
 <form
-  id="configuration" action="configure" method="post" hx-boost="true"
-  {{if .IsRedacted}}inert{{end}}
+  id="configuration"
+  {{if or (not .IsLockedMode) $hasSavedUserData}}
+  action="configure" method="post" hx-boost="true" 
+  {{end}}
+  {{if or .IsRedacted (and .IsLockedMode (not .IsAuthed))}}inert{{end}}
 >
   <div id="mdblist" class="relative border border-dashed rounded-sm mb-4 p-4" style="border-color: gray">
     <header class="w-full flex flex-row justify-between absolute px-4" style="top: -0.75rem; left: 0;">

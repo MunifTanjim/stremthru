@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
+	"github.com/MunifTanjim/stremthru/internal/server"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
@@ -136,6 +137,9 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 
 	if IsMethod(r, http.MethodGet) || IsMethod(r, http.MethodHead) {
 		if err := udManager.Resolve(ud); err != nil {
+			if errors.Is(err, stremio_userdata.ErrUnsupportedUserdataFormat) {
+				return nil, server.ErrorBadRequest(r).WithMessage(err.Error())
+			}
 			return nil, err
 		}
 		if ud.encoded == "" {

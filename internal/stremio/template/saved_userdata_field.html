@@ -156,4 +156,10 @@ function onOpenUserDataDeleteModal(e, { modal, onClose, trigger }) {
 }
 </script>
 
+{{else if .IsLockedMode }}
+
+<small class="flex flex-row align-center gap-2" style="color: var(--pico-del-color);">
+  🙅🏼‍♂️ Authorized Personnel Only
+</small>
+
 {{end}}

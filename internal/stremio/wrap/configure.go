@@ -35,7 +35,15 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if action := r.Header.Get("x-addon-configure-action"); action != "" {
+	action := r.Header.Get("x-addon-configure-action")
+	if config.Stremio.Locked && !td.IsAuthed && IsMethod(r, http.MethodPost) {
+		if action != "authorize" {
+			sendPage(w, r, td)
+			return
+		}
+	}
+
+	if action != "" {
 		switch action {
 		case "authorize":
 			if !IsPublicInstance {
@@ -234,14 +242,8 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 			if td.IsAuthed {
 				key := r.Form.Get("userdata_key")
 				if key == "" {
-					ud.SetEncoded("")
-					err := udManager.Sync(ud)
-					if err != nil {
-						LogError(r, "failed to unselect userdata", err)
-					} else {
-						stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), false)
-						return
-					}
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", "", false)
+					return
 				} else {
 					err := udManager.Load(key, ud)
 					if err != nil {
@@ -271,7 +273,7 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to copy userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), true)
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), false)
 					return
 				}
 			}
@@ -281,18 +283,17 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					LogError(r, "failed to delete userdata", err)
 				} else {
-					stremio_shared.RedirectToConfigurePage(w, r, "wrap", ud.GetEncoded(), true)
+					eud := ""
+					if !config.Stremio.Locked {
+						eud = ud.GetEncoded()
+					}
+					stremio_shared.RedirectToConfigurePage(w, r, "wrap", eud, false)
 					return
 				}
 			}
 		}
 
-		page, err := getPage(td)
-		if err != nil {
-			SendError(w, r, err)
-			return
-		}
-		SendHTML(w, 200, page)
+		sendPage(w, r, td)
 		return
 	}
 
@@ -387,10 +388,5 @@ func handleConfigure(w http.ResponseWriter, r *http.Request) {
 		td.ManifestURL = ExtractRequestBaseURL(r).JoinPath("/stremio/wrap/" + ud.GetEncoded() + "/manifest.json").String()
 	}
 
-	page, err := getPage(td)
-	if err != nil {
-		SendError(w, r, err)
-		return
-	}
-	SendHTML(w, 200, page)
+	sendPage(w, r, td)
 }
