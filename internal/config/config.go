@@ -77,6 +77,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_NEWZ_PLAYBACK_WAIT_TIME":        "15s",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
+		"STREMTHRU_TORZ_TORRENT_FILE_MAX_SIZE":             "1MB",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
 		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_INDEXER_COUNT":  "2",
 		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT":    "3",
@@ -1096,6 +1097,10 @@ func PrintConfig(state *AppState) {
 		l.Println("   max conn. per stream: " + strconv.Itoa(NewzMaxConnectionPerStream))
 		l.Println()
 	}
+
+	l.Println(" Torz:")
+	l.Println("   torrent file max size: " + util.ToSize(Torz.TorrentFileMaxSize))
+	l.Println()
 
 	l.Println(" Instance ID:")
 	l.Println("   " + InstanceId)

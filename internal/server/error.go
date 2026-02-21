@@ -165,6 +165,7 @@ func (e *APIError) Append(errs ...Error) *APIError {
 
 func NewAPIError(statusCode int, message string, code ErrorCode, errors ...Error) *APIError {
 	return &APIError{
+		Code:       code,
 		StatusCode: statusCode,
 		Message:    message,
 		Errors:     errors,

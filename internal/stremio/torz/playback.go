@@ -102,7 +102,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 					error_video: store_video.StoreVideoName500,
 				}, err
 			}
-			fileHeader, err := shared.FetchTorrentFile(link, 1024*1024)
+			magnet, fileHeader, err := shared.FetchTorrentFile(link)
 			if err != nil {
 				return &stremResult{
 					error_level: logger.LevelError,
@@ -110,13 +110,17 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 					error_video: store_video.StoreVideoName500,
 				}, err
 			}
-			amParams.Torrent = fileHeader
-			if _, _, err := amParams.GetTorrentMeta(); err != nil {
-				return &stremResult{
-					error_level: logger.LevelError,
-					error_log:   "invalid torrent file",
-					error_video: store_video.StoreVideoName500,
-				}, err
+			if magnet != "" {
+				amParams.Magnet = magnet
+			} else {
+				amParams.Torrent = fileHeader
+				if _, _, err := amParams.GetTorrentMeta(); err != nil {
+					return &stremResult{
+						error_level: logger.LevelError,
+						error_log:   "invalid torrent file",
+						error_video: store_video.StoreVideoName500,
+					}, err
+				}
 			}
 		}
 		amRes, err := ctx.Store.AddMagnet(amParams)

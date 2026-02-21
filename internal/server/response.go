@@ -36,6 +36,9 @@ func SendError(w http.ResponseWriter, r *http.Request, err error) {
 	if !errors.As(err, &e) {
 		e = ErrorInternalServerError(r).WithCause(err)
 	}
+	if e.Errors == nil {
+		e.Errors = []Error{}
+	}
 
 	statusCode := e.StatusCode
 	if statusCode == 0 {

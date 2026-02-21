@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/buddy"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/kv"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
 	"github.com/MunifTanjim/stremthru/internal/server"
@@ -15,6 +16,7 @@ import (
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -244,17 +246,21 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 		if payload.Magnet != "" {
 			data, err = addMagnet(ctx, payload.Magnet, nil)
 		} else if payload.Torrent != "" {
-			fileHeader, err := shared.FetchTorrentFile(payload.Torrent, 1024*1024)
-			if err != nil {
-				shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(err).Send(w, r)
+			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Torrent)
+			if fetchErr != nil {
+				shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(fetchErr).Send(w, r)
 				return
 			}
-			data, err = addMagnet(ctx, "", fileHeader)
+			if magnet != "" {
+				data, err = addMagnet(ctx, magnet, nil)
+			} else {
+				data, err = addMagnet(ctx, "", fileHeader)
+			}
 		}
 
 	case strings.Contains(contentType, "multipart/form-data"):
-		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
-		if err := r.ParseMultipartForm(512 << 10); err != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, config.Torz.TorrentFileMaxSize)
+		if err := r.ParseMultipartForm(util.ToBytes("512KB")); err != nil {
 			SendError(w, r, err)
 			return
 		}
