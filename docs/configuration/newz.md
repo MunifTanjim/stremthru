@@ -22,7 +22,7 @@ Maximum number of concurrent connections per stream.
 STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM=8
 ```
 
-### `STREMTHRU_NEWZ_NZB_CACHE_SIZE`
+### `STREMTHRU_NEWZ_NZB_FILE_CACHE_SIZE`
 
 Size of the NZB file cache.
 
@@ -31,14 +31,14 @@ Size of the NZB file cache.
 **Example:**
 
 ```sh
-STREMTHRU_NEWZ_NZB_CACHE_SIZE=512MB
+STREMTHRU_NEWZ_NZB_FILE_CACHE_SIZE=512MB
 ```
 
 ::: info
 Disk backed cache. Make sure you have enough disk space.
 :::
 
-### `STREMTHRU_NEWZ_NZB_CACHE_TTL`
+### `STREMTHRU_NEWZ_NZB_FILE_CACHE_TTL`
 
 TTL for cached NZB files.
 
@@ -48,7 +48,7 @@ TTL for cached NZB files.
 **Example:**
 
 ```sh
-STREMTHRU_NEWZ_NZB_CACHE_TTL=24h
+STREMTHRU_NEWZ_NZB_FILE_CACHE_TTL=24h
 ```
 
 ### `STREMTHRU_NEWZ_NZB_LINK_MODE`
@@ -70,7 +70,7 @@ If `hostname` is `*`, it is used as fallback.
 STREMTHRU_NEWZ_NZB_LINK_MODE=*:proxy
 ```
 
-### `STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE`
+### `STREMTHRU_NEWZ_NZB_FILE_MAX_SIZE`
 
 Maximum NZB file size allowed.
 
@@ -79,7 +79,7 @@ Maximum NZB file size allowed.
 **Example:**
 
 ```sh
-STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE=50MB
+STREMTHRU_NEWZ_NZB_FILE_MAX_SIZE=50MB
 ```
 
 ### `STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE`

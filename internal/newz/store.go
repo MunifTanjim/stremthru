@@ -107,7 +107,7 @@ func handleStoreNewzAdd(w http.ResponseWriter, r *http.Request) {
 		data, err = addNewz(ctx, newzStore, payload.Link, nil)
 
 	case strings.Contains(contentType, "multipart/form-data"):
-		r.Body = http.MaxBytesReader(w, r.Body, config.NewzNZBMaxFileSize)
+		r.Body = http.MaxBytesReader(w, r.Body, config.Newz.NZBFileMaxSize)
 		if err := r.ParseMultipartForm(util.ToBytes("10MB")); err != nil {
 			server.SendError(w, r, err)
 			return

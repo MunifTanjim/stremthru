@@ -39,12 +39,12 @@ func handleGetUsenetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := UsenetConfig{
-		NZBCacheSize:           util.ToSize(config.NewzNZBCacheSize),
-		NZBCacheTTL:            config.NewzNZBCacheTTL.String(),
-		NZBMaxFileSize:         util.ToSize(config.NewzNZBMaxFileSize),
-		SegmentCacheSize:       util.ToSize(config.NewzSegmentCacheSize),
-		StreamBufferSize:       util.ToSize(config.NewzStreamBufferSize),
-		MaxConnectionPerStream: config.NewzMaxConnectionPerStream,
+		NZBCacheSize:           util.ToSize(config.Newz.NZBFileCacheSize),
+		NZBCacheTTL:            config.Newz.NZBFileCacheTTL.String(),
+		NZBMaxFileSize:         util.ToSize(config.Newz.NZBFileMaxSize),
+		SegmentCacheSize:       util.ToSize(config.Newz.SegmentCacheSize),
+		StreamBufferSize:       util.ToSize(config.Newz.StreamBufferSize),
+		MaxConnectionPerStream: config.Newz.MaxConnectionPerStream,
 		IndexerRequestHeader: UsenetConfigIndexerRequestHeader{
 			Query: queryHeaders,
 			Grab:  flattenHeader(config.Newz.IndexerRequestHeader.Grab),

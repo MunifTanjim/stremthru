@@ -83,7 +83,7 @@ func handleParseNZB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, config.NewzNZBMaxFileSize)
+	r.Body = http.MaxBytesReader(w, r.Body, config.Newz.NZBFileMaxSize)
 	if err := r.ParseMultipartForm(util.ToBytes("10MB")); err != nil {
 		SendError(w, r, err)
 		return
@@ -269,7 +269,7 @@ func handleUploadNZB(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, config.NewzNZBMaxFileSize)
+	r.Body = http.MaxBytesReader(w, r.Body, config.Newz.NZBFileMaxSize)
 	if err := r.ParseMultipartForm(util.ToBytes("10MB")); err != nil {
 		SendError(w, r, err)
 		return

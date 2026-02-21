@@ -59,9 +59,9 @@ func (f *NZBFile) ToFileHeader() (*multipart.FileHeader, error) {
 
 var nzbFileCache = cache.NewCache[NZBFile](&cache.CacheConfig{
 	Name:       "newz_nzb",
-	Lifetime:   config.NewzNZBCacheTTL,
+	Lifetime:   config.Newz.NZBFileCacheTTL,
 	DiskBacked: true,
-	MaxSize:    config.NewzNZBCacheSize,
+	MaxSize:    config.Newz.NZBFileCacheSize,
 })
 
 func IsNZBFileCached(hash string) bool {
@@ -145,19 +145,19 @@ func fetchNZBFile(link string, name string, log *logger.Logger, onFetch func(*NZ
 				return nil, fmt.Errorf("failed to fetch nzb: status %d", res.StatusCode)
 			}
 
-			if res.ContentLength > config.NewzNZBMaxFileSize {
-				return nil, fmt.Errorf("file too large: %d bytes (max %d)", res.ContentLength, config.NewzNZBMaxFileSize)
+			if res.ContentLength > config.Newz.NZBFileMaxSize {
+				return nil, fmt.Errorf("file too large: %d bytes (max %d)", res.ContentLength, config.Newz.NZBFileMaxSize)
 			}
 
-			blob, err := io.ReadAll(io.LimitReader(res.Body, config.NewzNZBMaxFileSize+1024))
+			blob, err := io.ReadAll(io.LimitReader(res.Body, config.Newz.NZBFileMaxSize+1024))
 			if err != nil {
 				if log != nil {
 					log.Error("fetch nzb - failed", "error", err, "link", clink)
 				}
 				return nil, err
 			}
-			if size := int64(len(blob)); size > config.NewzNZBMaxFileSize {
-				return nil, fmt.Errorf("file too large: %d+ bytes (max %d)", size, config.NewzNZBMaxFileSize)
+			if size := int64(len(blob)); size > config.Newz.NZBFileMaxSize {
+				return nil, fmt.Errorf("file too large: %d+ bytes (max %d)", size, config.Newz.NZBFileMaxSize)
 			}
 			if len(blob) == 0 {
 				return nil, fmt.Errorf("empty response body")

@@ -66,7 +66,7 @@ func NewFileStream(
 	bufferSize int64,
 ) (*FileStream, error) {
 	if bufferSize <= 0 {
-		bufferSize = config.NewzStreamBufferSize
+		bufferSize = config.Newz.StreamBufferSize
 	}
 
 	ctx := context.Background()

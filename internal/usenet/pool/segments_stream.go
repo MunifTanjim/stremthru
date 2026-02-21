@@ -57,7 +57,7 @@ func NewSegmentsStream(
 ) *SegmentsStream {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	workerCount := max(min(len(segments), config.NewzMaxConnectionPerStream), 1)
+	workerCount := max(min(len(segments), config.Newz.MaxConnectionPerStream), 1)
 
 	s := &SegmentsStream{
 		segments:    segments,

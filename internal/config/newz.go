@@ -8,14 +8,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
-var NewzNZBCacheSize = util.ToBytes(getEnv("STREMTHRU_NEWZ_NZB_CACHE_SIZE"))
-var NewzNZBCacheTTL = mustParseDuration("newz nzb cache ttl", getEnv("STREMTHRU_NEWZ_NZB_CACHE_TTL"), 6*time.Hour)
-var NewzNZBMaxFileSize = util.ToBytes(getEnv("STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE"))
-
-var NewzSegmentCacheSize = util.ToBytes(getEnv("STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE"))
-var NewzStreamBufferSize = util.ToBytes(getEnv("STREMTHRU_NEWZ_STREAM_BUFFER_SIZE"))
-var NewzMaxConnectionPerStream = util.MustParseInt(getEnv("STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM"))
-
 type NZBLinkMode string
 
 var (
@@ -85,7 +77,13 @@ func (mbt newzIndexerRequestHeaderByType) Get(queryType NewzIndexerRequestQueryT
 }
 
 type newzConfig struct {
-	IndexerRequestHeader newzIndexerRequestHeaderMap
+	IndexerRequestHeader   newzIndexerRequestHeaderMap
+	MaxConnectionPerStream int
+	NZBFileCacheSize       int64
+	NZBFileCacheTTL        time.Duration
+	NZBFileMaxSize         int64
+	SegmentCacheSize       int64
+	StreamBufferSize       int64
 }
 
 func parseNewzIndexerRequestHeader(queryHeaderBlob, grabHeaderBlob string) newzIndexerRequestHeaderMap {
@@ -174,7 +172,13 @@ func parseNewzIndexerRequestHeader(queryHeaderBlob, grabHeaderBlob string) newzI
 
 var Newz = func() newzConfig {
 	newz := newzConfig{
-		IndexerRequestHeader: parseNewzIndexerRequestHeader(getEnv("STREMTHRU_NEWZ_QUERY_HEADER"), getEnv("STREMTHRU_NEWZ_GRAB_HEADER")),
+		IndexerRequestHeader:   parseNewzIndexerRequestHeader(getEnv("STREMTHRU_NEWZ_QUERY_HEADER"), getEnv("STREMTHRU_NEWZ_GRAB_HEADER")),
+		MaxConnectionPerStream: util.MustParseInt(getEnv("STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM")),
+		NZBFileCacheSize:       util.ToBytes(getEnv("STREMTHRU_NEWZ_NZB_FILE_CACHE_SIZE")),
+		NZBFileCacheTTL:        mustParseDuration("newz nzb file cache ttl", getEnv("STREMTHRU_NEWZ_NZB_FILE_CACHE_TTL"), 6*time.Hour),
+		NZBFileMaxSize:         util.ToBytes(getEnv("STREMTHRU_NEWZ_NZB_FILE_MAX_SIZE")),
+		SegmentCacheSize:       util.ToBytes(getEnv("STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE")),
+		StreamBufferSize:       util.ToBytes(getEnv("STREMTHRU_NEWZ_STREAM_BUFFER_SIZE")),
 	}
 
 	return newz

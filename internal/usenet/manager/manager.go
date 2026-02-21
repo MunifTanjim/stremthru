@@ -20,7 +20,7 @@ var globalManager = &Manager{
 }
 
 var getSegmentCache = sync.OnceValue(func() usenet_pool.SegmentCache {
-	return usenet_pool.NewSegmentCache(config.NewzSegmentCacheSize)
+	return usenet_pool.NewSegmentCache(config.Newz.SegmentCacheSize)
 })
 
 type Manager struct {

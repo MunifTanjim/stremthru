@@ -87,9 +87,9 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_IP_CHECKER":                             "aws",
 		"STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM":         "8",
-		"STREMTHRU_NEWZ_NZB_CACHE_SIZE":                    "512MB",
-		"STREMTHRU_NEWZ_NZB_CACHE_TTL":                     "24h",
-		"STREMTHRU_NEWZ_NZB_MAX_FILE_SIZE":                 "50MB",
+		"STREMTHRU_NEWZ_NZB_FILE_CACHE_SIZE":               "512MB",
+		"STREMTHRU_NEWZ_NZB_FILE_CACHE_TTL":                "24h",
+		"STREMTHRU_NEWZ_NZB_FILE_MAX_SIZE":                 "50MB",
 		"STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE":                "10GB",
 		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
 		"STREMTHRU_NEWZ_NZB_LINK_TYPE":                     "*:proxy",
@@ -1091,12 +1091,12 @@ func PrintConfig(state *AppState) {
 
 	if Feature.HasVault() {
 		l.Println(" Newz:")
-		l.Println("         nzb cache size: " + util.ToSize(NewzNZBCacheSize))
-		l.Println("          nzb cache ttl: " + NewzNZBCacheTTL.String())
-		l.Println("      nzb max file size: " + util.ToSize(NewzNZBMaxFileSize))
-		l.Println("     segment cache size: " + util.ToSize(NewzSegmentCacheSize))
-		l.Println("     stream buffer size: " + util.ToSize(NewzStreamBufferSize))
-		l.Println("   max conn. per stream: " + strconv.Itoa(NewzMaxConnectionPerStream))
+		l.Println("   max conn. per stream: " + strconv.Itoa(Newz.MaxConnectionPerStream))
+		l.Println("    nzb file cache size: " + util.ToSize(Newz.NZBFileCacheSize))
+		l.Println("     nzb file cache ttl: " + Newz.NZBFileCacheTTL.String())
+		l.Println("      nzb file max size: " + util.ToSize(Newz.NZBFileMaxSize))
+		l.Println("     segment cache size: " + util.ToSize(Newz.SegmentCacheSize))
+		l.Println("     stream buffer size: " + util.ToSize(Newz.StreamBufferSize))
 		l.Println()
 	}
 
