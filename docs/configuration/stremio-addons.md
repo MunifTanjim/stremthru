@@ -40,6 +40,18 @@ Max timeout for newz indexer requests.
 STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT=15s
 ```
 
+### `STREMTHRU_STREMIO_NEWZ_PLAYBACK_WAIT_TIME`
+
+Max wait time for newz playback to be ready.
+
+- **Default:** `15s`
+
+**Example:**
+
+```sh
+STREMTHRU_STREMIO_NEWZ_PLAYBACK_WAIT_TIME=15s
+```
+
 ## StremThru Torz
 
 ### `STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT`

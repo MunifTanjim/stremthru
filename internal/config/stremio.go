@@ -30,6 +30,7 @@ type stremioConfigWrap struct {
 
 type stremioConfigNewz struct {
 	IndexerMaxTimeout time.Duration
+	PlaybackWaitTime  time.Duration
 }
 
 type StremioConfig struct {
@@ -63,6 +64,7 @@ func parseStremio() StremioConfig {
 		},
 		Newz: stremioConfigNewz{
 			IndexerMaxTimeout: mustParseDuration("stremio newz indexer max timeout", getEnv("STREMTHRU_STREMIO_NEWZ_INDEXER_MAX_TIMEOUT"), 2*time.Second, 60*time.Second),
+			PlaybackWaitTime:  mustParseDuration("stremio newz playback wait time", getEnv("STREMTHRU_STREMIO_NEWZ_PLAYBACK_WAIT_TIME"), 5*time.Second),
 		},
 	}
 

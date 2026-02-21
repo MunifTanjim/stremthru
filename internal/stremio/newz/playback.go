@@ -145,11 +145,13 @@ func handlePlaybackFromStore(w http.ResponseWriter, r *http.Request, ud *UserDat
 			return result, err
 		}
 
+		retryInterval := 5 * time.Second
+		maxRetry := int(config.Stremio.Newz.PlaybackWaitTime / retryInterval)
 		newz, err := stremio_shared.WaitForNewzStatus(&ctx.Ctx, &store.GetNewzData{
 			Id:     addRes.Id,
 			Hash:   addRes.Hash,
 			Status: addRes.Status,
-		}, store.NewzStatusDownloaded, 3, 5*time.Second)
+		}, store.NewzStatusDownloaded, maxRetry, retryInterval)
 		if err != nil {
 			strem := &stremResult{
 				error_level: logger.LevelError,
