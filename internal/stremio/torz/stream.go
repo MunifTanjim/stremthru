@@ -21,9 +21,9 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 	"github.com/MunifTanjim/stremthru/internal/util"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 	"github.com/alitto/pond/v2"
@@ -693,9 +693,7 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 			pulledHashes = append(pulledHashes, hashes...)
 		}
 
-		worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
-			SId: nsid.String(),
-		})
+		torznab_indexer_syncinfo.QueueJob(nsid.String())
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)
 		shared.ErrorInternalServerError(r, "failed to normalize strem id").WithCause(err).Send(w, r)

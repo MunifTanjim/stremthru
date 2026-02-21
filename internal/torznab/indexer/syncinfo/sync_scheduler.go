@@ -1,28 +1,37 @@
-package worker
+package torznab_indexer_syncinfo
 
 import (
 	"net/url"
 	"sync"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/job"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
-	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/alitto/pond/v2"
 )
 
-func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
-	rateLimitTotalWaitThreshold := 1 * time.Minute
-	if conf.Interval != 0 {
-		rateLimitTotalWaitThreshold = conf.Interval / 2
-	}
-	conf.Executor = func(w *Worker) error {
-		log := w.Log
+const syncSchedulerId = "sync-torznab-indexer"
 
-		pendingItems, err := torznab_indexer_syncinfo.GetSyncPending()
+var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
+	Id:           syncSchedulerId,
+	Title:        "Sync Torznab Indexer",
+	Interval:     30 * time.Minute,
+	RunExclusive: true,
+	Disabled:     !config.Feature.HasVault(),
+	ShouldSkip: func() bool {
+		return !HasSyncPending()
+	},
+	Executor: func(j *job.Scheduler[JobData]) error {
+		log := j.Logger()
+
+		rateLimitTotalWaitThreshold := 15 * time.Minute
+
+		pendingItems, err := GetSyncPending()
 		if err != nil {
 			log.Error("failed to get pending sync", "error", err)
 			return err
@@ -41,7 +50,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 		log.Info("processing pending sync items", "count", len(pendingItems))
 
-		itemsByIndexerId := make(map[int64][]torznab_indexer_syncinfo.TorznabIndexerSyncInfo)
+		itemsByIndexerId := make(map[int64][]TorznabIndexerSyncInfo)
 		for _, item := range pendingItems {
 			itemsByIndexerId[item.IndexerId] = append(itemsByIndexerId[item.IndexerId], item)
 		}
@@ -102,8 +111,8 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 					results := []tznc.Torz{}
 
-					recordProgress := func(queries torznab_indexer_syncinfo.Queries, query *torznab_indexer_syncinfo.Query) {
-						if err := torznab_indexer_syncinfo.RecordProgress(indexer.Id, item.SId, queries); err != nil {
+					recordProgress := func(queries Queries, query *Query) {
+						if err := RecordProgress(indexer.Id, item.SId, queries); err != nil {
 							log.Error("failed to record progress", "error", err, "indexer", indexer.Name, "sid", item.SId, "query", query.Query)
 						}
 					}
@@ -230,9 +239,5 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 		wg.Wait()
 
 		return nil
-	}
-
-	worker := NewWorker(conf)
-
-	return worker
-}
+	},
+})

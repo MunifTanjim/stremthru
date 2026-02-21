@@ -10,7 +10,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 )
 
 type TorznabIndexerSyncInfoQueryResponse struct {
@@ -145,10 +144,8 @@ func handleQueueTorznabIndexerSyncInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Queue the sync request - the queue worker will prepare queries and create syncinfo entries
-	worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
-		SId: request.SId,
-	})
+	// Queue the sync request - the queue job will prepare queries and create syncinfo entries
+	torznab_indexer_syncinfo.QueueJob(request.SId)
 
 	SendData(w, r, 204, nil)
 }

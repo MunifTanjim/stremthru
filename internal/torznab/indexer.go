@@ -14,8 +14,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/util"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
@@ -82,9 +82,7 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	var wg sync.WaitGroup
 	for _, imdbId := range imdbIds {
 		wg.Go(func() {
-			worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
-				SId: imdbId,
-			})
+			torznab_indexer_syncinfo.QueueJob(imdbId)
 			buddy.PullTorrentsByStremId(imdbId, "")
 		})
 	}

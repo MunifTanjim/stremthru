@@ -1,16 +1,29 @@
-package worker
+package torznab_indexer_syncinfo
 
 import (
+	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/job"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
-	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	znabsearch "github.com/MunifTanjim/stremthru/internal/znab/search"
 )
 
-func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
-	conf.Executor = func(w *Worker) error {
-		log := w.Log
+const queueSyncSchedulerId = "queue-torznab-indexer-sync"
+
+var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
+	Id:           queueSyncSchedulerId,
+	Title:        "Queue Torznab Indexer Sync",
+	Interval:     10 * time.Minute,
+	RunExclusive: true,
+	Disabled:     !config.Feature.HasVault(),
+	Queue:        queue,
+	ShouldSkip: func() bool {
+		return queue.IsEmpty() || !torznab_indexer.Exists()
+	},
+	Executor: func(j *job.Scheduler[JobData]) error {
+		log := j.Logger()
 
 		indexers, err := torznab_indexer.GetAllEnabled()
 		if err != nil {
@@ -35,7 +48,7 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 			}
 		}
 
-		worker_queue.TorznabIndexerSyncerQueue.Process(func(item worker_queue.TorznabIndexerSyncerQueueItem) error {
+		j.JobQueue().Process(func(item JobData) error {
 			meta, nsid, err := znabsearch.GetQueryMeta(log, item.SId)
 			if err != nil {
 				log.Error("failed to get query metadata", "error", err, "sid", item.SId)
@@ -70,16 +83,16 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 
 				totalQueued := 0
 				for sid, queries := range queriesBySid {
-					queryItems := make(torznab_indexer_syncinfo.Queries, len(queries))
+					queryItems := make(Queries, len(queries))
 					for i := range queries {
-						queryItems[i] = torznab_indexer_syncinfo.Query{
+						queryItems[i] = Query{
 							Query: queries[i].Query.Encode(),
 							Exact: queries[i].IsExact,
 						}
 					}
 
 					count := len(queries)
-					err = torznab_indexer_syncinfo.Queue(indexer.Id, sid, queryItems)
+					err = Queue(indexer.Id, sid, queryItems)
 					if err != nil {
 						log.Error("failed to queue sync", "error", err, "indexer", indexer.Name, "sid", sid, "query_count", count)
 						continue
@@ -94,9 +107,5 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 		})
 
 		return nil
-	}
-
-	worker := NewWorker(conf)
-
-	return worker
-}
+	},
+})

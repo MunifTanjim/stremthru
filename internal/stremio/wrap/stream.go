@@ -18,8 +18,8 @@ import (
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/worker"
-	"github.com/MunifTanjim/stremthru/internal/worker/worker_queue"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
@@ -64,9 +64,7 @@ func (ud UserData) fetchStream(ctx *Ctx, r *http.Request, rType, id string) (*st
 			buddy.PullTorrentsByStremId(cleanSId, "")
 		}
 
-		worker_queue.TorznabIndexerSyncerQueue.Queue(worker_queue.TorznabIndexerSyncerQueueItem{
-			SId: nsid.String(),
-		})
+		torznab_indexer_syncinfo.QueueJob(nsid.String())
 	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "strem_id", stremId, "error", err)
 	} else {
