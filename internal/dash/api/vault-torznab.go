@@ -18,6 +18,7 @@ type TorznabIndexerResponse struct {
 	URL               string  `json:"url"`
 	IsValid           bool    `json:"is_valid"`
 	RateLimitConfigId *string `json:"rate_limit_config_id"`
+	Disabled          bool    `json:"disabled"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
 }
@@ -34,6 +35,7 @@ func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndex
 		Name:              item.Name,
 		URL:               item.URL,
 		RateLimitConfigId: rateLimitConfigId,
+		Disabled:          item.Disabled,
 		CreatedAt:         item.CAt.Format(time.RFC3339),
 		UpdatedAt:         item.UAt.Format(time.RFC3339),
 	}
@@ -279,6 +281,33 @@ func handleTestTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, toTorznabIndexerResponse(indexer))
 }
 
+func handleToggleTorznabIndexer(w http.ResponseWriter, r *http.Request) {
+	id, err := parseTorznabIndexerId(r)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
+
+	indexer, err := torznab_indexer.GetById(id)
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+	if indexer == nil {
+		ErrorNotFound(r).WithMessage("torznab indexer not found").Send(w, r)
+		return
+	}
+
+	if err := torznab_indexer.SetDisabled(id, !indexer.Disabled); err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	indexer.Disabled = !indexer.Disabled
+
+	SendData(w, r, 200, toTorznabIndexerResponse(indexer))
+}
+
 func AddVaultTorznabEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
@@ -308,6 +337,14 @@ func AddVaultTorznabEndpoints(router *http.ServeMux) {
 		switch r.Method {
 		case http.MethodPost:
 			handleTestTorznabIndexer(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+	router.HandleFunc("/vault/torznab/indexers/{id}/toggle", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleToggleTorznabIndexer(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}

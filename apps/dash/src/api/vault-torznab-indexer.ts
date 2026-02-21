@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 
 export type TorznabIndexer = {
   created_at: string;
+  disabled: boolean;
   id: number;
   name: string;
   rate_limit_config_id: null | string;
@@ -69,7 +70,17 @@ export function useTorznabIndexerMutation() {
     mutationFn: testTorznabIndexer,
   });
 
-  return { create, remove, test, update };
+  const toggle = useMutation({
+    mutationFn: toggleTorznabIndexer,
+    onSuccess: async (data, _, __, ctx) => {
+      ctx.client.setQueryData<TorznabIndexer[]>(
+        ["/vault/torznab/indexers"],
+        (items) => items?.map((item) => (item.id == data.id ? data : item)),
+      );
+    },
+  });
+
+  return { create, remove, test, toggle, update };
 }
 
 export function useTorznabIndexers() {
@@ -98,6 +109,13 @@ async function getTorznabIndexers() {
 async function testTorznabIndexer(id: number) {
   const { data } = await api<TorznabIndexer>(
     `POST /vault/torznab/indexers/${id}/test`,
+  );
+  return data;
+}
+
+async function toggleTorznabIndexer(id: number) {
+  const { data } = await api<TorznabIndexer>(
+    `POST /vault/torznab/indexers/${id}/toggle`,
   );
   return data;
 }

@@ -33,7 +33,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 			return nil
 		}
 
-		indexers, err := torznab_indexer.GetAll()
+		indexers, err := torznab_indexer.GetAllEnabled()
 		if err != nil {
 			log.Error("failed to get indexers", "error", err)
 			return err
