@@ -74,12 +74,14 @@ func WithStoreContext(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := PrepareStoreContext(w, r); err != nil {
 			if errors.Is(err, store.ErrInvalidName) {
+				msg := err.Error()
 				err = server.ErrorBadRequest(r).
-					WithMessage(err.Error()).
+					WithMessage(msg).
 					Append(server.Error{
 						Domain:       server.ErrorDomainStore,
 						LocationType: server.LocationTypeHeader,
 						Location:     server.HEADER_STREMTHRU_STORE_NAME,
+						Message:      msg,
 					})
 			}
 			server.SendError(w, r, err)

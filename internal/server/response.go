@@ -33,9 +33,35 @@ func SendError(w http.ResponseWriter, r *http.Request, err error) {
 	ctx.Error = err
 
 	var e *APIError
-	if !errors.As(err, &e) {
+	if sterr, ok := err.(StremThruError); ok {
+		sterr.Pack(r)
+		err := sterr.GetError()
+		e = &APIError{
+			Cause:      err.Cause,
+			Code:       err.Code,
+			Errors:     []Error{},
+			Message:    err.Msg,
+			Method:     err.Method,
+			Path:       err.Path,
+			RequestId:  err.RequestId,
+			StatusCode: err.GetStatusCode(),
+			Type:       string(err.Type),
+			meta:       map[string]any{},
+		}
+		if err.UpstreamCause != nil {
+			if e.Cause == nil {
+				e.Cause = err.UpstreamCause
+			} else {
+				e.meta["upstream_cause"] = err.UpstreamCause
+			}
+		}
+		if err.StoreName != "" {
+			e.meta["store_name"] = err.StoreName
+		}
+	} else if !errors.As(err, &e) {
 		e = ErrorInternalServerError(r).WithCause(err)
 	}
+
 	if e.Errors == nil {
 		e.Errors = []Error{}
 	}
