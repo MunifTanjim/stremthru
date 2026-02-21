@@ -102,7 +102,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 					error_video: store_video.StoreVideoName500,
 				}, err
 			}
-			magnet, fileHeader, err := shared.FetchTorrentFile(link)
+			magnet, fileHeader, err := shared.FetchTorrentFile(link, "", log)
 			if err != nil {
 				return &stremResult{
 					error_level: logger.LevelError,

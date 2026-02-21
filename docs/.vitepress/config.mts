@@ -47,6 +47,7 @@ export default defineConfig({
           { text: "Integrations", link: "/configuration/integrations" },
           { text: "Features", link: "/configuration/features" },
           { text: "Newz", link: "/configuration/newz" },
+          { text: "Torz", link: "/configuration/torz" },
         ],
       },
       {

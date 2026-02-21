@@ -77,6 +77,8 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_NEWZ_PLAYBACK_WAIT_TIME":        "15s",
 		"STREMTHRU_STREMIO_STORE_CATALOG_ITEM_LIMIT":       "2000",
 		"STREMTHRU_STREMIO_STORE_CATALOG_CACHE_TIME":       "10m",
+		"STREMTHRU_TORZ_TORRENT_FILE_CACHE_SIZE":           "256MB",
+		"STREMTHRU_TORZ_TORRENT_FILE_CACHE_TTL":            "6h",
 		"STREMTHRU_TORZ_TORRENT_FILE_MAX_SIZE":             "1MB",
 		"STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT":       "10s",
 		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_INDEXER_COUNT":  "2",
@@ -1099,7 +1101,11 @@ func PrintConfig(state *AppState) {
 	}
 
 	l.Println(" Torz:")
-	l.Println("   torrent file max size: " + util.ToSize(Torz.TorrentFileMaxSize))
+	if !IsPublicInstance {
+		l.Println("   torrent file cache size: " + util.ToSize(Torz.TorrentFileCacheSize))
+		l.Println("    torrent file cache ttl: " + Torz.TorrentFileCacheTTL.String())
+	}
+	l.Println("     torrent file max size: " + util.ToSize(Torz.TorrentFileMaxSize))
 	l.Println()
 
 	l.Println(" Instance ID:")

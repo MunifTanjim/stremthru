@@ -225,6 +225,8 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log := server.GetReqCtx(r).Log
+
 	var data *store.AddMagnetData
 	var err error
 	contentType := r.Header.Get("Content-Type")
@@ -246,7 +248,7 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 		if payload.Magnet != "" {
 			data, err = addMagnet(ctx, payload.Magnet, nil)
 		} else if payload.Torrent != "" {
-			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Torrent)
+			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Torrent, "", log)
 			if fetchErr != nil {
 				shared.ErrorBadRequest(r, "unable to fetch torrent file").WithCause(fetchErr).Send(w, r)
 				return

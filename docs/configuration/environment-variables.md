@@ -278,3 +278,7 @@ See [Features](./features) for details.
 ## Newz
 
 See [Newz Configuration](./newz) for all `STREMTHRU_NEWZ_*` environment variables.
+
+## Torz
+
+See [Torz Configuration](./torz) for all `STREMTHRU_TORZ_*` environment variables.

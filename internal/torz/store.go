@@ -97,6 +97,8 @@ func addTorz(r *http.Request, ctx *storecontext.Context, link string, file *mult
 }
 
 func handleStoreTorzAdd(w http.ResponseWriter, r *http.Request) {
+	log := server.GetReqCtx(r).Log
+
 	ctx := storecontext.Get(r)
 
 	var data *store.AddMagnetData
@@ -122,7 +124,7 @@ func handleStoreTorzAdd(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(payload.Link, "magnet:") {
 			data, err = addTorz(r, ctx, payload.Link, nil)
 		} else {
-			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Link)
+			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Link, "", log)
 			if fetchErr != nil {
 				server.ErrorBadRequest(r).Append(server.Error{
 					LocationType: server.LocationTypeBody,
