@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/offcloud"
 	"github.com/MunifTanjim/stremthru/store/pikpak"
 	"github.com/MunifTanjim/stremthru/store/premiumize"
+	"github.com/MunifTanjim/stremthru/store/qbittorrent"
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/stremthru"
 	"github.com/MunifTanjim/stremthru/store/torbox"
@@ -64,6 +66,9 @@ var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 	UserAgent:  config.StoreClientUserAgent,
 })
+var qbStore = qbittorrent.NewStoreClient(&qbittorrent.StoreClientConfig{
+	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("qbittorrent")),
+})
 
 func GetStore(name string) store.Store {
 	switch store.StoreName(name) {
@@ -87,6 +92,8 @@ func GetStore(name string) store.Store {
 		return stStore
 	case store.StoreNameTorBox:
 		return tbStore
+	case store.StoreNameQBittorrent:
+		return qbStore
 	default:
 		return nil
 	}
@@ -114,6 +121,8 @@ func GetStoreByCode(code string) store.Store {
 		return stStore
 	case store.StoreCodeTorBox:
 		return tbStore
+	case store.StoreCodeQBittorrent:
+		return qbStore
 	default:
 		return nil
 	}
@@ -231,9 +240,30 @@ func GenerateStremThruLink(r *http.Request, ctx *storecontext.Context, link stri
 		return nil, err
 	}
 
-	data.Link, err = ProxyWrapLink(r, ctx, data.Link, filename)
-	if err != nil {
-		return nil, err
+	storeName := string(ctx.Store.GetName())
+	if config.StoreContentProxy.IsEnabled(storeName) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, storeName) {
+		if ctx.IsProxyAuthorized {
+			tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
+
+			proxyLink, err := CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, filename)
+			if err != nil {
+				return nil, err
+			}
+
+			// For torrent stores with raw file streams, append hash and file
+			// index so the proxy can pace streaming to download progress.
+			if ctx.Store.GetName() == store.StoreNameQBittorrent {
+				if hash, fileIdx, err := qbittorrent.ParseLockedFileLink(link); err == nil {
+					sep := "?"
+					if strings.Contains(proxyLink, "?") {
+						sep = "&"
+					}
+					proxyLink += sep + "torrent_hash=" + hash + "&torrent_fidx=" + strconv.Itoa(fileIdx)
+				}
+			}
+
+			data.Link = proxyLink
+		}
 	}
 
 	return data, nil
@@ -329,4 +359,35 @@ func UnwrapProxyLinkToken(encodedToken string) (user string, link string, header
 	proxyLinkTokenCache.Add(encodedToken, *proxyLink)
 
 	return proxyLink.User, proxyLink.Value, proxyLink.Headers, proxyLink.TunT, nil
+}
+
+// GetQbitFileProgress returns the download progress for a qBittorrent file.
+// Uses the user's configured store auth token to access the qBittorrent API.
+func GetQbitFileProgress(user string, hash string, fileIndex int) (*qbittorrent.FileProgressInfo, error) {
+	apiKey := config.StoreAuthToken.GetToken(user, "qbittorrent")
+	if apiKey == "" {
+		return nil, errors.New("no qBittorrent API key for user")
+	}
+	return qbStore.GetFileProgress(apiKey, hash, fileIndex)
+}
+
+// GetQbitSafeBytes returns the contiguous-from-start safe byte boundary for
+// a qBittorrent file. Unlike GetQbitFileProgress (total progress), this tracks
+// the sequential download frontier for accurate streaming pacing.
+func GetQbitSafeBytes(user, hash string, fileIndex int) (safeBytes int64, fileSize int64, done bool, err error) {
+	apiKey := config.StoreAuthToken.GetToken(user, "qbittorrent")
+	if apiKey == "" {
+		return 0, 0, false, errors.New("no qBittorrent API key for user")
+	}
+	return qbStore.GetSafeBytes(apiKey, hash, fileIndex)
+}
+
+// IsQbitFileRangeAvailable checks whether the byte range [start, end] within
+// a qBittorrent file is fully downloaded at the piece level.
+func IsQbitFileRangeAvailable(user, hash string, fileIndex int, start, end int64) (bool, error) {
+	apiKey := config.StoreAuthToken.GetToken(user, "qbittorrent")
+	if apiKey == "" {
+		return false, errors.New("no qBittorrent API key for user")
+	}
+	return qbStore.IsFileRangeAvailable(apiKey, hash, fileIndex, start, end)
 }

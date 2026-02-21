@@ -27,6 +27,7 @@ func main() {
 			string(store.StoreNamePremiumize),
 			string(store.StoreNameRealDebrid),
 			string(store.StoreNameTorBox),
+			string(store.StoreNameQBittorrent),
 		},
 	})
 
