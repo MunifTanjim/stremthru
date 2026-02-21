@@ -2,6 +2,7 @@ package torznab_indexer
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
@@ -27,13 +28,14 @@ func (tidxr TorznabIndexer) GetClient() (torznab_client.Indexer, error) {
 			return nil, err
 		}
 
+		cacheKey := strconv.FormatInt(tidxr.Id, 10)
 		var client *jackett.Client
-		if !jackettCache.Get(tidxr.Id, &client) {
+		if !jackettCache.Get(cacheKey, &client) {
 			client = jackett.NewClient(&jackett.ClientConfig{
 				BaseURL: u.BaseURL,
 				APIKey:  apiKey,
 			})
-			err := jackettCache.Add(tidxr.Id, client)
+			err := jackettCache.Add(cacheKey, client)
 			if err != nil {
 				return nil, err
 			}

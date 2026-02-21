@@ -18,7 +18,7 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 			return err
 		}
 
-		clientById := map[string]tznc.Indexer{}
+		clientById := map[int64]tznc.Indexer{}
 		for i := range indexers {
 			indexer := &indexers[i]
 
@@ -26,10 +26,10 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 			case torznab_indexer.IndexerTypeJackett:
 				client, err := indexer.GetClient()
 				if err != nil {
-					log.Error("failed to create torznab client", "error", err, "id", indexer.GetCompositeId())
+					log.Error("failed to create torznab client", "error", err, "id", indexer.Id)
 					continue
 				}
-				clientById[indexer.GetCompositeId()] = client
+				clientById[indexer.Id] = client
 			default:
 				log.Warn("unsupported indexer type", "type", indexer.Type)
 			}
@@ -49,7 +49,7 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 			for i := range indexers {
 				indexer := &indexers[i]
 
-				client, ok := clientById[indexer.GetCompositeId()]
+				client, ok := clientById[indexer.Id]
 				if !ok {
 					continue
 				}
@@ -79,7 +79,7 @@ func InitTorznabIndexerSyncerQueueWorker(conf *WorkerConfig) *Worker {
 					}
 
 					count := len(queries)
-					err = torznab_indexer_syncinfo.Queue(indexer.Type, indexer.Id, sid, queryItems)
+					err = torznab_indexer_syncinfo.Queue(indexer.Id, sid, queryItems)
 					if err != nil {
 						log.Error("failed to queue sync", "error", err, "indexer", indexer.Name, "sid", sid, "query_count", count)
 						continue

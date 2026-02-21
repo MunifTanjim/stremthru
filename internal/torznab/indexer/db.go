@@ -38,31 +38,15 @@ func (it IndexerType) IsValid() bool {
 	}
 }
 
-func ParseCompositeId(compositeId string) (IndexerType, string, error) {
-	typeStr, id, ok := strings.Cut(compositeId, ":")
-	if !ok {
-		return "", "", fmt.Errorf("invalid composite id format: expected {type}:{id}")
-	}
-	indexerType := IndexerType(typeStr)
-	if !indexerType.IsValid() {
-		return "", "", fmt.Errorf("invalid indexer type: %s", typeStr)
-	}
-	return indexerType, id, nil
-}
-
 type TorznabIndexer struct {
+	Id                int64
 	Type              IndexerType
-	Id                string
 	Name              string
 	URL               string
 	APIKey            string
 	RateLimitConfigId sql.NullString
 	CAt               db.Timestamp
 	UAt               db.Timestamp
-}
-
-func (idxr TorznabIndexer) GetCompositeId() string {
-	return string(idxr.Type) + ":" + idxr.Id
 }
 
 type torznabIndexerRateLimiter struct {
@@ -88,7 +72,7 @@ func (idxr TorznabIndexer) GetRateLimiter() (*torznabIndexerRateLimiter, error) 
 	}
 	return &torznabIndexerRateLimiter{
 		Limiter: rl,
-		prefix:  idxr.GetCompositeId(),
+		prefix:  fmt.Sprintf("torznab:%d", idxr.Id),
 	}, nil
 }
 
@@ -102,7 +86,6 @@ func NewTorznabIndexer(indexerType IndexerType, url, apiKey string) (*TorznabInd
 
 		indexer := &TorznabIndexer{
 			Type: indexerType,
-			Id:   u.Encode(),
 			URL:  url,
 		}
 		err := indexer.SetAPIKey(apiKey)
@@ -167,8 +150,8 @@ func (i *TorznabIndexer) Validate() error {
 }
 
 var Column = struct {
-	Type              string
 	Id                string
+	Type              string
 	Name              string
 	URL               string
 	APIKey            string
@@ -176,8 +159,8 @@ var Column = struct {
 	CAt               string
 	UAt               string
 }{
-	Type:              "type",
 	Id:                "id",
+	Type:              "type",
 	Name:              "name",
 	URL:               "url",
 	APIKey:            "api_key",
@@ -187,14 +170,22 @@ var Column = struct {
 }
 
 var columns = []string{
-	Column.Type,
 	Column.Id,
+	Column.Type,
 	Column.Name,
 	Column.URL,
 	Column.APIKey,
 	Column.RateLimitConfigId,
 	Column.CAt,
 	Column.UAt,
+}
+
+var columnsInsert = []string{
+	Column.Type,
+	Column.Name,
+	Column.URL,
+	Column.APIKey,
+	Column.RateLimitConfigId,
 }
 
 var query_exists = fmt.Sprintf(
@@ -224,7 +215,7 @@ func GetAll() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -233,18 +224,17 @@ func GetAll() ([]TorznabIndexer, error) {
 }
 
 var query_get_by_id = fmt.Sprintf(
-	`SELECT %s FROM %s WHERE %s = ? AND %s = ?`,
+	`SELECT %s FROM %s WHERE %s = ?`,
 	strings.Join(columns, ", "),
 	TableName,
-	Column.Type,
 	Column.Id,
 )
 
-func GetById(indexerType IndexerType, id string) (*TorznabIndexer, error) {
-	row := db.QueryRow(query_get_by_id, indexerType, id)
+func GetById(id int64) (*TorznabIndexer, error) {
+	row := db.QueryRow(query_get_by_id, id)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Type, &item.Id, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -253,64 +243,62 @@ func GetById(indexerType IndexerType, id string) (*TorznabIndexer, error) {
 	return &item, nil
 }
 
-func GetByCompositeId(compositeId string) (*TorznabIndexer, error) {
-	indexerType, id, err := ParseCompositeId(compositeId)
-	if err != nil {
-		return nil, err
-	}
-	return GetById(indexerType, id)
-}
-
-var query_upsert = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES (?,?,?,?,?,?) ON CONFLICT (%s, %s) DO UPDATE SET %s`,
+var query_insert = fmt.Sprintf(
+	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
 	TableName,
-	db.JoinColumnNames(
-		Column.Type,
-		Column.Id,
-		Column.Name,
-		Column.URL,
-		Column.APIKey,
-		Column.RateLimitConfigId,
-	),
-	Column.Type,
-	Column.Id,
-	strings.Join([]string{
-		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.Name, Column.Name),
-		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.URL, Column.URL),
-		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.APIKey, Column.APIKey),
-		fmt.Sprintf(`%s = EXCLUDED.%s`, Column.RateLimitConfigId, Column.RateLimitConfigId),
-		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
-	}, ", "),
+	db.JoinColumnNames(columnsInsert...),
 )
 
-func (i *TorznabIndexer) Upsert() error {
-	_, err := db.Exec(query_upsert,
+func (i *TorznabIndexer) Insert() error {
+	result, err := db.Exec(query_insert,
 		i.Type,
-		i.Id,
 		i.Name,
 		i.URL,
 		i.APIKey,
 		i.RateLimitConfigId,
 	)
+	if err != nil {
+		return err
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	i.Id = id
+	return nil
+}
+
+var query_update = fmt.Sprintf(
+	`UPDATE %s SET %s WHERE %s = ?`,
+	TableName,
+	strings.Join([]string{
+		fmt.Sprintf(`%s = ?`, Column.Name),
+		fmt.Sprintf(`%s = ?`, Column.URL),
+		fmt.Sprintf(`%s = ?`, Column.APIKey),
+		fmt.Sprintf(`%s = ?`, Column.RateLimitConfigId),
+		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
+	}, ", "),
+	Column.Id,
+)
+
+func (i *TorznabIndexer) Update() error {
+	_, err := db.Exec(query_update,
+		i.Name,
+		i.URL,
+		i.APIKey,
+		i.RateLimitConfigId,
+		i.Id,
+	)
 	return err
 }
 
 var query_delete = fmt.Sprintf(
-	`DELETE FROM %s WHERE %s = ? AND %s = ?`,
+	`DELETE FROM %s WHERE %s = ?`,
 	TableName,
-	Column.Type,
 	Column.Id,
 )
 
-func Delete(indexerType IndexerType, id string) error {
-	_, err := db.Exec(query_delete, indexerType, id)
+func Delete(id int64) error {
+	_, err := db.Exec(query_delete, id)
 	return err
-}
-
-func DeleteByCompositeId(compositeId string) error {
-	indexerType, id, err := ParseCompositeId(compositeId)
-	if err != nil {
-		return err
-	}
-	return Delete(indexerType, id)
 }

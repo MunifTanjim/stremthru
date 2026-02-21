@@ -41,16 +41,15 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 		log.Info("processing pending sync items", "count", len(pendingItems))
 
-		itemsByIndexerId := make(map[string][]torznab_indexer_syncinfo.TorznabIndexerSyncInfo)
+		itemsByIndexerId := make(map[int64][]torznab_indexer_syncinfo.TorznabIndexerSyncInfo)
 		for _, item := range pendingItems {
-			key := item.GetIndexerCompositeId()
-			itemsByIndexerId[key] = append(itemsByIndexerId[key], item)
+			itemsByIndexerId[item.IndexerId] = append(itemsByIndexerId[item.IndexerId], item)
 		}
 
-		indexerById := make(map[string]*torznab_indexer.TorznabIndexer)
+		indexerById := make(map[int64]*torznab_indexer.TorznabIndexer)
 		for i := range indexers {
 			indexer := &indexers[i]
-			indexerById[indexer.GetCompositeId()] = indexer
+			indexerById[indexer.Id] = indexer
 		}
 
 		var wg sync.WaitGroup
@@ -66,7 +65,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 			case torznab_indexer.IndexerTypeJackett:
 				c, err := indexer.GetClient()
 				if err != nil {
-					log.Error("failed to create torznab client", "error", err, "id", indexer.GetCompositeId())
+					log.Error("failed to create torznab client", "error", err, "id", indexer.Id)
 					return err
 				}
 				client = c
@@ -80,7 +79,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 
 				rl, err := indexer.GetRateLimiter()
 				if err != nil {
-					log.Error("failed to get rate limiter", "error", err, "id", indexer.GetCompositeId())
+					log.Error("failed to get rate limiter", "error", err, "id", indexer.Id)
 					return
 				}
 
@@ -104,7 +103,7 @@ func InitTorznabIndexerSyncerWorker(conf *WorkerConfig) *Worker {
 					results := []tznc.Torz{}
 
 					recordProgress := func(queries torznab_indexer_syncinfo.Queries, query *torznab_indexer_syncinfo.Query) {
-						if err := torznab_indexer_syncinfo.RecordProgress(indexer.Type, indexer.Id, item.SId, queries); err != nil {
+						if err := torznab_indexer_syncinfo.RecordProgress(indexer.Id, item.SId, queries); err != nil {
 							log.Error("failed to record progress", "error", err, "indexer", indexer.Name, "sid", item.SId, "query", query.Query)
 						}
 					}

@@ -21,8 +21,7 @@ type TorznabIndexerSyncInfoQueryResponse struct {
 }
 
 type TorznabIndexerSyncInfoResponse struct {
-	Type        string                                `json:"type"`
-	Id          string                                `json:"id"`
+	IndexerId   int64                                 `json:"indexer_id"`
 	SId         string                                `json:"sid"`
 	QueuedAt    *string                               `json:"queued_at"`
 	SyncedAt    *string                               `json:"synced_at"`
@@ -39,11 +38,10 @@ type ListTorznabIndexerSyncInfoResponse struct {
 
 func toTorznabIndexerSyncInfoResponse(item *torznab_indexer_syncinfo.TorznabIndexerSyncInfo) TorznabIndexerSyncInfoResponse {
 	res := TorznabIndexerSyncInfoResponse{
-		Type:    string(item.Type),
-		Id:      item.Id,
-		SId:     item.SId,
-		Status:  string(item.Status),
-		Queries: make([]TorznabIndexerSyncInfoQueryResponse, len(item.Queries)),
+		IndexerId: item.IndexerId,
+		SId:       item.SId,
+		Status:    string(item.Status),
+		Queries:   make([]TorznabIndexerSyncInfoQueryResponse, len(item.Queries)),
 	}
 
 	for i, q := range item.Queries {

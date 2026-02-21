@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/ratelimit"
@@ -11,8 +12,8 @@ import (
 )
 
 type TorznabIndexerResponse struct {
+	Id                int64   `json:"id"`
 	Type              string  `json:"type"`
-	Id                string  `json:"id"`
 	Name              string  `json:"name"`
 	URL               string  `json:"url"`
 	IsValid           bool    `json:"is_valid"`
@@ -22,16 +23,14 @@ type TorznabIndexerResponse struct {
 }
 
 func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndexerResponse {
-	compositeId := string(item.Type) + ":" + item.Id
-
 	var rateLimitConfigId *string
 	if item.RateLimitConfigId.Valid {
 		rateLimitConfigId = &item.RateLimitConfigId.String
 	}
 
 	return TorznabIndexerResponse{
+		Id:                item.Id,
 		Type:              string(item.Type),
-		Id:                compositeId,
 		Name:              item.Name,
 		URL:               item.URL,
 		RateLimitConfigId: rateLimitConfigId,
@@ -127,7 +126,7 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := indexer.Upsert(); err != nil {
+	if err := indexer.Insert(); err != nil {
 		SendError(w, r, err)
 		return
 	}
@@ -135,10 +134,18 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 201, toTorznabIndexerResponse(indexer))
 }
 
-func handleGetTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+func parseTorznabIndexerId(r *http.Request) (int64, error) {
+	return strconv.ParseInt(r.PathValue("id"), 10, 64)
+}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+func handleGetTorznabIndexer(w http.ResponseWriter, r *http.Request) {
+	id, err := parseTorznabIndexerId(r)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
+
+	indexer, err := torznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -158,7 +165,11 @@ type UpdateTorznabIndexerRequest struct {
 }
 
 func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+	id, err := parseTorznabIndexerId(r)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
 
 	request := &UpdateTorznabIndexerRequest{}
 	if err := ReadRequestBodyJSON(r, request); err != nil {
@@ -166,7 +177,7 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+	indexer, err := torznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -210,7 +221,7 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := indexer.Upsert(); err != nil {
+	if err := indexer.Update(); err != nil {
 		SendError(w, r, err)
 		return
 	}
@@ -219,9 +230,13 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+	id, err := parseTorznabIndexerId(r)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
 
-	existing, err := torznab_indexer.GetByCompositeId(compositeId)
+	existing, err := torznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -231,7 +246,7 @@ func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := torznab_indexer.DeleteByCompositeId(compositeId); err != nil {
+	if err := torznab_indexer.Delete(id); err != nil {
 		SendError(w, r, err)
 		return
 	}
@@ -240,9 +255,13 @@ func handleDeleteTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleTestTorznabIndexer(w http.ResponseWriter, r *http.Request) {
-	compositeId := r.PathValue("id")
+	id, err := parseTorznabIndexerId(r)
+	if err != nil {
+		ErrorBadRequest(r).WithMessage("invalid id").Send(w, r)
+		return
+	}
 
-	indexer, err := torznab_indexer.GetByCompositeId(compositeId)
+	indexer, err := torznab_indexer.GetById(id)
 	if err != nil {
 		SendError(w, r, err)
 		return

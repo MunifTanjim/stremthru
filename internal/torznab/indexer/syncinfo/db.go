@@ -10,7 +10,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/db"
-	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 )
 
 var queueCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
@@ -90,19 +89,14 @@ func (q Queries) GetError() string {
 }
 
 type TorznabIndexerSyncInfo struct {
-	Type        torznab_indexer.IndexerType `json:"type"`
-	Id          string                      `json:"id"`
-	SId         string                      `json:"sid"`
-	QueuedAt    db.Timestamp                `json:"queued_at"`
-	SyncedAt    db.Timestamp                `json:"synced_at"`
-	Error       db.NullString               `json:"error"`
-	ResultCount sql.NullInt64               `json:"result_count"`
-	Status      Status                      `json:"status"`
-	Queries     Queries                     `json:"queries"`
-}
-
-func (si *TorznabIndexerSyncInfo) GetIndexerCompositeId() string {
-	return string(si.Type) + ":" + si.Id
+	IndexerId   int64         `json:"indexer_id"`
+	SId         string        `json:"sid"`
+	QueuedAt    db.Timestamp  `json:"queued_at"`
+	SyncedAt    db.Timestamp  `json:"synced_at"`
+	Error       db.NullString `json:"error"`
+	ResultCount sql.NullInt64 `json:"result_count"`
+	Status      Status        `json:"status"`
+	Queries     Queries       `json:"queries"`
 }
 
 func (si *TorznabIndexerSyncInfo) ShouldSync() bool {
@@ -118,8 +112,7 @@ func (si *TorznabIndexerSyncInfo) ShouldSync() bool {
 const TableName = "torznab_indexer_syncinfo"
 
 type ColumnStruct struct {
-	Type        string
-	Id          string
+	IndexerId   string
 	SId         string
 	QueuedAt    string
 	SyncedAt    string
@@ -130,8 +123,7 @@ type ColumnStruct struct {
 }
 
 var Column = ColumnStruct{
-	Type:        "type",
-	Id:          "id",
+	IndexerId:   "indexer_id",
 	SId:         "sid",
 	QueuedAt:    "queued_at",
 	SyncedAt:    "synced_at",
@@ -142,8 +134,7 @@ var Column = ColumnStruct{
 }
 
 var columns = []string{
-	Column.Type,
-	Column.Id,
+	Column.IndexerId,
 	Column.SId,
 	Column.QueuedAt,
 	Column.SyncedAt,
@@ -154,11 +145,10 @@ var columns = []string{
 }
 
 var query_queue = fmt.Sprintf(
-	"INSERT INTO %s AS tisi (%s) VALUES (?,?,?,%s,'%s',?) ON CONFLICT (%s) DO UPDATE SET %s WHERE %s",
+	"INSERT INTO %s AS tisi (%s) VALUES (?,?,%s,'%s',?) ON CONFLICT (%s) DO UPDATE SET %s WHERE %s",
 	TableName,
 	strings.Join([]string{
-		Column.Type,
-		Column.Id,
+		Column.IndexerId,
 		Column.SId,
 		Column.QueuedAt,
 		Column.Status,
@@ -167,8 +157,7 @@ var query_queue = fmt.Sprintf(
 	db.CurrentTimestamp,
 	StatusQueued,
 	strings.Join([]string{
-		Column.Type,
-		Column.Id,
+		Column.IndexerId,
 		Column.SId,
 	}, ", "),
 	strings.Join([]string{
@@ -183,12 +172,12 @@ var query_queue = fmt.Sprintf(
 	),
 )
 
-func Queue(indexerType torznab_indexer.IndexerType, indexerId, sid string, queries Queries) error {
+func Queue(indexerId int64, sid string, queries Queries) error {
 	if sid == "" {
 		return nil
 	}
 
-	cacheKey := string(indexerType) + ":" + indexerId + ":" + sid
+	cacheKey := strconv.FormatInt(indexerId, 10) + ":" + sid
 
 	var queuedAt db.Timestamp
 	if queueCache.Get(cacheKey, &queuedAt.Time) {
@@ -196,7 +185,7 @@ func Queue(indexerType torznab_indexer.IndexerType, indexerId, sid string, queri
 	}
 
 	queries.Clean()
-	_, err := db.Exec(query_queue, indexerType, indexerId, sid, queries)
+	_, err := db.Exec(query_queue, indexerId, sid, queries)
 	if err == nil {
 		err = queueCache.Add(cacheKey, time.Now())
 	}
@@ -211,8 +200,7 @@ var query_record_progress_common_values = strings.Join([]string{
 }, ", ")
 
 var query_record_progress_where = strings.Join([]string{
-	fmt.Sprintf("%s = ?", Column.Type),
-	fmt.Sprintf("%s = ?", Column.Id),
+	fmt.Sprintf("%s = ?", Column.IndexerId),
 	fmt.Sprintf("%s = ?", Column.SId),
 }, " AND ")
 
@@ -233,7 +221,7 @@ var query_record_progress_synced = fmt.Sprintf(
 	query_record_progress_where,
 )
 
-func RecordProgress(indexerType torznab_indexer.IndexerType, indexerId, sid string, queries Queries) error {
+func RecordProgress(indexerId int64, sid string, queries Queries) error {
 	if sid == "" {
 		return nil
 	}
@@ -247,26 +235,24 @@ func RecordProgress(indexerType torznab_indexer.IndexerType, indexerId, sid stri
 		sql.NullInt64{Int64: int64(count), Valid: status != StatusQueued},
 		status,
 		queries,
-		indexerType, indexerId, sid,
+		indexerId, sid,
 	)
 	return err
 }
 
 var query_get = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s = ? AND %s = ? AND %s = ?",
+	"SELECT %s FROM %s WHERE %s = ? AND %s = ?",
 	strings.Join(columns, ", "),
 	TableName,
-	Column.Type,
-	Column.Id,
+	Column.IndexerId,
 	Column.SId,
 )
 
-func ShouldSync(indexerType torznab_indexer.IndexerType, indexerId, sid string) bool {
+func ShouldSync(indexerId int64, sid string) bool {
 	item := TorznabIndexerSyncInfo{}
-	row := db.QueryRow(query_get, indexerType, indexerId, sid)
+	row := db.QueryRow(query_get, indexerId, sid)
 	if err := row.Scan(
-		&item.Type,
-		&item.Id,
+		&item.IndexerId,
 		&item.SId,
 		&item.QueuedAt,
 		&item.SyncedAt,
@@ -326,7 +312,7 @@ func GetSyncPending() ([]TorznabIndexerSyncInfo, error) {
 	items := []TorznabIndexerSyncInfo{}
 	for rows.Next() {
 		item := TorznabIndexerSyncInfo{}
-		if err := rows.Scan(&item.Type, &item.Id, &item.SId, &item.QueuedAt, &item.SyncedAt, &item.Error, &item.ResultCount, &item.Status, &item.Queries); err != nil {
+		if err := rows.Scan(&item.IndexerId, &item.SId, &item.QueuedAt, &item.SyncedAt, &item.Error, &item.ResultCount, &item.Status, &item.Queries); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -380,7 +366,7 @@ func GetItems(params GetItemsParams) ([]TorznabIndexerSyncInfo, error) {
 	items := []TorznabIndexerSyncInfo{}
 	for rows.Next() {
 		item := TorznabIndexerSyncInfo{}
-		if err := rows.Scan(&item.Type, &item.Id, &item.SId, &item.QueuedAt, &item.SyncedAt, &item.Error, &item.ResultCount, &item.Status, &item.Queries); err != nil {
+		if err := rows.Scan(&item.IndexerId, &item.SId, &item.QueuedAt, &item.SyncedAt, &item.Error, &item.ResultCount, &item.Status, &item.Queries); err != nil {
 			return nil, err
 		}
 		items = append(items, item)

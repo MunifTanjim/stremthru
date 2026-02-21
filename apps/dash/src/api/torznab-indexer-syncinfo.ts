@@ -4,14 +4,13 @@ import { api } from "@/lib/api";
 
 export type TorznabIndexerSyncInfo = {
   error: null | string;
-  id: string;
+  indexer_id: number;
   queries: TorznabIndexerSyncInfoQuery[];
   queued_at: null | string;
   result_count: null | number;
   sid: string;
   status: "queued" | "synced" | "syncing";
   synced_at: null | string;
-  type: string;
 };
 
 export type TorznabIndexerSyncInfoListResponse = {

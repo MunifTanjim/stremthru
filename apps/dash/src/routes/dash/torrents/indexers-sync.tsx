@@ -47,7 +47,7 @@ import { APIError } from "@/lib/api";
 declare module "@/components/data-table" {
   export interface DataTableMetaCtx {
     TorznabIndexerSyncInfo: {
-      indexerNameById: Map<string, string>;
+      indexerNameById: Map<number, string>;
     };
   }
 
@@ -165,10 +165,9 @@ const columns: ColumnDef<TorznabIndexerSyncInfo>[] = [
   col.display({
     cell: ({ row, table }) => {
       const { indexerNameById } = table.options.meta!.ctx;
-      const { id, type } = row.original;
-      const compositeId = `${type}:${id}`;
-      const name = indexerNameById.get(compositeId);
-      return name || compositeId;
+      const { indexer_id } = row.original;
+      const name = indexerNameById.get(indexer_id);
+      return name ?? `<unknown>`;
     },
     header: "Indexer",
     id: "indexer",
@@ -257,7 +256,7 @@ function RouteComponent() {
 
   const indexers = useTorznabIndexers();
   const indexerNameById = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<number, string>();
     for (const indexer of indexers.data ?? []) {
       map.set(indexer.id, indexer.name);
     }

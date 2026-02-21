@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 
 export type TorznabIndexer = {
   created_at: string;
-  id: string;
+  id: number;
   name: string;
   rate_limit_config_id: null | string;
   type: TorznabIndexerType;
@@ -42,7 +42,7 @@ export function useTorznabIndexerMutation() {
     mutationFn: async ({
       id,
       ...params
-    }: UpdateTorznabIndexerParams & { id: string }) => {
+    }: UpdateTorznabIndexerParams & { id: number }) => {
       return updateTorznabIndexer(id, params);
     },
     onSuccess: async (data, __, ___, ctx) => {
@@ -54,7 +54,7 @@ export function useTorznabIndexerMutation() {
   });
 
   const remove = useMutation({
-    mutationFn: async ({ id }: { id: string }) => {
+    mutationFn: async ({ id }: { id: number }) => {
       return deleteTorznabIndexer(id);
     },
     onSuccess: async (_, { id }, __, ctx) => {
@@ -86,7 +86,7 @@ async function createTorznabIndexer(params: CreateTorznabIndexerParams) {
   return data;
 }
 
-async function deleteTorznabIndexer(id: string) {
+async function deleteTorznabIndexer(id: number) {
   await api(`DELETE /vault/torznab/indexers/${id}`);
 }
 
@@ -95,7 +95,7 @@ async function getTorznabIndexers() {
   return data;
 }
 
-async function testTorznabIndexer(id: string) {
+async function testTorznabIndexer(id: number) {
   const { data } = await api<TorznabIndexer>(
     `POST /vault/torznab/indexers/${id}/test`,
   );
@@ -103,7 +103,7 @@ async function testTorznabIndexer(id: string) {
 }
 
 async function updateTorznabIndexer(
-  id: string,
+  id: number,
   params: UpdateTorznabIndexerParams,
 ) {
   const { data } = await api<TorznabIndexer>(
