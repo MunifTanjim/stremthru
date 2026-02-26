@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.97.1](https://github.com/MunifTanjim/stremthru/compare/0.97.0...0.97.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* **stremio/newz:** exclude non-newz stores from streams ([c5f2f0b](https://github.com/MunifTanjim/stremthru/commit/c5f2f0b9de264c57e793bc25586db12d0d953be2))
+* **usenet:** fix queries for postgresql ([c7b13e5](https://github.com/MunifTanjim/stremthru/commit/c7b13e5922aa8638d5daf58689832b38227470cd))
+
 ## [0.97.0](https://github.com/MunifTanjim/stremthru/compare/0.96.9...0.97.0) (2026-02-25)
 
 
