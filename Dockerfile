@@ -31,7 +31,7 @@ RUN xx-verify --static stremthru
 
 FROM alpine
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git ffmpeg
 
 WORKDIR /app
 

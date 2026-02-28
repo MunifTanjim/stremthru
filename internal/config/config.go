@@ -232,6 +232,7 @@ const (
 	FeatureStremioTorz     string = "stremio_torz"
 	FeatureStremioWrap     string = "stremio_wrap"
 	FeatureVault           string = "vault"
+	FeatureProbeMediaInfo  string = "probe_media_info"
 )
 
 var features = []string{
@@ -246,6 +247,7 @@ var features = []string{
 	FeatureStremioTorz,
 	FeatureStremioWrap,
 	FeatureVault,
+	FeatureProbeMediaInfo,
 }
 
 type FeatureConfig struct {

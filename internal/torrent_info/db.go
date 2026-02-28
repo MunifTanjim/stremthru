@@ -1274,7 +1274,7 @@ var list_query_columns = strings.Join(
 )
 
 var query_list_by_stremid_select = fmt.Sprintf(
-	"SELECT %s, %s(%s('p',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'asid',ts.%s,'src',ts.%s,'vhash',ts.%s)) AS files",
+	"SELECT %s, %s(%s('p',ts.%s,'i',ts.%s,'s',ts.%s,'sid',ts.%s,'asid',ts.%s,'src',ts.%s,'vhash',ts.%s,'mi',jsonb(mi))) AS files",
 	list_query_columns,
 	db.FnJSONGroupArray,
 	db.FnJSONObject,

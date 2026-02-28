@@ -260,6 +260,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		stremLinkCache.Add(cacheKey, glRes.Link)
 
+		if storeCode == store.StoreCodeTorBox {
+			torrent_stream.QueueMediaInfoProbe(magnet.Hash, file.GetPath(), glRes.Link)
+		}
+
 		return &stremResult{
 			link: glRes.Link,
 		}, nil

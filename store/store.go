@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream/media_info"
 	"github.com/anacrolix/torrent/metainfo"
 )
 
@@ -134,13 +135,14 @@ const (
 )
 
 type MagnetFile struct {
-	Idx       int    `json:"index"`
-	Link      string `json:"link,omitempty"`
-	Path      string `json:"path"`
-	Name      string `json:"name"`
-	Size      int64  `json:"size"`
-	VideoHash string `json:"video_hash,omitempty"`
-	Source    string `json:"source,omitempty"`
+	Idx       int                   `json:"index"`
+	Link      string                `json:"link,omitempty"`
+	Path      string                `json:"path"`
+	Name      string                `json:"name"`
+	Size      int64                 `json:"size"`
+	VideoHash string                `json:"video_hash,omitempty"`
+	MediaInfo *media_info.MediaInfo `json:"media_info,omitempty"`
+	Source    string                `json:"source,omitempty"`
 }
 
 func (f *MagnetFile) GetIdx() int {

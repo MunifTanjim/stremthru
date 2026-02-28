@@ -192,7 +192,7 @@ func NewWorker(conf *WorkerConfig) *Worker {
 			}()
 
 			if worker.shouldSkip != nil && worker.shouldSkip() {
-				log.Info("skipping")
+				log.Trace("skipping")
 				return nil
 			}
 

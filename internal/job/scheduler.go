@@ -129,7 +129,7 @@ func (j *Scheduler[T]) execute(triggered bool) {
 	log := conf.Log
 
 	if conf.ShouldSkip() {
-		log.Info("skipping")
+		log.Trace("skipping")
 		return
 	}
 
