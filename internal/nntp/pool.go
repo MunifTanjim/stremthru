@@ -327,6 +327,9 @@ func (p *Pool) Acquire(ctx context.Context) (*PooledConnection, error) {
 				errs = append(errs, err)
 				continue
 			}
+			if errors.Is(err, context.Canceled) {
+				return nil, err
+			}
 			p.handleConnectionFailure(err)
 			return nil, err
 		}
