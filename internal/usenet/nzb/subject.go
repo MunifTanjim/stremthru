@@ -14,6 +14,7 @@ var (
 	fileCountFilenameRegex                     = regexp.MustCompile(`[\[\(]\d+\/\d+[\]\)]\s-\s(.*\.\w{2,5})`)
 	reFilenameSegmentCountRegex                = regexp.MustCompile(`^Re:\s*(.+\.\w{2,5})(?: [\[\(]\d+\/\d+[\]\)])?`)
 	somethingHashLikeRegex                     = regexp.MustCompile(`\\[A-Z0-9]+\\::(.+)\s+yEnc\s+(?:[\[\(]\d+\/\d+[\)\]])?`)
+	somethingHashLikeNoYencRegex               = regexp.MustCompile(`(?i)\\[A-Z0-9]+\\::(.+)::`)
 	likeFilenameRegex                          = regexp.MustCompile(`\b([\w\-+()' .,]+(?:\[[\w\-/+()' .,]*][\w\-+()' .,]*)*\.[A-Za-z0-9]{2,4})\b`)
 )
 
@@ -73,6 +74,13 @@ func (p *subjectParser) Parse(f *File) {
 
 	if f.name == "" {
 		if matches := somethingHashLikeRegex.FindStringSubmatch(subject); len(matches) == 2 {
+			f.name = strings.TrimSpace(matches[1])
+			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
+		}
+	}
+
+	if f.name == "" {
+		if matches := somethingHashLikeNoYencRegex.FindStringSubmatch(subject); len(matches) == 2 {
 			f.name = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}

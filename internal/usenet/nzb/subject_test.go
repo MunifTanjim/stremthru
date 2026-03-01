@@ -236,6 +236,12 @@ func TestSubjectParser(t *testing.T) {
 			0,
 			`index.bdmv`,
 		},
+		{
+			0,
+			`[PRiVATE] \560e600702\::11e240fef1b52f.7af4b48f99ed1a7d1ae3f20ebf82d1.928324ad::/f1f5ef5c605c/`,
+			0,
+			`11e240fef1b52f.7af4b48f99ed1a7d1ae3f20ebf82d1.928324ad`,
+		},
 	} {
 		p := newSubjectParser(tc.fileCount)
 		f := &File{Subject: tc.subject}

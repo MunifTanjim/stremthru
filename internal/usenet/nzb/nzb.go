@@ -104,6 +104,9 @@ func Parse(r io.Reader) (*NZB, error) {
 
 	for i := range nzb.Files {
 		f := &nzb.Files[i]
+		if f.Groups == nil {
+			f.Groups = []string{}
+		}
 		slices.SortStableFunc(f.Segments, func(a, b Segment) int {
 			return a.Number - b.Number
 		})
