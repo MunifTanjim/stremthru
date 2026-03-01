@@ -49,7 +49,7 @@ func init() {
 	}
 
 	go func() {
-		ticker := time.NewTicker(10 * time.Second)
+		ticker := time.NewTicker(5 * time.Minute)
 		for range ticker.C {
 			persistCaches()
 		}
