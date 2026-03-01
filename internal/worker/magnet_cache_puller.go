@@ -44,6 +44,11 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 				}
 			}
 
+			// Skip remote peer lookups for qBittorrent store (custom fork feature, not supported upstream)
+			if s.GetName() == store.StoreNameQBittorrent {
+				return nil
+			}
+
 			for i, cHashes := range slices.Collect(slices.Chunk(hashes, 500)) {
 				if buddy.Peer.IsHaltedCheckMagnet() {
 					time.Sleep(15 * time.Second)
