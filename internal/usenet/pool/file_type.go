@@ -56,14 +56,16 @@ func DetectArchiveFileTypeByExtension(filename string) FileType {
 }
 
 func DetectFileType(fileBytes []byte, filename string) FileType {
-	if bytes.HasPrefix(fileBytes, magicBytesRAR5) || bytes.HasPrefix(fileBytes, magicBytesRAR4) {
-		ftLog.Trace("file type - detected", "filename", filename, "type", FileTypeRAR, "method", "magic_bytes")
-		return FileTypeRAR
-	}
+	if len(fileBytes) > 0 {
+		if bytes.HasPrefix(fileBytes, magicBytesRAR5) || bytes.HasPrefix(fileBytes, magicBytesRAR4) {
+			ftLog.Trace("file type - detected", "filename", filename, "type", FileTypeRAR, "method", "magic_bytes")
+			return FileTypeRAR
+		}
 
-	if bytes.HasPrefix(fileBytes, magicBytes7Zip) {
-		ftLog.Trace("file type - detected", "filename", filename, "type", FileType7z, "method", "magic_bytes")
-		return FileType7z
+		if bytes.HasPrefix(fileBytes, magicBytes7Zip) {
+			ftLog.Trace("file type - detected", "filename", filename, "type", FileType7z, "method", "magic_bytes")
+			return FileType7z
+		}
 	}
 
 	ft := DetectArchiveFileTypeByExtension(filename)
@@ -130,10 +132,16 @@ func IsArchiveFile(filename string) bool {
 	}
 }
 
-// GenerateRARVolumeName generates a RAR volume filename using new naming convention.
-// Volume 0: {base}.part01.rar, Volume 1: {base}.part02.rar, etc.
+// GenerateRARVolumeName generates a RAR volume filename.
+// Volume 0: {base}.rar, Volume 2: {base}.r00, etc.
 func GenerateRARVolumeName(base string, volume int) string {
-	return fmt.Sprintf("%s.part%02d.rar", base, volume+1)
+	if volume == 0 {
+		return fmt.Sprintf("%s.rar", base)
+	}
+	var char = 'r'
+	char += int32((volume - 1) / 100)
+	num := (volume - 1) % 100
+	return fmt.Sprintf("%s.%c%02d", base, char, num)
 }
 
 // Generate7zVolumeName generates a 7z volume filename.

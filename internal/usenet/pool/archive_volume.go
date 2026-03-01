@@ -113,8 +113,68 @@ func groupArchiveVolumes[T simpleFile](
 		}
 	}
 
+	// Post-processing: merge single-file aliased RAR groups if their volumes form a 0-based sequence.
+	// This handles the case where RAR volumes have completely random extensionless names.
+	type groupWithVol struct {
+		group *archiveVolumeGroup[T]
+		key   string
+		vol   int
+	}
+	var singleFileAliasedRAR []groupWithVol
+	for key, group := range groups {
+		if group.Aliased && group.FileType == FileTypeRAR && len(group.Files) == 1 {
+			singleFileAliasedRAR = append(singleFileAliasedRAR, groupWithVol{
+				group: group,
+				key:   key,
+				vol:   getFileVolume(group.Files[0], group.FileType),
+			})
+		}
+	}
+
+	if len(singleFileAliasedRAR) > 0 {
+		slices.SortStableFunc(singleFileAliasedRAR, func(a, b groupWithVol) int {
+			return cmp.Compare(a.vol, b.vol)
+		})
+
+		// Check if volumes form a strict 0-based contiguous sequence
+		valid := true
+		for i, gv := range singleFileAliasedRAR {
+			if gv.vol != i {
+				valid = false
+				break
+			}
+		}
+
+		if valid {
+			mergedFiles := make([]T, len(singleFileAliasedRAR))
+			mergedVolumes := make([]int, len(singleFileAliasedRAR))
+			var totalSize int64
+			for i, gv := range singleFileAliasedRAR {
+				delete(groups, gv.key)
+				mergedFiles[i] = gv.group.Files[0]
+				mergedVolumes[i] = gv.vol
+				totalSize += gv.group.TotalSize
+			}
+
+			mergedKey := mergedFiles[0].Name() + ":" + FileTypeRAR.String()
+			groups[mergedKey] = &archiveVolumeGroup[T]{
+				BaseName:  mergedFiles[0].Name(),
+				Aliased:   true,
+				FileType:  FileTypeRAR,
+				Files:     mergedFiles,
+				Volumes:   mergedVolumes,
+				TotalSize: totalSize,
+			}
+		}
+	}
+
 	result := make([]archiveVolumeGroup[T], 0, len(groups))
 	for _, group := range groups {
+		if group.Volumes != nil {
+			result = append(result, *group)
+			continue
+		}
+
 		type indexedVolume struct {
 			index  int
 			volume int
@@ -124,7 +184,7 @@ func groupArchiveVolumes[T simpleFile](
 			ivs[i] = indexedVolume{index: i, volume: getFileVolume(f, group.FileType)}
 		}
 		slices.SortStableFunc(ivs, func(a, b indexedVolume) int {
-			return a.volume - b.volume
+			return cmp.Compare(a.volume, b.volume)
 		})
 		sorted := make([]T, len(group.Files))
 		volumes := make([]int, len(group.Files))

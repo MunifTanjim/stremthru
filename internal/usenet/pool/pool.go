@@ -267,7 +267,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 				p.Log.Trace("fetch segment - retry", "segment_num", segment.Number, "message_id", messageId, "failed_attempts", failedAttempts, "excluded_providers", len(excludeProviders), "curr_priority", currPriority, "use_backup", useBackup)
 			}
 
-			conn, err := p.GetConnection(context.Background(), excludeProviders, currPriority, useBackup)
+			conn, err := p.GetConnection(ctx, excludeProviders, currPriority, useBackup)
 			if err != nil {
 				if errors.Is(err, ErrNoProvidersAvailable) {
 					if priorityIdx+1 < len(priorities) {
@@ -335,7 +335,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 				errs = append(errs, err)
 				failedAttempts++
 				p.Log.Warn("fetch segment - failed to decode", "error", err, "segment_num", segment.Number, "message_id", messageId)
-				continue
+				break
 			}
 
 			segmentData := data.ToSegmentData()
