@@ -265,7 +265,11 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		}
 	}
 
-	if config.HasPeer {
+	// Skip remote peer lookups for qBittorrent store since the upstream peer
+	// doesn't support it (custom fork feature). Can be removed once merged upstream.
+	isPeerUnsupportedStore := s.GetName() == store.StoreNameQBittorrent
+
+	if config.HasPeer && !isPeerUnsupportedStore {
 		if config.PeerFlag.Lazy {
 			storeCode := string(s.GetName().Code())
 			for _, hash := range staleOrMissingHashes {
