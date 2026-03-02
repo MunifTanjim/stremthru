@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -71,8 +76,23 @@ func main() {
 		server.SetKeepAlivesEnabled(false)
 	}
 
-	log.Println("stremthru listening on " + config.ListenAddr)
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("failed to start stremthru: %v", err)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		log.Println("stremthru listening on " + config.ListenAddr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("failed to start stremthru: %v", err)
+		}
+	}()
+
+	sig := <-quit
+	log.Printf("received signal: %v, shutting down...", sig)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("server shutdown error: %v", err)
 	}
 }
