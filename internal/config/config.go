@@ -410,6 +410,7 @@ type Config struct {
 	PullPeerURL                 string
 	RedisURI                    string
 	DatabaseURI                 string
+	DatabaseReplicaURIs         []string
 	Feature                     FeatureConfig
 	Version                     string
 	LandingPage                 string
@@ -532,6 +533,12 @@ var config = func() Config {
 	}
 
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI")
+	databaseReplicaUris := []string{}
+	for uri := range strings.FieldsFuncSeq(getEnv("STREMTHRU_DATABASE_REPLICA_URIS"), func(c rune) bool {
+		return c == ','
+	}) {
+		databaseReplicaUris = append(databaseReplicaUris, strings.TrimSpace(uri))
+	}
 
 	feature := FeatureConfig{
 		disabled: []string{FeatureAnime, FeatureStremioP2P},
@@ -660,6 +667,7 @@ var config = func() Config {
 		PullPeerURL:                 pullPeerUrl,
 		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
 		DatabaseURI:                 databaseUri,
+		DatabaseReplicaURIs:         databaseReplicaUris,
 		Feature:                     feature,
 		Version:                     "0.97.1", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
@@ -693,6 +701,7 @@ var HasPeer = config.HasPeer
 var PullPeerURL = config.PullPeerURL
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
+var DatabaseReplicaURIs = config.DatabaseReplicaURIs
 var Feature = config.Feature
 var Version = config.Version
 var LandingPage = config.LandingPage
@@ -929,6 +938,16 @@ func PrintConfig(state *AppState) {
 	}
 	l.Println(" Database URI:")
 	l.Println("   " + uri)
+	if len(DatabaseReplicaURIs) > 0 {
+		l.Println(" Replica URIs:")
+		for _, replicaUri := range DatabaseReplicaURIs {
+			uri, err := getRedactedURI(replicaUri)
+			if err != nil {
+				l.Panicf(" Invalid Database Replica URI: %v\n", err)
+			}
+			l.Println("   " + uri)
+		}
+	}
 	l.Println()
 
 	l.Println(" Features:")

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -18,6 +19,19 @@ type DB struct {
 	*sql.DB
 	URI     ConnectionURI
 	onClose func() error
+
+	replicas       []*sql.DB
+	replicaIdx     uint32
+	replicaOnClose []func() error
+}
+
+func (db *DB) getReplica() *sql.DB {
+	n := len(db.replicas)
+	if n == 0 {
+		return db.DB
+	}
+	i := atomic.AddUint32(&db.replicaIdx, 1)
+	return db.replicas[int(i)%n]
 }
 
 var db = &DB{}
@@ -103,11 +117,11 @@ var getExec = func(db Executor) dbExec {
 var Exec = getExec(db)
 
 func Query(query string, args ...any) (*sql.Rows, error) {
-	return db.Query(adaptQuery(query), args...)
+	return db.getReplica().Query(adaptQuery(query), args...)
 }
 
 func QueryRow(query string, args ...any) *sql.Row {
-	return db.QueryRow(adaptQuery(query), args...)
+	return db.getReplica().QueryRow(adaptQuery(query), args...)
 }
 
 type dbExecutor struct{}
@@ -169,9 +183,18 @@ func Ping() {
 		log.Fatalf("[db] failed to ping: %v\n", err)
 	}
 	one := 0
-	row := QueryRow("SELECT 1")
+	row := db.QueryRow(adaptQuery("SELECT 1"))
 	if err := row.Scan(&one); err != nil {
 		log.Fatalf("[db] failed to query: %v\n", err)
+	}
+	for i, replica := range db.replicas {
+		if err := replica.Ping(); err != nil {
+			log.Fatalf("[db] failed to ping replica[%d]: %v\n", i, err)
+		}
+		row := replica.QueryRow(adaptQuery("SELECT 1"))
+		if err := row.Scan(&one); err != nil {
+			log.Fatalf("[db] failed to query replica[%d]: %v\n", i, err)
+		}
 	}
 }
 
@@ -190,20 +213,51 @@ func Open() *DB {
 		}
 		db.DB = stdlib.OpenDBFromPool(pool)
 		db.onClose = func() error {
+			err := db.DB.Close()
 			pool.Close()
-			return nil
+			return err
 		}
 	}
 
 	db.URI = connUri
 
+	for _, replicaUri := range config.DatabaseReplicaURIs {
+		if connUri.Dialect != DBDialectPostgres {
+			log.Fatalf("[db] replica not supported for %s\n", connUri.Dialect)
+		}
+
+		replicaUri, err := ParseConnectionURI(replicaUri)
+		if err != nil {
+			log.Fatalf("[db] failed to parse replica uri: %v\n", err)
+		}
+		if replicaUri.Dialect != connUri.Dialect {
+			log.Fatalf("[db] replica dialect mismatch: %s\n", replicaUri.Dialect)
+		}
+		pool, err := pgxpool.New(context.Background(), replicaUri.DSN())
+		if err != nil {
+			log.Fatalf("[db] failed to create replica connection pool: %v\n", err)
+		}
+		replica := stdlib.OpenDBFromPool(pool)
+		db.replicas = append(db.replicas, replica)
+		db.replicaOnClose = append(db.replicaOnClose, func() error {
+			err := replica.Close()
+			pool.Close()
+			return err
+		})
+	}
+
 	return db
 }
 
 func Close() error {
-	err := db.Close()
+	errs := []error{}
 	if db.onClose != nil {
-		err = errors.Join(err, db.onClose())
+		errs = append(errs, db.onClose())
 	}
-	return err
+	for _, onClose := range db.replicaOnClose {
+		if onClose != nil {
+			errs = append(errs, onClose())
+		}
+	}
+	return errors.Join(errs...)
 }
