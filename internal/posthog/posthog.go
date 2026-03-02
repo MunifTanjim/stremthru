@@ -60,7 +60,10 @@ func Init() posthog.Client {
 }
 
 func Close() error {
-	return client.Close()
+	if client != nil {
+		return client.Close()
+	}
+	return nil
 }
 
 func WrapLogHandler(handler slog.Handler, logProperties *util.Set[string]) slog.Handler {
