@@ -304,14 +304,30 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			}
 			ufs.SetAliases(aliases)
 		} else {
+			partAliases := normalizeRARPartNames(group.Files)
+			if partAliases != nil {
+				ufs.SetAliases(partAliases)
+			}
 			for i, f := range group.Files {
-				entry.Parts = append(entry.Parts, NZBContentFile{
+				vol := group.Volumes[i]
+				part := NZBContentFile{
 					Type:       NZBContentFileTypeArchive,
 					Name:       f.Name(),
 					Size:       f.Size(),
 					Volume:     group.Volumes[i],
 					Streamable: true,
-				})
+				}
+				for normalized, original := range partAliases {
+					if original == f.Name() {
+						part.Alias = normalized
+						if vol == 0 {
+							archiveName = normalized
+							entry.Alias = normalized
+						}
+						break
+					}
+				}
+				entry.Parts = append(entry.Parts, part)
 			}
 		}
 

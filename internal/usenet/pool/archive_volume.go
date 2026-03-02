@@ -2,6 +2,7 @@ package usenet_pool
 
 import (
 	"cmp"
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -28,6 +29,63 @@ func stripTrailingNumbers(filename string) string {
 		return filename[:loc[0]]
 	}
 	return filename
+}
+
+func normalizeRARPartNames[T simpleFile](files []T) map[string]string {
+	type partInfo struct {
+		index  int
+		digits string
+		prefix string
+		suffix string
+	}
+
+	var parts []partInfo
+	for i, f := range files {
+		m := rarPartNumberRegex.FindStringSubmatchIndex(f.Name())
+		if m == nil {
+			continue
+		}
+		digitStr := f.Name()[m[2]:m[3]]
+		prefix := f.Name()[:m[2]]
+		suffix := f.Name()[m[3]:]
+		parts = append(parts, partInfo{
+			index:  i,
+			digits: digitStr,
+			prefix: prefix,
+			suffix: suffix,
+		})
+	}
+
+	if len(parts) == 0 {
+		return nil
+	}
+
+	maxWidth := 0
+	for _, p := range parts {
+		maxWidth = max(len(p.digits), maxWidth)
+	}
+
+	allSame := true
+	for _, p := range parts {
+		if len(p.digits) != maxWidth {
+			allSame = false
+			break
+		}
+	}
+	if allSame {
+		return nil
+	}
+
+	aliases := make(map[string]string)
+	for _, p := range parts {
+		if len(p.digits) == maxWidth {
+			continue
+		}
+		normalized := fmt.Sprintf("%s%0*s%s", p.prefix, maxWidth, p.digits, p.suffix)
+		aliases[normalized] = files[p.index].Name()
+	}
+
+	return aliases
 }
 
 func getArchiveBaseName(filename string) (baseName string, fileType FileType) {
