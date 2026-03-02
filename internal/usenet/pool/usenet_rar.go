@@ -51,9 +51,9 @@ func (ura *RARArchive) Close() error {
 	return nil
 }
 
-func (ura *RARArchive) IsStreamable() bool {
+func (ura *RARArchive) IsStreamable() (bool, error) {
 	solid, err := ura.isSolid()
-	return err == nil && !solid
+	return !solid, err
 }
 
 func (ura *RARArchive) isSolid() (bool, error) {

@@ -74,9 +74,9 @@ func (usa *SevenZipArchive) GetFiles() ([]ArchiveFile, error) {
 	return usa.files, nil
 }
 
-func (usa *SevenZipArchive) IsStreamable() bool {
+func (usa *SevenZipArchive) IsStreamable() (bool, error) {
 	iter := usa.r.Iter()
-	return !iter.HasCompression && !iter.HasEncryption
+	return !iter.HasCompression && !iter.HasEncryption, nil
 }
 
 type Usenet7zFile struct {

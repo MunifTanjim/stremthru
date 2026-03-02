@@ -335,7 +335,15 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			continue
 		}
 
-		entry.Streamable = archive.IsStreamable()
+		if streamable, err := archive.IsStreamable(); err != nil {
+			inspectLog.Warn("failed to check archive streamability", "error", err, "name", name)
+			entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			content.Files = append(content.Files, entry)
+			ufs.Close()
+			continue
+		} else {
+			entry.Streamable = streamable
+		}
 		if entry.Streamable {
 			files, err := archive.GetFiles()
 			if err != nil {
@@ -454,7 +462,15 @@ func (p *Pool) inspectArchiveFiles(files []ArchiveFile, password string) []NZBCo
 			continue
 		}
 
-		entry.Streamable = innerArchive.IsStreamable()
+		if streamable, err := innerArchive.IsStreamable(); err != nil {
+			inspectLog.Warn("failed to check nested archive streamability", "error", err, "name", name)
+			entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			afs.Close()
+			result = append(result, entry)
+			continue
+		} else {
+			entry.Streamable = streamable
+		}
 		if entry.Streamable {
 			if innerFiles, err := innerArchive.GetFiles(); err != nil {
 				inspectLog.Warn("failed to get nested archive files", "error", err, "name", name)

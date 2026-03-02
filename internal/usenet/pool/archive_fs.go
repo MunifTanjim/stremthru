@@ -17,7 +17,7 @@ type Archive interface {
 	Open(password string) error
 	Close() error
 	GetFiles() ([]ArchiveFile, error)
-	IsStreamable() bool
+	IsStreamable() (bool, error)
 }
 
 type ArchiveFile interface {

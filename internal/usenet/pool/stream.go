@@ -131,7 +131,9 @@ func (p *Pool) streamArchiveFile(
 	archive Archive,
 	archiveType FileType,
 ) (*Stream, error) {
-	if !archive.IsStreamable() {
+	if streamable, err := archive.IsStreamable(); err != nil {
+		return nil, fmt.Errorf("failed to check %s archive streamability: %w", archiveType, err)
+	} else if !streamable {
 		return nil, fmt.Errorf("non-streamable %s archive", archiveType)
 	}
 
@@ -249,7 +251,9 @@ func (p *Pool) tryStreamNestedArchiveGroup(group *archiveVolumeGroup[ArchiveFile
 }
 
 func (p *Pool) streamArchiveFileInner(archive Archive, archiveType FileType) (*Stream, error) {
-	if !archive.IsStreamable() {
+	if streamable, err := archive.IsStreamable(); err != nil {
+		return nil, fmt.Errorf("failed to check inner %s archive streamability: %w", archiveType, err)
+	} else if !streamable {
 		return nil, fmt.Errorf("non-streamable inner %s archive", archiveType)
 	}
 
@@ -427,7 +431,10 @@ func (p *Pool) streamTargetFromArchive(
 			return nil, fmt.Errorf("failed to open inner archive: %w", err)
 		}
 
-		if !innerArchive.IsStreamable() {
+		if streamable, err := innerArchive.IsStreamable(); err != nil {
+			innerArchive.Close()
+			return nil, fmt.Errorf("failed to check inner %s archive streamability: %w", innerFileType, err)
+		} else if !streamable {
 			innerArchive.Close()
 			return nil, fmt.Errorf("non-streamable inner %s archive", innerFileType)
 		}
@@ -550,7 +557,10 @@ func (p *Pool) StreamByContentPath(
 		return nil, fmt.Errorf("failed to open archive: %w", err)
 	}
 
-	if !archive.IsStreamable() {
+	if streamable, err := archive.IsStreamable(); err != nil {
+		archive.Close()
+		return nil, fmt.Errorf("failed to check %s archive streamability: %w", fileType, err)
+	} else if !streamable {
 		archive.Close()
 		return nil, fmt.Errorf("non-streamable %s archive", fileType)
 	}
