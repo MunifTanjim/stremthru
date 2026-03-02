@@ -37,7 +37,12 @@ func registerPersistentCache(c persistentCache) {
 	persistentCaches = append(persistentCaches, c)
 }
 
+var persistTicker *time.Ticker
+
 func ClosePersistentCaches() {
+	if persistTicker != nil {
+		persistTicker.Stop()
+	}
 	persistCaches()
 }
 
@@ -48,9 +53,9 @@ func init() {
 		panic(err)
 	}
 
+	persistTicker = time.NewTicker(5 * time.Minute)
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		for range ticker.C {
+		for range persistTicker.C {
 			persistCaches()
 		}
 	}()
