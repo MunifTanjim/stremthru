@@ -64,7 +64,7 @@ function formatDate(dateString: string): string {
 const formSchema = z.object({
   file: z
     .file()
-    .max(5 * 1024 * 1024)
+    .max(50 * 1024 * 1024)
     .nullable(),
 });
 
@@ -178,7 +178,10 @@ function RouteComponent() {
                         disabled={upload.isPending}
                         onClick={(e) => {
                           e.preventDefault();
-                          const name = parsedNzb.meta.title || file.name;
+                          const name =
+                            parsedNzb.meta.name ||
+                            parsedNzb.meta.title ||
+                            file.name;
                           toast.promise(upload.mutateAsync({ file, name }), {
                             error(err: APIError) {
                               console.error(err);

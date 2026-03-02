@@ -9,12 +9,22 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 const schedulerId = "process-nzb"
 
 var log = logger.Scoped("job/" + schedulerId)
+
+func isValidName(name string) bool {
+	if r, err := util.ParseTorrentTitle(name); err != nil {
+		return false
+	} else if r.Year == "" && r.Resolution == "" && r.Quality == "" && r.Codec == "" {
+		return false
+	}
+	return true
+}
 
 var scheduler = job.NewScheduler(&job.SchedulerConfig[JobData]{
 	Id:           schedulerId,
@@ -35,12 +45,23 @@ var scheduler = job.NewScheduler(&job.SchedulerConfig[JobData]{
 
 			hash := HashNZBFileLink(data.URL)
 
-			name := data.Name
-			if name == "" {
-				name = nzbDoc.GetMeta("title")
+			name := ""
+			if mName := nzbDoc.GetMeta("name"); isValidName(mName) {
+				name = mName
 			}
 			if name == "" {
-				name = nzbFile.Name
+				if mTitle := nzbDoc.GetMeta("title"); isValidName(mTitle) {
+					name = mTitle
+				}
+			}
+			if name == "" {
+				if isValidName(nzbFile.Name) {
+					name = nzbFile.Name
+				} else if nzbFile.Name != "" {
+					name = nzbFile.Name
+				} else {
+					name = data.Name
+				}
 			}
 
 			password := nzbDoc.GetMeta("password")
