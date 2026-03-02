@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.98.0](https://github.com/MunifTanjim/stremthru/compare/0.97.1...0.98.0) (2026-03-02)
+
+
+### Features
+
+* **cache:** increase disk backed persist interval ([6a9ea79](https://github.com/MunifTanjim/stremthru/commit/6a9ea7948b58af7c8a605d3733ed7b4149a98d05))
+* **db:** support replica for postgresql ([b9cb2e6](https://github.com/MunifTanjim/stremthru/commit/b9cb2e6aea1bf8f8da39613eafa9d4eedb089372))
+* **torrent_stream:** add support for media info ([aba3ae9](https://github.com/MunifTanjim/stremthru/commit/aba3ae9e1e671e7f2d825b3cc492f58aa665fc14))
+* **usenet:** improve inspection for rar archives ([962d9a8](https://github.com/MunifTanjim/stremthru/commit/962d9a81ee9c81409cdb40c62223ada27ed13941))
+* **usenet:** improve nzb name detection ([36bd156](https://github.com/MunifTanjim/stremthru/commit/36bd1569f4665d48b8953b64c1faab92236dd87b))
+* **usenet:** improve nzb subject parsing ([606281b](https://github.com/MunifTanjim/stremthru/commit/606281be2ea70bb1510cd36d79065260752b517a))
+
+
+### Bug Fixes
+
+* add graceful shutdown ([3284a22](https://github.com/MunifTanjim/stremthru/commit/3284a2299daaa2649e4b169fdf653c4fffc8fba8))
+* **cache:** cleanup ticker for disk backed cache ([9dcdb7d](https://github.com/MunifTanjim/stremthru/commit/9dcdb7dd297dad8411eadaf9b1f6c0f17c29e8b3))
+* **nntp:** do not mark offline for context canceled error ([2734c5d](https://github.com/MunifTanjim/stremthru/commit/2734c5d50228a1e8b869ec048ba83ca638a83e30))
+* **posthog:** check nil client on close ([87fb845](https://github.com/MunifTanjim/stremthru/commit/87fb84527d857e0556eb6f6fd957201812d45015))
+* **usenet:** normalize rar part number zero padding ([ea1f825](https://github.com/MunifTanjim/stremthru/commit/ea1f825c2a9d1f77ba754f92841bfbb9023879ad))
+* **usenet:** surface archive streamable check error ([7083bed](https://github.com/MunifTanjim/stremthru/commit/7083bed5306958863991831a333a0d01a827fb7a))
+
 ## [0.97.1](https://github.com/MunifTanjim/stremthru/compare/0.97.0...0.97.1) (2026-02-26)
 
 
