@@ -6,12 +6,12 @@ This guide walks you through setting up StremThru's Usenet support end-to-end - 
 
 Before you begin, make sure you have:
 
-- **StremThru running** with the `vault` feature enabled
+- **StremThru running** with Vault
 - **Usenet Provider** - you'll need access to NNTP server
 - **Newznab Indexer** - you'll need access to Newznab indexer
 
 ::: info
-The `vault` feature is required for Usenet functionality. See [Features](/configuration/features) for details.
+[`Vault`](/configuration/#vault) is required for Usenet functionality.
 :::
 
 ## Step 1: Add Usenet Servers
@@ -83,9 +83,3 @@ When using the **StremThru** indexer or store, Usenet server or Newznab indexer 
 ## Verifying the Setup
 
 - **Check pool status** - navigate to **Dashboard > Usenet > Config** to see the status of your configured Usenet servers and verify connections are healthy.
-
-## Related Docs
-
-- [Newz Configuration](/configuration/newz)
-- [Newz API](/api/newz)
-- [Newz Addon](/stremio-addons/newz)

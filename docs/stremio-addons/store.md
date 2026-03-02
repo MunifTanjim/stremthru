@@ -4,11 +4,12 @@ The Store addon lets you browse and search content in your store account directl
 
 **Path:** `/stremio/store`
 
-## Overview
+## Features
 
-- Browse your store catalog within Stremio
-- Multi-store support
-- Usenet and WebDL content support
+- Torrent support
+- Usenet support
+- WebDL support
+- Multi-Store support
 
 ## Configuration
 

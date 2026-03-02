@@ -10,7 +10,7 @@ docker run --rm -p 8080:8080 \
   muniftanjim/stremthru
 ```
 
-This starts StremThru on port `8080` with basic proxy authorization.
+This starts StremThru on port `8080`.
 
 ## Docker Compose
 

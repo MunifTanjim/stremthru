@@ -1,15 +1,19 @@
 # Wrap Addon
 
-The Wrap addon lets you wrap other Stremio addons with StremThru, enabling content proxying, debrid integration, and multi-addon aggregation.
+The Wrap addon lets you wrap other Stremio addons with StremThru, enabling content proxying, debrid integration, multi-addon aggregation etc.
 
 **Path:** `/stremio/wrap`
 
-## Overview
+## Features
 
-- Wrap upstream Stremio addons with StremThru
-- Aggregate multiple addons into one
-- Content proxy through StremThru
-- Extractor and template support
+- Combine multiple addons into one
+- Unified Filter and Sort
+- Extractor and Template
+- Content proxy using StremThru
+- Add debrid support to P2P stream addons
+- Reconfigure debrid service for debrid stream addons
+- Custom Poster (e.g. [RPDB](https://ratingposterdb.com/)) support
+- Multi-Store support
 
 ## Configuration
 

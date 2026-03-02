@@ -43,6 +43,7 @@ Use the `+` and `-` prefix syntax to selectively toggle features without affecti
 | `anime`            | Anime support               | Disabled |                  |
 | `dmm_hashlist`     | DMM hashlist support        | Enabled  |                  |
 | `imdb_title`       | IMDB title support          | Enabled  |                  |
+| `probe_media_info` | Probe Media Info            | Enabled  |                  |
 | `stremio_list`     | Stremio List addon          | Enabled  |                  |
 | `stremio_newz`     | Stremio Newz addon (Usenet) | Enabled  | Requires `vault` |
 | `stremio_p2p`      | Stremio P2P support         | Disabled |                  |

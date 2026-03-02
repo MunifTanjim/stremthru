@@ -1,11 +1,14 @@
 # Stremio Sidekick
 
-The Sidekick provides extra management features for Stremio, including addon management and library backup/restore.
+The Sidekick provides extra management features for Stremio.
 
 **Path:** `/stremio/sidekick`
 
 ## Overview
 
 - Stremio account management
-- Addon install, uninstall, and reorder
-- Library backup and restore
+- Enable/Disable addons
+- Install/Uninstall addons
+- Modify, Reorder addons
+- Backup/Restore/Reset addons
+- Backup/Restore/Reset library items

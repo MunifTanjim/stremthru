@@ -1,13 +1,15 @@
 # Torz Addon
 
-The Torz addon integrates torrent indexers with StremThru, providing torrent search results directly in Stremio.
+The Torz addon integrates Torrent with Stremio.
 
 **Path:** `/stremio/torz`
 
-## Overview
+## Features
 
-- Multi-store support
-- Torrent indexer integration
+- Crowdsourced content
+- Jackett Indexer support
+- Filter and Sort
+- Multi-Store support
 
 ## Configuration
 

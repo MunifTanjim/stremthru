@@ -23,20 +23,6 @@ Values for these headers will be forwarded to the external store.
 | `premium` |
 | `trial`   |
 
-### MagnetStatus
-
-| Value         | Description                    |
-| ------------- | ------------------------------ |
-| `cached`      | Content is cached on the store |
-| `queued`      | Magnet is queued for download  |
-| `downloading` | Content is being downloaded    |
-| `processing`  | Content is being processed     |
-| `downloaded`  | Content is fully downloaded    |
-| `uploading`   | Content is being uploaded      |
-| `failed`      | Download failed                |
-| `invalid`     | Invalid magnet                 |
-| `unknown`     | Unknown status                 |
-
 ## Endpoints
 
 ### Get User

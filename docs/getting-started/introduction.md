@@ -22,12 +22,12 @@ Supported stores:
 
 StremThru includes six built-in Stremio addons:
 
-- **[Store](/stremio-addons/store)** — Browse and search your store catalog
-- **[Wrap](/stremio-addons/wrap)** — Wrap other Stremio addons with StremThru
-- **[Torz](/stremio-addons/torz)** — Torrent indexer integration
-- **[Newz](/stremio-addons/newz)** — Stream Usenet content via Newznab indexers
-- **[List](/stremio-addons/list)** — Generate catalogs from external lists (Trakt, TMDB, AniList, etc.)
-- **[Sidekick](/stremio-addons/sidekick)** — Extra features for Stremio (addon management, library backup/restore)
+- **[List](/stremio-addons/list)**
+- **[Store](/stremio-addons/store)**
+- **[Wrap](/stremio-addons/wrap)**
+- **[Torz](/stremio-addons/torz)**
+- **[Newz](/stremio-addons/newz)**
+- **[Sidekick](/stremio-addons/sidekick)**
 
 ## SDKs
 

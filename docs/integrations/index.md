@@ -16,4 +16,4 @@ StremThru integrates with several external services for content metadata, list m
 
 ## Configuration
 
-Each integration has its own set of environment variables. See the individual integration pages for setup details, or refer to the [Environment Variables](/configuration/environment-variables#integrations) reference.
+Each integration has its own set of environment variables. See the individual integration pages for setup details, or refer to the [Integrations Config](/configuration/#integrations) page.

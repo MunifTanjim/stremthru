@@ -4,7 +4,7 @@ The Proxy API creates proxified URLs that route content through StremThru.
 
 ## Authentication
 
-Authorization is checked against the [`STREMTHRU_AUTH`](/configuration/environment-variables#stremthru-auth) configuration.
+Authorization is checked against the [`STREMTHRU_AUTH`](/configuration/#stremthru-auth) configuration.
 
 If the `token` query parameter is present, the proxified link will _**not**_ be encrypted.
 

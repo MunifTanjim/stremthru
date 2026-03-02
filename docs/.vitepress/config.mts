@@ -34,6 +34,8 @@ export default defineConfig({
       {
         text: "Guides",
         items: [
+          { text: "Docker Compose", link: "/guides/docker-compose" },
+          { text: "Stream Filter", link: "/guides/stream-filter" },
           { text: "Usenet Setup", link: "/guides/usenet-setup" },
         ],
       },
@@ -42,16 +44,12 @@ export default defineConfig({
         items: [
           { text: "Overview", link: "/configuration/" },
           {
-            text: "Environment Variables",
-            link: "/configuration/environment-variables",
-          },
-          {
             text: "Database & Cache",
             link: "/configuration/database-and-cache",
           },
-          { text: "Stremio Addons", link: "/configuration/stremio-addons" },
-          { text: "Integrations", link: "/configuration/integrations" },
           { text: "Features", link: "/configuration/features" },
+          { text: "Integrations", link: "/configuration/integrations" },
+          { text: "Stremio Addons", link: "/configuration/stremio-addons" },
           { text: "Newz", link: "/configuration/newz" },
           { text: "Torz", link: "/configuration/torz" },
         ],
@@ -60,12 +58,12 @@ export default defineConfig({
         text: "Stremio Addons",
         items: [
           { text: "Overview", link: "/stremio-addons/" },
+          { text: "List", link: "/stremio-addons/list" },
           { text: "Store", link: "/stremio-addons/store" },
           { text: "Wrap", link: "/stremio-addons/wrap" },
-          { text: "Sidekick", link: "/stremio-addons/sidekick" },
           { text: "Torz", link: "/stremio-addons/torz" },
           { text: "Newz", link: "/stremio-addons/newz" },
-          { text: "List", link: "/stremio-addons/list" },
+          { text: "Sidekick", link: "/stremio-addons/sidekick" },
         ],
       },
       {

@@ -2,12 +2,6 @@
 
 Configuration for StremThru's Newz (Usenet) functionality.
 
-## Feature Flag
-
-The Newz feature requires the `vault` feature.
-
-See [Features](./features) for more details on feature flags.
-
 ## Newz
 
 ### `STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM`

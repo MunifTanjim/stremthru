@@ -75,6 +75,25 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
 ```
 
+### `STREMTHRU_DATABASE_REPLICA_URIS`
+
+Comma-separated list of PostgreSQL replica URIs for read scaling. Only supported with PostgreSQL.
+
+**Format:** Same as `STREMTHRU_DATABASE_URI` (PostgreSQL only)
+
+**Behavior:**
+
+- Read queries are routed to replicas
+- Write queries and transactions use the primary
+- Round-robin load balancing across replicas
+- Falls back to primary if no replicas are configured
+
+**Example:**
+
+```sh
+STREMTHRU_DATABASE_REPLICA_URIS=postgresql://stremthru:stremthru@replica1:5432/stremthru,postgresql://stremthru:stremthru@replica2:5432/stremthru
+```
+
 ## Cache
 
 ### Redis

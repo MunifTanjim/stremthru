@@ -1,13 +1,8 @@
 # StremThru List
 
-The List addon generates Stremio catalogs from external list providers like Trakt, TMDB, AniList, Letterboxd, MDBList, and TVDB.
+The List addon generates Stremio catalogs for lists from external providers.
 
 **Path:** `/stremio/list`
-
-## Overview
-
-- Generate Stremio catalogs from external lists
-- Multiple list provider support
 
 ## Supported Providers
 
@@ -19,6 +14,14 @@ The List addon generates Stremio catalogs from external list providers like Trak
 | [TMDB](/integrations/tmdb)             | Movie and TV lists       |
 | [Trakt](/integrations/trakt)           | Watchlists, custom lists |
 | [TVDB](/integrations/tvdb)             | TV show lists            |
+
+## Features
+
+- Custom Name
+- Custom Poster (e.g. [RPDB](https://ratingposterdb.com/)) support
+- Custom Metadata ID
+- Split type List (`movie`, `movies` or `series`)
+- Shuffle
 
 ## Configuration
 
