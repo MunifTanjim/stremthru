@@ -37,7 +37,23 @@ func (mc MagnetCache) IsStale() bool {
 	return mc.ModifiedAt.Before(time.Now().Add(-staleTime))
 }
 
-func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCache, error) {
+type magnetCacheRow struct {
+	Store      store.StoreCode `json:"s"`
+	Hash       string          `json:"h"`
+	IsCached   bool            `json:"c"`
+	ModifiedAt db.Timestamp    `json:"m"`
+}
+
+var magnetCacheRowCache = cache.NewCache[magnetCacheRow](&cache.CacheConfig{
+	Name:     "magnet_cache:row",
+	Lifetime: 2 * time.Minute,
+})
+
+func magnetCacheKey(storeCode store.StoreCode, hash string) string {
+	return string(storeCode) + ":" + hash
+}
+
+func GetByHashes(storeCode store.StoreCode, hashes []string, sid string) ([]MagnetCache, error) {
 	if len(hashes) == 0 {
 		return []MagnetCache{}, nil
 	}
@@ -47,54 +63,88 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 		return nil, err
 	}
 
-	args_len := len(hashes) + 1
-	if sid != "" {
-		args_len += 1
-	}
-	arg_idx := 0
-	args := make([]any, args_len)
-
-	query := "SELECT store, hash, is_cached, modified_at FROM " + TableName
-	if sid != "" {
-		query += " LEFT JOIN " + torrent_stream.TableName + " ON " + TableName + ".hash = " + torrent_stream.TableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + torrent_stream.TableName + ".sid IN (?, '*')) AND"
-		args[arg_idx] = sid
-		arg_idx += 1
-	} else {
-		query += " WHERE"
+	// Try cache first for each hash
+	uncachedHashes := make([]string, 0, len(hashes))
+	cachedRows := map[string]magnetCacheRow{}
+	for _, hash := range hashes {
+		var row magnetCacheRow
+		if magnetCacheRowCache.Get(magnetCacheKey(storeCode, hash), &row) {
+			cachedRows[hash] = row
+		} else {
+			uncachedHashes = append(uncachedHashes, hash)
+		}
 	}
 
-	args[arg_idx] = store
-	arg_idx += 1
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
-		hashPlaceholders[i] = "?"
-		args[arg_idx+i] = hash
-	}
+	// Query DB for uncached hashes
+	if len(uncachedHashes) > 0 {
+		args := make([]any, 1+len(uncachedHashes))
+		args[0] = storeCode
+		hashPlaceholders := make([]string, len(uncachedHashes))
+		for i, hash := range uncachedHashes {
+			hashPlaceholders[i] = "?"
+			args[1+i] = hash
+		}
 
-	query += " store = ? AND hash IN (" + strings.Join(hashPlaceholders, ",") + ")"
+		query := "SELECT store, hash, is_cached, modified_at FROM " + TableName + " WHERE store = ? AND hash IN (" + strings.Join(hashPlaceholders, ",") + ")"
 
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	mcs := []MagnetCache{}
-	for rows.Next() {
-		smc := MagnetCache{}
-		if err := rows.Scan(&smc.Store, &smc.Hash, &smc.IsCached, &smc.ModifiedAt); err != nil {
+		rows, err := db.Query(query, args...)
+		if err != nil {
 			return nil, err
 		}
-		if files, ok := filesByHash[smc.Hash]; ok && len(files) > 0 {
-			smc.Files = files
+		defer rows.Close()
+
+		for rows.Next() {
+			var row magnetCacheRow
+			if err := rows.Scan(&row.Store, &row.Hash, &row.IsCached, &row.ModifiedAt); err != nil {
+				return nil, err
+			}
+			cachedRows[row.Hash] = row
+			magnetCacheRowCache.Add(magnetCacheKey(storeCode, row.Hash), row)
 		}
-		mcs = append(mcs, smc)
+
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
+	// Build result, applying sid filter if needed
+	mcs := []MagnetCache{}
+	for _, hash := range hashes {
+		row, ok := cachedRows[hash]
+		if !ok {
+			continue
+		}
+
+		// When sid is set, skip cached items that don't have matching files
+		if sid != "" && row.IsCached {
+			files, hasFiles := filesByHash[hash]
+			if !hasFiles || !filesMatchSid(files, sid) {
+				continue
+			}
+		}
+
+		mc := MagnetCache{
+			Store:      row.Store,
+			Hash:       row.Hash,
+			IsCached:   row.IsCached,
+			ModifiedAt: row.ModifiedAt,
+		}
+		if files, ok := filesByHash[hash]; ok && len(files) > 0 {
+			mc.Files = files
+		}
+		mcs = append(mcs, mc)
 	}
+
 	return mcs, nil
+}
+
+func filesMatchSid(files torrent_stream.Files, sid string) bool {
+	for _, f := range files {
+		if f.SId == sid || f.SId == "*" {
+			return true
+		}
+	}
+	return false
 }
 
 var touchSkipCount atomic.Int64
@@ -138,6 +188,7 @@ func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, i
 			return
 		}
 		prevIsCachedCache.Add(cacheKey, isCached)
+		magnetCacheRowCache.Remove(cacheKey)
 	}
 	if !skipFileTracking {
 		torrent_stream.TrackFiles(storeCode, map[string]torrent_stream.Files{hash: files})
@@ -216,6 +267,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		} else {
 			for _, key := range hitCacheKeys {
 				prevIsCachedCache.Add(key, true)
+				magnetCacheRowCache.Remove(key)
 			}
 		}
 	}
@@ -232,6 +284,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		} else {
 			for _, key := range missCacheKeys {
 				prevIsCachedCache.Add(key, false)
+				magnetCacheRowCache.Remove(key)
 			}
 		}
 	}

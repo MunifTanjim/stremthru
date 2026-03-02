@@ -333,6 +333,11 @@ func GetFile(hash string, sid string) (*File, error) {
 	return &file, nil
 }
 
+var filesCache = cache.NewCache[Files](&cache.CacheConfig{
+	Name:     "torrent_stream:files",
+	Lifetime: 5 * time.Minute,
+})
+
 func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	byHash := map[string]Files{}
 
@@ -340,9 +345,25 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		return byHash, nil
 	}
 
-	args := make([]any, len(hashes))
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
+	uncachedHashes := make([]string, 0, len(hashes))
+	for _, hash := range hashes {
+		var files Files
+		if filesCache.Get(hash, &files) {
+			if len(files) > 0 {
+				byHash[hash] = files
+			}
+			continue
+		}
+		uncachedHashes = append(uncachedHashes, hash)
+	}
+
+	if len(uncachedHashes) == 0 {
+		return byHash, nil
+	}
+
+	args := make([]any, len(uncachedHashes))
+	hashPlaceholders := make([]string, len(uncachedHashes))
+	for i, hash := range uncachedHashes {
 		args[i] = hash
 		hashPlaceholders[i] = "?"
 	}
@@ -353,6 +374,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	}
 	defer rows.Close()
 
+	foundHashes := map[string]bool{}
 	for rows.Next() {
 		hash := ""
 		files := Files{}
@@ -360,15 +382,28 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 			return nil, err
 		}
 		byHash[hash] = files
+		filesCache.Add(hash, files)
+		foundHashes[hash] = true
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+
+	// Cache misses too so we don't re-query for unknown hashes
+	for _, hash := range uncachedHashes {
+		if !foundHashes[hash] {
+			filesCache.Add(hash, Files{})
+		}
+	}
+
 	return byHash, nil
 }
 
 func TrackFiles(storeCode store.StoreCode, filesByHash map[string]Files) {
+	for hash := range filesByHash {
+		filesCache.Remove(hash)
+	}
 	items := []InsertData{}
 	for hash, files := range filesByHash {
 		shouldIgnoreFiles := storeCode == store.StoreCodePremiumize && !files.HasVideo()
