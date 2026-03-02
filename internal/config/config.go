@@ -410,6 +410,7 @@ type Config struct {
 	PullPeerURL                 string
 	RedisURI                    string
 	DatabaseURI                 string
+	DatabaseReadReplicaURI      string
 	Feature                     FeatureConfig
 	Version                     string
 	LandingPage                 string
@@ -660,6 +661,7 @@ var config = func() Config {
 		PullPeerURL:                 pullPeerUrl,
 		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
 		DatabaseURI:                 databaseUri,
+		DatabaseReadReplicaURI:      getEnv("STREMTHRU_DATABASE_READ_REPLICA_URI"),
 		Feature:                     feature,
 		Version:                     "0.97.1", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
@@ -693,6 +695,7 @@ var HasPeer = config.HasPeer
 var PullPeerURL = config.PullPeerURL
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
+var DatabaseReadReplicaURI = config.DatabaseReadReplicaURI
 var Feature = config.Feature
 var Version = config.Version
 var LandingPage = config.LandingPage

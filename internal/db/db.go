@@ -21,6 +21,8 @@ type DB struct {
 }
 
 var db = &DB{}
+var readDB *sql.DB   // read replica, nil when not configured
+var readDBClose func() // cleanup function for read replica
 var Dialect DBDialect
 
 var BooleanFalse string
@@ -103,11 +105,19 @@ var getExec = func(db Executor) dbExec {
 var Exec = getExec(db)
 
 func Query(query string, args ...any) (*sql.Rows, error) {
-	return db.Query(adaptQuery(query), args...)
+	q := adaptQuery(query)
+	if readDB != nil {
+		return readDB.Query(q, args...)
+	}
+	return db.Query(q, args...)
 }
 
 func QueryRow(query string, args ...any) *sql.Row {
-	return db.QueryRow(adaptQuery(query), args...)
+	q := adaptQuery(query)
+	if readDB != nil {
+		return readDB.QueryRow(q, args...)
+	}
+	return db.QueryRow(q, args...)
 }
 
 type dbExecutor struct{}
@@ -169,9 +179,18 @@ func Ping() {
 		log.Fatalf("[db] failed to ping: %v\n", err)
 	}
 	one := 0
-	row := QueryRow("SELECT 1")
+	row := db.QueryRow(adaptQuery("SELECT 1"))
 	if err := row.Scan(&one); err != nil {
 		log.Fatalf("[db] failed to query: %v\n", err)
+	}
+	if readDB != nil {
+		if err := readDB.Ping(); err != nil {
+			log.Fatalf("[db] failed to ping read replica: %v\n", err)
+		}
+		row := readDB.QueryRow(adaptQuery("SELECT 1"))
+		if err := row.Scan(&one); err != nil {
+			log.Fatalf("[db] failed to query read replica: %v\n", err)
+		}
 	}
 }
 
@@ -197,10 +216,33 @@ func Open() *DB {
 
 	db.URI = connUri
 
+	if config.DatabaseReadReplicaURI != "" {
+		replicaUri, err := ParseConnectionURI(config.DatabaseReadReplicaURI)
+		if err != nil {
+			log.Fatalf("[db] failed to parse read replica uri: %v\n", err)
+		}
+		if replicaUri.Dialect != DBDialectPostgres {
+			log.Fatalf("[db] read replica only supports postgresql\n")
+		}
+		pool, err := pgxpool.New(context.Background(), replicaUri.DSN())
+		if err != nil {
+			log.Fatalf("[db] failed to create read replica connection pool: %v\n", err)
+		}
+		readDB = stdlib.OpenDBFromPool(pool)
+		readDBClose = func() {
+			readDB.Close()
+			pool.Close()
+		}
+		log.Println("[db] read replica enabled")
+	}
+
 	return db
 }
 
 func Close() error {
+	if readDBClose != nil {
+		readDBClose()
+	}
 	err := db.Close()
 	if db.onClose != nil {
 		err = errors.Join(err, db.onClose())
