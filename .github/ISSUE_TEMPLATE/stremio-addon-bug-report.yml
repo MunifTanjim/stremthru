@@ -1,0 +1,113 @@
+name: Stremio Addon Bug Report
+description: Report a bug with one of the StremThru Stremio Addons
+title: "[Addon Bug] "
+labels: ["bug", "stremio-addon"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug with a StremThru Stremio Addon!
+
+        Please fill out the following information to help us diagnose and fix the issue.
+
+  - type: dropdown
+    id: addon
+    attributes:
+      label: Which Addon?
+      description: Select the Stremio addon that is experiencing the issue
+      options:
+        - List
+        - Wrap
+        - Store
+        - Torz
+        - Newz
+        - Sidekick
+    validations:
+      required: true
+
+  - type: dropdown
+    id: self-hosted
+    attributes:
+      label: Self-Hosted or Public Instance?
+      description: Are you using a self-hosted instance or a public instance?
+      options:
+        - Self-hosted
+        - Public
+    validations:
+      required: true
+
+  - type: input
+    id: instance-url
+    attributes:
+      label: StremThru Instance URL
+      description: What is the URL of the StremThru instance you're using? (required for Public instance)
+      placeholder: https://stremthru.example.com
+    validations:
+      required: false
+
+  - type: input
+    id: stremthru-version
+    attributes:
+      label: StremThru Version
+      description: What version of StremThru are you using?
+      placeholder: v0.1.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: What is currently happening? Please be as detailed as possible.
+      placeholder: Describe what you're experiencing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+      placeholder: Describe what you expected to happen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide detailed steps to reproduce the issue
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Please provide any relevant logs (if available)
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context about the problem here (screenshots, configuration details, etc.)
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched for existing issues before creating this one
+          required: true
+        - label: I have provided all the required information above
+          required: true
