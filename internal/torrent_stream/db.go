@@ -1,6 +1,7 @@
 package torrent_stream
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -20,6 +22,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream/media_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/zeebo/xxh3"
 )
 
 func JSONBMediaInfo(mi *media_info.MediaInfo) db.JSONB[media_info.MediaInfo] {
@@ -407,43 +410,82 @@ var record_streams_query_before_values = fmt.Sprintf(
 	),
 )
 var record_streams_query_values_placeholder = fmt.Sprintf("(%s)", util.RepeatJoin("?", 9, ","))
+
+var query_record_cond_new_source_is_dht_or_tor = fmt.Sprintf(
+	`EXCLUDED.%s IN ('dht','tor')`, Column.Source,
+)
+var query_record_cond_old_source_is_not_dht_or_tor = fmt.Sprintf(
+	`ts.%s NOT IN ('dht','tor')`, Column.Source,
+)
+
+var query_record_cond_should_update_idx = fmt.Sprintf(
+	`(%s AND (ts.%s = -1 OR ts.%s != EXCLUDED.%s))`,
+	query_record_cond_old_source_is_not_dht_or_tor,
+	Column.Idx, Column.Idx, Column.Idx,
+)
+var query_record_cond_should_update_size = fmt.Sprintf(
+	`(%s AND (ts.%s = -1 OR ts.%s != EXCLUDED.%s))`,
+	query_record_cond_old_source_is_not_dht_or_tor,
+	Column.Size, Column.Size, Column.Size,
+)
+var query_record_cond_should_update_sid = fmt.Sprintf(
+	`(EXCLUDED.%s NOT IN ('', '*') AND ts.%s != EXCLUDED.%s)`,
+	Column.SId, Column.SId, Column.SId,
+)
+var query_record_cond_should_update_asid = fmt.Sprintf(
+	`(EXCLUDED.%s != '' AND ts.%s != EXCLUDED.%s)`,
+	Column.ASId, Column.ASId, Column.ASId,
+)
+var query_record_cond_should_update_vhash = fmt.Sprintf(
+	`(EXCLUDED.%s != '' AND ts.%s = '')`,
+	Column.VideoHash, Column.VideoHash,
+)
+var query_record_cond_should_update_mi = fmt.Sprintf(
+	`(EXCLUDED.%s IS NOT NULL AND ts.%s IS NULL)`,
+	Column.MediaInfo, Column.MediaInfo,
+)
+var query_record_cond_should_update_src = fmt.Sprintf(
+	`((%s OR %s) AND (EXCLUDED.%s != 'mfn' OR ts.%s = 'mfn') AND EXCLUDED.%s != '')`,
+	query_record_cond_new_source_is_dht_or_tor, query_record_cond_old_source_is_not_dht_or_tor,
+	Column.Source, Column.Source,
+	Column.Source,
+)
+
+var query_record_on_conflict_set_cond = func(col, cond string) string {
+	return fmt.Sprintf(
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ts.%s END",
+		col, cond, col, col,
+	)
+}
+
 var record_streams_query_on_conflict = fmt.Sprintf(
-	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s",
+	" ON CONFLICT (%s,%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s WHERE %s",
 	Column.Hash,
 	Column.Path,
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s IN ('dht','tor') OR ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Idx, Column.Source, Column.Idx, Column.Source, Column.Idx, Column.Idx,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s IN ('dht','tor') OR ts.%s = -1 OR ts.%s IN ('','mfn') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.Size, Column.Source, Column.Size, Column.Source, Column.Size, Column.Size,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s IN ('', '*') THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.SId, Column.SId, Column.SId, Column.SId,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = '' THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.ASId, Column.ASId, Column.ASId, Column.ASId,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s = '' THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.VideoHash, Column.VideoHash, Column.VideoHash, Column.VideoHash,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN ts.%s IS NULL THEN EXCLUDED.%s ELSE ts.%s END",
-		Column.MediaInfo, Column.MediaInfo, Column.MediaInfo, Column.MediaInfo,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN (EXCLUDED.%s NOT IN ('dht','tor') AND ts.%s IN ('dht','tor')) OR (EXCLUDED.%s = 'mfn' AND ts.%s != 'mfn') OR EXCLUDED.%s = '' THEN ts.%s ELSE EXCLUDED.%s END",
-		Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source, Column.Source,
-	),
-	fmt.Sprintf(
-		"%s = %s",
-		Column.UAt, db.CurrentTimestamp,
-	),
+	query_record_on_conflict_set_cond(Column.Idx, query_record_cond_should_update_idx),
+	query_record_on_conflict_set_cond(Column.Size, query_record_cond_should_update_size),
+	query_record_on_conflict_set_cond(Column.SId, query_record_cond_should_update_sid),
+	query_record_on_conflict_set_cond(Column.ASId, query_record_cond_should_update_asid),
+	query_record_on_conflict_set_cond(Column.VideoHash, query_record_cond_should_update_vhash),
+	query_record_on_conflict_set_cond(Column.MediaInfo, query_record_cond_should_update_mi),
+	query_record_on_conflict_set_cond(Column.Source, query_record_cond_should_update_src),
+	fmt.Sprintf("%s = %s", Column.UAt, db.CurrentTimestamp),
+	strings.Join([]string{
+		query_record_cond_should_update_idx,
+		query_record_cond_should_update_size,
+		query_record_cond_should_update_sid,
+		query_record_cond_should_update_asid,
+		query_record_cond_should_update_vhash,
+		query_record_cond_should_update_mi,
+		query_record_cond_should_update_src,
+	}, " OR "),
 )
+
+func get_record_query(count int) string {
+	return record_streams_query_before_values +
+		util.RepeatJoin(record_streams_query_values_placeholder, count, ",") +
+		record_streams_query_on_conflict
+}
 
 var recordSkipCount atomic.Int64
 var recordAllowCount atomic.Int64
@@ -452,10 +494,15 @@ func GetRecordCacheStats() (skipped int64, allowed int64) {
 	return recordSkipCount.Load(), recordAllowCount.Load()
 }
 
-var prevRecordSourceCache = cache.NewLRUCache[string](&cache.CacheConfig{
-	Name:     "torrent_stream:prev_record_src",
-	Lifetime: 1 * time.Hour,
-	MaxSize:  200_000,
+type prevRecordData struct {
+	Source      string
+	Fingerprint uint64
+}
+
+var prevRecordCache = cache.NewLRUCache[prevRecordData](&cache.CacheConfig{
+	Name:     "torrent_stream:prev_record",
+	Lifetime: 4 * time.Hour,
+	MaxSize:  1_000_000,
 })
 
 func Record(items []InsertData, discardIdx bool) error {
@@ -466,7 +513,7 @@ func Record(items []InsertData, discardIdx bool) error {
 	errs := []error{}
 	for cItems := range slices.Chunk(items, 150) {
 		seenFileMap := map[string]struct{}{}
-		recordSrcByKey := map[string]string{}
+		recordDataByKey := map[string]prevRecordData{}
 
 		count := len(cItems)
 		args := make([]any, 0, count*9)
@@ -487,8 +534,16 @@ func Record(items []InsertData, discardIdx bool) error {
 			key := item.Hash + ":" + item.Path
 			if _, seen := seenFileMap[key]; !seen {
 				seenFileMap[key] = struct{}{}
-				var prevRecordSource string
-				if prevRecordSourceCache.Get(key, &prevRecordSource) && (prevRecordSource == item.Source || prevRecordSource == "dht" || prevRecordSource == "tor") {
+				var fpBuf bytes.Buffer
+				fpBuf.WriteString(strconv.Itoa(idx))
+				fpBuf.WriteString(strconv.FormatInt(item.Size, 10))
+				fpBuf.WriteString(sid)
+				fpBuf.WriteString(item.ASId)
+				fpBuf.WriteString(item.VideoHash)
+				fpBuf.WriteString(strconv.FormatBool(item.MediaInfo != nil))
+				fingerprint := xxh3.Hash(fpBuf.Bytes())
+				var prev prevRecordData
+				if prevRecordCache.Get(key, &prev) && (prev.Source == item.Source || prev.Source == "dht" || prev.Source == "tor" || prev.Fingerprint == fingerprint) {
 					recordSkipCount.Add(1)
 					count--
 					continue
@@ -505,7 +560,7 @@ func Record(items []InsertData, discardIdx bool) error {
 					item.VideoHash,
 					JSONBMediaInfo(item.MediaInfo),
 				)
-				recordSrcByKey[key] = item.Source
+				recordDataByKey[key] = prevRecordData{Source: item.Source, Fingerprint: fingerprint}
 			} else {
 				log.Debug("skipped duplicate file", "hash", item.Hash, "path", item.Path)
 				count--
@@ -514,17 +569,14 @@ func Record(items []InsertData, discardIdx bool) error {
 		if count == 0 {
 			continue
 		}
-		query := record_streams_query_before_values +
-			util.RepeatJoin(record_streams_query_values_placeholder, count, ",") +
-			record_streams_query_on_conflict
-		_, err := db.Exec(query, args...)
+		_, err := db.Exec(get_record_query(count), args...)
 		if err != nil {
 			log.Error("failed partially to record", "error", err)
 			errs = append(errs, err)
 		} else {
 			log.Debug("recorded torrent stream", "count", count)
-			for key, source := range recordSrcByKey {
-				prevRecordSourceCache.Add(key, source)
+			for key, data := range recordDataByKey {
+				prevRecordCache.Add(key, data)
 			}
 		}
 	}
