@@ -20,6 +20,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/zeebo/xxh3"
 )
 
 type CommaSeperatedString []string
@@ -678,80 +679,77 @@ var query_upsert_before_values = fmt.Sprintf(
 	}, ","),
 )
 var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 9, ",") + ")"
+
+var query_upsert_cond_new_source_is_dht = fmt.Sprintf(
+	`EXCLUDED.%s = 'dht'`,
+	Column.Source,
+)
+var query_upsert_cond_new_source_more_reliable = fmt.Sprintf(
+	`(EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd'))`,
+	Column.Source, Column.Source,
+)
+var query_upsert_cond_old_size_missing = fmt.Sprintf(
+	`(EXCLUDED.%s > 0 AND ti.%s < 1)`,
+	Column.Size, Column.Size,
+)
+var query_upsert_cond_seeders_changed = fmt.Sprintf(
+	`(EXCLUDED.%s > 0 AND ti.%s != EXCLUDED.%s)`,
+	Column.Seeders, Column.Seeders, Column.Seeders,
+)
+
+var query_upsert_cond_should_update_source = fmt.Sprintf(
+	`(%s OR %s)`,
+	query_upsert_cond_new_source_is_dht, query_upsert_cond_new_source_more_reliable,
+)
+var query_upsert_cond_should_update_size = fmt.Sprintf(
+	`(%s OR %s)`,
+	query_upsert_cond_new_source_is_dht, query_upsert_cond_old_size_missing,
+)
+var query_upsert_cond_should_update_indexer = fmt.Sprintf(
+	`(EXCLUDED.%s != '' AND ti.%s != EXCLUDED.%s)`,
+	Column.Indexer, Column.Indexer, Column.Indexer,
+)
+var query_upsert_cond_should_update_category = fmt.Sprintf(
+	`(EXCLUDED.%s != '' AND ti.%s = '')`,
+	Column.Category, Column.Category,
+)
+var query_upsert_cond_should_update_seeders = fmt.Sprintf(
+	`(%s OR %s)`,
+	query_upsert_cond_new_source_is_dht, query_upsert_cond_seeders_changed,
+)
+var query_upsert_cond_should_update_private = fmt.Sprintf(
+	`(EXCLUDED.%s = %s AND ti.%s = %s)`,
+	Column.Private, db.BooleanTrue, Column.Private, db.BooleanFalse,
+)
+
+var query_upsert_on_conflict_set_cond = func(col, cond string) string {
+	return fmt.Sprintf(
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		col, cond, col, col,
+	)
+}
+
 var query_upsert_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s, %s`,
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s, %s WHERE %s`,
 	Column.Hash,
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.TorrentTitle,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.TorrentTitle,
-		Column.TorrentTitle,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s < 1 THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Size,
-		Column.Source,
-		Column.Size,
-		Column.Size,
-		Column.Size,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s != '' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Indexer,
-		Column.Indexer,
-		Column.Indexer,
-		Column.Indexer,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s = '' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Category,
-		Column.Category,
-		Column.Category,
-		Column.Category,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (ti.%s != 'dht' AND EXCLUDED.%s > 0) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Seeders,
-		Column.Source,
-		Column.Source,
-		Column.Seeders,
-		Column.Seeders,
-		Column.Seeders,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Leechers,
-		Column.Source,
-		Column.Leechers,
-		Column.Leechers,
-	),
-	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (ti.%s != 'dht' AND ti.%s = %s) THEN ti.%s ELSE EXCLUDED.%s END",
-		Column.Private,
-		Column.Source,
-		Column.Source,
-		Column.Private,
-		db.BooleanTrue,
-		Column.Private,
-		Column.Private,
-	),
-	fmt.Sprintf(
-		"%s = %s",
-		Column.UpdatedAt,
-		db.CurrentTimestamp,
-	),
+	query_upsert_on_conflict_set_cond(Column.TorrentTitle, query_upsert_cond_should_update_source),
+	query_upsert_on_conflict_set_cond(Column.Size, query_upsert_cond_should_update_size),
+	query_upsert_on_conflict_set_cond(Column.Indexer, query_upsert_cond_should_update_indexer),
+	query_upsert_on_conflict_set_cond(Column.Source, query_upsert_cond_should_update_source),
+	query_upsert_on_conflict_set_cond(Column.Category, query_upsert_cond_should_update_category),
+	query_upsert_on_conflict_set_cond(Column.Seeders, query_upsert_cond_should_update_seeders),
+	query_upsert_on_conflict_set_cond(Column.Leechers, query_upsert_cond_new_source_is_dht),
+	query_upsert_on_conflict_set_cond(Column.Private, query_upsert_cond_should_update_private),
+	fmt.Sprintf("%s = %s", Column.UpdatedAt, db.CurrentTimestamp),
+	strings.Join([]string{
+		query_upsert_cond_new_source_is_dht,
+		query_upsert_cond_new_source_more_reliable,
+		query_upsert_cond_old_size_missing,
+		query_upsert_cond_should_update_indexer,
+		query_upsert_cond_should_update_category,
+		query_upsert_cond_seeders_changed,
+		query_upsert_cond_should_update_private,
+	}, " OR "),
 )
 
 var noTorrentInfo = !config.Feature.HasTorrentInfo()
@@ -763,11 +761,22 @@ func GetUpsertCacheStats() (skipped int64, allowed int64) {
 	return upsertSkipCount.Load(), upsertAllowCount.Load()
 }
 
-var prevRecordSourceCache = cache.NewLRUCache[string](&cache.CacheConfig{
-	Name:     "torrent_info:prev_record_src",
-	Lifetime: 1 * time.Hour,
-	MaxSize:  100_000,
+type prevRecordData struct {
+	Source      string
+	Fingerprint uint64
+}
+
+var prevRecordCache = cache.NewLRUCache[prevRecordData](&cache.CacheConfig{
+	Name:     "torrent_info:prev_record",
+	Lifetime: 4 * time.Hour,
+	MaxSize:  500_000,
 })
+
+func get_upsert_query(count int) string {
+	return query_upsert_before_values +
+		util.RepeatJoin(query_upsert_values_placeholder, count, ",") +
+		query_upsert_on_conflict
+}
 
 func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) error {
 	if len(items) == 0 {
@@ -780,7 +789,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 	for cItems := range slices.Chunk(items, 150) {
 		count := len(cItems)
 		seenHash := map[string]struct{}{}
-		recordSrcByHash := map[string]string{}
+		recordDataByHash := map[string]prevRecordData{}
 		args := make([]any, 0, 7*count)
 		for _, t := range cItems {
 			if _, seen := seenHash[t.Hash]; seen {
@@ -814,8 +823,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				}
 			}
 
-			var prevRecordSource string
-			if prevRecordSourceCache.Get(t.Hash, &prevRecordSource) && (prevRecordSource == tSource || prevRecordSource == string(TorrentInfoSourceDHT)) {
+			fingerprint := xxh3.HashString(t.TorrentTitle + "|" + strconv.FormatInt(t.Size, 10) + "|" + strconv.FormatBool(t.Private))
+			var prev prevRecordData
+			if prevRecordCache.Get(t.Hash, &prev) && (prev.Source == tSource || prev.Source == string(TorrentInfoSourceDHT) || prev.Fingerprint == fingerprint) {
 				upsertSkipCount.Add(1)
 				count--
 				continue
@@ -833,24 +843,21 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 
 			upsertAllowCount.Add(1)
 			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Indexer, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
-			recordSrcByHash[t.Hash] = tSource
+			recordDataByHash[t.Hash] = prevRecordData{Source: tSource, Fingerprint: fingerprint}
 		}
 
 		if noTorrentInfo || count == 0 {
 			continue
 		}
 
-		query := query_upsert_before_values +
-			util.RepeatJoin(query_upsert_values_placeholder, count, ",") +
-			query_upsert_on_conflict
-		_, err := db.Exec(query, args...)
+		_, err := db.Exec(get_upsert_query(count), args...)
 		if err != nil {
 			log.Error("failed to upsert torrent info", "error", err, "count", count)
 			errs = append(errs, err)
 		} else {
 			log.Debug("upserted torrent info", "count", count)
-			for hash, source := range recordSrcByHash {
-				prevRecordSourceCache.Add(hash, source)
+			for hash, data := range recordDataByHash {
+				prevRecordCache.Add(hash, data)
 			}
 		}
 	}
