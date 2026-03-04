@@ -128,8 +128,8 @@ func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, i
 		if isCached {
 			is_cached = db.BooleanTrue
 		}
-		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, " + is_cached + ") ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = " + db.CurrentTimestamp)
-		result, err = db.Exec(buf.String(), storeCode, hash)
+		buf.WriteString(" (store, hash, is_cached) VALUES (?, ?, " + is_cached + ") ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = " + db.CurrentTimestamp + " WHERE " + TableName + ".is_cached != EXCLUDED.is_cached OR " + TableName + ".modified_at < ?")
+		result, err = db.Exec(buf.String(), storeCode, hash, db.Timestamp{Time: time.Now().Add(-24 * time.Hour)})
 		if err == nil {
 			_, err = result.RowsAffected()
 		}
@@ -149,8 +149,10 @@ var query_bulk_touch_before_values = fmt.Sprintf(
 	TableName,
 )
 var query_bulk_touch_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = %s`,
+	` ON CONFLICT (store, hash) DO UPDATE SET is_cached = EXCLUDED.is_cached, modified_at = %s WHERE %s.is_cached != EXCLUDED.is_cached OR %s.modified_at < ?`,
 	db.CurrentTimestamp,
+	TableName,
+	TableName,
 )
 
 func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.Files, cached map[string]bool, skipFileTracking bool) {
@@ -208,8 +210,11 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		}
 	}
 
+	staleThreshold := db.Timestamp{Time: time.Now().Add(-24 * time.Hour)}
+
 	if hit_count > 0 {
 		hit_query.WriteString(query_bulk_touch_on_conflict)
+		hit_args = append(hit_args, staleThreshold)
 		_, err := db.Exec(hit_query.String(), hit_args...)
 		if err != nil {
 			mcLog.Error("failed to touch hits", "error", err)
@@ -226,6 +231,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 
 	if miss_count > 0 {
 		miss_query.WriteString(query_bulk_touch_on_conflict)
+		miss_args = append(miss_args, staleThreshold)
 		_, err := db.Exec(miss_query.String(), miss_args...)
 		if err != nil {
 			mcLog.Error("failed to touch misses", "error", err)
