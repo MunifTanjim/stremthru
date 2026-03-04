@@ -20,6 +20,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/zeebo/xxh3"
 )
 
 type CommaSeperatedString []string
@@ -678,79 +679,68 @@ var query_upsert_before_values = fmt.Sprintf(
 	}, ","),
 )
 var query_upsert_values_placeholder = "(" + util.RepeatJoin("?", 9, ",") + ")"
+var cond_upsert_src_dominated = fmt.Sprintf(
+	"EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd'))",
+	Column.Source, Column.Source, Column.Source,
+)
+var cond_upsert_src_is_dht = fmt.Sprintf("EXCLUDED.%s = 'dht'", Column.Source)
+var cond_upsert_size_missing = fmt.Sprintf("ti.%s < 1", Column.Size)
+var cond_upsert_category_empty = fmt.Sprintf("ti.%s = ''", Column.Category)
+var cond_upsert_indexer_incoming = fmt.Sprintf("EXCLUDED.%s != ''", Column.Indexer)
+var cond_upsert_indexer_empty = fmt.Sprintf("ti.%s = ''", Column.Indexer)
+var cond_upsert_seeders_update = fmt.Sprintf(
+	"ti.%s != 'dht' AND EXCLUDED.%s > 0",
+	Column.Source, Column.Seeders,
+)
+var cond_upsert_seeders_changed = fmt.Sprintf(
+	"%s AND ti.%s != EXCLUDED.%s",
+	cond_upsert_seeders_update, Column.Seeders, Column.Seeders,
+)
+
 var query_upsert_on_conflict = fmt.Sprintf(
-	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s, %s`,
+	` ON CONFLICT (%s) DO UPDATE SET %s, %s, %s, %s, %s, %s, %s, %s, %s WHERE %s`,
 	Column.Hash,
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.TorrentTitle,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.TorrentTitle,
-		Column.TorrentTitle,
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.TorrentTitle, cond_upsert_src_dominated, Column.TorrentTitle, Column.TorrentTitle,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR ti.%s < 1 THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Size,
-		Column.Source,
-		Column.Size,
-		Column.Size,
-		Column.Size,
+		"%s = CASE WHEN %s OR %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Size, cond_upsert_src_is_dht, cond_upsert_size_missing, Column.Size, Column.Size,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s != '' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Indexer,
-		Column.Indexer,
-		Column.Indexer,
-		Column.Indexer,
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Indexer, cond_upsert_indexer_incoming, Column.Indexer, Column.Indexer,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (EXCLUDED.%s != 'ato' AND ti.%s NOT IN ('dht','tio','ad','dl','rd')) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
-		Column.Source,
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Source, cond_upsert_src_dominated, Column.Source, Column.Source,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN ti.%s = '' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Category,
-		Column.Category,
-		Column.Category,
-		Column.Category,
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Category, cond_upsert_category_empty, Column.Category, Column.Category,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (ti.%s != 'dht' AND EXCLUDED.%s > 0) THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Seeders,
-		Column.Source,
-		Column.Source,
-		Column.Seeders,
-		Column.Seeders,
-		Column.Seeders,
+		"%s = CASE WHEN %s OR (%s) THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Seeders, cond_upsert_src_is_dht, cond_upsert_seeders_update, Column.Seeders, Column.Seeders,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' THEN EXCLUDED.%s ELSE ti.%s END",
-		Column.Leechers,
-		Column.Source,
-		Column.Leechers,
-		Column.Leechers,
+		"%s = CASE WHEN %s THEN EXCLUDED.%s ELSE ti.%s END",
+		Column.Leechers, cond_upsert_src_is_dht, Column.Leechers, Column.Leechers,
 	),
 	fmt.Sprintf(
-		"%s = CASE WHEN EXCLUDED.%s = 'dht' OR (ti.%s != 'dht' AND ti.%s = %s) THEN ti.%s ELSE EXCLUDED.%s END",
-		Column.Private,
-		Column.Source,
-		Column.Source,
-		Column.Private,
-		db.BooleanTrue,
-		Column.Private,
-		Column.Private,
+		"%s = CASE WHEN %s OR (ti.%s != 'dht' AND ti.%s = %s) THEN ti.%s ELSE EXCLUDED.%s END",
+		Column.Private, cond_upsert_src_is_dht, Column.Source, Column.Private, db.BooleanTrue, Column.Private, Column.Private,
 	),
+	fmt.Sprintf("%s = %s", Column.UpdatedAt, db.CurrentTimestamp),
 	fmt.Sprintf(
-		"%s = %s",
-		Column.UpdatedAt,
-		db.CurrentTimestamp,
+		`%s OR ti.%s != EXCLUDED.%s OR (%s AND EXCLUDED.%s >= 1) OR (%s AND EXCLUDED.%s != '') OR (%s AND %s) OR (%s)`,
+		cond_upsert_src_dominated,
+		Column.TorrentTitle, Column.TorrentTitle,
+		cond_upsert_size_missing, Column.Size,
+		cond_upsert_category_empty, Column.Category,
+		cond_upsert_indexer_empty, cond_upsert_indexer_incoming,
+		cond_upsert_seeders_changed,
 	),
 )
 
@@ -763,8 +753,13 @@ func GetUpsertCacheStats() (skipped int64, allowed int64) {
 	return upsertSkipCount.Load(), upsertAllowCount.Load()
 }
 
-var prevRecordSourceCache = cache.NewLRUCache[string](&cache.CacheConfig{
-	Name:     "torrent_info:prev_record_src",
+type prevRecordData struct {
+	Source      string
+	Fingerprint uint64
+}
+
+var prevRecordCache = cache.NewLRUCache[prevRecordData](&cache.CacheConfig{
+	Name:     "torrent_info:prev_record",
 	Lifetime: 1 * time.Hour,
 	MaxSize:  100_000,
 })
@@ -780,7 +775,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 	for cItems := range slices.Chunk(items, 150) {
 		count := len(cItems)
 		seenHash := map[string]struct{}{}
-		recordSrcByHash := map[string]string{}
+		recordDataByHash := map[string]prevRecordData{}
 		args := make([]any, 0, 7*count)
 		for _, t := range cItems {
 			if _, seen := seenHash[t.Hash]; seen {
@@ -814,8 +809,9 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				}
 			}
 
-			var prevRecordSource string
-			if prevRecordSourceCache.Get(t.Hash, &prevRecordSource) && (prevRecordSource == tSource || prevRecordSource == string(TorrentInfoSourceDHT)) {
+			fingerprint := xxh3.HashString(t.TorrentTitle + "|" + strconv.FormatInt(t.Size, 10))
+			var prev prevRecordData
+			if prevRecordCache.Get(t.Hash, &prev) && (prev.Source == tSource || prev.Source == string(TorrentInfoSourceDHT) || prev.Fingerprint == fingerprint) {
 				upsertSkipCount.Add(1)
 				count--
 				continue
@@ -833,7 +829,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 
 			upsertAllowCount.Add(1)
 			args = append(args, t.Hash, t.TorrentTitle, t.Size, t.Indexer, t.Source, tCategory, t.Seeders, t.Leechers, t.Private)
-			recordSrcByHash[t.Hash] = tSource
+			recordDataByHash[t.Hash] = prevRecordData{Source: tSource, Fingerprint: fingerprint}
 		}
 
 		if noTorrentInfo || count == 0 {
@@ -849,8 +845,8 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			errs = append(errs, err)
 		} else {
 			log.Debug("upserted torrent info", "count", count)
-			for hash, source := range recordSrcByHash {
-				prevRecordSourceCache.Add(hash, source)
+			for hash, data := range recordDataByHash {
+				prevRecordCache.Add(hash, data)
 			}
 		}
 	}
