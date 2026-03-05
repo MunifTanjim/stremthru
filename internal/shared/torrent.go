@@ -103,9 +103,10 @@ var torrentFileFetcher = func() *http.Client {
 func FetchTorrentFile(link string, name string, log *logger.Logger) (string, *multipart.FileHeader, error) {
 	clink := cleanTorrentFileLink(link)
 
+	linkHash := hashTorrentFileLink(link)
 	var cacheKey string
 	if !config.IsPublicInstance {
-		cacheKey = hashTorrentFileLink(link)
+		cacheKey = linkHash
 	}
 
 	var torrentFile TorrentFile
@@ -117,7 +118,7 @@ func FetchTorrentFile(link string, name string, log *logger.Logger) (string, *mu
 		return "", fh, err
 	}
 
-	if fetchErr := ""; cacheKey != "" && torrentFetchErrCache.Get(cacheKey, &fetchErr) {
+	if fetchErr := ""; torrentFetchErrCache.Get(linkHash, &fetchErr) {
 		if log != nil {
 			log.Debug("fetch torrent - cached failure", "link", clink)
 		}
@@ -129,12 +130,12 @@ func FetchTorrentFile(link string, name string, log *logger.Logger) (string, *mu
 	if log != nil {
 		log.Debug("fetch torrent - cache miss", "link", clink)
 	}
-	result, err, _ := torrentFileFetchSG.Do(cacheKey, func() (ret any, err error) {
+	result, err, _ := torrentFileFetchSG.Do(linkHash, func() (ret any, err error) {
 		defer func() {
 			if err == nil {
 				return
 			}
-			if err := torrentFetchErrCache.Add(cacheKey, err.Error()); err != nil && log != nil {
+			if err := torrentFetchErrCache.Add(linkHash, err.Error()); err != nil && log != nil {
 				log.Warn("fetch torrent - failed to cache failure", "error", err, "link", clink)
 			}
 		}()
@@ -201,10 +202,11 @@ func FetchTorrentFile(link string, name string, log *logger.Logger) (string, *mu
 			Link: link,
 			Mod:  time.Now(),
 		}
-		err = torrentFileCache.Add(cacheKey, file)
-		if err != nil {
-			if log != nil {
-				log.Warn("fetch torrent - failed to cache", "error", err, "link", clink)
+		if cacheKey != "" {
+			if err := torrentFileCache.Add(cacheKey, file); err != nil {
+				if log != nil {
+					log.Warn("fetch torrent - failed to cache", "error", err, "link", clink)
+				}
 			}
 		}
 		return file, nil
