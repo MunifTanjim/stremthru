@@ -105,40 +105,42 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 		query.WriteString("= ?")
 		args = append(args, imdbIds[0])
 	} else {
-		query_in_imdbids, arg_imdbids := db.InStringValues(imdbIds)
-		query.WriteString(query_in_imdbids)
-		args = append(args, arg_imdbids...)
+		inFragment, inArgs := db.InValues(imdbIds)
+		query.WriteString(inFragment)
+		args = append(args, inArgs...)
 	}
 	if q.Season != "" {
+		csvFragment, csvTransform := db.ContainsCSV("ti." + torrent_info.Column.Seasons)
 		query.WriteString(
 			fmt.Sprintf(
-				" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+				" AND (ti.%s = ? OR %s)",
 				torrent_info.Column.Seasons,
-				torrent_info.Column.Seasons,
+				csvFragment,
 			),
 		)
-		args = append(args, q.Season, "%,"+q.Season+",%")
+		args = append(args, q.Season, csvTransform(q.Season))
 	}
 	if q.Ep != "" {
+		csvFragment, csvTransform := db.ContainsCSV("ti." + torrent_info.Column.Episodes)
 		if q.Season != "" {
 			query.WriteString(
 				fmt.Sprintf(
-					" AND (ti.%s = '' OR ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+					" AND (ti.%s = '' OR ti.%s = ? OR %s)",
 					torrent_info.Column.Episodes,
 					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
+					csvFragment,
 				),
 			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
+			args = append(args, q.Ep, csvTransform(q.Ep))
 		} else {
 			query.WriteString(
 				fmt.Sprintf(
-					" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+					" AND (ti.%s = ? OR %s)",
 					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
+					csvFragment,
 				),
 			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
+			args = append(args, q.Ep, csvTransform(q.Ep))
 		}
 	}
 	query.WriteString(

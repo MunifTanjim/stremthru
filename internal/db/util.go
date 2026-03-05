@@ -147,6 +147,32 @@ func ToValues[T any](values []T, format string) string {
 	return fmt.Sprintf(util.RepeatJoin(format, len(values), ","), args...)
 }
 
+// InValues returns the SQL fragment and args for an IN/ANY clause.
+// For PostgreSQL: "= ANY(string_to_array(?, ','))" with a single comma-joined arg (stable query shape).
+// For SQLite: "IN (?,?,?)" with individual args.
+func InValues(values []string) (string, []any) {
+	if Dialect == DBDialectPostgres {
+		return "= ANY(string_to_array(?, ','))", []any{strings.Join(values, ",")}
+	}
+	args := make([]any, len(values))
+	placeholders := make([]string, len(values))
+	for i, v := range values {
+		args[i] = v
+		placeholders[i] = "?"
+	}
+	return "IN (" + strings.Join(placeholders, ",") + ")", args
+}
+
+// ContainsCSV returns the SQL fragment for checking if a value exists in a comma-separated column.
+// For PostgreSQL: "? = ANY(string_to_array(column, ','))" — avoids wrapping column in function.
+// For SQLite: "CONCAT(',', column, ',') LIKE ?" — requires arg like "%,value,%".
+func ContainsCSV(column string) (fragment string, transformArg func(value string) string) {
+	if Dialect == DBDialectPostgres {
+		return "? = ANY(string_to_array(" + column + ", ','))", func(value string) string { return value }
+	}
+	return "CONCAT(',', " + column + ", ',') LIKE ?", func(value string) string { return "%," + value + ",%" }
+}
+
 var nonAlphaNumericRegex = regexp.MustCompile(`[^a-z0-9]`)
 var whitespacesRegex = regexp.MustCompile(`\s{2,}`)
 var fts5SymbolRegex = regexp.MustCompile(`[-+*:^]`)

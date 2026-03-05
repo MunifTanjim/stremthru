@@ -374,9 +374,9 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 
 	readCacheMissCount.Add(int64(len(missedHashes)))
 
-	query_in_hashes, args := db.InStringValues(missedHashes)
+	inFragment, args := db.InValues(missedHashes)
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h "+query_in_hashes+" GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h "+inFragment+" GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
