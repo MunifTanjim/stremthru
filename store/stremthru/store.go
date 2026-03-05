@@ -2,6 +2,11 @@ package stremthru
 
 import (
 	"errors"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -12,9 +17,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 	"github.com/golang-jwt/jwt/v5"
-	"net/http"
-	"strings"
-	"time"
 )
 
 var (
@@ -182,7 +184,7 @@ func flattenContentFiles(files []usenet_pool.NZBContentFile, parentPath string) 
 				result = append(result, store.NewzFile{
 					Idx:  -1,
 					Path: partPath,
-					Name: f.Name,
+					Name: filepath.Base(f.Name),
 					Size: f.Size,
 				})
 			}
@@ -194,7 +196,7 @@ func flattenContentFiles(files []usenet_pool.NZBContentFile, parentPath string) 
 			result = append(result, store.NewzFile{
 				Idx:  -1,
 				Path: filePath,
-				Name: f.Name,
+				Name: filepath.Base(f.Name),
 				Size: f.Size,
 			})
 		}
