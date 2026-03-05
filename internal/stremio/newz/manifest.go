@@ -7,6 +7,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/shared"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -99,6 +100,8 @@ func handleManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	manifest := GetManifest(r, ud)
+
+	stremio_shared.ClaimAddonOnStremioAddonsDotNet(manifest, "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..YO-7e-c9BYI1ADgCJJJn7Q.pY6wEXj6wkd3JQIDXrmDCuZXyWUI11CaUN_KAsHUK7wU9IMTgdk0nH9tQ6rtSNdNA8eOtQYtPYn_mkEhwNGrXlmgWomIV4w0Dn18bWerQ4llDhJKTj_sXdXcUG1Cd3o3.7xAgZF6M04iVDV5g-J0QlA")
 
 	SendResponse(w, r, 200, manifest)
 }
