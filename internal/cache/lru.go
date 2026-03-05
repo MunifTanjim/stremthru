@@ -30,6 +30,10 @@ func (cache *LRUCache[V]) Has(key string) bool {
 }
 
 func (cache *LRUCache[V]) Add(key string, value V) error {
+	if key == "" {
+		return nil
+	}
+
 	cache.m.Lock()
 	defer cache.m.Unlock()
 
@@ -38,6 +42,10 @@ func (cache *LRUCache[V]) Add(key string, value V) error {
 }
 
 func (cache *LRUCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	if key == "" {
+		return nil
+	}
+
 	cache.m.Lock()
 	defer cache.m.Unlock()
 

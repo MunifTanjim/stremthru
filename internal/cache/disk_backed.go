@@ -110,6 +110,10 @@ func (c *diskBackedCache[V]) Add(key string, value V) error {
 }
 
 func (c *diskBackedCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	if key == "" {
+		return nil
+	}
+
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(value); err != nil {
 		return err

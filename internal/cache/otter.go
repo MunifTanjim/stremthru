@@ -87,6 +87,10 @@ func (c *otterCache[V]) Add(key string, value V) error {
 }
 
 func (c *otterCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	if key == "" {
+		return nil
+	}
+
 	c.otter.Set(key, value)
 	if lifetime > 0 {
 		c.otter.SetExpiresAfter(key, lifetime)

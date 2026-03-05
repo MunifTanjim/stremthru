@@ -53,6 +53,10 @@ func (cache *RedisCache[V]) Has(key string) bool {
 }
 
 func (cache *RedisCache[V]) Add(key string, value V) error {
+	if key == "" {
+		return nil
+	}
+
 	err := cache.c.Set(&rc.Item{
 		Key:   cache.name + ":" + key,
 		Value: value,
@@ -62,6 +66,10 @@ func (cache *RedisCache[V]) Add(key string, value V) error {
 }
 
 func (cache *RedisCache[V]) AddWithLifetime(key string, value V, lifetime time.Duration) error {
+	if key == "" {
+		return nil
+	}
+
 	err := cache.c.Set(&rc.Item{
 		Key:   cache.name + ":" + key,
 		Value: value,
