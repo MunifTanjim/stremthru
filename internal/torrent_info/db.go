@@ -564,8 +564,8 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 	return &tInfo, nil
 }
 
-var get_by_hashes_query = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s IN ",
+var get_by_hashes_query_prefix = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s ",
 	`"`+strings.Join(Columns, `","`)+`"`,
 	TableName,
 	Column.Hash,
@@ -578,11 +578,8 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 		return byHash, nil
 	}
 
-	query := fmt.Sprintf("%s (%s)", get_by_hashes_query, util.RepeatJoin("?", len(hashes), ","))
-	args := make([]any, len(hashes))
-	for i, hash := range hashes {
-		args[i] = hash
-	}
+	inFragment, args := db.InValues(hashes)
+	query := get_by_hashes_query_prefix + inFragment
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
@@ -1164,18 +1161,23 @@ var query_list_hashes_by_stremid_from_imdb_torrent = fmt.Sprintf(
 	imdb_torrent.TableName,
 	imdb_torrent.Column.TId,
 )
-var query_list_hashes_by_stremid_from_imdb_torrent_for_series = fmt.Sprintf(
-	"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND CONCAT(',', ti.%s, ',') LIKE ? AND (ti.%s = '' OR CONCAT(',', ti.%s, ',') LIKE ?)",
-	imdb_torrent.Column.Hash,
-	imdb_torrent.TableName,
-	TableName,
-	imdb_torrent.Column.Hash,
-	Column.Hash,
-	imdb_torrent.Column.TId,
-	Column.Seasons,
-	Column.Episodes,
-	Column.Episodes,
-)
+var query_list_hashes_by_stremid_from_imdb_torrent_for_series, csvTransformSeason, csvTransformEpisode = func() (string, func(string) string, func(string) string) {
+	seasonFragment, seasonTransform := db.ContainsCSV("ti." + Column.Seasons)
+	episodeFragment, episodeTransform := db.ContainsCSV("ti." + Column.Episodes)
+	q := fmt.Sprintf(
+		"SELECT ito.%s FROM %s ito JOIN %s ti ON ito.%s = ti.%s WHERE ito.%s = ? AND %s AND (ti.%s = '' OR %s)",
+		imdb_torrent.Column.Hash,
+		imdb_torrent.TableName,
+		TableName,
+		imdb_torrent.Column.Hash,
+		Column.Hash,
+		imdb_torrent.Column.TId,
+		seasonFragment,
+		Column.Episodes,
+		episodeFragment,
+	)
+	return q, seasonTransform, episodeTransform
+}()
 
 func ListHashesByStremId(stremId string) ([]string, error) {
 	nsid, err := ts.NormalizeStreamId(stremId)
@@ -1198,7 +1200,7 @@ func ListHashesByStremId(stremId string) ([]string, error) {
 			args = append(args, parts[0])
 
 			query += " UNION " + query_list_hashes_by_stremid_from_imdb_torrent_for_series
-			args = append(args, parts[0], "%,"+parts[1]+",%", "%,"+parts[2]+",%")
+			args = append(args, parts[0], csvTransformSeason(parts[1]), csvTransformEpisode(parts[2]))
 		} else {
 			imdbId, _, _ := strings.Cut(stremId, ":")
 			args = append(args, imdbId)

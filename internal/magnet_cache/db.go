@@ -47,31 +47,21 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 		return nil, err
 	}
 
-	args_len := len(hashes) + 1
-	if sid != "" {
-		args_len += 1
-	}
-	arg_idx := 0
-	args := make([]any, args_len)
+	args := make([]any, 0, len(hashes)+2)
 
 	query := "SELECT store, hash, is_cached, modified_at FROM " + TableName
 	if sid != "" {
 		query += " LEFT JOIN " + torrent_stream.TableName + " ON " + TableName + ".hash = " + torrent_stream.TableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + torrent_stream.TableName + ".sid IN (?, '*')) AND"
-		args[arg_idx] = sid
-		arg_idx += 1
+		args = append(args, sid)
 	} else {
 		query += " WHERE"
 	}
 
-	args[arg_idx] = store
-	arg_idx += 1
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
-		hashPlaceholders[i] = "?"
-		args[arg_idx+i] = hash
-	}
+	inFragment, inArgs := db.InValues(hashes)
+	args = append(args, store)
+	args = append(args, inArgs...)
 
-	query += " store = ? AND hash IN (" + strings.Join(hashPlaceholders, ",") + ")"
+	query += " store = ? AND hash " + inFragment
 
 	rows, err := db.Query(query, args...)
 	if err != nil {

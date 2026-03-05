@@ -15,7 +15,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
-	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
@@ -104,42 +103,44 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	)
 	if len(imdbIds) == 1 {
 		query.WriteString("= ?")
+		args = append(args, imdbIds[0])
 	} else {
-		query.WriteString("IN (" + util.RepeatJoin("?", len(imdbIds), ",") + ")")
-	}
-	for _, imdbId := range imdbIds {
-		args = append(args, imdbId)
+		inFragment, inArgs := db.InValues(imdbIds)
+		query.WriteString(inFragment)
+		args = append(args, inArgs...)
 	}
 	if q.Season != "" {
+		csvFragment, csvTransform := db.ContainsCSV("ti." + torrent_info.Column.Seasons)
 		query.WriteString(
 			fmt.Sprintf(
-				" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+				" AND (ti.%s = ? OR %s)",
 				torrent_info.Column.Seasons,
-				torrent_info.Column.Seasons,
+				csvFragment,
 			),
 		)
-		args = append(args, q.Season, "%,"+q.Season+",%")
+		args = append(args, q.Season, csvTransform(q.Season))
 	}
 	if q.Ep != "" {
+		csvFragment, csvTransform := db.ContainsCSV("ti." + torrent_info.Column.Episodes)
 		if q.Season != "" {
 			query.WriteString(
 				fmt.Sprintf(
-					" AND (ti.%s = '' OR ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+					" AND (ti.%s = '' OR ti.%s = ? OR %s)",
 					torrent_info.Column.Episodes,
 					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
+					csvFragment,
 				),
 			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
+			args = append(args, q.Ep, csvTransform(q.Ep))
 		} else {
 			query.WriteString(
 				fmt.Sprintf(
-					" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
+					" AND (ti.%s = ? OR %s)",
 					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
+					csvFragment,
 				),
 			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
+			args = append(args, q.Ep, csvTransform(q.Ep))
 		}
 	}
 	query.WriteString(

@@ -340,14 +340,9 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		return byHash, nil
 	}
 
-	args := make([]any, len(hashes))
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
-		args[i] = hash
-		hashPlaceholders[i] = "?"
-	}
+	inFragment, args := db.InValues(hashes)
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h "+inFragment+" GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
