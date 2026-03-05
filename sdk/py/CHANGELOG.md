@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.7.0...sdk-py-0.8.0) (2026-03-05)
+
+
+### Features
+
+* **sdk/py:** support new endpoints - newz, torz ([4c08154](https://github.com/MunifTanjim/stremthru/commit/4c081549d650afd1934df4a1a6f8d8c391e502f9))
+
 ## [0.7.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.6.0...sdk-py-0.7.0) (2026-01-28)
 
 
