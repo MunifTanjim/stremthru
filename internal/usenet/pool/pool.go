@@ -191,7 +191,11 @@ func (p *Pool) GetConnection(ctx context.Context, excludeProvider []string, maxP
 		if err == nil {
 			return conn, nil
 		}
-		p.Log.Debug("failed to acquire connection from provider", "error", err, "provider_id", provider.Id())
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			p.Log.Trace("failed to acquire connection from provider", "error", err, "provider_id", provider.Id())
+		} else {
+			p.Log.Debug("failed to acquire connection from provider", "error", err, "provider_id", provider.Id())
+		}
 	}
 
 	return providers[0].Acquire(ctx)
@@ -263,12 +267,19 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 		}
 
 		for failedAttempts < 3 {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+
 			if len(excludeProviders) > 0 || priorityIdx > 0 || useBackup {
 				p.Log.Trace("fetch segment - retry", "segment_num", segment.Number, "message_id", messageId, "failed_attempts", failedAttempts, "excluded_providers", len(excludeProviders), "curr_priority", currPriority, "use_backup", useBackup)
 			}
 
 			conn, err := p.GetConnection(ctx, excludeProviders, currPriority, useBackup)
 			if err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					return nil, err
+				}
 				if errors.Is(err, ErrNoProvidersAvailable) {
 					if priorityIdx+1 < len(priorities) {
 						priorityIdx++

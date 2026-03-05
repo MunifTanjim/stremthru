@@ -64,7 +64,7 @@ func (p *Pool) streamFile(
 
 	switch fileType {
 	case FileTypePlain:
-		return p.streamPlainFile(file, config)
+		return p.streamPlainFile(ctx, file, config)
 	case FileTypeRAR:
 		return p.streamRARFile(ctx, nzbDoc, config)
 	case FileType7z:
@@ -92,6 +92,7 @@ func (p *Pool) fetchFirstSegment(
 }
 
 func (p *Pool) streamPlainFile(
+	ctx context.Context,
 	file *nzb.File,
 	config *StreamConfig,
 ) (*Stream, error) {
@@ -100,7 +101,7 @@ func (p *Pool) streamPlainFile(
 	p.Log.Trace("creating stream", "stream_type", "plain", "filename", filename, "segment_count", file.SegmentCount())
 
 	stream, err := NewFileStream(
-		context.Background(),
+		ctx,
 		p,
 		file,
 		config.SegmentBufferSize,
@@ -511,7 +512,7 @@ func (p *Pool) StreamByContentPath(
 	}
 
 	if len(pathParts) == 1 {
-		return p.streamPlainFile(file, config)
+		return p.streamPlainFile(ctx, file, config)
 	}
 
 	archiveName := contentFile.Name
