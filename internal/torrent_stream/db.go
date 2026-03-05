@@ -256,6 +256,7 @@ func cleanupFilesWithNameAsPath(hash string, files Files) {
 		log.Error("failed to cleanup files with name as path", "error", err, "hash", hash)
 	} else {
 		log.Debug("cleaned up files with name as path", "hash", hash)
+		filesByHashCache.Remove(hash)
 	}
 }
 
@@ -336,6 +337,19 @@ func GetFile(hash string, sid string) (*File, error) {
 	return &file, nil
 }
 
+var filesByHashCache = cache.NewCache[Files](&cache.CacheConfig{
+	Name:     "torrent_stream:files_by_hash",
+	Lifetime: 2 * time.Hour,
+	MaxSize:  400_000,
+})
+
+var readCacheHitCount atomic.Int64
+var readCacheMissCount atomic.Int64
+
+func GetReadCacheStats() (hit int64, miss int64) {
+	return readCacheHitCount.Load(), readCacheMissCount.Load()
+}
+
 func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 	byHash := map[string]Files{}
 
@@ -343,9 +357,26 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		return byHash, nil
 	}
 
-	args := make([]any, len(hashes))
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
+	var missedHashes []string
+	for _, hash := range hashes {
+		var cached Files
+		if filesByHashCache.Get(hash, &cached) {
+			readCacheHitCount.Add(1)
+			byHash[hash] = cached
+		} else {
+			missedHashes = append(missedHashes, hash)
+		}
+	}
+
+	if len(missedHashes) == 0 {
+		return byHash, nil
+	}
+
+	readCacheMissCount.Add(int64(len(missedHashes)))
+
+	args := make([]any, len(missedHashes))
+	hashPlaceholders := make([]string, len(missedHashes))
+	for i, hash := range missedHashes {
 		args[i] = hash
 		hashPlaceholders[i] = "?"
 	}
@@ -362,6 +393,7 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		if err := rows.Scan(&hash, &files); err != nil {
 			return nil, err
 		}
+		filesByHashCache.Add(hash, files)
 		byHash[hash] = files
 	}
 
@@ -487,13 +519,6 @@ func get_record_query(count int) string {
 		record_streams_query_on_conflict
 }
 
-var recordSkipCount atomic.Int64
-var recordAllowCount atomic.Int64
-
-func GetRecordCacheStats() (skipped int64, allowed int64) {
-	return recordSkipCount.Load(), recordAllowCount.Load()
-}
-
 type prevRecordData struct {
 	Source      string
 	Fingerprint uint64
@@ -504,6 +529,13 @@ var prevRecordCache = cache.NewLRUCache[prevRecordData](&cache.CacheConfig{
 	Lifetime: 4 * time.Hour,
 	MaxSize:  1_000_000,
 })
+
+var writeCacheHitCount atomic.Int64
+var writeCacheMissCount atomic.Int64
+
+func GetWriteCacheStats() (hit int64, miss int64) {
+	return writeCacheHitCount.Load(), writeCacheMissCount.Load()
+}
 
 func Record(items []InsertData, discardIdx bool) error {
 	if len(items) == 0 {
@@ -544,11 +576,11 @@ func Record(items []InsertData, discardIdx bool) error {
 				fingerprint := xxh3.Hash(fpBuf.Bytes())
 				var prev prevRecordData
 				if prevRecordCache.Get(key, &prev) && (prev.Source == item.Source || prev.Source == "dht" || prev.Source == "tor" || prev.Fingerprint == fingerprint) {
-					recordSkipCount.Add(1)
+					writeCacheHitCount.Add(1)
 					count--
 					continue
 				}
-				recordAllowCount.Add(1)
+				writeCacheMissCount.Add(1)
 				args = append(args,
 					item.Hash,
 					item.Path,
@@ -575,8 +607,14 @@ func Record(items []InsertData, discardIdx bool) error {
 			errs = append(errs, err)
 		} else {
 			log.Debug("recorded torrent stream", "count", count)
+			invalidatedHashes := util.NewSet[string]()
 			for key, data := range recordDataByKey {
 				prevRecordCache.Add(key, data)
+				hash, _, _ := strings.Cut(key, ":")
+				if !invalidatedHashes.Has(hash) {
+					filesByHashCache.Remove(hash)
+					invalidatedHashes.Add(hash)
+				}
 			}
 		}
 	}
@@ -609,6 +647,9 @@ var query_set_media_info = fmt.Sprintf(
 
 func SetMediaInfo(hash, path string, mediaInfo *media_info.MediaInfo) error {
 	_, err := db.Exec(query_set_media_info, JSONBMediaInfo(mediaInfo), hash, path)
+	if err == nil {
+		filesByHashCache.Remove(hash)
+	}
 	return err
 }
 
@@ -634,6 +675,7 @@ func TagStremId(hash string, filepath string, sid string) {
 		log.Error("failed to tag strem id", "error", err, "hash", hash, "fpath", filepath, "sid", sid)
 	} else {
 		log.Debug("tagged strem id", "hash", hash, "fpath", filepath, "sid", sid)
+		filesByHashCache.Remove(hash)
 	}
 }
 
@@ -675,6 +717,7 @@ func TagAnimeStremId(hash string, filepath string, sid string) {
 		log.Error("failed to tag anime strem id", "error", err, "hash", hash, "fpath", filepath, "asid", asid, "strem_id", sid)
 	} else {
 		log.Debug("tagged anime strem id", "hash", hash, "fpath", filepath, "asid", asid, "strem_id", sid)
+		filesByHashCache.Remove(hash)
 	}
 }
 

@@ -18,6 +18,18 @@ import (
 
 const TableName = "magnet_cache"
 
+var Column = struct {
+	Store      string
+	Hash       string
+	IsCached   string
+	ModifiedAt string
+}{
+	Store:      "store",
+	Hash:       "hash",
+	IsCached:   "is_cached",
+	ModifiedAt: "modified_at",
+}
+
 var mcLog = logger.Scoped(TableName)
 
 type MagnetCache struct {
@@ -37,7 +49,45 @@ func (mc MagnetCache) IsStale() bool {
 	return mc.ModifiedAt.Before(time.Now().Add(-staleTime))
 }
 
-func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCache, error) {
+var magnetInfoByHashCache = cache.NewCache[MagnetCache](&cache.CacheConfig{
+	Name:     "magnet_cache:info_by_hash",
+	Lifetime: 2 * time.Hour,
+	MaxSize:  200_000,
+})
+
+var getReadCacheHitCount atomic.Int64
+var getReadCacheMissCount atomic.Int64
+
+func GetReadCacheStats() (hit int64, miss int64) {
+	return getReadCacheHitCount.Load(), getReadCacheMissCount.Load()
+}
+
+func matchesSidFilter(mc *MagnetCache, sid string) bool {
+	if sid == "" || !mc.IsCached {
+		return true
+	}
+	for _, f := range mc.Files {
+		if f.SId == sid || f.SId == "*" {
+			return true
+		}
+	}
+	return false
+}
+
+var query_get_by_hashes = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ? AND %s IN `,
+	db.JoinColumnNames(
+		Column.Store,
+		Column.Hash,
+		Column.IsCached,
+		Column.ModifiedAt,
+	),
+	TableName,
+	Column.Store,
+	Column.Hash,
+)
+
+func GetByHashes(storeCode store.StoreCode, hashes []string, sid string) ([]MagnetCache, error) {
 	if len(hashes) == 0 {
 		return []MagnetCache{}, nil
 	}
@@ -47,31 +97,46 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 		return nil, err
 	}
 
-	args_len := len(hashes) + 1
-	if sid != "" {
-		args_len += 1
+	mcs := []MagnetCache{}
+	var missedHashes []string
+
+	for _, hash := range hashes {
+		cacheKey := writeCacheKey(storeCode, hash)
+		var cached MagnetCache
+		if magnetInfoByHashCache.Get(cacheKey, &cached) {
+			getReadCacheHitCount.Add(1)
+			if files, ok := filesByHash[cached.Hash]; ok && len(files) > 0 {
+				cached.Files = files
+			}
+			if matchesSidFilter(&cached, sid) {
+				mcs = append(mcs, cached)
+			}
+		} else {
+			missedHashes = append(missedHashes, hash)
+		}
 	}
+
+	getReadCacheMissCount.Add(int64(len(missedHashes)))
+
+	if len(missedHashes) == 0 {
+		return mcs, nil
+	}
+
+	args_len := len(missedHashes) + 1
 	arg_idx := 0
 	args := make([]any, args_len)
 
-	query := "SELECT store, hash, is_cached, modified_at FROM " + TableName
-	if sid != "" {
-		query += " LEFT JOIN " + torrent_stream.TableName + " ON " + TableName + ".hash = " + torrent_stream.TableName + ".h WHERE (is_cached = " + db.BooleanFalse + " OR " + torrent_stream.TableName + ".sid IN (?, '*')) AND"
-		args[arg_idx] = sid
-		arg_idx += 1
-	} else {
-		query += " WHERE"
-	}
+	query := query_get_by_hashes
 
-	args[arg_idx] = store
+	args[arg_idx] = storeCode
 	arg_idx += 1
-	hashPlaceholders := make([]string, len(hashes))
-	for i, hash := range hashes {
+	hashPlaceholders := make([]string, len(missedHashes))
+	for i, hash := range missedHashes {
 		hashPlaceholders[i] = "?"
 		args[arg_idx+i] = hash
 	}
 
-	query += " store = ? AND hash IN (" + strings.Join(hashPlaceholders, ",") + ")"
+	query += "(" + strings.Join(hashPlaceholders, ",") + ")"
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
@@ -79,16 +144,22 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	}
 	defer rows.Close()
 
-	mcs := []MagnetCache{}
 	for rows.Next() {
 		smc := MagnetCache{}
 		if err := rows.Scan(&smc.Store, &smc.Hash, &smc.IsCached, &smc.ModifiedAt); err != nil {
 			return nil, err
 		}
+
+		cacheKey := writeCacheKey(storeCode, smc.Hash)
+		magnetInfoByHashCache.Add(cacheKey, smc)
+
 		if files, ok := filesByHash[smc.Hash]; ok && len(files) > 0 {
 			smc.Files = files
 		}
-		mcs = append(mcs, smc)
+
+		if matchesSidFilter(&smc, sid) {
+			mcs = append(mcs, smc)
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -97,30 +168,30 @@ func GetByHashes(store store.StoreCode, hashes []string, sid string) ([]MagnetCa
 	return mcs, nil
 }
 
-var touchSkipCount atomic.Int64
-var touchAllowCount atomic.Int64
-
-func GetTouchCacheStats() (skipped int64, allowed int64) {
-	return touchSkipCount.Load(), touchAllowCount.Load()
-}
-
 var prevIsCachedCache = cache.NewLRUCache[bool](&cache.CacheConfig{
 	Name:     "magnet_cache:prev_is_cached",
 	Lifetime: 4 * time.Hour,
 	MaxSize:  200_000,
 })
 
-func touchCacheKey(storeCode store.StoreCode, hash string) string {
+var writeCacheHitCount atomic.Int64
+var writeCacheMissCount atomic.Int64
+
+func GetWriteCacheStats() (hit int64, miss int64) {
+	return writeCacheHitCount.Load(), writeCacheMissCount.Load()
+}
+
+func writeCacheKey(storeCode store.StoreCode, hash string) string {
 	return string(storeCode) + ":" + hash
 }
 
 func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, isCached bool, skipFileTracking bool) {
-	cacheKey := touchCacheKey(storeCode, hash)
+	cacheKey := writeCacheKey(storeCode, hash)
 	var prevIsCached bool
 	if prevIsCachedCache.Get(cacheKey, &prevIsCached) && prevIsCached == isCached {
-		touchSkipCount.Add(1)
+		writeCacheHitCount.Add(1)
 	} else {
-		touchAllowCount.Add(1)
+		writeCacheMissCount.Add(1)
 		buf := bytes.NewBuffer([]byte("INSERT INTO " + TableName))
 		var result sql.Result
 		var err error
@@ -138,6 +209,7 @@ func Touch(storeCode store.StoreCode, hash string, files torrent_stream.Files, i
 			return
 		}
 		prevIsCachedCache.Add(cacheKey, isCached)
+		magnetInfoByHashCache.Remove(cacheKey)
 	}
 	if !skipFileTracking {
 		torrent_stream.TrackFiles(storeCode, map[string]torrent_stream.Files{hash: files})
@@ -183,14 +255,14 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 	missCacheKeys := []string{}
 
 	for hash, is_cached := range cached {
-		cacheKey := touchCacheKey(storeCode, hash)
+		cacheKey := writeCacheKey(storeCode, hash)
 		var prevIsCached bool
 		if prevIsCachedCache.Get(cacheKey, &prevIsCached) && prevIsCached == is_cached {
-			touchSkipCount.Add(1)
+			writeCacheHitCount.Add(1)
 			continue
 		}
 
-		touchAllowCount.Add(1)
+		writeCacheMissCount.Add(1)
 		if !is_cached {
 			if miss_count > 0 {
 				miss_query.WriteString(",")
@@ -221,6 +293,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		} else {
 			for _, key := range hitCacheKeys {
 				prevIsCachedCache.Add(key, true)
+				magnetInfoByHashCache.Remove(key)
 			}
 		}
 	}
@@ -238,6 +311,7 @@ func BulkTouch(storeCode store.StoreCode, filesByHash map[string]torrent_stream.
 		} else {
 			for _, key := range missCacheKeys {
 				prevIsCachedCache.Add(key, false)
+				magnetInfoByHashCache.Remove(key)
 			}
 		}
 	}

@@ -27,9 +27,11 @@ type ServerStats = {
 
 type TorrentsStats = {
   cache: {
-    magnet_cache: { allowed: number; skipped: number };
-    torrent_info: { allowed: number; skipped: number };
-    torrent_stream: { allowed: number; skipped: number };
+    read_magnet_cache: { hit: number; miss: number };
+    read_torrent_stream: { hit: number; miss: number };
+    write_magnet_cache: { hit: number; miss: number };
+    write_torrent_info: { hit: number; miss: number };
+    write_torrent_stream: { hit: number; miss: number };
   };
   files: {
     total_count: number;

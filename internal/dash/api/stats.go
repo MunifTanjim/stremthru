@@ -27,8 +27,8 @@ var cachedTorrentsStats = cache.NewCachedValue(cache.CachedValueConfig[*torrent_
 })
 
 type CacheStatsEntry struct {
-	Skipped int64 `json:"skipped"`
-	Allowed int64 `json:"allowed"`
+	Hit  int64 `json:"hit"`
+	Miss int64 `json:"miss"`
 }
 
 type TorrentsStats struct {
@@ -37,9 +37,11 @@ type TorrentsStats struct {
 		TotalCount int `json:"total_count"`
 	} `json:"files"`
 	Cache struct {
-		TorrentInfo   CacheStatsEntry `json:"torrent_info"`
-		TorrentStream CacheStatsEntry `json:"torrent_stream"`
-		MagnetCache   CacheStatsEntry `json:"magnet_cache"`
+		WriteTorrentInfo   CacheStatsEntry `json:"write_torrent_info"`
+		ReadTorrentStream  CacheStatsEntry `json:"read_torrent_stream"`
+		WriteTorrentStream CacheStatsEntry `json:"write_torrent_stream"`
+		ReadMagnetCache    CacheStatsEntry `json:"read_magnet_cache"`
+		WriteMagnetCache   CacheStatsEntry `json:"write_magnet_cache"`
 	} `json:"cache"`
 }
 
@@ -59,12 +61,16 @@ func HandleGetTorrentsStats(w http.ResponseWriter, r *http.Request) {
 	data.TotalCount = stats.TotalCount
 	data.Files.TotalCount = stats.Streams.TotalCount
 
-	tiSkipped, tiAllowed := torrent_info.GetUpsertCacheStats()
-	tsSkipped, tsAllowed := torrent_stream.GetRecordCacheStats()
-	mcSkipped, mcAllowed := magnet_cache.GetTouchCacheStats()
-	data.Cache.TorrentInfo = CacheStatsEntry{Skipped: tiSkipped, Allowed: tiAllowed}
-	data.Cache.TorrentStream = CacheStatsEntry{Skipped: tsSkipped, Allowed: tsAllowed}
-	data.Cache.MagnetCache = CacheStatsEntry{Skipped: mcSkipped, Allowed: mcAllowed}
+	tiWriteHit, tiWriteMiss := torrent_info.GetUpsertCacheStats()
+	tsReadHit, tsReadMiss := torrent_stream.GetReadCacheStats()
+	tsWriteHit, tsWriteMiss := torrent_stream.GetWriteCacheStats()
+	mcReadHit, mcReadMiss := magnet_cache.GetReadCacheStats()
+	mcWriteHit, mcWriteMiss := magnet_cache.GetWriteCacheStats()
+	data.Cache.WriteTorrentInfo = CacheStatsEntry{Hit: tiWriteHit, Miss: tiWriteMiss}
+	data.Cache.ReadTorrentStream = CacheStatsEntry{Hit: tsReadHit, Miss: tsReadMiss}
+	data.Cache.WriteTorrentStream = CacheStatsEntry{Hit: tsWriteHit, Miss: tsWriteMiss}
+	data.Cache.ReadMagnetCache = CacheStatsEntry{Hit: mcReadHit, Miss: mcReadMiss}
+	data.Cache.WriteMagnetCache = CacheStatsEntry{Hit: mcWriteHit, Miss: mcWriteMiss}
 
 	SendData(w, r, 200, data)
 }
