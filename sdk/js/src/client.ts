@@ -1,5 +1,10 @@
 import { ErrorCode, ErrorType, StremThruError } from "./error";
-import { StoreMagnetStatus, StoreUserSubscriptionStatus } from "./types";
+import {
+  StoreMagnetStatus,
+  StoreNewzStatus,
+  StoreTorzStatus,
+  StoreUserSubscriptionStatus,
+} from "./types";
 import { VERSION } from "./version";
 
 const USER_AGENT = `stremthru:sdk:js/${VERSION}`;
@@ -23,6 +28,9 @@ type ResponseMeta = {
 };
 
 class StremThruStore {
+  newz: StremThruStoreNewz;
+  torz: StremThruStoreTorz;
+
   #client: StremThru;
   #clientIp?: string;
 
@@ -31,6 +39,9 @@ class StremThruStore {
     if (clientIp) {
       this.#clientIp = clientIp;
     }
+
+    this.newz = new StremThruStoreNewz(client);
+    this.torz = new StremThruStoreTorz(client);
   }
 
   async addMagnet({
@@ -142,9 +153,13 @@ class StremThruStore {
     limit,
     offset,
   }: {
-    // min `1`, max `500`, default `100`
+    /**
+     * min `1`, max `500`, default `100`
+     */
     limit?: number;
-    // min `0`, default `0`
+    /**
+     * min `0`, default `0`
+     */
     offset?: number;
   }) {
     const params: Record<string, string> = {};
@@ -171,6 +186,270 @@ class StremThruStore {
     return await this.#client.request<null>(`/v0/store/magnets/${magnetId}`, {
       method: "DELETE",
     });
+  }
+}
+
+class StremThruStoreNewz {
+  #client: StremThru;
+
+  constructor(client: StremThru) {
+    this.#client = client;
+  }
+
+  async add(
+    params: { file: File; link?: never } | { file?: never; link: string },
+  ) {
+    let body: FormData | Record<string, unknown>;
+    if ("file" in params && params.file) {
+      body = new FormData();
+      body.set("file", params.file);
+    } else {
+      body = { link: params.link };
+    }
+    return await this.#client.request<{
+      hash: string;
+      id: string;
+      status: StoreNewzStatus;
+    }>("/v0/store/newz", {
+      body,
+      method: "POST",
+    });
+  }
+
+  async check(params: {
+    /**
+     * min `1`, max `500`
+     */
+    hash: string[];
+  }) {
+    return await this.#client.request<{
+      items: Array<{
+        files: Array<{
+          index: number;
+          name: string;
+          path: string;
+          size: number;
+          video_hash?: string;
+        }>;
+        hash: string;
+        status: StoreNewzStatus;
+      }>;
+    }>("/v0/store/newz/check", {
+      method: "GET",
+      params: { hash: params.hash },
+    });
+  }
+
+  async generateLink({ link }: { link: string }) {
+    return await this.#client.request<{
+      link: string;
+    }>("/v0/store/newz/link/generate", {
+      body: { link },
+      method: "POST",
+    });
+  }
+
+  async get(newzId: string) {
+    return await this.#client.request<{
+      added_at: string;
+      files: Array<{
+        index: number;
+        link: string;
+        name: string;
+        path: string;
+        size: number;
+        video_hash?: string;
+      }>;
+      hash: string;
+      id: string;
+      name: string;
+      size: number;
+      status: StoreNewzStatus;
+    }>(`/v0/store/newz/${newzId}`, { method: "GET" });
+  }
+
+  async list({
+    limit,
+    offset,
+  }: {
+    /**
+     * min `1`, max `500`, default `100`
+     */
+    limit?: number;
+    /**
+     * min `0`, default `0`
+     */
+    offset?: number;
+  } = {}) {
+    const params: Record<string, string> = {};
+    if (limit) {
+      params["limit"] = String(limit);
+    }
+    if (offset) {
+      params["offset"] = String(offset);
+    }
+    return await this.#client.request<{
+      items: Array<{
+        added_at: string;
+        hash: string;
+        id: string;
+        name: string;
+        size: number;
+        status: StoreNewzStatus;
+      }>;
+      total_items: number;
+    }>("/v0/store/newz", { method: "GET", params });
+  }
+
+  async remove(newzId: string) {
+    return await this.#client.request<{
+      id: string;
+    }>(`/v0/store/newz/${newzId}`, { method: "DELETE" });
+  }
+}
+
+class StremThruStoreTorz {
+  #client: StremThru;
+
+  constructor(client: StremThru) {
+    this.#client = client;
+  }
+
+  async add(
+    params: { file: File; link?: never } | { file?: never; link: string },
+  ) {
+    let body: FormData | Record<string, unknown>;
+    if ("file" in params && params.file) {
+      body = new FormData();
+      body.set("file", params.file);
+    } else {
+      body = { link: params.link };
+    }
+    return await this.#client.request<{
+      added_at: string;
+      files: Array<{
+        index: number;
+        link: string;
+        name: string;
+        path: string;
+        size: number;
+        video_hash?: string;
+      }>;
+      hash: string;
+      id: string;
+      magnet: string;
+      name: string;
+      private?: boolean;
+      size: number;
+      status: StoreTorzStatus;
+    }>("/v0/store/torz", {
+      body,
+      method: "POST",
+    });
+  }
+
+  async check(params: {
+    /**
+     * min `1`, max `500`
+     */
+    hash: string[];
+    /**
+     * Stream ID
+     */
+    sid?: string;
+  }) {
+    const queryParams: Record<string, string | string[]> = {
+      hash: params.hash,
+    };
+    if (params.sid) {
+      queryParams["sid"] = params.sid;
+    }
+    return await this.#client.request<{
+      items: Array<{
+        files: Array<{
+          index: number;
+          name: string;
+          path: string;
+          size: number;
+          video_hash?: string;
+        }>;
+        hash: string;
+        magnet: string;
+        status: StoreTorzStatus;
+      }>;
+    }>("/v0/store/torz/check", {
+      method: "GET",
+      params: queryParams,
+    });
+  }
+
+  async generateLink({ link }: { link: string }) {
+    return await this.#client.request<{
+      link: string;
+    }>("/v0/store/torz/link/generate", {
+      body: { link },
+      method: "POST",
+    });
+  }
+
+  async get(torzId: string) {
+    return await this.#client.request<{
+      added_at: string;
+      files: Array<{
+        index: number;
+        link: string;
+        name: string;
+        path: string;
+        size: number;
+        video_hash?: string;
+      }>;
+      hash: string;
+      id: string;
+      name: string;
+      private?: boolean;
+      size: number;
+      status: StoreTorzStatus;
+    }>(`/v0/store/torz/${torzId}`, { method: "GET" });
+  }
+
+  async list({
+    limit,
+    offset,
+  }: {
+    /**
+     * min `1`, max `500`, default `100`
+     */
+    limit?: number;
+    /**
+     * min `0`, default `0`
+     */
+    offset?: number;
+  } = {}) {
+    const params: Record<string, string> = {};
+    if (limit) {
+      params["limit"] = String(limit);
+    }
+    if (offset) {
+      params["offset"] = String(offset);
+    }
+    return await this.#client.request<{
+      items: Array<{
+        added_at: string;
+        hash: string;
+        id: string;
+        name: string;
+        private?: boolean;
+        size: number;
+        status: StoreTorzStatus;
+      }>;
+      total_items: number;
+    }>("/v0/store/torz", { method: "GET", params });
+  }
+
+  async remove(torzId: string) {
+    return await this.#client.request<{
+      id: string;
+    }>(`/v0/store/torz/${torzId}`, { method: "DELETE" });
   }
 }
 
