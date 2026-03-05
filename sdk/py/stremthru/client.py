@@ -152,6 +152,29 @@ StoreMagnetStatus = Literal[
     "uploading",
 ]
 
+StoreNewzStatus = Literal[
+    "cached",
+    "downloaded",
+    "downloading",
+    "failed",
+    "invalid",
+    "processing",
+    "queued",
+    "unknown",
+]
+
+StoreTorzStatus = Literal[
+    "cached",
+    "downloaded",
+    "downloading",
+    "failed",
+    "invalid",
+    "processing",
+    "queued",
+    "unknown",
+    "uploading",
+]
+
 
 class AddMagnetDataFile(TypedDict):
     index: int
@@ -238,6 +261,245 @@ class ListMagnetsData(TypedDict):
     total_items: int
 
 
+class AddNewzData(TypedDict):
+    hash: str
+    id: str
+    status: StoreNewzStatus
+
+
+class CheckNewzDataItemFile(TypedDict):
+    index: int
+    name: str
+    path: str
+    size: int
+    video_hash: Optional[str]
+
+
+class CheckNewzDataItem(TypedDict):
+    files: list[CheckNewzDataItemFile]
+    hash: str
+    status: StoreNewzStatus
+
+
+class CheckNewzData(TypedDict):
+    items: list[CheckNewzDataItem]
+
+
+class GetNewzDataFile(TypedDict):
+    index: int
+    link: str
+    name: str
+    path: str
+    size: int
+    video_hash: Optional[str]
+
+
+class GetNewzData(TypedDict):
+    added_at: str
+    files: list[GetNewzDataFile]
+    hash: str
+    id: str
+    name: str
+    size: int
+    status: StoreNewzStatus
+
+
+class ListNewzDataItem(TypedDict):
+    added_at: str
+    hash: str
+    id: str
+    name: str
+    size: int
+    status: StoreNewzStatus
+
+
+class ListNewzData(TypedDict):
+    items: list[ListNewzDataItem]
+    total_items: int
+
+
+class AddTorzDataFile(TypedDict):
+    index: int
+    link: str
+    name: str
+    path: str
+    size: int
+    video_hash: Optional[str]
+
+
+class AddTorzData(TypedDict):
+    added_at: str
+    files: list[AddTorzDataFile]
+    hash: str
+    id: str
+    magnet: str
+    name: str
+    private: Optional[bool]
+    size: int
+    status: StoreTorzStatus
+
+
+class CheckTorzDataItemFile(TypedDict):
+    index: int
+    name: str
+    path: str
+    size: int
+    video_hash: Optional[str]
+
+
+class CheckTorzDataItem(TypedDict):
+    files: list[CheckTorzDataItemFile]
+    hash: str
+    magnet: str
+    status: StoreTorzStatus
+
+
+class CheckTorzData(TypedDict):
+    items: list[CheckTorzDataItem]
+
+
+class GetTorzDataFile(TypedDict):
+    index: int
+    link: str
+    name: str
+    path: str
+    size: int
+    video_hash: Optional[str]
+
+
+class GetTorzData(TypedDict):
+    added_at: str
+    files: list[GetTorzDataFile]
+    hash: str
+    id: str
+    name: str
+    private: Optional[bool]
+    size: int
+    status: StoreTorzStatus
+
+
+class ListTorzDataItem(TypedDict):
+    added_at: str
+    hash: str
+    id: str
+    name: str
+    private: Optional[bool]
+    size: int
+    status: StoreTorzStatus
+
+
+class ListTorzData(TypedDict):
+    items: list[ListTorzDataItem]
+    total_items: int
+
+
+class StremThruStoreNewz:
+    def __init__(self, client: StremThru):
+        self.client = client
+
+    async def add(
+        self,
+        link: Optional[str] = None,
+        file: Optional[io.BufferedReader] = None,
+    ) -> Response[AddNewzData]:
+        if file is not None:
+            data = aiohttp.FormData()
+            data.add_field("file", file)
+            return await self.client.request(
+                "/v0/store/newz",
+                "POST",
+                data=data,
+            )
+
+        return await self.client.request(
+            "/v0/store/newz",
+            "POST",
+            json={"link": link},
+        )
+
+    async def check(self, hash: list[str]) -> Response[CheckNewzData]:
+        return await self.client.request("/v0/store/newz/check", params={"hash": hash})
+
+    async def generate_link(self, link: str) -> Response[GenerateLinkData]:
+        return await self.client.request(
+            "/v0/store/newz/link/generate",
+            "POST",
+            json={"link": link},
+        )
+
+    async def get(self, newz_id: str) -> Response[GetNewzData]:
+        return await self.client.request(f"/v0/store/newz/{newz_id}")
+
+    async def list(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> Response[ListNewzData]:
+        params = {}
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        return await self.client.request("/v0/store/newz", params=params)
+
+    async def remove(self, newz_id: str) -> Response[None]:
+        return await self.client.request(f"/v0/store/newz/{newz_id}", "DELETE")
+
+
+class StremThruStoreTorz:
+    def __init__(self, client: StremThru):
+        self.client = client
+
+    async def add(
+        self,
+        link: Optional[str] = None,
+        file: Optional[io.BufferedReader] = None,
+    ) -> Response[AddTorzData]:
+        if file is not None:
+            data = aiohttp.FormData()
+            data.add_field("file", file)
+            return await self.client.request(
+                "/v0/store/torz",
+                "POST",
+                data=data,
+            )
+
+        return await self.client.request(
+            "/v0/store/torz",
+            "POST",
+            json={"link": link},
+        )
+
+    async def check(
+        self, hash: list[str], sid: Optional[str] = None
+    ) -> Response[CheckTorzData]:
+        params: dict[str, Any] = {"hash": hash}
+        if sid:
+            params["sid"] = sid
+        return await self.client.request("/v0/store/torz/check", params=params)
+
+    async def generate_link(self, link: str) -> Response[GenerateLinkData]:
+        return await self.client.request(
+            "/v0/store/torz/link/generate",
+            "POST",
+            json={"link": link},
+        )
+
+    async def get(self, torz_id: str) -> Response[GetTorzData]:
+        return await self.client.request(f"/v0/store/torz/{torz_id}")
+
+    async def list(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> Response[ListTorzData]:
+        params = {}
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        return await self.client.request("/v0/store/torz", params=params)
+
+    async def remove(self, torz_id: str) -> Response[None]:
+        return await self.client.request(f"/v0/store/torz/{torz_id}", "DELETE")
+
+
 class StremThruStore:
     _client_ip: str | None = None
 
@@ -245,6 +507,8 @@ class StremThruStore:
         self.client = client
         if client_ip:
             self._client_ip = client_ip
+        self.newz = StremThruStoreNewz(client)
+        self.torz = StremThruStoreTorz(client)
 
     async def add_magnet(
         self,
