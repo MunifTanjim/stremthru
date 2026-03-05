@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.11.0...sdk-js-0.12.0) (2026-03-05)
+
+
+### Features
+
+* **sdk/js:** support new endpoints for newz and torz ([ba2a1ca](https://github.com/MunifTanjim/stremthru/commit/ba2a1ca34219f8279c4ed4f754228de3ebfe137b))
+
 ## [0.11.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.10.0...sdk-js-0.11.0) (2026-01-28)
 
 
