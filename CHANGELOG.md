@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.98.1](https://github.com/MunifTanjim/stremthru/compare/0.98.0...0.98.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* **store/stremthru:** normalize file name for newz ([b377dca](https://github.com/MunifTanjim/stremthru/commit/b377dca20a4ddc153e94f0178945da92a773bddd))
+* **stremio:** prioritize file size for sort ([1c9c91a](https://github.com/MunifTanjim/stremthru/commit/1c9c91a372c3a17b16d624d1cb99c371ddc86121))
+* **usenet:** do not retry on context canceled error ([2ff7e41](https://github.com/MunifTanjim/stremthru/commit/2ff7e41017a704aa4557aba6a71d86687f913029))
+
+
+### Performance Improvements
+
+* add read cache - magnet_cache, torrent_stream ([39d17ee](https://github.com/MunifTanjim/stremthru/commit/39d17ee5876b65eda77def9e7457f7a6d833d985))
+* **magnet_cache:** reduce database write ([8a9c5c4](https://github.com/MunifTanjim/stremthru/commit/8a9c5c4ba74ed630d37ee176708051347b0d94ec))
+* **torrent_info:** reduce database write ([e99f34d](https://github.com/MunifTanjim/stremthru/commit/e99f34dddd19690f86be47be5a4660985ff13d54))
+* **torrent_stream:** reduce database write ([fac708f](https://github.com/MunifTanjim/stremthru/commit/fac708facd49839a553f11f7c61f261ed26bc0f5))
+
 ## [0.98.0](https://github.com/MunifTanjim/stremthru/compare/0.97.1...0.98.0) (2026-03-02)
 
 
