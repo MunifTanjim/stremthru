@@ -51,6 +51,9 @@ func (s WrappedStream) GetResolution() string {
 }
 
 func (s WrappedStream) GetSize() string {
+	if s.R.File.Size != "" {
+		return s.R.File.Size
+	}
 	return s.R.Size
 }
 
