@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.98.2](https://github.com/MunifTanjim/stremthru/compare/0.98.1...0.98.2) (2026-03-05)
+
+
+### Bug Fixes
+
+* **cache:** ignore empty key ([a34975a](https://github.com/MunifTanjim/stremthru/commit/a34975a18e2130466898056dd7fdf70b3dd3d816))
+* **torrent_info:** fix torrent file cache on public instance ([a607f35](https://github.com/MunifTanjim/stremthru/commit/a607f35ba4722965994aaf8c9eda153654594899))
+
 ## [0.98.1](https://github.com/MunifTanjim/stremthru/compare/0.98.0...0.98.1) (2026-03-05)
 
 
