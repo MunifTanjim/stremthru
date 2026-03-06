@@ -7,6 +7,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	newznab_client "github.com/MunifTanjim/stremthru/internal/newznab/client"
+	newznab_easynews "github.com/MunifTanjim/stremthru/internal/newznab/easynews"
 	newznab_stremthru "github.com/MunifTanjim/stremthru/internal/newznab/stremthru"
 	newznab_torbox "github.com/MunifTanjim/stremthru/internal/newznab/torbox"
 	"github.com/MunifTanjim/stremthru/store/torbox"
@@ -18,6 +19,7 @@ const (
 	NewzIndexerTypeGeneric   NewzIndexerType = "generic"
 	NewzIndexerTypeStremThru NewzIndexerType = "stremthru"
 	NewzIndexerTypeTorbox    NewzIndexerType = "torbox"
+	NewzIndexerTypeEasynews  NewzIndexerType = "easynews"
 )
 
 type NewzIndexer struct {
@@ -34,7 +36,7 @@ func (i NewzIndexer) Validate() (string, error) {
 	if i.Name == "" {
 		return "name", fmt.Errorf("indexer name is required")
 	}
-	if i.Type != NewzIndexerTypeTorbox && i.Type != NewzIndexerTypeStremThru && i.URL == "" {
+	if i.Type != NewzIndexerTypeTorbox && i.Type != NewzIndexerTypeStremThru && i.Type != NewzIndexerTypeEasynews && i.URL == "" {
 		return "url", fmt.Errorf("indexer url is required")
 	}
 	return "", nil
@@ -116,6 +118,18 @@ func (ud *UserDataNewzIndexers) Prepare() ([]newznab_client.Indexer, error) {
 			var client newznab_client.Indexer
 			if !newznabIndexerCache.Get(key, &client) {
 				client = newznab_stremthru.NewIndexer(apiKey)
+				err := newznabIndexerCache.Add(key, client)
+				if err != nil {
+					return clients, err
+				}
+			}
+			clients = append(clients, client)
+
+		case NewzIndexerTypeEasynews:
+			key := "easynews:" + apiKey
+			var client newznab_client.Indexer
+			if !newznabIndexerCache.Get(key, &client) {
+				client = newznab_easynews.NewIndexer(apiKey)
 				err := newznabIndexerCache.Add(key, client)
 				if err != nil {
 					return clients, err

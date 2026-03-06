@@ -32,66 +32,72 @@ func newSubjectParser(fileCount int) *subjectParser {
 	return &p
 }
 
-func (p *subjectParser) Parse(f *File) {
-	subject := f.Subject
+func ParseSubject(fileSubject string) (fname, subject string) {
+	subject = fileSubject
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := quotedFilenameRegex.FindStringSubmatch(subject); len(matches) == 2 {
 			if name := strings.TrimSpace(matches[1]); name != "" {
-				f.name = name
+				fname = name
 				subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 			}
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := bracketedFilenameRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := fileCountFilenameYencSegmentCountSizeregex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := fileCountFilenameRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[1], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := reFilenameSegmentCountRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[1], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := somethingHashLikeRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := somethingHashLikeNoYencRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}
 	}
 
-	if f.name == "" {
+	if fname == "" {
 		if matches := likeFilenameRegex.FindStringSubmatch(subject); len(matches) == 2 {
-			f.name = strings.TrimSpace(matches[1])
+			fname = strings.TrimSpace(matches[1])
 			subject = strings.TrimSpace(strings.Replace(subject, matches[1], "", 1))
 		}
 	}
+
+	return fname, subject
+}
+
+func (p *subjectParser) Parse(f *File) {
+	fname, subject := ParseSubject(f.Subject)
 
 	if p.fileCount > 0 && f.number == 0 {
 		if matches := p.fileIndexRegex.FindStringSubmatch(subject); len(matches) == 2 {
@@ -100,7 +106,9 @@ func (p *subjectParser) Parse(f *File) {
 		}
 	}
 
-	if f.name == "" {
-		f.name = subject
+	if fname == "" {
+		fname = subject
 	}
+
+	f.name = fname
 }

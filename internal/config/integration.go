@@ -79,6 +79,15 @@ func (c integrationConfigGitHub) HasDefaultCredentials() bool {
 	return c.User != "" && c.Token != ""
 }
 
+type integrationConfigEasynews struct {
+	User     string
+	Password string
+}
+
+func (c integrationConfigEasynews) IsEnabled() bool {
+	return c.User != "" && c.Password != ""
+}
+
 type integrationConfigTMDB struct {
 	AccessToken   string
 	ListStaleTime time.Duration
@@ -102,6 +111,7 @@ type IntegrationConfig struct {
 	AniList    integrationConfigAniList
 	Bitmagnet  integrationConfigBitmagnet
 	GitHub     integrationConfigGitHub
+	Easynews   integrationConfigEasynews
 	Letterboxd integrationConfigLettterboxd
 	MDBList    integrationConfigMDBList
 	Trakt      integrationConfigTrakt
@@ -139,6 +149,10 @@ func parseIntegration() IntegrationConfig {
 		GitHub: integrationConfigGitHub{
 			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),
+		},
+		Easynews: integrationConfigEasynews{
+			User:     getEnv("STREMTHRU_INTEGRATION_EASYNEWS_USER"),
+			Password: getEnv("STREMTHRU_INTEGRATION_EASYNEWS_PASSWORD"),
 		},
 		Letterboxd: letterboxd,
 		MDBList: integrationConfigMDBList{

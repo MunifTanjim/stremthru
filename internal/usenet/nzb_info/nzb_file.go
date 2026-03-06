@@ -7,11 +7,13 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"encoding/base64"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -130,11 +132,13 @@ func fetchNZBFile(link string, name string, log *logger.Logger, onFetch func(*NZ
 				}
 			}()
 
-			req, err := http.NewRequest("GET", link, nil)
+			req, err := newEasyNewsAwareRequest(link)
 			if err != nil {
 				return nil, err
 			}
-			req.Header = config.Newz.IndexerRequestHeader.Grab.Clone()
+			if req.Header == nil {
+				req.Header = config.Newz.IndexerRequestHeader.Grab.Clone()
+			}
 			res, err := nzbFileFetcher.Do(req)
 			if err != nil {
 				return nil, err
@@ -224,4 +228,64 @@ func CacheNZBFile(hash string, file NZBFile) error {
 func DeleteNZBFile(link string) {
 	cacheKey := HashNZBFileLink(link)
 	nzbFileCache.Remove(cacheKey)
+}
+
+func buildEasyNewsNZBPostBody(hash, filename, ext, sig string) string {
+	b64Filename := base64.StdEncoding.EncodeToString([]byte(filename))
+	b64Ext := base64.StdEncoding.EncodeToString([]byte(ext))
+	value := hash + "|" + b64Filename + ":" + b64Ext
+
+	fieldName := "0"
+	if sig != "" {
+		fieldName = sig
+	}
+
+	form := url.Values{}
+	form.Set("autoNZB", "1")
+	form.Set(fieldName, value)
+	return form.Encode()
+}
+
+func isEasyNewsNZBLink(u *url.URL) bool {
+	return u.Host == "members.easynews.com" && u.Path == "/2.0/api/dl-nzb"
+}
+
+func newEasyNewsAwareRequest(link string) (*http.Request, error) {
+	u, err := url.Parse(link)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isEasyNewsNZBLink(u) {
+		return http.NewRequest("GET", link, nil)
+	}
+
+	q := u.Query()
+	hash := q.Get("hash")
+	filename := q.Get("filename")
+	ext := q.Get("ext")
+	sig := q.Get("sig")
+
+	postBody := buildEasyNewsNZBPostBody(hash, filename, ext, sig)
+
+	postURL := url.URL{
+		Scheme: u.Scheme,
+		Host:   u.Host,
+		Path:   u.Path,
+	}
+
+	req, err := http.NewRequest("POST", postURL.String(), strings.NewReader(postBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header = http.Header{}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if u.User != nil {
+		username := u.User.Username()
+		password, _ := u.User.Password()
+		req.SetBasicAuth(username, password)
+	}
+
+	return req, nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/newznab"
+	newznab_easynews "github.com/MunifTanjim/stremthru/internal/newznab/easynews"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb_info"
@@ -163,6 +164,107 @@ func handleNewznabGetNZB(w http.ResponseWriter, r *http.Request) {
 	w.Write(file.Blob)
 }
 
+func handleNewznabEasynews(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	t := query.Get("t")
+
+	if t == "" {
+		http.Redirect(w, r, r.URL.Path+"?t=caps", http.StatusTemporaryRedirect)
+		return
+	}
+
+	o := strings.ToLower(query.Get("o"))
+	if o != "" && o != "json" && o != "xml" {
+		sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter("invalid output format"), "xml")
+		return
+	}
+
+	idxr := newznab_easynews.NewIndexer(query.Get("apikey"))
+	switch t {
+	case "caps":
+		w.Header().Set("Cache-Control", "public, max-age=7200")
+		sendZnabResponse(w, r, 200, idxr.Capabilities(), o)
+		return
+	default:
+		if !isNewznabRequestAuthed(r) {
+			sendZnabResponse(w, r, 200, znab.ErrorIncorrectUserCreds, o)
+			return
+		}
+	}
+
+	switch t {
+	case "search", "tvsearch", "movie":
+		newzItems, err := idxr.Search(query, nil)
+		if err != nil {
+			sendZnabResponse(w, r, 200, znab.ErrorUnknownError(err.Error()), o)
+			return
+		}
+		items := newznab.FeedItems{}
+		for i := range newzItems {
+			newzItem := newzItems[i]
+			item := newznab.FeedItem{
+				GUID:        newzItem.GUID,
+				Link:        newzItem.DownloadLink,
+				PublishDate: newzItem.PublishDate,
+				Title:       newzItem.Title,
+				Poster:      newzItem.Poster,
+				Group:       newzItem.Group,
+				Grabs:       newzItem.Grabs,
+				Comments:    newzItem.Comments,
+				Password:    newzItem.Password,
+				UsenetDate:  newzItem.Date,
+				Episode:     newzItem.Episode,
+				IMDB:        newzItem.IMDB,
+				Season:      newzItem.Season,
+				Size:        newzItem.Size,
+				Indexer:     newznab.ChannelItemIndexer(newzItem.Indexer),
+			}
+			items = append(items, item)
+		}
+		w.Header().Set("Cache-Control", "public, max-age=300")
+		sendZnabResponse(w, r, 200, newznab.Feed{
+			Info:  newznab.StremThruIndexer.Info(),
+			Items: items,
+		}, o)
+
+	case "get":
+		handleNewznabGet(w, r, o)
+
+	default:
+		w.Header().Set("Cache-Control", "public, max-age=7200")
+		sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter(t), o)
+	}
+}
+
+func handleNewznabEasynewsGetNZB(w http.ResponseWriter, r *http.Request) {
+	if !isNewznabRequestAuthed(r) {
+		server.ErrorForbidden(r).Send(w, r)
+		return
+	}
+
+	nzbId := r.PathValue("nzbId")
+	if nzbId == "" {
+		server.ErrorNotFound(r).Send(w, r)
+		return
+	}
+
+	file, err := newznab_easynews.DownloadNZB(nzbId)
+	if err != nil {
+		server.SendError(w, r, err)
+		return
+	}
+	if file == nil {
+		server.ErrorNotFound(r).Send(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/x-nzb")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.Name))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(file.Blob)))
+	w.WriteHeader(http.StatusOK)
+	w.Write(file.Blob)
+}
+
 func AddNewznabEndpoints(mux *http.ServeMux) {
 	if config.IsPublicInstance || !config.Feature.HasVault() {
 		return
@@ -170,4 +272,8 @@ func AddNewznabEndpoints(mux *http.ServeMux) {
 
 	mux.HandleFunc("/v0/newznab/api", handleNewznab)
 	mux.HandleFunc("/v0/newznab/getnzb/{nzbId}", handleNewznabGetNZB)
+	if config.Integration.Easynews.IsEnabled() {
+		mux.HandleFunc("/v0/newznab/easynews/api", handleNewznabEasynews)
+		mux.HandleFunc("/v0/newznab/easynews/getnzb/{nzbId}", handleNewznabEasynewsGetNZB)
+	}
 }

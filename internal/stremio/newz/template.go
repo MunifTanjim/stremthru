@@ -92,6 +92,12 @@ func (td *TemplateData) HasFieldError() bool {
 var indexerTypeOptions = func() []configure.ConfigOption {
 	options := []configure.ConfigOption{}
 	if !IsPublicInstance {
+		if config.Integration.Easynews.IsEnabled() {
+			options = append(options, configure.ConfigOption{
+				Value: string(stremio_userdata.NewzIndexerTypeEasynews),
+				Label: "Easynews",
+			})
+		}
 		options = append(options,
 			configure.ConfigOption{
 				Value: string(stremio_userdata.NewzIndexerTypeGeneric),
