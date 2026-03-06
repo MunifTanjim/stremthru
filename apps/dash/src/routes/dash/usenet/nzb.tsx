@@ -413,7 +413,9 @@ function ContentFileNode({
                       ? "Article Not Found"
                       : error === "open_failed"
                         ? "Open Failed"
-                        : error}
+                        : error === "missing_password"
+                          ? "Missing Password"
+                          : error}
                   </Badge>
                 ))}
               </div>

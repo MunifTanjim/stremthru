@@ -27,6 +27,7 @@ const (
 
 const (
 	NZBContentFileErrorArticleNotFound = "article_not_found"
+	NZBContentFileErrorMissingPassword = "missing_password"
 	NZBContentFileErrorOpenFailed      = "open_failed"
 )
 
@@ -353,7 +354,11 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 
 		if streamable, err := archive.IsStreamable(); err != nil {
 			inspectLog.Warn("failed to check archive streamability", "error", err, "name", name)
-			entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			if errors.Is(err, rardecode.ErrArchiveEncrypted) {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorMissingPassword)
+			} else {
+				entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
+			}
 			content.Files = append(content.Files, entry)
 			ufs.Close()
 			continue
