@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -46,6 +47,35 @@ func (c *StoreClient) getCacheKey(params request.Context, key string) string {
 
 func (s *StoreClient) GetName() store.StoreName {
 	return s.Name
+}
+
+type LockedFileLink string
+
+const lockedFileLinkPrefix = "stremthru://store/offcloud/"
+
+func (l LockedFileLink) encodeData(id string, filePath string) string {
+	return util.Base64Encode(id + ":" + filePath)
+}
+
+func (l LockedFileLink) decodeData(encoded string) (id, filePath string, err error) {
+	decoded, err := util.Base64Decode(encoded)
+	if err != nil {
+		return "", "", err
+	}
+	id, filePath, found := strings.Cut(decoded, ":")
+	if !found {
+		return "", "", err
+	}
+	return id, filePath, nil
+}
+
+func (l LockedFileLink) Create(id, filePath string) string {
+	return lockedFileLinkPrefix + l.encodeData(id, filePath)
+}
+
+func (l LockedFileLink) Parse() (id, filePath string, err error) {
+	encoded := strings.TrimPrefix(string(l), lockedFileLinkPrefix)
+	return l.decodeData(encoded)
 }
 
 func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
@@ -103,12 +133,13 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 		for i := range res.Data.Files {
 			f := &res.Data.Files[i]
+			fPath := f.GetPath()
 			data.Files = append(data.Files, store.MagnetFile{
 				Idx:  -1,
 				Name: f.GetName(),
-				Path: f.GetPath(),
+				Path: fPath,
 				Size: f.Size,
-				Link: f.URL,
+				Link: LockedFileLink("").Create(data.Id, fPath),
 			})
 		}
 	}
@@ -167,7 +198,32 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 }
 
 func (s *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
-	data := &store.GenerateLinkData{Link: params.Link}
+	id, filePath, err := LockedFileLink(params.Link).Parse()
+	if err != nil {
+		return nil, err
+	}
+	res, err := s.client.ExploreCloudDownload(&ExploreCloudDownloadParams{
+		Ctx:       params.Ctx,
+		RequestId: id,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var link string
+	for i := range res.Data.Files {
+		f := &res.Data.Files[i]
+		fPath := f.GetPath()
+		if fPath == filePath {
+			link = f.URL
+			break
+		}
+	}
+	if link == "" {
+		uerr := UpstreamErrorWithCause(errors.New("file not found"))
+		uerr.StatusCode = 404
+		return nil, uerr
+	}
+	data := &store.GenerateLinkData{Link: link}
 	return data, nil
 }
 
@@ -214,12 +270,13 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	}
 	for i := range res.Data.Files {
 		f := &res.Data.Files[i]
+		fPath := f.GetPath()
 		data.Files = append(data.Files, store.MagnetFile{
 			Idx:  -1,
 			Name: f.GetName(),
-			Path: f.GetPath(),
+			Path: fPath,
 			Size: f.Size,
-			Link: f.URL,
+			Link: LockedFileLink("").Create(data.Id, fPath),
 		})
 	}
 	return data, nil
