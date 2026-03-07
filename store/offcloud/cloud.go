@@ -3,39 +3,67 @@ package offcloud
 import (
 	"encoding/json"
 	"net/url"
-	"strconv"
-	"strings"
+	"path/filepath"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
-	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
-type CheckCacheParams struct {
+type GetCacheInfoParams struct {
 	Ctx
-	Hashes []string `json:"hashes"`
+	URLs         []string `json:"urls"`
+	IncludeFiles bool     `json:"includeFiles,omitempty"`
 }
 
-type CheckCacheData struct {
+type GetCacheInfoDataItem struct {
+	Cached bool `json:"cached"`
+	Files  []struct {
+		Folder   []string `json:"folder"`
+		Filename string   `json:"filename"`
+	} `json:"files,omitempty"`
+}
+
+type GetCacheInfoData []GetCacheInfoDataItem
+
+type getCacheInfoData struct {
 	ResponseContainer
-	CachedItems []string `json:"cachedItems"`
+	data GetCacheInfoData
 }
 
-func (c APIClient) CheckCache(params *CheckCacheParams) (APIResponse[CheckCacheData], error) {
-	c.injectAPIKey(&params.Ctx)
+func (c *getCacheInfoData) UnmarshalJSON(data []byte) error {
+	var rerr ResponseContainer
+
+	if err := json.Unmarshal(data, &rerr); err == nil {
+		c.ResponseContainer = rerr
+		return nil
+	}
+
+	var items GetCacheInfoData
+	if err := json.Unmarshal(data, &items); err == nil {
+		c.data = items
+		return nil
+	}
+
+	return core.NewAPIError("failed to parse response")
+}
+
+func (c APIClient) GetCacheInfo(params *GetCacheInfoParams) (APIResponse[GetCacheInfoData], error) {
 	params.JSON = params
-	response := &CheckCacheData{}
-	res, err := c.Request("POST", "/api/cache", params, response)
-	return newAPIResponse(res, *response), err
+	response := &getCacheInfoData{}
+	res, err := c.Request("POST", "/api/cache/info", params, response)
+	return newAPIResponse(res, response.data), err
 }
 
 type CloudDownloadStatus string
 
 const (
 	CloudDownloadStatusCreated     CloudDownloadStatus = "created"
+	CloudDownloadStatusQueued      CloudDownloadStatus = "queued"
 	CloudDownloadStatusDownloading CloudDownloadStatus = "downloading"
 	CloudDownloadStatusDownloaded  CloudDownloadStatus = "downloaded"
 	CloudDownloadStatusError       CloudDownloadStatus = "error"
+	CloudDownloadStatusCanceled    CloudDownloadStatus = "canceled"
 )
 
 type AddCloudDownloadParams struct {
@@ -49,23 +77,19 @@ type AddCloudDownloadData struct {
 
 	RequestId    string              `json:"requestId"`
 	FileName     string              `json:"fileName"`
-	Site         string              `json:"site"`
 	Status       CloudDownloadStatus `json:"status"`
 	OriginalLink string              `json:"originalLink"` // e.g. `magnet?:xt=urn:btih:{HASH}`
-	URL          CloudDownloadLink   `json:"url"`          // e.g. `https://{SERVER}.offlcoud.com/cloud/download/{REQUEST_ID}`
-	CreatedOn    time.Time           `json:"createdOn"`
 }
 
-func (acdd *AddCloudDownloadData) GetServer() string {
-	info, err := acdd.URL.parse()
-	if err != nil {
-		return ""
-	}
-	return info.server
-}
+// func (acdd *AddCloudDownloadData) GetServer() string {
+// 	info, err := acdd.URL.parse()
+// 	if err != nil {
+// 		return ""
+// 	}
+// 	return info.server
+// }
 
 func (c APIClient) AddCloudDownload(params *AddCloudDownloadParams) (APIResponse[AddCloudDownloadData], error) {
-	c.injectAPIKey(&params.Ctx)
 	params.JSON = params
 	response := &AddCloudDownloadData{}
 	res, err := c.Request("POST", "/api/cloud", params, response)
@@ -83,179 +107,80 @@ type GetCloudDownloadStatusParams struct {
 	RequestId string `json:"requestId"`
 }
 
-type GetCloudDownloadStatusDataStatus struct {
-	Status           CloudDownloadStatus `json:"status"`
-	Amount           int                 `json:"amount"` // downloaded bytes
-	RequestId        string              `json:"requestId"`
-	IsCompleted      bool                `json:"isCompleted"` // present when downloading
-	FileName         string              `json:"fileName"`    // can be renamed
-	FileSize         int64               `json:"fileSize"`
-	Server           string              `json:"server"`
-	IsDirectory      bool                `json:"isDirectory"`                // present when downloaded
-	DownloadingSpeed json.Number         `json:"downloadingSpeed,omitempty"` // present when downloading, bytes/sec
-	DownloadingTime  int                 `json:"downloadingTime,omitempty"`  // present when downloading, probably milliseconds
-}
-
-type GetCloudDownloadStatusData struct {
-	ResponseContainer
-	Status GetCloudDownloadStatusDataStatus `json:"status"`
-}
-
-func (c APIClient) GetCloudDownloadStatus(params *GetCloudDownloadStatusParams) (APIResponse[GetCloudDownloadStatusData], error) {
-	c.injectAPIKey(&params.Ctx)
-	params.JSON = params
-	response := &GetCloudDownloadStatusData{}
-	res, err := c.Request("POST", "/api/cloud/status", params, response)
-	return newAPIResponse(res, *response), err
-}
-
 type ExploreCloudDownloadParams struct {
 	Ctx
-	RequestId string `json:"requestId"`
+	RequestId string
 }
 
-type CloudDownloadLink string // e.g. `https://{SERVER}.offlcoud.com/cloud/download/{REQUEST_ID}/{FILE_IDX}/{FILE_NAME}`
-
-type parsedCloudDownloadLinkInfo struct {
-	server    string
-	path      string
-	requestId string
-	fileIdx   int
-	fileName  string
+type ExploreCloudDownloadDataFile struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Size int64  `json:"size"`
+	Path string `json:"path"`
+	URL  string `json:"url"`
 }
 
-func (link CloudDownloadLink) parse() (*parsedCloudDownloadLinkInfo, error) {
-	u, err := url.Parse(string(link))
-	if err != nil {
-		return nil, err
-	}
-	info := &parsedCloudDownloadLinkInfo{}
-	server, _, _ := strings.Cut(u.Host, ".")
-	info.server = server
-	info.path = u.Path
-	pathParts := strings.Split(info.path, "/")
-	info.requestId = pathParts[3]
-	if len(pathParts) > 4 {
-		fileIdx, err := strconv.Atoi(pathParts[4])
-		if err != nil {
-			return nil, err
-		}
-		info.fileIdx = fileIdx
-		info.fileName = pathParts[5]
-	}
-	return info, nil
+func (f *ExploreCloudDownloadDataFile) GetName() string {
+	return filepath.Base(f.Path)
 }
 
-type ExploreCloudDownloadData []CloudDownloadLink // e.g. `https://{SERVER}.offlcoud.com/cloud/download/{REQUEST_ID}/{FILE_IDX}/{FILE_NAME}`
+func (f *ExploreCloudDownloadDataFile) GetPath() string {
+	path, _ := util.RemoveRootFolderFromPath(f.Path)
+	return path
+}
 
-type exploreCloudDownloadData struct {
+type ExploreCloudDownloadData struct {
 	ResponseContainer
-	data ExploreCloudDownloadData
+	Files []ExploreCloudDownloadDataFile `json:"files"`
 }
 
-func (c *exploreCloudDownloadData) UnmarshalJSON(data []byte) error {
+func (c APIClient) ExploreCloudDownload(params *ExploreCloudDownloadParams) (APIResponse[ExploreCloudDownloadData], error) {
+	params.Query = &url.Values{
+		"format": {"detailed"},
+	}
+	response := ExploreCloudDownloadData{}
+	res, err := c.Request("GET", "/api/cloud/explore/"+params.RequestId, params, &response)
+	return newAPIResponse(res, response), err
+}
+
+type GetCloudHistoryParams struct {
+	Ctx
+}
+
+type GetCloudHistoryDataItem struct {
+	RequestId    string              `json:"requestId"`
+	FileName     string              `json:"fileName"`
+	Status       CloudDownloadStatus `json:"status"`
+	OriginalLink string              `json:"originalLink"`
+	CreatedOn    time.Time           `json:"createdOn"`
+}
+
+type GetCloudHistoryData []GetCloudHistoryDataItem
+
+type getCloudHistoryData struct {
+	ResponseContainer
+	data GetCloudHistoryData
+}
+
+func (d *getCloudHistoryData) UnmarshalJSON(data []byte) error {
 	var rerr ResponseContainer
 
 	if err := json.Unmarshal(data, &rerr); err == nil {
-		c.ResponseContainer = rerr
+		d.ResponseContainer = rerr
 		return nil
 	}
 
-	var items ExploreCloudDownloadData
+	var items GetCloudHistoryData
 	if err := json.Unmarshal(data, &items); err == nil {
-		c.data = items
+		d.data = items
 		return nil
 	}
 
 	return core.NewAPIError("failed to parse response")
 }
 
-func (c APIClient) ExploreCloudDownload(params *ExploreCloudDownloadParams) (APIResponse[ExploreCloudDownloadData], error) {
-	c.injectAPIKey(&params.Ctx)
-	params.JSON = params
-	response := &exploreCloudDownloadData{}
-	res, err := c.Request("POST", "/api/cloud/explore", params, response)
+func (c APIClient) GetCloudHistory(params *GetCloudHistoryParams) (APIResponse[GetCloudHistoryData], error) {
+	response := getCloudHistoryData{}
+	res, err := c.Request("GET", "/api/cloud/history", params, &response)
 	return newAPIResponse(res, response.data), err
-}
-
-type ListCloudDownloadsParams struct {
-	Ctx
-	Page int `json:"page"`
-}
-
-type ListCloudDownloadsDataItem struct {
-	CreatedOn    time.Time           `json:"createdOn"`
-	FileName     string              `json:"fileName"`
-	FileSize     int64               `json:"fileSize"`
-	IsDirectory  bool                `json:"isDirectory"`
-	OriginalLink string              `json:"originalLink"`
-	RequestId    string              `json:"requestId"`
-	Server       string              `json:"server"`
-	Site         string              `json:"site"` // 'BitTorrent'
-	Status       CloudDownloadStatus `json:"status"`
-	UserId       string              `json:"userId"`
-}
-
-type ListCloudDownloadsData struct {
-	ResponseContainer
-	History []ListCloudDownloadsDataItem
-	IsEnd   bool
-}
-
-func (c APIClient) ListCloudDownloads(params *ListCloudDownloadsParams) (APIResponse[ListCloudDownloadsData], error) {
-	c.injectSessionCookie(&params.Ctx)
-	params.JSON = params
-	response := &ListCloudDownloadsData{}
-	res, err := c.Request("POST", "/cloud/history", params, response)
-	return newAPIResponse(res, *response), err
-}
-
-type ListCloudDownloadEntriesParams struct {
-	Ctx
-	RequestId string
-	Server    string
-}
-
-type ListCloudDownloadEntriesData struct {
-	ResponseContainer
-	Entries     []string `json:"entries"` // e.g. `{MAGNET_NAME}/{FILE_PATH}`, `/{MAGNET_NAME}.aria2`
-	File        string   `json:"file"`    // e.g. `{NORMALIZED_MAGNET_NAME}`
-	IsDirectory bool     `json:"isDirectory"`
-	Server      string   `json:"server"`
-}
-
-func (c APIClient) ListCloudDownloadEntries(params *ListCloudDownloadEntriesParams) (APIResponse[ListCloudDownloadEntriesData], error) {
-	c.injectSessionCookie(&params.Ctx)
-	params.JSON = params
-	response := &ListCloudDownloadEntriesData{}
-
-	path := c.BaseURL.JoinPath("/cloud/list")
-	path.Host = params.Server + "." + path.Host
-	req, err := params.NewRequest(path, "GET", params.RequestId, c.reqHeader, c.reqQuery)
-	if err != nil {
-		error := core.NewStoreError("failed to create request")
-		error.StoreName = string(store.StoreNameOffcloud)
-		error.Cause = err
-		return newAPIResponse(nil, *response), error
-	}
-
-	res, err := c.doRequest(req, response)
-	return newAPIResponse(res, *response), err
-}
-
-type RemoveCloudDownloadParams struct {
-	Ctx
-	RequestId string
-}
-
-type RemoveCloudDownloadData struct {
-	ResponseContainer
-	Success bool `json:"success"`
-}
-
-func (c APIClient) RemoveCloudDownload(params *RemoveCloudDownloadParams) (APIResponse[RemoveCloudDownloadData], error) {
-	c.injectSessionCookie(&params.Ctx)
-	response := &RemoveCloudDownloadData{}
-	res, err := c.Request("GET", "/cloud/remove/"+params.RequestId, params, response)
-	return newAPIResponse(res, *response), err
 }

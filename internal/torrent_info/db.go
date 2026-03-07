@@ -804,7 +804,7 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			}
 
 			tSource := string(t.Source)
-			shouldIgnoreFiles := t.Source == TorrentInfoSourcePremiumize && !t.Files.HasVideo()
+			shouldIgnoreFiles := t.Source == TorrentInfoSourceOffcloud || (t.Source == TorrentInfoSourcePremiumize && !t.Files.HasVideo())
 			if !shouldIgnoreFiles {
 				for _, f := range t.Files {
 					if !strings.HasPrefix(f.Path, "/") {
