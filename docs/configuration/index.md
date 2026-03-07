@@ -125,7 +125,7 @@ If `username` is `*`, it is used as a fallback for users without explicit store 
 | Debrider    | `debrider`   | `<api-key>`          |
 | Debrid-Link | `debridlink` | `<api-key>`          |
 | EasyDebrid  | `easydebrid` | `<api-key>`          |
-| Offcloud    | `offcloud`   | `<email>:<password>` |
+| Offcloud    | `offcloud`   | `<api-key>`          |
 | PikPak      | `pikpak`     | `<email>:<password>` |
 | Premiumize  | `premiumize` | `<api-key>`          |
 | RealDebrid  | `realdebrid` | `<api-token>`        |
