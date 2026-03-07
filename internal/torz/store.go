@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/peer_token"
@@ -121,8 +122,16 @@ func handleStoreTorzAdd(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if strings.HasPrefix(payload.Link, "magnet:") {
-			data, err = addTorz(r, ctx, payload.Link, nil)
+		if strings.HasPrefix(payload.Link, "magnet:") || !strings.Contains(payload.Link, ":") {
+			m, err := core.ParseMagnetLink(payload.Link)
+			if err != nil || m.Hash == "" {
+				server.ErrorBadRequest(r).Append(server.Error{
+					LocationType: server.LocationTypeBody,
+					Location:     "link",
+					Message:      "invalid link",
+				}).Send(w, r)
+			}
+			data, err = addTorz(r, ctx, m.RawLink, nil)
 		} else {
 			magnet, fileHeader, fetchErr := shared.FetchTorrentFile(payload.Link, "", log)
 			if fetchErr != nil {
