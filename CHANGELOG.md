@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.98.4](https://github.com/MunifTanjim/stremthru/compare/0.98.3...0.98.4) (2026-03-07)
+
+
+### Bug Fixes
+
+* **store/offcloud:** adapt to new offcloud api ([51aa5c4](https://github.com/MunifTanjim/stremthru/commit/51aa5c4ea131dcbf2ad2fba5fb56e806fd3a4b38))
+* **store/offcloud:** handle link generation properly ([f3859e7](https://github.com/MunifTanjim/stremthru/commit/f3859e7b15497cb12619b61efa7d212d9487d11f))
+* **torz:** accept hash in add torz endpoint ([c279115](https://github.com/MunifTanjim/stremthru/commit/c2791155923c413136bfcdb2e6527f6920f95355))
+
 ## [0.98.3](https://github.com/MunifTanjim/stremthru/compare/0.98.2...0.98.3) (2026-03-07)
 
 
