@@ -451,12 +451,12 @@ var query_record_cond_old_source_is_not_dht_or_tor = fmt.Sprintf(
 )
 
 var query_record_cond_should_update_idx = fmt.Sprintf(
-	`(%s AND (ts.%s = -1 OR ts.%s != EXCLUDED.%s))`,
+	`(%s AND EXCLUDED.%s != -1 AND ts.%s != EXCLUDED.%s)`,
 	query_record_cond_old_source_is_not_dht_or_tor,
 	Column.Idx, Column.Idx, Column.Idx,
 )
 var query_record_cond_should_update_size = fmt.Sprintf(
-	`(%s AND (ts.%s = -1 OR ts.%s != EXCLUDED.%s))`,
+	`(%s AND EXCLUDED.%s != -1 AND ts.%s != EXCLUDED.%s)`,
 	query_record_cond_old_source_is_not_dht_or_tor,
 	Column.Size, Column.Size, Column.Size,
 )
