@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.98.3](https://github.com/MunifTanjim/stremthru/compare/0.98.2...0.98.3) (2026-03-07)
+
+
+### Bug Fixes
+
+* **torrent_stream:** fix query for updating idx and size ([a50bfe1](https://github.com/MunifTanjim/stremthru/commit/a50bfe11e7bf6b1747b71af6d5584fb3818e3842))
+* **usenet:** detect missing password for rar archive ([768bf42](https://github.com/MunifTanjim/stremthru/commit/768bf42e8c3822fc77e044c03050335010949136))
+
 ## [0.98.2](https://github.com/MunifTanjim/stremthru/compare/0.98.1...0.98.2) (2026-03-05)
 
 
