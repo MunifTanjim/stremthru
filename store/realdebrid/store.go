@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/request"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -364,19 +366,152 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		}
 	}
 
-	hashes := []string{}
-	for _, m := range params.Magnets {
+	magnetByHash := make(map[string]core.MagnetLink, len(params.Magnets))
+	hashes := make([]string, len(params.Magnets))
+
+	for i, m := range params.Magnets {
 		magnet, err := core.ParseMagnetLink(m)
 		if err != nil {
 			return nil, err
 		}
-		hashes = append(hashes, magnet.Hash)
+		magnetByHash[magnet.Hash] = magnet
+		hashes[i] = magnet.Hash
 	}
 
-	data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP, params.SId)
-	if err != nil {
+	foundItemByHash := map[string]store.CheckMagnetDataItem{}
+
+	if data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP, params.SId); err != nil {
 		return nil, err
+	} else {
+		for _, item := range data.Items {
+			foundItemByHash[item.Hash] = item
+		}
 	}
+
+	if params.LocalOnly {
+		data := &store.CheckMagnetData{
+			Items: []store.CheckMagnetDataItem{},
+		}
+		for _, hash := range hashes {
+			if item, ok := foundItemByHash[hash]; ok {
+				data.Items = append(data.Items, item)
+			}
+		}
+		return data, nil
+	}
+
+	missingHashes := []string{}
+	for _, hash := range hashes {
+		if _, ok := foundItemByHash[hash]; !ok {
+			missingHashes = append(missingHashes, hash)
+		}
+	}
+
+	// For missing hashes, check RD directly via add/check/delete.
+	// The instantAvailability endpoint is deprecated, so we add the magnet,
+	// check if it reaches waiting_files_selection (meaning cached), then delete.
+	type rdCacheResult struct {
+		hash  string
+		name  string
+		size  int64
+		files []GetTorrentInfoDataFile
+	}
+	rdResults := []rdCacheResult{}
+
+	if len(missingHashes) > 0 {
+		for _, hash := range missingHashes {
+			m := magnetByHash[hash]
+			addRes, err := c.client.AddMagnet(&AddMagnetParams{
+				Ctx:    params.Ctx,
+				Magnet: m.Link,
+				IP:     params.ClientIP,
+			})
+			if err != nil {
+				continue
+			}
+			torrentId := addRes.Data.Id
+
+			tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
+				Ctx: params.Ctx,
+				Id:  torrentId,
+			})
+			if err != nil {
+				c.client.DeleteTorrent(&DeleteTorrentParams{Ctx: params.Ctx, Id: torrentId})
+				continue
+			}
+
+			if tInfo.Data.Status == TorrentStatusWaitingFilesSelection {
+				rdResults = append(rdResults, rdCacheResult{
+					hash:  strings.ToLower(tInfo.Data.Hash),
+					name:  tInfo.Data.Filename,
+					size:  tInfo.Data.OriginalBytes,
+					files: tInfo.Data.Files,
+				})
+			}
+
+			c.client.DeleteTorrent(&DeleteTorrentParams{Ctx: params.Ctx, Id: torrentId})
+		}
+	}
+
+	rdResultByHash := map[string]rdCacheResult{}
+	for _, r := range rdResults {
+		rdResultByHash[r.hash] = r
+	}
+
+	data := &store.CheckMagnetData{
+		Items: []store.CheckMagnetDataItem{},
+	}
+	tInfos := []buddy.TorrentInfoInput{}
+	source := string(c.GetName().Code())
+
+	for _, hash := range hashes {
+		if item, ok := foundItemByHash[hash]; ok {
+			data.Items = append(data.Items, item)
+			continue
+		}
+
+		m := magnetByHash[hash]
+		item := store.CheckMagnetDataItem{
+			Hash:   m.Hash,
+			Magnet: m.Link,
+			Status: store.MagnetStatusUnknown,
+			Files:  []store.MagnetFile{},
+		}
+		tInfo := buddy.TorrentInfoInput{
+			Hash: hash,
+		}
+
+		if r, ok := rdResultByHash[hash]; ok {
+			tInfo.TorrentTitle = r.name
+			tInfo.Size = r.size
+			item.Status = store.MagnetStatusCached
+			for _, f := range r.files {
+				if !core.HasVideoExtension(f.Path) {
+					continue
+				}
+				file := torrent_stream.File{
+					Idx:    f.Id - 1,
+					Path:   f.Path,
+					Name:   filepath.Base(f.Path),
+					Size:   f.Bytes,
+					Source: source,
+				}
+				tInfo.Files = append(tInfo.Files, file)
+				item.Files = append(item.Files, store.MagnetFile{
+					Idx:    file.Idx,
+					Path:   file.Path,
+					Name:   file.Name,
+					Size:   file.Size,
+					Source: file.Source,
+				})
+			}
+		}
+
+		tInfos = append(tInfos, tInfo)
+		data.Items = append(data.Items, item)
+	}
+
+	go buddy.BulkTrackMagnet(c, tInfos, nil, "", params.GetAPIKey(c.client.apiKey))
 	return data, nil
 }
 
