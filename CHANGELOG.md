@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.98.5](https://github.com/MunifTanjim/stremthru/compare/0.98.4...0.98.5) (2026-03-08)
+
+
+### Bug Fixes
+
+* **usenet:** remove unnecessary group selection to fetch article ([ade4c9a](https://github.com/MunifTanjim/stremthru/commit/ade4c9acc49d445c5672e29eaf23366459a5e967))
+
+
+### Performance Improvements
+
+* **store/stremthru:** optimize check newz db query ([69f88e7](https://github.com/MunifTanjim/stremthru/commit/69f88e7c502b1c508bbcbd6559cbb59fcdbe2187))
+
 ## [0.98.4](https://github.com/MunifTanjim/stremthru/compare/0.98.3...0.98.4) (2026-03-07)
 
 
