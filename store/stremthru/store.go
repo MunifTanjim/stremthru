@@ -117,17 +117,17 @@ func (c *StoreClient) CheckNewz(params *store.CheckNewzParams) (*store.CheckNewz
 	if err != nil {
 		return nil, err
 	}
+	infoByHash, err := nzb_info.GetByHashes(params.Hashes)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]store.CheckNewzDataItem, len(params.Hashes))
 	for i, hash := range params.Hashes {
-		info, err := nzb_info.GetByHash(hash)
-		if err != nil {
-			return nil, err
-		}
 		item := store.CheckNewzDataItem{
 			Hash:   hash,
 			Status: store.NewzStatusUnknown,
 		}
-		if info != nil && info.Streamable {
+		if info, ok := infoByHash[hash]; ok && info.Streamable {
 			item.Status = store.NewzStatusCached
 			item.Files = flattenContentFiles(info.ContentFiles.Data, "")
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/db"
 	usenet_pool "github.com/MunifTanjim/stremthru/internal/usenet/pool"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/rs/xid"
 )
 
@@ -164,6 +165,47 @@ func GetByHash(hash string) (*NZBInfo, error) {
 		return nil, err
 	}
 	return &info, nil
+}
+
+var query_get_by_hashes = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s IN `,
+	db.JoinColumnNames(columns...),
+	TableName,
+	Column.Hash,
+)
+
+func GetByHashes(hashes []string) (map[string]*NZBInfo, error) {
+	byHash := map[string]*NZBInfo{}
+
+	count := len(hashes)
+	if count == 0 {
+		return byHash, nil
+	}
+
+	query := fmt.Sprintf("%s (%s)", query_get_by_hashes, util.RepeatJoin("?", count, ","))
+	args := make([]any, count)
+	for i, hash := range hashes {
+		args[i] = hash
+	}
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		info := NZBInfo{}
+		if err := rows.Scan(&info.Id, &info.Hash, &info.Name, &info.Size, &info.FileCount, &info.Password, &info.URL, &info.ContentFiles, &info.Streamable, &info.User, &info.Date, &info.Status, &info.CAt, &info.UAt); err != nil {
+			return nil, err
+		}
+		byHash[info.Hash] = &info
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return byHash, nil
 }
 
 var query_get_all = fmt.Sprintf(
