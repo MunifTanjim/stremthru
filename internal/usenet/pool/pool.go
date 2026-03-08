@@ -309,14 +309,6 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 
 			p.Log.Trace("fetch segment - connection acquired", "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId(), "use_backup", useBackup)
 
-			if err := p.ensureConnectionGroup(conn, groups...); err != nil {
-				conn.Release()
-				errs = append(errs, err)
-				failedAttempts++
-				p.Log.Warn("fetch segment - failed to ensure group", "error", err, "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId())
-				continue
-			}
-
 			article, err := conn.Body("<" + messageId + ">")
 			if err != nil {
 				errs = append(errs, err)
