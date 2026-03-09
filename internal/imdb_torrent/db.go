@@ -70,7 +70,7 @@ func Insert(items []IMDBTorrent) error {
 }
 
 var query_get_last_mapped_imdb_id = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s != '' ORDER BY %s DESC LIMIT 1;",
+	"SELECT %s FROM %s WHERE %s > '' ORDER BY %s DESC LIMIT 1;",
 	Column.TId,
 	TableName,
 	Column.TId,
