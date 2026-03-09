@@ -253,6 +253,9 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 			Year:        tInfo.Year,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	if q.Offset > 0 {
 		items = items[min(q.Offset, len(items)):]
