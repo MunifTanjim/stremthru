@@ -44,6 +44,7 @@ var FnJSONGroupArray string
 var FnJSONObject string
 var FnMax string
 var NewAdvisoryLock func(names ...string) AdvisoryLock
+var InStringValues func(values []string) (query string, args []any)
 
 var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 	uri, err := ParseConnectionURI(config.DatabaseURI)
@@ -63,6 +64,7 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 		FnJSONObject = "json_object"
 		FnMax = "max"
 		NewAdvisoryLock = sqliteNewAdvisoryLock
+		InStringValues = sqliteInStringValues
 
 		dsnModifiers = append(dsnModifiers, func(u *url.URL, q *url.Values) {
 			u.Scheme = "file"
@@ -75,6 +77,8 @@ var connUri, dsnModifiers = func() (ConnectionURI, []DSNModifier) {
 		FnJSONObject = "json_build_object"
 		FnMax = "greatest"
 		NewAdvisoryLock = postgresNewAdvisoryLock
+		InStringValues = postgresInStringValues
+
 	default:
 		log.Fatalf("[db] unsupported dialect: %v\n", Dialect)
 	}

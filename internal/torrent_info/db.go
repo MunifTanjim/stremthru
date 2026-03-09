@@ -565,8 +565,8 @@ func GetByHash(hash string) (*TorrentInfo, error) {
 	return &tInfo, nil
 }
 
-var get_by_hashes_query = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s IN ",
+var query_get_by_hashes = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s",
 	`"`+strings.Join(Columns, `","`)+`"`,
 	TableName,
 	Column.Hash,
@@ -579,11 +579,8 @@ func GetByHashes(hashes []string) (map[string]TorrentInfo, error) {
 		return byHash, nil
 	}
 
-	query := fmt.Sprintf("%s (%s)", get_by_hashes_query, util.RepeatJoin("?", len(hashes), ","))
-	args := make([]any, len(hashes))
-	for i, hash := range hashes {
-		args[i] = hash
-	}
+	query_in_hashes, args := db.InStringValues(hashes)
+	query := fmt.Sprintf("%s %s", query_get_by_hashes, query_in_hashes)
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err

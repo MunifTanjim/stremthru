@@ -374,14 +374,9 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 
 	readCacheMissCount.Add(int64(len(missedHashes)))
 
-	args := make([]any, len(missedHashes))
-	hashPlaceholders := make([]string, len(missedHashes))
-	for i, hash := range missedHashes {
-		args[i] = hash
-		hashPlaceholders[i] = "?"
-	}
+	query_in_hashes, args := db.InStringValues(missedHashes)
 
-	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h IN ("+strings.Join(hashPlaceholders, ",")+") GROUP BY h", args...)
+	rows, err := db.Query("SELECT h, "+db.FnJSONGroupArray+"("+db.FnJSONObject+"('i', i, 'p', p, 's', s, 'sid', sid, 'asid', asid, 'src', src, 'vhash', vhash, 'mi', jsonb(mi))) AS files FROM "+TableName+" WHERE h "+query_in_hashes+" GROUP BY h", args...)
 	if err != nil {
 		return nil, err
 	}
@@ -728,20 +723,17 @@ func GetStremIdByHashes(hashes []string) (*url.Values, error) {
 		return byHash, nil
 	}
 
+	query_in_hashes, arg_hashes := db.InStringValues(hashes)
 	query := fmt.Sprintf(
-		`SELECT %s, %s FROM %s WHERE %s IN (%s) AND %s like 'tt%%' GROUP BY %s, %s`,
+		`SELECT %s, %s FROM %s WHERE %s %s AND %s like 'tt%%' GROUP BY %s, %s`,
 		Column.Hash, Column.SId,
 		TableName,
-		Column.Hash, util.RepeatJoin("?", count, ","),
+		Column.Hash, query_in_hashes,
 		Column.SId,
 		Column.Hash,
 		Column.SId,
 	)
-	args := make([]any, count)
-	for i, hash := range hashes {
-		args[i] = hash
-	}
-	rows, err := db.Query(query, args...)
+	rows, err := db.Query(query, arg_hashes...)
 	if err != nil {
 		return byHash, err
 	}

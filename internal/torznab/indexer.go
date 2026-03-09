@@ -15,7 +15,6 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
-	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
@@ -104,11 +103,11 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	)
 	if len(imdbIds) == 1 {
 		query.WriteString("= ?")
+		args = append(args, imdbIds[0])
 	} else {
-		query.WriteString("IN (" + util.RepeatJoin("?", len(imdbIds), ",") + ")")
-	}
-	for _, imdbId := range imdbIds {
-		args = append(args, imdbId)
+		query_in_imdbids, arg_imdbids := db.InStringValues(imdbIds)
+		query.WriteString(query_in_imdbids)
+		args = append(args, arg_imdbids...)
 	}
 	if q.Season != "" {
 		query.WriteString(

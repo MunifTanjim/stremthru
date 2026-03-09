@@ -162,3 +162,23 @@ func PrepareFTS5Query(query string, lenient bool) string {
 	}
 	return `"` + strings.Join(strings.Split(query, " "), sep) + `"`
 }
+
+func sqliteInStringValues(values []string) (query string, args []any) {
+	if len(values) == 0 {
+		return "IN (NULL)", nil
+	}
+	args = make([]any, len(values))
+	for i := range values {
+		args[i] = values[i]
+	}
+	query = "IN (" + util.RepeatJoin("?", len(values), ",") + ")"
+	return query, args
+}
+
+func postgresInStringValues(values []string) (query string, args []any) {
+	if len(values) == 0 {
+		return "= ANY('{}'::text[])", nil
+	}
+	query = "= ANY(?::text[])"
+	return query, []any{values}
+}
