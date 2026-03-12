@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.98.6](https://github.com/MunifTanjim/stremthru/compare/0.98.5...0.98.6) (2026-03-12)
+
+
+### Bug Fixes
+
+* **torznab:** add missing check for search error ([a25bce5](https://github.com/MunifTanjim/stremthru/commit/a25bce5be13f8247176999efc58b67eeb286b818))
+* **usenet:** fix nzb subject parser for mangled quoted filename ([135496a](https://github.com/MunifTanjim/stremthru/commit/135496a02bbe59eb66fb2097b228d0312df69a7f))
+* **usenet:** properly detect compression for encrypted rar archive ([bced66b](https://github.com/MunifTanjim/stremthru/commit/bced66b455231b52897a0db87b4346d53685ee27))
+
+
+### Performance Improvements
+
+* **db:** make postgres queries stable for IN condition ([79e5c22](https://github.com/MunifTanjim/stremthru/commit/79e5c22f49e9edaff54d09ee82ccc9db6f8283b2))
+* **imdb_torrent:** optimize GetLastMappedIMDBId query for postgres ([9bc6977](https://github.com/MunifTanjim/stremthru/commit/9bc697748ba891dbba345bc08e680fbbfc35e539))
+* **torznab/indexer:** add some parallel processing for sync ([33075ec](https://github.com/MunifTanjim/stremthru/commit/33075ec0672a583b9129e04b7e4bca39b8d0ca51))
+
 ## [0.98.5](https://github.com/MunifTanjim/stremthru/compare/0.98.4...0.98.5) (2026-03-08)
 
 
