@@ -10,6 +10,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 var queueCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
@@ -292,18 +293,38 @@ func HasSyncPending() bool {
 	return err == nil
 }
 
-var query_get_sync_pending = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s ORDER BY %s ASC",
+var query_get_sync_pending_before_cond = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE ",
 	db.JoinColumnNames(columns...),
 	TableName,
-	query_get_pending_cond,
+)
+
+var query_get_sync_pending_after_cond = fmt.Sprintf(
+	" ORDER BY %s ASC LIMIT 1000",
 	Column.QueuedAt,
 )
 
-func GetSyncPending() ([]TorznabIndexerSyncInfo, error) {
+func get_sync_pending_query(excludeCount int) string {
+	var query strings.Builder
+	query.WriteString(query_get_sync_pending_before_cond)
+	query.WriteString(query_get_pending_cond)
+	if excludeCount > 0 {
+		query.WriteString(" AND " + Column.IndexerId + " NOT IN (" + util.RepeatJoin("?", excludeCount, ",") + ")")
+	}
+	query.WriteString(query_get_sync_pending_after_cond)
+	return query.String()
+}
+
+func GetSyncPending(excludeIndexerIds []int64) ([]TorznabIndexerSyncInfo, error) {
 	staleTimestamp := time.Now().Add(-staleTime)
 
-	rows, err := db.Query(query_get_sync_pending, db.Timestamp{Time: staleTimestamp})
+	args := make([]any, 0, 1+len(excludeIndexerIds))
+	args = append(args, db.Timestamp{Time: staleTimestamp})
+	for _, id := range excludeIndexerIds {
+		args = append(args, id)
+	}
+
+	rows, err := db.Query(get_sync_pending_query(len(excludeIndexerIds)), args...)
 	if err != nil {
 		return nil, err
 	}

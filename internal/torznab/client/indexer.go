@@ -68,6 +68,7 @@ func (t *Torz) EnsureMagnet() error {
 		return nil
 	}
 
+	// TODO: use shared.FetchTorrentFile
 	client := config.GetHTTPClient(config.TUNNEL_TYPE_AUTO)
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse

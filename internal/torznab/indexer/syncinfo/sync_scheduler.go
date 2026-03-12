@@ -1,8 +1,10 @@
 package torznab_indexer_syncinfo
 
 import (
+	"fmt"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -31,213 +33,246 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 
 		rateLimitTotalWaitThreshold := 15 * time.Minute
 
-		pendingItems, err := GetSyncPending()
-		if err != nil {
-			log.Error("failed to get pending sync", "error", err)
-			return err
-		}
+		excludedIndexerIds := util.NewSet[int64]()
 
-		if len(pendingItems) == 0 {
-			log.Debug("no pending sync items")
-			return nil
-		}
-
-		indexers, err := torznab_indexer.GetAllEnabled()
-		if err != nil {
-			log.Error("failed to get indexers", "error", err)
-			return err
-		}
-
-		log.Info("processing pending sync items", "count", len(pendingItems))
-
-		itemsByIndexerId := make(map[int64][]TorznabIndexerSyncInfo)
-		for _, item := range pendingItems {
-			itemsByIndexerId[item.IndexerId] = append(itemsByIndexerId[item.IndexerId], item)
-		}
-
-		indexerById := make(map[int64]*torznab_indexer.TorznabIndexer)
-		for i := range indexers {
-			indexer := &indexers[i]
-			indexerById[indexer.Id] = indexer
-		}
-
-		var wg sync.WaitGroup
-		for indexerId, items := range itemsByIndexerId {
-			indexer, ok := indexerById[indexerId]
-			if !ok {
-				log.Warn("indexer not found in vault", "id", indexerId)
-				continue
+		for {
+			pendingItems, err := GetSyncPending(excludedIndexerIds.ToSlice())
+			if err != nil {
+				log.Error("failed to get pending sync", "error", err)
+				return err
 			}
 
-			var client tznc.Indexer
-			switch indexer.Type {
-			case torznab_indexer.IndexerTypeJackett:
-				c, err := indexer.GetClient()
-				if err != nil {
-					log.Error("failed to create torznab client", "error", err, "id", indexer.Id)
-					return err
-				}
-				client = c
-			default:
-				log.Warn("unsupported indexer type", "type", indexer.Type)
-				continue
+			if len(pendingItems) == 0 {
+				log.Debug("no pending sync items")
+				return nil
 			}
 
-			wg.Go(func() {
-				log.Info("processing items for indexer", "indexer", indexer.Name, "count", len(items))
+			indexers, err := torznab_indexer.GetAllEnabled()
+			if err != nil {
+				log.Error("failed to get indexers", "error", err)
+				return err
+			}
 
-				rl, err := indexer.GetRateLimiter()
-				if err != nil {
-					log.Error("failed to get rate limiter", "error", err, "id", indexer.Id)
-					return
+			log.Info("processing pending sync items", "count", len(pendingItems))
+
+			itemsByIndexerId := make(map[int64][]TorznabIndexerSyncInfo)
+			for _, item := range pendingItems {
+				itemsByIndexerId[item.IndexerId] = append(itemsByIndexerId[item.IndexerId], item)
+			}
+
+			indexerById := make(map[int64]*torznab_indexer.TorznabIndexer)
+			for i := range indexers {
+				indexer := &indexers[i]
+				indexerById[indexer.Id] = indexer
+			}
+
+			var wg sync.WaitGroup
+			var rateLimitedMu sync.Mutex
+			for indexerId, items := range itemsByIndexerId {
+				indexer, ok := indexerById[indexerId]
+				if !ok {
+					log.Warn("indexer not found in vault", "id", indexerId)
+					rateLimitedMu.Lock()
+					excludedIndexerIds.Add(indexerId)
+					rateLimitedMu.Unlock()
+					continue
 				}
 
-				rateLimitedWait := 0 * time.Second
-
-				for i := range items {
-					item := &items[i]
-
-					queries := item.Queries
-					if len(queries) == 0 {
-						log.Debug("no queries stored for item", "sid", item.SId)
-						continue
-					}
-
-					nsid, err := torrent_stream.NormalizeStreamId(item.SId)
+				var client tznc.Indexer
+				switch indexer.Type {
+				case torznab_indexer.IndexerTypeJackett:
+					c, err := indexer.GetClient()
 					if err != nil {
-						log.Error("failed to normalize stream id", "error", err, "sid", item.SId)
+						log.Error("failed to create torznab client", "error", err, "id", indexer.Id)
 						continue
 					}
+					client = c
+				default:
+					log.Warn("unsupported indexer type", "type", indexer.Type)
+					continue
+				}
 
-					results := []tznc.Torz{}
+				wg.Go(func() {
+					log.Info("processing items for indexer", "indexer", indexer.Name, "count", len(items))
 
-					recordProgress := func(queries Queries, query *Query) {
-						if err := RecordProgress(indexer.Id, item.SId, queries); err != nil {
-							log.Error("failed to record progress", "error", err, "indexer", indexer.Name, "sid", item.SId, "query", query.Query)
-						}
+					rl, err := indexer.GetRateLimiter()
+					if err != nil {
+						log.Error("failed to get rate limiter", "error", err, "id", indexer.Id)
+						return
 					}
 
-					for i := range queries {
-						sQuery := &queries[i]
-						if sQuery.Done {
-							continue
+					var recordProcessMutex sync.Mutex
+					var rateLimitExceeded atomic.Bool
+					var rateLimitedWait atomic.Int64
+
+					itemPool := pond.NewPool(3)
+					for i := range items {
+						if rateLimitExceeded.Load() {
+							break
 						}
 
-						query, err := url.ParseQuery(sQuery.Query)
-						if err != nil {
-							log.Error("failed to parse query", "error", err, "indexer", indexer.Name, "query", sQuery.Query)
-							sQuery.Error = err.Error()
-							recordProgress(queries, sQuery)
-							continue
-						}
+						item := &items[i]
+						itemPool.Submit(func() {
+							queries := item.Queries
+							if len(queries) == 0 {
+								log.Debug("no queries stored for item", "sid", item.SId)
+								return
+							}
 
-						if rl != nil {
-							if result, err := rl.Try(); err != nil {
-								log.Error("rate limit check failed", "error", err, "indexer", indexer.Name)
-								sQuery.Error = err.Error()
-								recordProgress(queries, sQuery)
-								continue
-							} else if !result.Allowed {
-								if rateLimitedWait+result.RetryAfter > rateLimitTotalWaitThreshold {
-									log.Warn("rate limited, stopping indexer processing", "indexer", indexer.Name, "retry_after", result.RetryAfter.String())
-									return
+							recordProgress := func(queries Queries, query *Query) {
+								recordProcessMutex.Lock()
+								defer recordProcessMutex.Unlock()
+
+								if err := RecordProgress(indexer.Id, item.SId, queries); err != nil {
+									log.Error("failed to record progress", "error", err, "indexer", indexer.Name, "sid", item.SId, "query", query.Query)
 								}
-								rateLimitedWait += result.RetryAfter
-								if err := rl.Wait(); err != nil {
-									log.Error("rate limit wait failed", "error", err, "indexer", indexer.Name)
+							}
+
+							nsid, err := torrent_stream.NormalizeStreamId(item.SId)
+							if err != nil {
+								log.Error("failed to normalize stream id", "error", err, "sid", item.SId)
+								queries[0].Error = fmt.Errorf("failed to normalize stream id: %w", err).Error()
+								recordProgress(queries, &queries[0])
+								return
+							}
+
+							results := []tznc.Torz{}
+
+							for i := range queries {
+								if rateLimitExceeded.Load() {
+									break
+								}
+
+								sQuery := &queries[i]
+								if sQuery.Done {
+									continue
+								}
+
+								query, err := url.ParseQuery(sQuery.Query)
+								if err != nil {
+									log.Error("failed to parse query", "error", err, "indexer", indexer.Name, "query", sQuery.Query)
 									sQuery.Error = err.Error()
 									recordProgress(queries, sQuery)
+									continue
+								}
+
+								if rl != nil {
+									if result, err := rl.Try(); err != nil {
+										log.Error("rate limit check failed", "error", err, "indexer", indexer.Name)
+										sQuery.Error = err.Error()
+										recordProgress(queries, sQuery)
+										continue
+									} else if !result.Allowed {
+										if time.Duration(rateLimitedWait.Load())+result.RetryAfter > rateLimitTotalWaitThreshold {
+											rateLimitExceeded.Store(true)
+											log.Warn("rate limited, stopping indexer processing", "indexer", indexer.Name, "retry_after", result.RetryAfter.String())
+											return
+										}
+										rateLimitedWait.Add(int64(result.RetryAfter))
+										if err := rl.Wait(); err != nil {
+											rateLimitExceeded.Store(true)
+											log.Error("rate limit wait failed", "error", err, "indexer", indexer.Name)
+											sQuery.Error = err.Error()
+											recordProgress(queries, sQuery)
+											return
+										}
+									}
+								}
+
+								start := time.Now()
+								qResults, err := client.Search(query)
+								if err != nil {
+									log.Error("indexer search failed", "error", err, "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String())
+									sQuery.Error = err.Error()
+									recordProgress(queries, sQuery)
+									continue
+								}
+
+								sQuery.Count = len(qResults)
+								sQuery.Done = true
+								sQuery.Error = ""
+
+								log.Debug("indexer search completed", "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String(), "count", sQuery.Count)
+
+								recordProgress(queries, sQuery)
+
+								results = append(results, qResults...)
+							}
+
+							log.Debug("indexer search completed", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
+
+							// TODO: download torrent files in a separate queue
+							seenSourceURL := util.NewSet[string]()
+							torzFetchWg := pond.NewPool(5)
+							for i := range results {
+								item := &results[i]
+								if item.HasMissingData() && item.SourceLink != "" {
+									if seenSourceURL.Has(item.SourceLink) {
+										continue
+									}
+									seenSourceURL.Add(item.SourceLink)
+
+									torzFetchWg.Submit(func() {
+										err := item.EnsureMagnet()
+										if err != nil {
+											log.Warn("failed to ensure magnet link for torrent", "error", err)
+										}
+									})
+								}
+							}
+							if err := torzFetchWg.Stop().Wait(); err != nil {
+								log.Warn("errors occurred while fetching torrent magnets", "error", err)
+							}
+
+							tInfosToUpsert := []torrent_info.TorrentItem{}
+							for i := range results {
+								item := &results[i]
+								if item.HasMissingData() {
+									continue
+								}
+
+								tInfo := torrent_info.TorrentItem{
+									Hash:         item.Hash,
+									TorrentTitle: item.Title,
+									Size:         item.Size,
+									Indexer:      item.Indexer,
+									Source:       torrent_info.TorrentInfoSourceIndexer,
+									Seeders:      item.Seeders,
+									Leechers:     item.Leechers,
+									Private:      item.Private,
+									Files:        item.Files,
+								}
+								tInfosToUpsert = append(tInfosToUpsert, tInfo)
+							}
+
+							if len(tInfosToUpsert) > 0 {
+								category := torrent_info.TorrentInfoCategoryUnknown
+								if nsid.IsSeries() {
+									category = torrent_info.TorrentInfoCategorySeries
+								} else {
+									category = torrent_info.TorrentInfoCategoryMovie
+								}
+
+								if err := torrent_info.Upsert(tInfosToUpsert, category, false); err != nil {
+									log.Error("failed to upsert torrent info", "error", err, "count", len(tInfosToUpsert))
 									return
 								}
+
+								log.Debug("saved torrents", "indexer", indexer.Name, "sid", item.SId, "count", len(tInfosToUpsert))
 							}
-						}
-
-						start := time.Now()
-						qResults, err := client.Search(query)
-						if err != nil {
-							log.Error("indexer search failed", "error", err, "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String())
-							sQuery.Error = err.Error()
-							recordProgress(queries, sQuery)
-							continue
-						}
-
-						sQuery.Count = len(qResults)
-						sQuery.Done = true
-						sQuery.Error = ""
-
-						log.Debug("indexer search completed", "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String(), "count", sQuery.Count)
-
-						recordProgress(queries, sQuery)
-
-						results = append(results, qResults...)
+						})
 					}
-
-					log.Debug("indexer search completed", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
-
-					// TODO: download torrent files in a separate queue
-					seenSourceURL := util.NewSet[string]()
-					torzFetchWg := pond.NewPool(5)
-					for i := range results {
-						item := &results[i]
-						if item.HasMissingData() && item.SourceLink != "" {
-							if seenSourceURL.Has(item.SourceLink) {
-								continue
-							}
-							seenSourceURL.Add(item.SourceLink)
-
-							torzFetchWg.Submit(func() {
-								err := item.EnsureMagnet()
-								if err != nil {
-									log.Warn("failed to ensure magnet link for torrent", "error", err)
-								}
-							})
-						}
+					if err := itemPool.Stop().Wait(); err != nil {
+						log.Error("errors during item processing", "error", err, "indexer", indexer.Name)
 					}
-					if err := torzFetchWg.Stop().Wait(); err != nil {
-						log.Warn("errors occurred while fetching torrent magnets", "error", err)
+					if rateLimitExceeded.Load() {
+						rateLimitedMu.Lock()
+						excludedIndexerIds.Add(indexer.Id)
+						rateLimitedMu.Unlock()
 					}
-
-					tInfosToUpsert := []torrent_info.TorrentItem{}
-					for i := range results {
-						item := &results[i]
-						if item.HasMissingData() {
-							continue
-						}
-
-						tInfo := torrent_info.TorrentItem{
-							Hash:         item.Hash,
-							TorrentTitle: item.Title,
-							Size:         item.Size,
-							Indexer:      item.Indexer,
-							Source:       torrent_info.TorrentInfoSourceIndexer,
-							Seeders:      item.Seeders,
-							Leechers:     item.Leechers,
-							Private:      item.Private,
-							Files:        item.Files,
-						}
-						tInfosToUpsert = append(tInfosToUpsert, tInfo)
-					}
-
-					if len(tInfosToUpsert) > 0 {
-						category := torrent_info.TorrentInfoCategoryUnknown
-						if nsid.IsSeries() {
-							category = torrent_info.TorrentInfoCategorySeries
-						} else {
-							category = torrent_info.TorrentInfoCategoryMovie
-						}
-
-						if err := torrent_info.Upsert(tInfosToUpsert, category, false); err != nil {
-							log.Error("failed to upsert torrent info", "error", err, "count", len(tInfosToUpsert))
-							continue
-						}
-
-						log.Debug("saved torrents", "indexer", indexer.Name, "sid", item.SId, "count", len(tInfosToUpsert))
-					}
-				}
-			})
+				})
+			}
+			wg.Wait()
 		}
-		wg.Wait()
-
-		return nil
 	},
 })
