@@ -1082,9 +1082,10 @@ func UpsertParsed(tInfos []*TorrentInfo) error {
 }
 
 var query_list_hashes_for_anime_by_anidb_id_from_torrent_stream = fmt.Sprintf(
-	`SELECT DISTINCT %s FROM %s WHERE %s LIKE ?`,
+	`SELECT DISTINCT %s FROM %s WHERE %s LIKE ? AND %s != ''`,
 	ts.Column.Hash,
 	ts.TableName,
+	ts.Column.ASId,
 	ts.Column.ASId,
 )
 var query_list_hashes_for_anime_by_anidb_id_from_anidb_torrent = fmt.Sprintf(
@@ -1156,9 +1157,13 @@ func listHashesForAnimeByAniDBId(anidbId, season, episode string) ([]string, err
 }
 
 var query_list_hashes_by_stremid_from_torrent_stream = fmt.Sprintf(
-	"SELECT DISTINCT %s FROM %s WHERE %s = ? OR %s LIKE ?",
+	"SELECT %s FROM %s WHERE %s = ? UNION SELECT %s FROM %s WHERE %s LIKE ? AND %s != '' AND %s != '*'",
 	ts.Column.Hash,
 	ts.TableName,
+	ts.Column.SId,
+	ts.Column.Hash,
+	ts.TableName,
+	ts.Column.SId,
 	ts.Column.SId,
 	ts.Column.SId,
 )
