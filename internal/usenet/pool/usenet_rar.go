@@ -104,6 +104,8 @@ func (ura *RARArchive) GetFiles() ([]ArchiveFile, error) {
 				packedSize:   header.PackedSize,
 				unPackedSize: header.UnPackedSize,
 				solid:        header.Solid,
+				isCompressed: header.Compressed,
+				isEncrypted:  header.Encrypted || header.HeaderEncrypted,
 			}
 			files = append(files, file)
 		}
@@ -121,6 +123,8 @@ type UsenetRARFile struct {
 	unPackedSize int64
 	packedSize   int64
 	solid        bool
+	isCompressed bool
+	isEncrypted  bool
 }
 
 func (urf *UsenetRARFile) Name() string {
@@ -147,7 +151,7 @@ func (urf *UsenetRARFile) Size() int64 {
 }
 
 func (urf *UsenetRARFile) IsStreamable() bool {
-	return !urf.solid && urf.packedSize == urf.unPackedSize
+	return !urf.solid && !urf.isCompressed
 }
 
 // .part01.rar format
