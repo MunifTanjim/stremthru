@@ -9,6 +9,7 @@ import (
 
 var (
 	quotedFilenameRegex                        = regexp.MustCompile(`"([^"].+[^"])"`)
+	unquotedFilenameYencRegex                  = regexp.MustCompile(`^([^"]+\.\w{2,5})"\s+yEnc\s`)
 	bracketedFilenameRegex                     = regexp.MustCompile(`\[(?:(?:(?:[^\/\[\]]*(?:\[[^\]]*\])?)*)?\/)*([^\[\]]*(?:\[[^\]]*\])?[^\[\/\.]*\.\w{2,5})\]`)
 	fileCountFilenameYencSegmentCountSizeregex = regexp.MustCompile(`^[\[\(]\d+\/\d+[\]\)]\s-\s(.*)\syEnc\s[\[\(]\d+\/\d+[\]\)]\s\d+`)
 	fileCountFilenameRegex                     = regexp.MustCompile(`[\[\(]\d+\/\d+[\]\)]\s-\s(.*\.\w{2,5})`)
@@ -41,6 +42,13 @@ func (p *subjectParser) Parse(f *File) {
 				f.name = name
 				subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 			}
+		}
+	}
+
+	if f.name == "" {
+		if matches := unquotedFilenameYencRegex.FindStringSubmatch(subject); len(matches) == 2 {
+			f.name = strings.TrimSpace(matches[1])
+			subject = strings.TrimSpace(strings.Replace(subject, matches[0], "", 1))
 		}
 	}
 

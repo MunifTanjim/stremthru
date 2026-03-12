@@ -242,6 +242,12 @@ func TestSubjectParser(t *testing.T) {
 			0,
 			`11e240fef1b52f.7af4b48f99ed1a7d1ae3f20ebf82d1.928324ad`,
 		},
+		{
+			0,
+			`[sam].Otonari.no.Tenshi-sama.ni.Itsunomanika.Dame.Ningen.ni.Sareteita.Ken-01.[BD.1080p.FLAC].[6FE47A6D] [6FE47A6D].mkv" yEnc 2674273598 (1/3731)`,
+			0,
+			`[sam].Otonari.no.Tenshi-sama.ni.Itsunomanika.Dame.Ningen.ni.Sareteita.Ken-01.[BD.1080p.FLAC].[6FE47A6D] [6FE47A6D].mkv`,
+		},
 	} {
 		p := newSubjectParser(tc.fileCount)
 		f := &File{Subject: tc.subject}
