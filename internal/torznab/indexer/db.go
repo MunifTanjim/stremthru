@@ -253,6 +253,20 @@ func GetAllEnabled() ([]TorznabIndexer, error) {
 	return items, nil
 }
 
+var query_is_enabled = fmt.Sprintf(
+	`SELECT 1 FROM %s WHERE %s = ? AND %s = %s`,
+	TableName,
+	Column.Id,
+	Column.Disabled,
+	db.BooleanFalse,
+)
+
+func IsEnabled(id int64) bool {
+	var one int
+	err := db.QueryRow(query_is_enabled, id).Scan(&one)
+	return err == nil
+}
+
 var query_get_by_id = fmt.Sprintf(
 	`SELECT %s FROM %s WHERE %s = ?`,
 	strings.Join(columns, ", "),
