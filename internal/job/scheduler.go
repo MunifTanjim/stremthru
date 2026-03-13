@@ -28,6 +28,10 @@ func (sch *Scheduler[T]) Logger() *logger.Logger {
 	return sch.conf.Log
 }
 
+func (sch *Scheduler[T]) Interval() time.Duration {
+	return sch.conf.Interval
+}
+
 func (sch *Scheduler[T]) JobQueue() job_queue.JobQueue[T] {
 	return sch.conf.Queue
 }
