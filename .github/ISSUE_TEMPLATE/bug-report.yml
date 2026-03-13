@@ -1,29 +1,34 @@
-name: Stremio Addon Bug Report
-description: Report a bug with one of the StremThru Stremio Addons
-title: "[Addon Bug] "
-labels: ["bug", "stremio-addon"]
+name: Bug Report
+description: Report a bug with StremThru
+title: "[Bug] "
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug with a StremThru Stremio Addon!
+        Thanks for taking the time to report a bug with StremThru!
 
         Please fill out the following information to help us diagnose and fix the issue.
 
   - type: dropdown
-    id: addon
+    id: area
     attributes:
-      label: Which Addon?
-      description: Select the Stremio addon that is experiencing the issue
+      label: Related Area
+      description: If this bug is related to a specific area, select it here
       options:
-        - List
-        - Wrap
-        - Store
-        - Torz
-        - Newz
-        - Sidekick
+        - "Other"
+        - "Addon: StremThru List"
+        - "Addon: StremThru Wrap"
+        - "Addon: StremThru Store"
+        - "Addon: StremThru Torz"
+        - "Addon: StremThru Newz"
+        - "Dashboard: Torrent"
+        - "Dashboard: Usenet"
+        - "Dashboard: Other"
+        - "Proxy"
+        - "Tool: Stremio Sidekick"
     validations:
-      required: true
+      required: false
 
   - type: dropdown
     id: self-hosted
