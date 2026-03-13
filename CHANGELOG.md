@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.98.7](https://github.com/MunifTanjim/stremthru/compare/0.98.6...0.98.7) (2026-03-13)
+
+
+### Performance Improvements
+
+* **torznab/indexer:** fix strategy for sync parallel processing ([b6e9aaf](https://github.com/MunifTanjim/stremthru/commit/b6e9aaf2076e870d057a3af9ed6f13f03b4e164e))
+
 ## [0.98.6](https://github.com/MunifTanjim/stremthru/compare/0.98.5...0.98.6) (2026-03-12)
 
 
