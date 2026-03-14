@@ -223,7 +223,7 @@ The generated direct link should be valid for 12 hours.
 
 ## Torznab Endpoint
 
-**`GET /v0/torzab/api`**
+**`GET /v0/torznab/api`**
 
 StremThru exposes a Torznab-compatible API endpoint that can be used with tools like Prowlarr, Radarr, Sonarr etc.
 
