@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.98.8](https://github.com/MunifTanjim/stremthru/compare/0.98.7...0.98.8) (2026-03-14)
+
+
+### Bug Fixes
+
+* **anidb:** handle nil pointer in map torrent worker ([a4ad614](https://github.com/MunifTanjim/stremthru/commit/a4ad61401945ddb17cb827b5c9401a0e42c42a61))
+
 ## [0.98.7](https://github.com/MunifTanjim/stremthru/compare/0.98.6...0.98.7) (2026-03-13)
 
 
