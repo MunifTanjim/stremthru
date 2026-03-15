@@ -287,6 +287,26 @@ func GetById(id int64) (*TorznabIndexer, error) {
 	return &item, nil
 }
 
+var query_get_by_url = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ?`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.URL,
+)
+
+func GetByURL(url string) (*TorznabIndexer, error) {
+	row := db.QueryRow(query_get_by_url, url)
+
+	item := TorznabIndexer{}
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &item, nil
+}
+
 var query_insert = fmt.Sprintf(
 	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
 	TableName,
@@ -294,7 +314,7 @@ var query_insert = fmt.Sprintf(
 )
 
 func (i *TorznabIndexer) Insert() error {
-	result, err := db.Exec(query_insert,
+	_, err := db.Exec(query_insert,
 		i.Type,
 		i.Name,
 		i.URL,
@@ -304,11 +324,11 @@ func (i *TorznabIndexer) Insert() error {
 	if err != nil {
 		return err
 	}
-	id, err := result.LastInsertId()
+	inserted, err := GetByURL(i.URL)
 	if err != nil {
 		return err
 	}
-	i.Id = id
+	i.Id = inserted.Id
 	return nil
 }
 
