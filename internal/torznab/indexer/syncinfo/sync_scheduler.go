@@ -185,7 +185,11 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 						results = append(results, qResults...)
 					}
 
-					log.Debug("indexer search completed", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
+					if task.rateLimitExceeded.Load() && len(results) == 0 {
+						log.Trace("indexer search rate limited", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
+					} else {
+						log.Debug("indexer search completed", "indexer", indexer.Name, "sid", item.SId, "count", len(results))
+					}
 
 					// TODO: download torrent files in a separate queue
 					seenSourceURL := util.NewSet[string]()
