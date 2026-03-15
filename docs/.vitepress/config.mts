@@ -40,8 +40,11 @@ export default defineConfig({
         text: "Guides",
         items: [
           { text: "Docker Compose", link: "/guides/docker-compose" },
+          { text: "Dashboard", link: "/guides/dashboard" },
           { text: "Stream Filter", link: "/guides/stream-filter" },
           { text: "Usenet Setup", link: "/guides/usenet-setup" },
+          { text: "*arr Apps", link: "/guides/arr-apps" },
+          { text: "FAQ", link: "/guides/faq" },
         ],
       },
       {
