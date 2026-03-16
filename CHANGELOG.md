@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.98.9](https://github.com/MunifTanjim/stremthru/compare/0.98.8...0.98.9) (2026-03-16)
+
+
+### Bug Fixes
+
+* **newznab/indexer:** fix id discovery after insert ([8ee56e6](https://github.com/MunifTanjim/stremthru/commit/8ee56e6bbc9e89dc207217ddf75d6c6953e91f12))
+* **torznab/indexer:** fix id discovery after insert ([3b4af55](https://github.com/MunifTanjim/stremthru/commit/3b4af554dfa4aa91569eae076150f456ea6af221))
+* **torznab/indexer:** fix log for rate limited indexer search ([8b1edae](https://github.com/MunifTanjim/stremthru/commit/8b1edae2bbfc2596c2f77fca3c58b9d69a679e9d))
+
 ## [0.98.8](https://github.com/MunifTanjim/stremthru/compare/0.98.7...0.98.8) (2026-03-14)
 
 

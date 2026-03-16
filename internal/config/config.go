@@ -669,7 +669,7 @@ var config = func() Config {
 		DatabaseURI:                 databaseUri,
 		DatabaseReplicaURIs:         databaseReplicaUris,
 		Feature:                     feature,
-		Version:                     "0.98.8", // x-release-please-version
+		Version:                     "0.98.9", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
 		ServerStartTime:             time.Now(),
 		StoreContentProxy:           storeContentProxyMap,
