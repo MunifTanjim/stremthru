@@ -2,6 +2,11 @@
 
 ## Docker
 
+**Images:**
+
+- Docker Hub: [`muniftanjim/stremthru`](https://hub.docker.com/r/muniftanjim/stremthru)
+- GitHub Container Registry: [`ghcr.io/muniftanjim/stremthru`](https://github.com/MunifTanjim/stremthru/pkgs/container/stremthru)
+
 Pull and run the Docker image:
 
 ```sh

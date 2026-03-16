@@ -2,6 +2,7 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   cleanUrls: true,
+  lastUpdated: true,
 
   title: "StremThru",
   description: "Companion for Stremio",
@@ -16,9 +17,13 @@ export default defineConfig({
     ],
   ],
 
+  sitemap: {
+    hostname: "https://docs.stremthru.13377001.xyz",
+  },
+
   themeConfig: {
     nav: [
-      { text: "Guide", link: "/getting-started/introduction" },
+      { text: "Guide", link: "/guides/docker-compose" },
       { text: "Configuration", link: "/configuration/" },
       { text: "API", link: "/api/" },
     ],
@@ -29,6 +34,7 @@ export default defineConfig({
         items: [
           { text: "Introduction", link: "/getting-started/introduction" },
           { text: "Installation", link: "/getting-started/installation" },
+          { text: "FAQ", link: "/getting-started/faq" },
         ],
       },
       {
