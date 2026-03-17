@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.98.10](https://github.com/MunifTanjim/stremthru/compare/0.98.9...0.98.10) (2026-03-17)
+
+
+### Bug Fixes
+
+* **usenet:** fix playback from multi-vol rar with random names ([b4cd2cf](https://github.com/MunifTanjim/stremthru/commit/b4cd2cf2ef5dd8a2b9af3e505fd44bf3b3e6cd99))
+
+
+### Performance Improvements
+
+* **usenet:** speed up nzb inspection ([2d94423](https://github.com/MunifTanjim/stremthru/commit/2d944234e9ddd3168697a6f82bb2c8362c186f75))
+
 ## [0.98.9](https://github.com/MunifTanjim/stremthru/compare/0.98.8...0.98.9) (2026-03-16)
 
 
