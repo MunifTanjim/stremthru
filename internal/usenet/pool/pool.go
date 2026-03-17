@@ -403,6 +403,19 @@ func (p *Pool) addProvider(provider *ProviderConfig) error {
 	return nil
 }
 
+func (p *Pool) maxPrimaryProviderConnections() int {
+	p.providersMutex.RLock()
+	defer p.providersMutex.RUnlock()
+	maxConnections := 0
+	for _, provider := range p.providers {
+		if provider.isBackup {
+			continue
+		}
+		maxConnections += int(provider.MaxSize())
+	}
+	return maxConnections
+}
+
 func (p *Pool) AddProvider(provider *ProviderConfig) error {
 	p.providersMutex.Lock()
 	defer p.providersMutex.Unlock()

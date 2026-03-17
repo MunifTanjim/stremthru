@@ -172,7 +172,11 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 		data *SegmentData
 		err  error
 	}, len(tasks))
-	fetchPool := pond.NewPool(config.Newz.MaxConnectionPerStream)
+	maxFetcher := max(
+		p.maxPrimaryProviderConnections()-2*config.Newz.MaxConnectionPerStream,
+		config.Newz.MaxConnectionPerStream,
+	)
+	fetchPool := pond.NewPool(maxFetcher)
 	for i, t := range tasks {
 		fetchPool.Submit(func() {
 			taskResults[i].data, taskResults[i].err = p.fetchSegment(ctx, t.segment, t.groups)
