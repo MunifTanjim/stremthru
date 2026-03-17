@@ -132,9 +132,9 @@ func IsArchiveFile(filename string) bool {
 	}
 }
 
-// GenerateRARVolumeName generates a RAR volume filename.
-// Volume 0: {base}.rar, Volume 2: {base}.r00, etc.
-func GenerateRARVolumeName(base string, volume int) string {
+// generateOldRARVolumeName generates a RAR volume filename.
+// Volume 1: {base}.rar, Volume 2: {base}.r00, etc.
+func generateOldRARVolumeName(base string, volume int) string {
 	if volume == 0 {
 		return fmt.Sprintf("%s.rar", base)
 	}
@@ -142,6 +142,19 @@ func GenerateRARVolumeName(base string, volume int) string {
 	char += int32((volume - 1) / 100)
 	num := (volume - 1) % 100
 	return fmt.Sprintf("%s.%c%02d", base, char, num)
+}
+
+// generateNewRARVolumeName generates a RAR volume filename.
+// Volume 1: {base}.part001.rar, Volume 2: {base}.part002.rar, etc.
+func generateNewRARVolumeName(base string, volume int) string {
+	return fmt.Sprintf("%s.part%03d.rar", base, volume+1)
+}
+
+func GenerateRARVolumeName(base string, volume int, oldNaming bool) string {
+	if oldNaming {
+		return generateOldRARVolumeName(base, volume)
+	}
+	return generateNewRARVolumeName(base, volume)
 }
 
 // Generate7zVolumeName generates a 7z volume filename.

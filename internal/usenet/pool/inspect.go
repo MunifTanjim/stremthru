@@ -280,12 +280,13 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 		archiveName := name
 		if group.Aliased {
 			aliases := make(map[string]string, len(group.Files))
+			oldRARNaming := group.FileType == FileTypeRAR && !HasRARNewVolumeName(group.Files[0].Name())
 			for i, f := range group.Files {
 				vol := group.Volumes[i]
 				var syntheticName string
 				switch group.FileType {
 				case FileTypeRAR:
-					syntheticName = GenerateRARVolumeName(group.BaseName, vol)
+					syntheticName = GenerateRARVolumeName(group.BaseName, vol, oldRARNaming)
 				case FileType7z:
 					syntheticName = Generate7zVolumeName(group.BaseName, vol)
 				}

@@ -180,7 +180,7 @@ func groupArchiveVolumes[T simpleFile](
 	}
 	var singleFileAliasedRAR []groupWithVol
 	for key, group := range groups {
-		if group.Aliased && group.FileType == FileTypeRAR && len(group.Files) == 1 {
+		if group.FileType == FileTypeRAR && len(group.Files) == 1 {
 			singleFileAliasedRAR = append(singleFileAliasedRAR, groupWithVol{
 				group: group,
 				key:   key,
@@ -204,6 +204,8 @@ func groupArchiveVolumes[T simpleFile](
 		}
 
 		if valid {
+			baseName := singleFileAliasedRAR[0].group.BaseName
+
 			mergedFiles := make([]T, len(singleFileAliasedRAR))
 			mergedVolumes := make([]int, len(singleFileAliasedRAR))
 			var totalSize int64
@@ -214,9 +216,9 @@ func groupArchiveVolumes[T simpleFile](
 				totalSize += gv.group.TotalSize
 			}
 
-			mergedKey := mergedFiles[0].Name() + ":" + FileTypeRAR.String()
+			mergedKey := baseName + ":" + FileTypeRAR.String()
 			groups[mergedKey] = &archiveVolumeGroup[T]{
-				BaseName:  mergedFiles[0].Name(),
+				BaseName:  baseName,
 				Aliased:   true,
 				FileType:  FileTypeRAR,
 				Files:     mergedFiles,

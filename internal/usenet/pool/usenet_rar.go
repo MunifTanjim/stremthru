@@ -163,6 +163,10 @@ var rarRNumberRegex = regexp.MustCompile(`(?i)\.r(\d+)$`)
 // .rar
 var rarFirstPartRegex = regexp.MustCompile(`(?i)\.rar$`)
 
+func HasRARNewVolumeName(filename string) bool {
+	return rarPartNumberRegex.MatchString(filename)
+}
+
 func GetRARVolumeNumber(filename string) int {
 	if matches := rarPartNumberRegex.FindStringSubmatch(filename); len(matches) > 1 {
 		n, _ := strconv.Atoi(matches[1])
