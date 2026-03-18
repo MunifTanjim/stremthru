@@ -153,7 +153,7 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, cached map[string
 	}
 }
 
-func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp string, sid string) (*store.CheckMagnetData, error) {
+func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp string, sid string, checkPeer bool) (*store.CheckMagnetData, error) {
 	if matched, err := regexp.MatchString("^tt[0-9]+(:[0-9]{1,2}:[0-9]{1,3})?$", sid); err != nil || !matched {
 		sid = ""
 	}
@@ -265,7 +265,7 @@ func CheckMagnet(s store.Store, hashes []string, storeToken string, clientIp str
 		}
 	}
 
-	if config.HasPeer {
+	if checkPeer && config.HasPeer {
 		if config.PeerFlag.Lazy {
 			storeCode := string(s.GetName().Code())
 			for _, hash := range staleOrMissingHashes {

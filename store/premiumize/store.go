@@ -234,7 +234,7 @@ func (c *StoreClient) checkMagnet(params *store.CheckMagnetParams, includeLinkAn
 	foundItemByHash := map[string]store.CheckMagnetDataItem{}
 
 	if !includeLinkAndPath {
-		if data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP, params.SId); err != nil {
+		if data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(c.client.apiKey), params.ClientIP, params.SId, true); err != nil {
 			return nil, err
 		} else {
 			for _, item := range data.Items {

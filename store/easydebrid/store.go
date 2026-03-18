@@ -152,7 +152,7 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 	foundItemByHash := map[string]store.CheckMagnetDataItem{}
 
-	if data, err := buddy.CheckMagnet(s, hashes, params.GetAPIKey(s.client.apiKey), params.ClientIP, params.SId); err != nil {
+	if data, err := buddy.CheckMagnet(s, hashes, params.GetAPIKey(s.client.apiKey), params.ClientIP, params.SId, true); err != nil {
 		return nil, err
 	} else {
 		for _, item := range data.Items {
