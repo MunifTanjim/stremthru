@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.98.11](https://github.com/MunifTanjim/stremthru/compare/0.98.10...0.98.11) (2026-03-18)
+
+
+### Performance Improvements
+
+* **store/torbox:** skip peer for check magnet ([3e7cabe](https://github.com/MunifTanjim/stremthru/commit/3e7cabe7ef4a662dc658dda24ca5419eda97e654))
+
 ## [0.98.10](https://github.com/MunifTanjim/stremthru/compare/0.98.9...0.98.10) (2026-03-17)
 
 
