@@ -10,6 +10,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/db"
+	indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 )
 
 var queueCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
@@ -392,6 +393,80 @@ var query_count_items_by_sid = fmt.Sprintf(
 	Column.QueuedAt,
 	Column.SId,
 )
+
+type IndexerSyncStats struct {
+	IndexerId    int64  `json:"indexer_id"`
+	IndexerName  string `json:"indexer_name"`
+	TotalCount   int64  `json:"total_count"`
+	SyncedCount  int64  `json:"synced_count"`
+	QueuedCount  int64  `json:"queued_count"`
+	ErrorCount   int64  `json:"error_count"`
+	ResultCount  int64  `json:"result_count"`
+	LastSyncedAt string `json:"last_synced_at,omitempty"`
+}
+
+var query_get_stats = fmt.Sprintf(
+	`SELECT
+		si.%s,
+		i.%s,
+		COUNT(1) AS total_count,
+		SUM(CASE WHEN si.%s IS NOT NULL THEN 1 ELSE 0 END) AS synced_count,
+		SUM(CASE WHEN si.%s IN ('%s', '%s') THEN 1 ELSE 0 END) AS queued_count,
+		SUM(CASE WHEN si.%s IS NOT NULL AND si.%s != '' THEN 1 ELSE 0 END) AS error_count,
+		COALESCE(SUM(si.%s), 0) AS result_count,
+		MAX(si.%s) AS last_synced_at
+	FROM %s si
+	JOIN %s i ON i.%s = si.%s
+	GROUP BY si.%s
+	ORDER BY i.%s`,
+	Column.IndexerId,
+	indexer.Column.Name,
+	Column.SyncedAt,
+	Column.Status, StatusQueued, StatusSyncing,
+	Column.Error, Column.Error,
+	Column.ResultCount,
+	Column.SyncedAt,
+	TableName,
+	indexer.TableName, indexer.Column.Id, Column.IndexerId,
+	Column.IndexerId,
+	indexer.Column.Name,
+)
+
+func GetStats() ([]IndexerSyncStats, error) {
+	rows, err := db.Query(query_get_stats)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []IndexerSyncStats{}
+	for rows.Next() {
+		item := IndexerSyncStats{}
+		lastSyncedAt := db.Timestamp{}
+		if err := rows.Scan(
+			&item.IndexerId,
+			&item.IndexerName,
+			&item.TotalCount,
+			&item.SyncedCount,
+			&item.QueuedCount,
+			&item.ErrorCount,
+			&item.ResultCount,
+			&lastSyncedAt,
+		); err != nil {
+			return nil, err
+		}
+		if !lastSyncedAt.IsZero() {
+			item.LastSyncedAt = lastSyncedAt.Format(time.RFC3339)
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
 
 func CountItems(sid string) (int, error) {
 	var count int

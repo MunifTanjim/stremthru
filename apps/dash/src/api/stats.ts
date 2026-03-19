@@ -45,6 +45,26 @@ type TorrentsStats = {
   total_count: number;
 };
 
+type TorznabIndexerStats = {
+  error_count: number;
+  indexers: TorznabIndexerSyncStats[];
+  queued_count: number;
+  result_count: number;
+  synced_count: number;
+  total_count: number;
+};
+
+type TorznabIndexerSyncStats = {
+  error_count: number;
+  indexer_id: number;
+  indexer_name: string;
+  last_synced_at: null | string;
+  queued_count: number;
+  result_count: number;
+  synced_count: number;
+  total_count: number;
+};
+
 const HOUR = 60 * 60 * 1000;
 
 export function useIMDBTitleStats() {
@@ -80,6 +100,19 @@ export function useTorrentsStats() {
     queryKey: ["/stats/torrents"],
     retry: false,
     staleTime: 2 * HOUR,
+  });
+}
+
+export function useTorznabIndexerStats() {
+  return useQuery({
+    queryFn: async () => {
+      const { data } = await api<TorznabIndexerStats>(
+        "/stats/torznab-indexers",
+      );
+      return data;
+    },
+    queryKey: ["/stats/torznab-indexers"],
+    staleTime: 1 * HOUR,
   });
 }
 

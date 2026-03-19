@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/MunifTanjim/stremthru/internal/tvdb"
 )
@@ -243,6 +244,53 @@ func HandleGetListsStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stats, err := cachedListsStats.Get()
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	SendData(w, r, 200, stats)
+}
+
+type TorznabIndexerStats struct {
+	TotalCount  int64                                       `json:"total_count"`
+	SyncedCount int64                                       `json:"synced_count"`
+	QueuedCount int64                                       `json:"queued_count"`
+	ErrorCount  int64                                       `json:"error_count"`
+	ResultCount int64                                       `json:"result_count"`
+	Indexers    []torznab_indexer_syncinfo.IndexerSyncStats `json:"indexers"`
+}
+
+var cachedTorznabIndexerStats = cache.NewCachedValue(cache.CachedValueConfig[*TorznabIndexerStats]{
+	Get: func() (*TorznabIndexerStats, error) {
+		indexers, err := torznab_indexer_syncinfo.GetStats()
+		if err != nil {
+			return nil, err
+		}
+
+		stats := &TorznabIndexerStats{
+			Indexers: indexers,
+		}
+		for _, idx := range indexers {
+			stats.TotalCount += idx.TotalCount
+			stats.SyncedCount += idx.SyncedCount
+			stats.QueuedCount += idx.QueuedCount
+			stats.ErrorCount += idx.ErrorCount
+			stats.ResultCount += idx.ResultCount
+		}
+
+		return stats, nil
+	},
+	TTL: 1 * time.Hour,
+})
+
+func HandleGetTorznabIndexerStats(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) {
+		ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	stats, err := cachedTorznabIndexerStats.Get()
 	if err != nil {
 		SendError(w, r, err)
 		return
