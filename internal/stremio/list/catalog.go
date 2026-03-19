@@ -15,6 +15,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/meta"
+	"github.com/MunifTanjim/stremthru/internal/serializd"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
@@ -516,6 +517,27 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			catalogItems = append(catalogItems, catalogItem{meta, item})
 		}
 
+	case "serializd":
+		list := serializd.SerializdList{Id: id}
+		if err := list.Fetch(); err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range list.Items {
+			item := &list.Items[i]
+			meta := stremio.MetaPreview{
+				Type:        stremio.ContentTypeSeries,
+				Name:        item.Name,
+				Poster:      item.PosterURL(),
+				PosterShape: stremio.MetaPosterShapePoster,
+			}
+			if ud.MetaIdSeries == "tmdb" {
+				meta.Id = "tmdb:" + strconv.Itoa(item.ID)
+			}
+			catalogItems = append(catalogItems, catalogItem{meta, item})
+		}
+
 	case "tvdb":
 		list := tvdb.TVDBList{Id: id}
 		if err := ud.FetchTVDBList(&list); err != nil {
@@ -791,6 +813,40 @@ func handleCatalog(w http.ResponseWriter, r *http.Request) {
 			}
 
 			item.MetaPreview.Id = imdbId
+			if posterBaseUrl != "" {
+				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
+			}
+
+			items = append(items, item.MetaPreview)
+		}
+
+	case "serializd":
+		tmdbShowIds := make([]string, 0, len(catalogItems))
+		for i := range catalogItems {
+			item := catalogItems[i].item.(*serializd.SerializdItem)
+			tmdbShowIds = append(tmdbShowIds, strconv.Itoa(item.ID))
+		}
+
+		_, showImdbIdByTmdbId, err := getIMDBIdsForTMDBIds(ud.TMDBTokenId, nil, tmdbShowIds)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+
+		for i := range catalogItems {
+			item := &catalogItems[i]
+			sitem := item.item.(*serializd.SerializdItem)
+			imdbId := ""
+			if id, ok := showImdbIdByTmdbId[strconv.Itoa(sitem.ID)]; ok {
+				imdbId = id
+			}
+			if imdbId == "" && item.MetaPreview.Id == "" {
+				continue
+			}
+
+			if item.MetaPreview.Id == "" {
+				item.MetaPreview.Id = imdbId
+			}
 			if posterBaseUrl != "" {
 				item.MetaPreview.Poster = posterBaseUrl + imdbId + ".jpg" + posterQueryParams
 			}

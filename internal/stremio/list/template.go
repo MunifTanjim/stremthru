@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
+	"github.com/MunifTanjim/stremthru/internal/serializd"
 	"github.com/MunifTanjim/stremthru/internal/stremio/configure"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_template "github.com/MunifTanjim/stremthru/internal/stremio/template"
@@ -363,6 +364,15 @@ func getTemplateData(ud *UserData, udError userDataError, isAuthed bool, r *http
 						list.Error.URL = "Trakt.tv authorization needed"
 					}
 
+				case "serializd":
+					l := serializd.SerializdList{Id: id}
+					if err := ud.FetchSerializdList(&l); err != nil {
+						log.Error("failed to fetch list", "error", err, "id", listId)
+						list.Error.URL = "Failed to Fetch List: " + err.Error()
+					} else {
+						list.URL = l.GetURL()
+					}
+
 				case "tvdb":
 					l := tvdb.TVDBList{Id: id}
 					if err := ud.FetchTVDBList(&l); err != nil {
@@ -646,6 +656,20 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 							"/users/garycrawfordgc/progress",
 						},
 					},
+				},
+			})
+		}
+		if TMDBEnabled {
+			td.SupportedServices = append(td.SupportedServices, supportedService{
+				Name:     "Serializd",
+				Hostname: "serializd.com",
+				Icon:     "https://www.serializd.com/favicon.ico",
+				URLs: []supportedServiceUrl{
+					{Pattern: "/popular"},
+					{Pattern: "/trending"},
+					{Pattern: "/featured"},
+					{Pattern: "/anticipated"},
+					{Pattern: "/top-shows"},
 				},
 			})
 		}

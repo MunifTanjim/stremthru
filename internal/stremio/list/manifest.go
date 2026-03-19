@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
+	"github.com/MunifTanjim/stremthru/internal/serializd"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
@@ -238,6 +239,33 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 						catalog.Type = string(stremio.ContentTypeSeries)
 						catalog.Genres = trakt.ShowGenreNames
 					}
+				}
+				if hasListNames {
+					if name := ud.ListNames[idx]; name != "" {
+						catalog.Name = name
+					}
+				}
+				if hasListTypes {
+					if listType := ud.ListTypes[idx]; listType != "" {
+						catalog.Type = listType
+					}
+				}
+				catalogs = append(catalogs, catalog)
+
+			case "serializd":
+				list := serializd.SerializdList{Id: idStr}
+				if err := list.Fetch(); err != nil {
+					return nil, err
+				}
+				catalog := stremio.Catalog{
+					Type: string(stremio.ContentTypeSeries),
+					Id:   "st.list.serializd." + idStr,
+					Name: list.Name,
+					Extra: []stremio.CatalogExtra{
+						{
+							Name: "skip",
+						},
+					},
 				}
 				if hasListNames {
 					if name := ud.ListNames[idx]; name != "" {

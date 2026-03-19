@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
 	"github.com/MunifTanjim/stremthru/internal/oauth"
+	"github.com/MunifTanjim/stremthru/internal/serializd"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_userdata "github.com/MunifTanjim/stremthru/internal/stremio/userdata"
@@ -55,6 +56,7 @@ type UserData struct {
 	tmdbById       map[string]tmdb.TMDBList             `json:"-"`
 	tvdbById       map[string]tvdb.TVDBList             `json:"-"`
 	letterboxdById map[string]letterboxd.LetterboxdList `json:"-"`
+	serializdById  map[string]serializd.SerializdList   `json:"-"`
 }
 
 func (ud UserData) StripSecrets() UserData {
@@ -616,6 +618,31 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 					continue
 				}
 				ud.Lists[idx] = "tvdb:" + list.Id
+
+			case "www.serializd.com", "serializd.com":
+				if !isTMDBConfigured {
+					if TMDBEnabled {
+						udErr.list_urls[idx] = "TMDB Auth Code is required"
+					} else {
+						udErr.list_urls[idx] = "Unsupported List URL"
+					}
+					continue
+				}
+
+				list := serializd.SerializdList{}
+				path := strings.Trim(listUrl.Path, "/")
+				listId := serializd.ID_PREFIX_DYNAMIC + path
+				if !serializd.IsValidListId(listId) {
+					udErr.list_urls[idx] = "Unsupported Serializd URL"
+					continue
+				}
+				list.Id = listId
+				err := ud.FetchSerializdList(&list)
+				if err != nil {
+					udErr.list_urls[idx] = "Failed to fetch List: " + err.Error()
+					continue
+				}
+				ud.Lists[idx] = "serializd:" + list.Id
 			}
 		}
 
@@ -858,5 +885,26 @@ func (ud *UserData) FetchTVDBList(list *tvdb.TVDBList) error {
 	}
 
 	ud.tvdbById[list.Id] = *list
+	return nil
+}
+
+func (ud *UserData) FetchSerializdList(list *serializd.SerializdList) error {
+	if ud.TMDBTokenId == "" {
+		return errors.New("TMDB Auth Code missing")
+	}
+	if ud.serializdById == nil {
+		ud.serializdById = map[string]serializd.SerializdList{}
+	}
+	if list.Id != "" {
+		if l, ok := ud.serializdById[list.Id]; ok {
+			*list = l
+			return nil
+		}
+	}
+	if err := list.Fetch(); err != nil {
+		return err
+	}
+
+	ud.serializdById[list.Id] = *list
 	return nil
 }
