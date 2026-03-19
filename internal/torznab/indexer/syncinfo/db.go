@@ -271,9 +271,9 @@ func ShouldSync(indexerId int64, sid string) bool {
 }
 
 var query_get_pending_cond = fmt.Sprintf(
-	// is queued and (not synced or (queued after synced and synced is stale))
-	"%s IS NOT NULL AND (%s IS NULL OR (%s > %s AND %s <= ?))",
-	Column.QueuedAt,
+	// status is pending and (not synced or (queued after synced and synced is stale))
+	"%s IN ('%s', '%s') AND (%s IS NULL OR (%s > %s AND %s <= ?))",
+	Column.Status, StatusQueued, StatusSyncing,
 	Column.SyncedAt,
 	Column.QueuedAt,
 	Column.SyncedAt,
@@ -334,18 +334,16 @@ type GetItemsParams struct {
 }
 
 var query_get_items = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s IS NOT NULL ORDER BY %s DESC LIMIT ? OFFSET ?",
+	"SELECT %s FROM %s ORDER BY %s DESC LIMIT ? OFFSET ?",
 	db.JoinColumnNames(columns...),
 	TableName,
-	Column.QueuedAt,
 	Column.QueuedAt,
 )
 
 var query_get_items_by_sid = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s IS NOT NULL AND %s = ? ORDER BY %s DESC LIMIT ? OFFSET ?",
+	"SELECT %s FROM %s WHERE %s = ? ORDER BY %s DESC LIMIT ? OFFSET ?",
 	db.JoinColumnNames(columns...),
 	TableName,
-	Column.QueuedAt,
 	Column.SId,
 	Column.QueuedAt,
 )
@@ -382,15 +380,13 @@ func GetItems(params GetItemsParams) ([]TorznabIndexerSyncInfo, error) {
 }
 
 var query_count_items = fmt.Sprintf(
-	"SELECT COUNT(1) FROM %s WHERE %s IS NOT NULL",
+	"SELECT COUNT(1) FROM %s",
 	TableName,
-	Column.QueuedAt,
 )
 
 var query_count_items_by_sid = fmt.Sprintf(
-	"SELECT COUNT(1) FROM %s WHERE %s IS NOT NULL AND %s = ?",
+	"SELECT COUNT(1) FROM %s WHERE %s = ?",
 	TableName,
-	Column.QueuedAt,
 	Column.SId,
 )
 
