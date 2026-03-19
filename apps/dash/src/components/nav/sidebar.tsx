@@ -270,17 +270,21 @@ function useNavItems(): NavItem[] {
       icon: MagnetIcon,
       items: [
         {
-          path: "/dash/torrents",
+          path: "/dash/torrent",
           title: "Stats",
         },
       ],
-      path: "/dash/torrents",
-      title: "Torrents",
+      path: "/dash/torrent",
+      title: "Torrent",
     };
     if (server?.feature.vault) {
       torrents.items!.push({
-        path: "/dash/torrents/indexers-sync",
-        title: "Indexers Sync",
+        path: "/dash/torrent/torznab-indexers",
+        title: "Indexers",
+      });
+      torrents.items!.push({
+        path: "/dash/torrent/sync-info",
+        title: "Sync Info",
       });
     }
     items.push(torrents);
@@ -340,10 +344,6 @@ function useNavItems(): NavItem[] {
           title: "Trakt Accounts",
         });
       }
-      vault.items!.push({
-        path: "/dash/vault/torznab-indexers",
-        title: "Torznab Indexers",
-      });
       items.push(vault);
 
       const sync: NavItem = {

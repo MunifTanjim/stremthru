@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/dash/torrents")({
+export const Route = createFileRoute("/dash/torrent")({
   component: RouteComponent,
   staticData: {
-    crumb: "Torrents",
+    crumb: "Torrent",
   },
 });
 

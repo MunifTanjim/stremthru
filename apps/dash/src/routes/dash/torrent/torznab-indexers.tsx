@@ -380,10 +380,10 @@ function TorznabIndexerFormSheet({
   );
 }
 
-export const Route = createFileRoute("/dash/vault/torznab-indexers")({
+export const Route = createFileRoute("/dash/torrent/torznab-indexers")({
   component: RouteComponent,
   staticData: {
-    crumb: "Torznab Indexers",
+    crumb: "Indexers",
   },
 });
 

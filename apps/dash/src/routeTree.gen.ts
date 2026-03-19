@@ -14,7 +14,7 @@ import { Route as DashIndexRouteImport } from './routes/dash/index'
 import { Route as DashWorkersRouteImport } from './routes/dash/workers'
 import { Route as DashVaultRouteImport } from './routes/dash/vault'
 import { Route as DashUsenetRouteImport } from './routes/dash/usenet'
-import { Route as DashTorrentsRouteImport } from './routes/dash/torrents'
+import { Route as DashTorrentRouteImport } from './routes/dash/torrent'
 import { Route as DashSyncRouteImport } from './routes/dash/sync'
 import { Route as DashSettingsRouteImport } from './routes/dash/settings'
 import { Route as DashProxyRouteImport } from './routes/dash/proxy'
@@ -22,12 +22,11 @@ import { Route as DashLoginRouteImport } from './routes/dash/login'
 import { Route as DashListsRouteImport } from './routes/dash/lists'
 import { Route as DashVaultIndexRouteImport } from './routes/dash/vault/index'
 import { Route as DashUsenetIndexRouteImport } from './routes/dash/usenet/index'
-import { Route as DashTorrentsIndexRouteImport } from './routes/dash/torrents/index'
+import { Route as DashTorrentIndexRouteImport } from './routes/dash/torrent/index'
 import { Route as DashSyncIndexRouteImport } from './routes/dash/sync/index'
 import { Route as DashSettingsIndexRouteImport } from './routes/dash/settings/index'
 import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
-import { Route as DashVaultTorznabIndexersRouteImport } from './routes/dash/vault/torznab-indexers'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
 import { Route as DashUsenetServersRouteImport } from './routes/dash/usenet/servers'
 import { Route as DashUsenetNzbQueueRouteImport } from './routes/dash/usenet/nzb-queue'
@@ -35,7 +34,8 @@ import { Route as DashUsenetNzbInspectorRouteImport } from './routes/dash/usenet
 import { Route as DashUsenetNzbRouteImport } from './routes/dash/usenet/nzb'
 import { Route as DashUsenetIndexersRouteImport } from './routes/dash/usenet/indexers'
 import { Route as DashUsenetConfigRouteImport } from './routes/dash/usenet/config'
-import { Route as DashTorrentsIndexersSyncRouteImport } from './routes/dash/torrents/indexers-sync'
+import { Route as DashTorrentTorznabIndexersRouteImport } from './routes/dash/torrent/torznab-indexers'
+import { Route as DashTorrentSyncInfoRouteImport } from './routes/dash/torrent/sync-info'
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
 import { Route as DashSyncStremioStremioRouteImport } from './routes/dash/sync/stremio-stremio'
 import { Route as DashSettingsRatelimitConfigsRouteImport } from './routes/dash/settings/ratelimit-configs'
@@ -65,9 +65,9 @@ const DashUsenetRoute = DashUsenetRouteImport.update({
   path: '/usenet',
   getParentRoute: () => DashRoute,
 } as any)
-const DashTorrentsRoute = DashTorrentsRouteImport.update({
-  id: '/torrents',
-  path: '/torrents',
+const DashTorrentRoute = DashTorrentRouteImport.update({
+  id: '/torrent',
+  path: '/torrent',
   getParentRoute: () => DashRoute,
 } as any)
 const DashSyncRoute = DashSyncRouteImport.update({
@@ -105,10 +105,10 @@ const DashUsenetIndexRoute = DashUsenetIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashUsenetRoute,
 } as any)
-const DashTorrentsIndexRoute = DashTorrentsIndexRouteImport.update({
+const DashTorrentIndexRoute = DashTorrentIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashTorrentsRoute,
+  getParentRoute: () => DashTorrentRoute,
 } as any)
 const DashSyncIndexRoute = DashSyncIndexRouteImport.update({
   id: '/',
@@ -130,12 +130,6 @@ const DashVaultTraktAccountsRoute = DashVaultTraktAccountsRouteImport.update({
   path: '/trakt-accounts',
   getParentRoute: () => DashVaultRoute,
 } as any)
-const DashVaultTorznabIndexersRoute =
-  DashVaultTorznabIndexersRouteImport.update({
-    id: '/torznab-indexers',
-    path: '/torznab-indexers',
-    getParentRoute: () => DashVaultRoute,
-  } as any)
 const DashVaultStremioAccountsRoute =
   DashVaultStremioAccountsRouteImport.update({
     id: '/stremio-accounts',
@@ -172,12 +166,17 @@ const DashUsenetConfigRoute = DashUsenetConfigRouteImport.update({
   path: '/config',
   getParentRoute: () => DashUsenetRoute,
 } as any)
-const DashTorrentsIndexersSyncRoute =
-  DashTorrentsIndexersSyncRouteImport.update({
-    id: '/indexers-sync',
-    path: '/indexers-sync',
-    getParentRoute: () => DashTorrentsRoute,
+const DashTorrentTorznabIndexersRoute =
+  DashTorrentTorznabIndexersRouteImport.update({
+    id: '/torznab-indexers',
+    path: '/torznab-indexers',
+    getParentRoute: () => DashTorrentRoute,
   } as any)
+const DashTorrentSyncInfoRoute = DashTorrentSyncInfoRouteImport.update({
+  id: '/sync-info',
+  path: '/sync-info',
+  getParentRoute: () => DashTorrentRoute,
+} as any)
 const DashSyncStremioTraktRoute = DashSyncStremioTraktRouteImport.update({
   id: '/stremio-trakt',
   path: '/stremio-trakt',
@@ -202,7 +201,7 @@ export interface FileRoutesByFullPath {
   '/dash/proxy': typeof DashProxyRoute
   '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/sync': typeof DashSyncRouteWithChildren
-  '/dash/torrents': typeof DashTorrentsRouteWithChildren
+  '/dash/torrent': typeof DashTorrentRouteWithChildren
   '/dash/usenet': typeof DashUsenetRouteWithChildren
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
@@ -210,7 +209,8 @@ export interface FileRoutesByFullPath {
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
-  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
+  '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
+  '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/config': typeof DashUsenetConfigRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
@@ -218,12 +218,11 @@ export interface FileRoutesByFullPath {
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
-  '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
   '/dash/settings/': typeof DashSettingsIndexRoute
   '/dash/sync/': typeof DashSyncIndexRoute
-  '/dash/torrents/': typeof DashTorrentsIndexRoute
+  '/dash/torrent/': typeof DashTorrentIndexRoute
   '/dash/usenet/': typeof DashUsenetIndexRoute
   '/dash/vault/': typeof DashVaultIndexRoute
 }
@@ -235,7 +234,8 @@ export interface FileRoutesByTo {
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
-  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
+  '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
+  '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/config': typeof DashUsenetConfigRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
@@ -243,12 +243,11 @@ export interface FileRoutesByTo {
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
-  '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists': typeof DashListsIndexRoute
   '/dash/settings': typeof DashSettingsIndexRoute
   '/dash/sync': typeof DashSyncIndexRoute
-  '/dash/torrents': typeof DashTorrentsIndexRoute
+  '/dash/torrent': typeof DashTorrentIndexRoute
   '/dash/usenet': typeof DashUsenetIndexRoute
   '/dash/vault': typeof DashVaultIndexRoute
 }
@@ -260,7 +259,7 @@ export interface FileRoutesById {
   '/dash/proxy': typeof DashProxyRoute
   '/dash/settings': typeof DashSettingsRouteWithChildren
   '/dash/sync': typeof DashSyncRouteWithChildren
-  '/dash/torrents': typeof DashTorrentsRouteWithChildren
+  '/dash/torrent': typeof DashTorrentRouteWithChildren
   '/dash/usenet': typeof DashUsenetRouteWithChildren
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
@@ -268,7 +267,8 @@ export interface FileRoutesById {
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
-  '/dash/torrents/indexers-sync': typeof DashTorrentsIndexersSyncRoute
+  '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
+  '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/config': typeof DashUsenetConfigRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
   '/dash/usenet/nzb': typeof DashUsenetNzbRoute
@@ -276,12 +276,11 @@ export interface FileRoutesById {
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
-  '/dash/vault/torznab-indexers': typeof DashVaultTorznabIndexersRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
   '/dash/settings/': typeof DashSettingsIndexRoute
   '/dash/sync/': typeof DashSyncIndexRoute
-  '/dash/torrents/': typeof DashTorrentsIndexRoute
+  '/dash/torrent/': typeof DashTorrentIndexRoute
   '/dash/usenet/': typeof DashUsenetIndexRoute
   '/dash/vault/': typeof DashVaultIndexRoute
 }
@@ -294,7 +293,7 @@ export interface FileRouteTypes {
     | '/dash/proxy'
     | '/dash/settings'
     | '/dash/sync'
-    | '/dash/torrents'
+    | '/dash/torrent'
     | '/dash/usenet'
     | '/dash/vault'
     | '/dash/workers'
@@ -302,7 +301,8 @@ export interface FileRouteTypes {
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
-    | '/dash/torrents/indexers-sync'
+    | '/dash/torrent/sync-info'
+    | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/config'
     | '/dash/usenet/indexers'
     | '/dash/usenet/nzb'
@@ -310,12 +310,11 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
     | '/dash/vault/stremio-accounts'
-    | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
     | '/dash/settings/'
     | '/dash/sync/'
-    | '/dash/torrents/'
+    | '/dash/torrent/'
     | '/dash/usenet/'
     | '/dash/vault/'
   fileRoutesByTo: FileRoutesByTo
@@ -327,7 +326,8 @@ export interface FileRouteTypes {
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
-    | '/dash/torrents/indexers-sync'
+    | '/dash/torrent/sync-info'
+    | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/config'
     | '/dash/usenet/indexers'
     | '/dash/usenet/nzb'
@@ -335,12 +335,11 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
     | '/dash/vault/stremio-accounts'
-    | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists'
     | '/dash/settings'
     | '/dash/sync'
-    | '/dash/torrents'
+    | '/dash/torrent'
     | '/dash/usenet'
     | '/dash/vault'
   id:
@@ -351,7 +350,7 @@ export interface FileRouteTypes {
     | '/dash/proxy'
     | '/dash/settings'
     | '/dash/sync'
-    | '/dash/torrents'
+    | '/dash/torrent'
     | '/dash/usenet'
     | '/dash/vault'
     | '/dash/workers'
@@ -359,7 +358,8 @@ export interface FileRouteTypes {
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
-    | '/dash/torrents/indexers-sync'
+    | '/dash/torrent/sync-info'
+    | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/config'
     | '/dash/usenet/indexers'
     | '/dash/usenet/nzb'
@@ -367,12 +367,11 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
     | '/dash/vault/stremio-accounts'
-    | '/dash/vault/torznab-indexers'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
     | '/dash/settings/'
     | '/dash/sync/'
-    | '/dash/torrents/'
+    | '/dash/torrent/'
     | '/dash/usenet/'
     | '/dash/vault/'
   fileRoutesById: FileRoutesById
@@ -418,11 +417,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashUsenetRouteImport
       parentRoute: typeof DashRoute
     }
-    '/dash/torrents': {
-      id: '/dash/torrents'
-      path: '/torrents'
-      fullPath: '/dash/torrents'
-      preLoaderRoute: typeof DashTorrentsRouteImport
+    '/dash/torrent': {
+      id: '/dash/torrent'
+      path: '/torrent'
+      fullPath: '/dash/torrent'
+      preLoaderRoute: typeof DashTorrentRouteImport
       parentRoute: typeof DashRoute
     }
     '/dash/sync': {
@@ -474,12 +473,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashUsenetIndexRouteImport
       parentRoute: typeof DashUsenetRoute
     }
-    '/dash/torrents/': {
-      id: '/dash/torrents/'
+    '/dash/torrent/': {
+      id: '/dash/torrent/'
       path: '/'
-      fullPath: '/dash/torrents/'
-      preLoaderRoute: typeof DashTorrentsIndexRouteImport
-      parentRoute: typeof DashTorrentsRoute
+      fullPath: '/dash/torrent/'
+      preLoaderRoute: typeof DashTorrentIndexRouteImport
+      parentRoute: typeof DashTorrentRoute
     }
     '/dash/sync/': {
       id: '/dash/sync/'
@@ -507,13 +506,6 @@ declare module '@tanstack/react-router' {
       path: '/trakt-accounts'
       fullPath: '/dash/vault/trakt-accounts'
       preLoaderRoute: typeof DashVaultTraktAccountsRouteImport
-      parentRoute: typeof DashVaultRoute
-    }
-    '/dash/vault/torznab-indexers': {
-      id: '/dash/vault/torznab-indexers'
-      path: '/torznab-indexers'
-      fullPath: '/dash/vault/torznab-indexers'
-      preLoaderRoute: typeof DashVaultTorznabIndexersRouteImport
       parentRoute: typeof DashVaultRoute
     }
     '/dash/vault/stremio-accounts': {
@@ -565,12 +557,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashUsenetConfigRouteImport
       parentRoute: typeof DashUsenetRoute
     }
-    '/dash/torrents/indexers-sync': {
-      id: '/dash/torrents/indexers-sync'
-      path: '/indexers-sync'
-      fullPath: '/dash/torrents/indexers-sync'
-      preLoaderRoute: typeof DashTorrentsIndexersSyncRouteImport
-      parentRoute: typeof DashTorrentsRoute
+    '/dash/torrent/torznab-indexers': {
+      id: '/dash/torrent/torznab-indexers'
+      path: '/torznab-indexers'
+      fullPath: '/dash/torrent/torznab-indexers'
+      preLoaderRoute: typeof DashTorrentTorznabIndexersRouteImport
+      parentRoute: typeof DashTorrentRoute
+    }
+    '/dash/torrent/sync-info': {
+      id: '/dash/torrent/sync-info'
+      path: '/sync-info'
+      fullPath: '/dash/torrent/sync-info'
+      preLoaderRoute: typeof DashTorrentSyncInfoRouteImport
+      parentRoute: typeof DashTorrentRoute
     }
     '/dash/sync/stremio-trakt': {
       id: '/dash/sync/stremio-trakt'
@@ -638,18 +637,20 @@ const DashSyncRouteWithChildren = DashSyncRoute._addFileChildren(
   DashSyncRouteChildren,
 )
 
-interface DashTorrentsRouteChildren {
-  DashTorrentsIndexersSyncRoute: typeof DashTorrentsIndexersSyncRoute
-  DashTorrentsIndexRoute: typeof DashTorrentsIndexRoute
+interface DashTorrentRouteChildren {
+  DashTorrentSyncInfoRoute: typeof DashTorrentSyncInfoRoute
+  DashTorrentTorznabIndexersRoute: typeof DashTorrentTorznabIndexersRoute
+  DashTorrentIndexRoute: typeof DashTorrentIndexRoute
 }
 
-const DashTorrentsRouteChildren: DashTorrentsRouteChildren = {
-  DashTorrentsIndexersSyncRoute: DashTorrentsIndexersSyncRoute,
-  DashTorrentsIndexRoute: DashTorrentsIndexRoute,
+const DashTorrentRouteChildren: DashTorrentRouteChildren = {
+  DashTorrentSyncInfoRoute: DashTorrentSyncInfoRoute,
+  DashTorrentTorznabIndexersRoute: DashTorrentTorznabIndexersRoute,
+  DashTorrentIndexRoute: DashTorrentIndexRoute,
 }
 
-const DashTorrentsRouteWithChildren = DashTorrentsRoute._addFileChildren(
-  DashTorrentsRouteChildren,
+const DashTorrentRouteWithChildren = DashTorrentRoute._addFileChildren(
+  DashTorrentRouteChildren,
 )
 
 interface DashUsenetRouteChildren {
@@ -678,14 +679,12 @@ const DashUsenetRouteWithChildren = DashUsenetRoute._addFileChildren(
 
 interface DashVaultRouteChildren {
   DashVaultStremioAccountsRoute: typeof DashVaultStremioAccountsRoute
-  DashVaultTorznabIndexersRoute: typeof DashVaultTorznabIndexersRoute
   DashVaultTraktAccountsRoute: typeof DashVaultTraktAccountsRoute
   DashVaultIndexRoute: typeof DashVaultIndexRoute
 }
 
 const DashVaultRouteChildren: DashVaultRouteChildren = {
   DashVaultStremioAccountsRoute: DashVaultStremioAccountsRoute,
-  DashVaultTorznabIndexersRoute: DashVaultTorznabIndexersRoute,
   DashVaultTraktAccountsRoute: DashVaultTraktAccountsRoute,
   DashVaultIndexRoute: DashVaultIndexRoute,
 }
@@ -700,7 +699,7 @@ interface DashRouteChildren {
   DashProxyRoute: typeof DashProxyRoute
   DashSettingsRoute: typeof DashSettingsRouteWithChildren
   DashSyncRoute: typeof DashSyncRouteWithChildren
-  DashTorrentsRoute: typeof DashTorrentsRouteWithChildren
+  DashTorrentRoute: typeof DashTorrentRouteWithChildren
   DashUsenetRoute: typeof DashUsenetRouteWithChildren
   DashVaultRoute: typeof DashVaultRouteWithChildren
   DashWorkersRoute: typeof DashWorkersRoute
@@ -713,7 +712,7 @@ const DashRouteChildren: DashRouteChildren = {
   DashProxyRoute: DashProxyRoute,
   DashSettingsRoute: DashSettingsRouteWithChildren,
   DashSyncRoute: DashSyncRouteWithChildren,
-  DashTorrentsRoute: DashTorrentsRouteWithChildren,
+  DashTorrentRoute: DashTorrentRouteWithChildren,
   DashUsenetRoute: DashUsenetRouteWithChildren,
   DashVaultRoute: DashVaultRouteWithChildren,
   DashWorkersRoute: DashWorkersRoute,

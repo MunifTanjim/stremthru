@@ -56,10 +56,10 @@ declare module "@/components/data-table" {
   }
 }
 
-export const Route = createFileRoute("/dash/torrents/indexers-sync")({
+export const Route = createFileRoute("/dash/torrent/sync-info")({
   component: RouteComponent,
   staticData: {
-    crumb: "Indexers Sync",
+    crumb: "Sync Info",
   },
 });
 
