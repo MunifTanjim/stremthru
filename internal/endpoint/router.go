@@ -4,10 +4,13 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/newz"
+	"github.com/MunifTanjim/stremthru/internal/sabnzbd"
 	"github.com/MunifTanjim/stremthru/internal/torz"
 )
 
 func AddEndpoints(mux *http.ServeMux) {
 	newz.AddEndpoints(mux)
 	torz.AddEndpoints(mux)
+
+	sabnzbd.AddEndpoints(mux)
 }

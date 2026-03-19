@@ -199,3 +199,49 @@ StremThru exposes a Newznab-compatible API endpoint that can be used with tools 
 **Authentication:** Uses the `STREMTHRU_AUTH` credentials, passed via the `apikey` query parameter.
 
 **Output format:** Controlled by the `o` query parameter (`xml` default, `json` supported).
+
+## SABnzbd Endpoint
+
+**`GET /v0/sabnzbd/api`**
+
+StremThru exposes a SABnzbd-compatible API endpoint that can be used with tools like Sonarr, Radarr, Prowlarr etc. to send NZBs to StremThru for processing.
+
+::: info Prerequisite
+[`Vault`](/configuration/#vault) is required for this.
+:::
+
+**Authentication:** Uses the [`STREMTHRU_AUTH_SABNZBD`](/configuration/newz#stremthru-auth-sabnzbd) credentials, passed via the `apikey` query parameter.
+
+### Supported Modes
+
+#### `addurl`
+
+Queue an NZB URL for download.
+
+**Query Parameters:**
+
+| Parameter  | Required | Description                              |
+| ---------- | -------- | ---------------------------------------- |
+| `name`     | Yes      | NZB URL to download                      |
+| `nzbname`  | No       | Display name for the NZB                 |
+| `cat`      | No       | Category (`*` is treated as none)        |
+| `priority` | No       | Priority integer (`-100` treated as `0`) |
+| `password` | No       | Password for the NZB                     |
+
+**Success Response:**
+
+```json
+{
+  "status": true,
+  "nzo_ids": ["SABnzbd_nzo_<id>"]
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "status": false,
+  "error": "<message>"
+}
+```

@@ -187,6 +187,8 @@ type AuthMap struct {
 	user_pass  map[string]string
 	admin_pass map[string]string
 	is_admin   map[string]bool
+
+	sabnzbd_apikey map[string]string
 }
 
 func (m AuthMap) GetPassword(user string) string {
@@ -204,10 +206,8 @@ func (m AuthMap) IsAdmin(user string) bool {
 	return ok && isAdmin
 }
 
-type SabnzbdAuthMap map[string]string // username -> apikey
-
-func (m SabnzbdAuthMap) GetUser(apikey string) string {
-	for user, key := range m {
+func (m AuthMap) GetSABnzbdUser(apikey string) string {
+	for user, key := range m.sabnzbd_apikey {
 		if key == apikey {
 			return user
 		}
@@ -401,7 +401,6 @@ type Config struct {
 	Port                        string
 	StoreAuthToken              StoreAuthTokenMap
 	Auth                        AuthMap
-	SabnzbdAuth                 SabnzbdAuthMap
 	BuddyURL                    string
 	HasBuddy                    bool
 	PeerURL                     string
@@ -446,6 +445,8 @@ var config = func() Config {
 		user_pass:  map[string]string{},
 		admin_pass: map[string]string{},
 		is_admin:   map[string]bool{},
+
+		sabnzbd_apikey: map[string]string{},
 	}
 
 	authCredStr := getEnv("STREMTHRU_AUTH")
@@ -488,14 +489,17 @@ var config = func() Config {
 		authMap.admin_pass[username] = password
 	}
 
-	sabnzbdAuthMap := make(SabnzbdAuthMap)
-	sabnzbdAuthList := strings.FieldsFunc(getEnv("STREMTHRU_AUTH_SABNZBD"), func(c rune) bool {
+	for _, creds := range strings.FieldsFunc(getEnv("STREMTHRU_AUTH_SABNZBD"), func(c rune) bool {
 		return c == ','
-	})
-	for _, entry := range sabnzbdAuthList {
-		if username, apikey, ok := strings.Cut(entry, ":"); ok && username != "" && apikey != "" {
-			sabnzbdAuthMap[username] = apikey
+	}) {
+		if !strings.Contains(creds, ":") {
+			log.Fatalf("invalid sabnzbd auth credential, expected format: <username:apikey>, got: <%s>", creds)
 		}
+		basicAuth, err := util.ParseBasicAuth(creds)
+		if err != nil {
+			log.Fatalf("invalid sabnzbd auth credential: <%s>, error: %v", creds, err)
+		}
+		authMap.sabnzbd_apikey[basicAuth.Username] = basicAuth.Password
 	}
 
 	storeAlldebridTokenList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_AUTH"), func(c rune) bool {
@@ -663,7 +667,6 @@ var config = func() Config {
 
 		ListenAddr:                  listenAddr,
 		Auth:                        authMap,
-		SabnzbdAuth:                 sabnzbdAuthMap,
 		StoreAuthToken:              storeAuthTokenMap,
 		BuddyURL:                    buddyUrl,
 		HasBuddy:                    len(buddyUrl) > 0,
@@ -694,7 +697,6 @@ var LogFormat = config.LogFormat
 
 var ListenAddr = config.ListenAddr
 var Auth = config.Auth
-var SabnzbdAuth = config.SabnzbdAuth
 var StoreAuthToken = config.StoreAuthToken
 var BuddyURL = config.BuddyURL
 var HasBuddy = config.HasBuddy

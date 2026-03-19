@@ -163,3 +163,17 @@ Header-Name: Header-Value
 ```sh
 STREMTHRU_NEWZ_GRAB_HEADER=":sabnzbd:"
 ```
+
+## Authentication
+
+### `STREMTHRU_AUTH_SABNZBD`
+
+Credentials for authenticating requests to the [SABnzbd-compatible endpoint](/api/newz#sabnzbd-endpoint).
+
+**Format:** `username:apikey` (comma-separated for multiple entries)
+
+**Example:**
+
+```sh
+STREMTHRU_AUTH_SABNZBD=alice:api-key-for-alice,bob:api-key-for-bob
+```
