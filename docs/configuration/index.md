@@ -84,6 +84,28 @@ Directory for StremThru data files (cache, database, temporary files etc.).
 STREMTHRU_DATA_DIR=./data
 ```
 
+### `STREMTHRU_IP_CHECKER`
+
+Comma-separated list of IP checker services used to determine the machine's public IP address. Multiple checkers provide fallback — if the first fails, the next is tried.
+
+| Value            | Description                                            |
+| ---------------- | ------------------------------------------------------ |
+| `api.ipify.org`  | [api.ipify.org](https://api.ipify.org)                 |
+| `akamai`         | [whatismyip.akamai.com](https://whatismyip.akamai.com) |
+| `amazon` / `aws` | [checkip.amazonaws.com](https://checkip.amazonaws.com) |
+| `icanhazip.com`  | [icanhazip.com](https://icanhazip.com)                 |
+| `ifconfig.co`    | [ifconfig.co](https://ifconfig.co/ip)                  |
+| `ifconfig.io`    | [ifconfig.io](https://ifconfig.io/ip)                  |
+| `ifconfig.me`    | [ifconfig.me](https://ifconfig.me/ip)                  |
+
+- **Default:** `aws,akamai,api.ipify.org`
+
+**Example:**
+
+```sh
+STREMTHRU_IP_CHECKER=aws,akamai,api.ipify.org
+```
+
 ## Authentication {#authentication}
 
 ### `STREMTHRU_AUTH`

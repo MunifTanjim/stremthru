@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type TunnelType string
@@ -303,46 +305,88 @@ func getHTTPClientWithProxy(proxyUrl *url.URL) *http.Client {
 type IPResolver struct {
 	machineIP string
 
-	checker            string
+	checkers           []string
 	proxyIpByHostname  map[string]string
 	proxyIpByProxyHost map[string]string
 	proxyIpMapStaleAt  time.Time
 	m                  sync.Mutex
 }
 
-func (ipr *IPResolver) getIp(client *http.Client) (string, error) {
-	switch ipr.checker {
-	case "aws", "amazon":
-		req, err := http.NewRequest(http.MethodGet, "https://checkip.amazonaws.com", nil)
-		if err != nil {
-			return "", err
+var validIPCheckers = func() *util.Set[string] {
+	checkers := util.NewSet[string]()
+	checkers.Add("api.ipify.org")
+	checkers.Add("akamai")
+	checkers.Add("amazon")
+	checkers.Add("aws")
+	checkers.Add("icanhazip.com")
+	checkers.Add("ifconfig.co")
+	checkers.Add("ifconfig.io")
+	checkers.Add("ifconfig.me")
+	return checkers
+}()
+
+func (ipr *IPResolver) validate() {
+	for _, checker := range ipr.checkers {
+		if !validIPCheckers.Has(checker) {
+			log.Fatalf("invalid ip checker: %s", checker)
 		}
-		res, err := client.Do(req)
-		if err != nil {
-			return "", err
-		}
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return "", err
-		}
-		return strings.TrimSpace(string(body)), nil
-	case "akamai":
-		req, err := http.NewRequest(http.MethodGet, "https://whatismyip.akamai.com", nil)
-		if err != nil {
-			return "", err
-		}
-		res, err := client.Do(req)
-		if err != nil {
-			return "", err
-		}
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return "", err
-		}
-		return strings.TrimSpace(string(body)), nil
-	default:
-		return "", errors.New("invalid ip checker: " + ipr.checker)
 	}
+}
+
+func (ipr *IPResolver) getIpFrom(client *http.Client, checker string) (string, error) {
+	var checkUrl string
+	switch checker {
+	case "api.ipify.org":
+		checkUrl = "https://api.ipify.org"
+	case "akamai":
+		checkUrl = "https://whatismyip.akamai.com"
+	case "amazon", "aws":
+		checkUrl = "https://checkip.amazonaws.com"
+	case "icanhazip.com":
+		checkUrl = "https://icanhazip.com"
+	case "ifconfig.co":
+		checkUrl = "https://ifconfig.co/ip"
+	case "ifconfig.io":
+		checkUrl = "https://ifconfig.io/ip"
+	case "ifconfig.me":
+		checkUrl = "https://ifconfig.me/ip"
+	default:
+		return "", errors.New("invalid ip checker: " + checker)
+	}
+	req, err := http.NewRequest(http.MethodGet, checkUrl, nil)
+	if err != nil {
+		return "", err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	ip := strings.TrimSpace(string(body))
+	if ip == "" {
+		return "", errors.New("empty response from ip checker: " + checker)
+	}
+	return ip, nil
+}
+
+func (ipr *IPResolver) getIp(client *http.Client) (string, error) {
+	errs := []error{}
+	for _, checker := range ipr.checkers {
+		ip, err := ipr.getIpFrom(client, checker)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		return ip, nil
+	}
+	if len(errs) > 0 {
+		return "", errors.Join(errs...)
+	}
+	return "", errors.New("no ip checker configured")
 }
 
 func (ipr *IPResolver) GetMachineIP() string {

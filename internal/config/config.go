@@ -86,7 +86,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT":    "3",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_UPSTREAM_COUNT": "5",
 		"STREMTHRU_STREMIO_WRAP_PUBLIC_MAX_STORE_COUNT":    "3",
-		"STREMTHRU_IP_CHECKER":                             "aws",
+		"STREMTHRU_IP_CHECKER":                             "aws,akamai,api.ipify.org",
 		"STREMTHRU_NEWZ_MAX_CONNECTION_PER_STREAM":         "8",
 		"STREMTHRU_NEWZ_NZB_FILE_CACHE_SIZE":               "512MB",
 		"STREMTHRU_NEWZ_NZB_FILE_CACHE_TTL":                "24h",
@@ -651,6 +651,12 @@ var config = func() Config {
 			listenAddr = "127.0.0.1" + listenAddr
 		}
 	}
+
+	ip := &IPResolver{
+		checkers: strings.Split(getEnv("STREMTHRU_IP_CHECKER"), ","),
+	}
+	ip.validate()
+
 	return Config{
 		LogLevel:  logLevel,
 		LogFormat: logFormat,
@@ -677,12 +683,9 @@ var config = func() Config {
 		StoreContentCachedStaleTime: storeContentCachedStaleTimeMap,
 		StoreClientUserAgent:        getEnv("STREMTHRU_STORE_CLIENT_USER_AGENT"),
 		ContentProxyConnectionLimit: contentProxyConnectionMap,
-		IP: &IPResolver{
-			checker: getEnv("STREMTHRU_IP_CHECKER"),
-		},
-
-		DataDir:     dataDir,
-		VaultSecret: vaultSecret,
+		IP:                          ip,
+		DataDir:                     dataDir,
+		VaultSecret:                 vaultSecret,
 	}
 }()
 
