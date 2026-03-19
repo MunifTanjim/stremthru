@@ -138,11 +138,22 @@ function QueriesPopover({
   );
 }
 
-function StatusBadge({ status }: { status: TorznabIndexerSyncInfo["status"] }) {
+function StatusBadge({
+  status,
+  syncedAt,
+}: {
+  status: TorznabIndexerSyncInfo["status"];
+  syncedAt: TorznabIndexerSyncInfo["synced_at"];
+}) {
+  const syncedRecently =
+    syncedAt && DateTime.fromISO(syncedAt).diffNow("hours").hours > -24;
+
   const config = {
     queued: {
-      className: "bg-muted text-muted-foreground",
-      label: "Queued",
+      className: syncedRecently
+        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+        : "bg-muted text-muted-foreground",
+      label: syncedRecently ? `⌛ Queued` : "Queued",
     },
     synced: {
       className:
@@ -180,9 +191,9 @@ const columns: ColumnDef<TorznabIndexerSyncInfo>[] = [
     header: "Strem Id",
   }),
   col.accessor("status", {
-    cell: ({ getValue }) => {
+    cell: ({ getValue, row }) => {
       const status = getValue();
-      return <StatusBadge status={status} />;
+      return <StatusBadge status={status} syncedAt={row.original.synced_at} />;
     },
     header: "Status",
   }),
