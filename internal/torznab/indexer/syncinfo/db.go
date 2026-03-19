@@ -16,7 +16,7 @@ import (
 var queueCache = cache.NewLRUCache[time.Time](&cache.CacheConfig{
 	Lifetime: 3 * time.Hour,
 	Name:     "torznab_indexer_syncinfo:queue",
-	MaxSize:  2048,
+	MaxSize:  4096,
 })
 
 const staleTime = 24 * time.Hour
@@ -294,7 +294,7 @@ func HasSyncPending() bool {
 }
 
 var query_get_sync_pending_by_indexer = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s AND %s = ? ORDER BY %s ASC LIMIT 1000",
+	"SELECT %s FROM %s WHERE %s AND %s = ? ORDER BY %s DESC LIMIT 1000",
 	db.JoinColumnNames(columns...),
 	TableName,
 	query_get_pending_cond,
