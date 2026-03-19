@@ -69,6 +69,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME": "24h",
 		"STREMTHRU_INTEGRATION_LETTERBOXD_USER_AGENT":      "stremthru",
 		"STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME":    "12h",
+		"STREMTHRU_INTEGRATION_SERIALIZD_LIST_STALE_TIME":  "24h",
 		"STREMTHRU_INTEGRATION_TMDB_LIST_STALE_TIME":       "12h",
 		"STREMTHRU_INTEGRATION_TRAKT_LIST_STALE_TIME":      "12h",
 		"STREMTHRU_INTEGRATION_TVDB_LIST_STALE_TIME":       "12h",
@@ -1011,7 +1012,7 @@ func PrintConfig(state *AppState) {
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "bitmagnet.io", "github.com", "kitsu.app", "letterboxd.com", "mdblist.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
+	for _, integration := range []string{"anilist.co", "bitmagnet.io", "github.com", "kitsu.app", "letterboxd.com", "mdblist.com", "serializd.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
 		switch integration {
 		case "anilist.co":
 			disabled := ""
@@ -1075,6 +1076,13 @@ func PrintConfig(state *AppState) {
 		case "mdblist.com":
 			l.Println("   - " + integration)
 			l.Println("       list stale time: " + Integration.MDBList.ListStaleTime.String())
+		case "serializd.com":
+			disabled := ""
+			if !Integration.TMDB.IsEnabled() {
+				disabled = " (disabled)"
+			}
+			l.Println("   - " + integration + disabled)
+			l.Println("       list stale time: " + Integration.Serializd.ListStaleTime.String())
 		case "themoviedb.org":
 			disabled := ""
 			if !Integration.TMDB.IsEnabled() {

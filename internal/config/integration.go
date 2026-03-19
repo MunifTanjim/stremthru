@@ -88,6 +88,10 @@ func (c integrationConfigTMDB) IsEnabled() bool {
 	return c.AccessToken != ""
 }
 
+type integrationConfigSerializd struct {
+	ListStaleTime time.Duration
+}
+
 type integrationConfigTVDB struct {
 	APIKey             string
 	ListStaleTime      time.Duration
@@ -106,6 +110,7 @@ type IntegrationConfig struct {
 	MDBList    integrationConfigMDBList
 	Trakt      integrationConfigTrakt
 	Kitsu      integrationConfigKitsu
+	Serializd  integrationConfigSerializd
 	TMDB       integrationConfigTMDB
 	TVDB       integrationConfigTVDB
 }
@@ -154,6 +159,9 @@ func parseIntegration() IntegrationConfig {
 			ClientSecret: getEnv("STREMTHRU_INTEGRATION_KITSU_CLIENT_SECRET"),
 			Email:        getEnv("STREMTHRU_INTEGRATION_KITSU_EMAIL"),
 			Password:     getEnv("STREMTHRU_INTEGRATION_KITSU_PASSWORD"),
+		},
+		Serializd: integrationConfigSerializd{
+			ListStaleTime: mustParseDuration("serializd list stale time", getEnv("STREMTHRU_INTEGRATION_SERIALIZD_LIST_STALE_TIME"), 1*time.Hour),
 		},
 		TMDB: integrationConfigTMDB{
 			AccessToken:   getEnv("STREMTHRU_INTEGRATION_TMDB_ACCESS_TOKEN"),

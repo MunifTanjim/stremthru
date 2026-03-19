@@ -7,7 +7,13 @@ type IMDBTitleStats = {
 };
 
 type ListsStats = Record<
-  "anilist" | "letterboxd" | "mdblist" | "tmdb" | "trakt" | "tvdb",
+  | "anilist"
+  | "letterboxd"
+  | "mdblist"
+  | "serializd"
+  | "tmdb"
+  | "trakt"
+  | "tvdb",
   {
     total_items: number;
     total_lists: number;

@@ -29,6 +29,10 @@ const listsChartConfig = {
     color: "var(--chart-2)",
     label: "MDBList",
   },
+  serializd: {
+    color: "var(--chart-5)",
+    label: "Serializd",
+  },
   tmdb: {
     color: "var(--chart-1)",
     label: "TMDB",
@@ -65,6 +69,11 @@ export function ListStatsCard() {
           service: "letterboxd",
         },
         {
+          fill: "var(--color-serializd)",
+          lists: data?.serializd.total_lists,
+          service: "serializd",
+        },
+        {
           fill: "var(--color-tmdb)",
           lists: data?.tmdb.total_lists,
           service: "tmdb",
@@ -95,6 +104,11 @@ export function ListStatsCard() {
           fill: "var(--color-letterboxd)",
           items: data?.letterboxd.total_items,
           service: "letterboxd",
+        },
+        {
+          fill: "var(--color-serializd)",
+          items: data?.serializd.total_items,
+          service: "serializd",
         },
         {
           fill: "var(--color-tmdb)",

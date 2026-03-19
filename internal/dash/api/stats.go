@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/letterboxd"
 	"github.com/MunifTanjim/stremthru/internal/magnet_cache"
 	"github.com/MunifTanjim/stremthru/internal/mdblist"
+	"github.com/MunifTanjim/stremthru/internal/serializd"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/tmdb"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
@@ -167,9 +168,15 @@ type ListsStats struct {
 		TotalLists int `json:"total_lists"`
 		TotalItems int `json:"total_items"`
 	} `json:"tvdb"`
+	Serializd struct {
+		TotalLists int `json:"total_lists"`
+		TotalItems int `json:"total_items"`
+	} `json:"serializd"`
 }
 
 var query_get_lists_stats = fmt.Sprintf(`
+SELECT COUNT(1) FROM %s UNION ALL SELECT COUNT(1) FROM %s
+UNION ALL
 SELECT COUNT(1) FROM %s UNION ALL SELECT COUNT(1) FROM %s
 UNION ALL
 SELECT COUNT(1) FROM %s UNION ALL SELECT COUNT(1) FROM %s
@@ -188,6 +195,7 @@ SELECT COUNT(1) FROM %s UNION ALL SELECT COUNT(1) FROM %s
 	tmdb.ListTableName, tmdb.ItemTableName,
 	trakt.ListTableName, trakt.ItemTableName,
 	tvdb.ListTableName, tvdb.ItemTableName,
+	serializd.ListTableName, serializd.ItemTableName,
 )
 
 var cachedListsStats = cache.NewCachedValue(cache.CachedValueConfig[*ListsStats]{
@@ -198,7 +206,7 @@ var cachedListsStats = cache.NewCachedValue(cache.CachedValueConfig[*ListsStats]
 		}
 		defer rows.Close()
 
-		counts := make([]int, 0, 12)
+		counts := make([]int, 0, 14)
 		for rows.Next() {
 			var count int
 			if err := rows.Scan(&count); err != nil {
@@ -220,6 +228,8 @@ var cachedListsStats = cache.NewCachedValue(cache.CachedValueConfig[*ListsStats]
 		stats.Trakt.TotalItems = counts[9]
 		stats.TVDB.TotalLists = counts[10]
 		stats.TVDB.TotalItems = counts[11]
+		stats.Serializd.TotalLists = counts[12]
+		stats.Serializd.TotalItems = counts[13]
 
 		return &stats, nil
 	},
