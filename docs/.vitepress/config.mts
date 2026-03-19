@@ -91,6 +91,7 @@ export default defineConfig({
           { text: "GitHub", link: "/integrations/github" },
           { text: "Letterboxd", link: "/integrations/letterboxd" },
           { text: "MDBList", link: "/integrations/mdblist" },
+          { text: "Serializd", link: "/integrations/serializd" },
           { text: "TMDB", link: "/integrations/tmdb" },
           { text: "TVDB", link: "/integrations/tvdb" },
           { text: "Trakt", link: "/integrations/trakt" },

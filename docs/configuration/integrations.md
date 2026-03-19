@@ -69,6 +69,23 @@ Stale time for MDBList list data.
 STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME=12h
 ```
 
+## Serializd
+
+No environment variables required. Serializd integration requires [TMDB](#tmdb) to be enabled.
+
+### `STREMTHRU_INTEGRATION_SERIALIZD_LIST_STALE_TIME`
+
+Stale time for Serializd list data.
+
+- **Default:** `24h`
+- **Minimum:** `1h`
+
+**Example:**
+
+```sh
+STREMTHRU_INTEGRATION_SERIALIZD_LIST_STALE_TIME=24h
+```
+
 ## TMDB
 
 TMDB integration requires an [Access Token](https://www.themoviedb.org/settings/api).
