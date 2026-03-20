@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.99.0](https://github.com/MunifTanjim/stremthru/compare/0.98.11...0.99.0) (2026-03-20)
+
+
+### Features
+
+* **config:** support various ip checkers ([555487a](https://github.com/MunifTanjim/stremthru/commit/555487a3b0d15ceb1d97c643abe7910ac6460ca6))
+* **dash:** reorganize torrent pages ([4103029](https://github.com/MunifTanjim/stremthru/commit/4103029349a7adb86a6bba4961e62231b3043aa0))
+* **sabnzbd:** add sabnzbd compatible endpoint ([e56510c](https://github.com/MunifTanjim/stremthru/commit/e56510c12912abd04d386f9c2778cd5df08a6a60))
+* **serializd:** add initial integration ([33d15b8](https://github.com/MunifTanjim/stremthru/commit/33d15b81081a821840ff98c20ed00562e121e53e))
+* **store:** add stats ([d0f8ecc](https://github.com/MunifTanjim/stremthru/commit/d0f8eccfe5d813a1263a8a39c5687ebeb60a4b5b))
+* **stremio/list:** add support for serializd ([0277651](https://github.com/MunifTanjim/stremthru/commit/027765152f4f52a4de08028a90daf152e8919144))
+* **stremio/store:** support webdl for pikpak ([174a575](https://github.com/MunifTanjim/stremthru/commit/174a5754a294bc8c16b4fdeee7084949adc65c80))
+* **torznab/indexer:** add stats in dashboard ([a3e3345](https://github.com/MunifTanjim/stremthru/commit/a3e3345616087fe93999ef5d7ee893626409a5f1))
+* **torznab/indexer:** show indicator for recently synced ([9a813ab](https://github.com/MunifTanjim/stremthru/commit/9a813ab2fd5d9f4ad0a787fab9939462e7dd835d))
+* **torznab/indexer:** sync newly queued items first ([2bc830e](https://github.com/MunifTanjim/stremthru/commit/2bc830e84bafad3896388e2a929c29eedc2938d2))
+
+
+### Bug Fixes
+
+* **torznab:** respect lazy peer flag config ([0db8b91](https://github.com/MunifTanjim/stremthru/commit/0db8b91a0006267a7727d131d5e3192b04f933f1))
+
+
+### Performance Improvements
+
+* **torznab/indexer:** update queries and indices ([90dc63f](https://github.com/MunifTanjim/stremthru/commit/90dc63f53d6947f770f6d057ba6ade2e6f7511a2))
+
 ## [0.98.11](https://github.com/MunifTanjim/stremthru/compare/0.98.10...0.98.11) (2026-03-18)
 
 
