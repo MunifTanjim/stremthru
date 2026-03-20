@@ -311,37 +311,69 @@ func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp s
 	}
 
 	if idr.isWebDL {
-		if s.GetName() != store.StoreNameTorBox {
+		switch s.GetName() {
+		case store.StoreNamePikPak:
+			if webzStore, ok := s.(store.WebzStore); ok {
+				params := &store.GetWebzParams{
+					Id: id,
+				}
+				params.APIKey = storeToken
+				webz, err := webzStore.GetWebz(params)
+				if err != nil {
+					return nil, err
+				}
+				cInfo := &store.GetMagnetData{
+					AddedAt: webz.AddedAt,
+					Hash:    webz.Hash,
+					Id:      webz.Id,
+					Name:    webz.Name,
+					Size:    webz.Size,
+					Status:  store.MagnetStatus(webz.Status),
+				}
+				for _, f := range webz.Files {
+					cInfo.Files = append(cInfo.Files, store.MagnetFile{
+						Idx:       f.Idx,
+						Name:      f.Name,
+						Size:      f.Size,
+						Link:      f.Link,
+						VideoHash: f.VideoHash,
+					})
+				}
+				return &contentInfo{cInfo, ""}, nil
+			}
+
+		case store.StoreNameTorBox:
+			params := &stremio_store_webdl.GetWebDLParams{
+				Id: id,
+			}
+			params.APIKey = storeToken
+			webdl, err := stremio_store_webdl.GetWebDL(params, s.GetName())
+			if err != nil {
+				return nil, err
+			}
+			cInfo := &store.GetMagnetData{
+				AddedAt: webdl.AddedAt,
+				Hash:    webdl.Hash,
+				Id:      webdl.Id,
+				Name:    webdl.Name,
+				Size:    webdl.Size,
+				Status:  webdl.Status,
+			}
+			for _, f := range webdl.Files {
+				cInfo.Files = append(cInfo.Files, store.MagnetFile{
+					Idx:       f.Idx,
+					Name:      f.Name,
+					Size:      f.Size,
+					Link:      f.Link,
+					VideoHash: f.VideoHash,
+				})
+
+			}
+			return &contentInfo{cInfo, ""}, nil
+
+		default:
 			return nil, nil
 		}
-
-		params := &stremio_store_webdl.GetWebDLParams{
-			Id: id,
-		}
-		params.APIKey = storeToken
-		webdl, err := stremio_store_webdl.GetWebDL(params, s.GetName())
-		if err != nil {
-			return nil, err
-		}
-		cInfo := &store.GetMagnetData{
-			AddedAt: webdl.AddedAt,
-			Hash:    webdl.Hash,
-			Id:      webdl.Id,
-			Name:    webdl.Name,
-			Size:    webdl.Size,
-			Status:  webdl.Status,
-		}
-		for _, f := range webdl.Files {
-			cInfo.Files = append(cInfo.Files, store.MagnetFile{
-				Idx:       f.Idx,
-				Name:      f.Name,
-				Size:      f.Size,
-				Link:      f.Link,
-				VideoHash: f.VideoHash,
-			})
-
-		}
-		return &contentInfo{cInfo, ""}, nil
 	}
 
 	params := &store.GetMagnetParams{

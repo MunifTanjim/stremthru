@@ -108,7 +108,7 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 							catalogs = append(catalogs, getManifestCatalog(usenetCode, ud.HideCatalog))
 						}
 
-						if storeName == store.StoreNameTorBox {
+						if storeName == store.StoreNameTorBox || storeName == store.StoreNamePikPak {
 							if ud.EnableWebDL {
 								webdlCode := code + "-webdl"
 								idPrefixes = append(idPrefixes, getIdPrefix(webdlCode))
@@ -154,7 +154,7 @@ func GetManifest(r *http.Request, ud *UserData) (*stremio.Manifest, error) {
 				catalogs = append(catalogs, getManifestCatalog(usenetCode, ud.HideCatalog))
 			}
 
-			if storeName == store.StoreNameTorBox {
+			if storeName == store.StoreNameTorBox || storeName == store.StoreNamePikPak {
 				if ud.EnableWebDL {
 					webdlCode := storeCode + "-webdl"
 					idPrefixes = append(idPrefixes, getIdPrefix(webdlCode))

@@ -455,3 +455,75 @@ type NewzStore interface {
 	RemoveNewz(params *RemoveNewzParams) (*RemoveNewzData, error)
 	GenerateNewzLink(params *GenerateNewzLinkParams) (*GenerateNewzLinkData, error)
 }
+
+type WebzFile struct {
+	Idx       int    `json:"index"`
+	Link      string `json:"link,omitempty"`
+	Path      string `json:"path"`
+	Name      string `json:"name"`
+	Size      int64  `json:"size"`
+	VideoHash string `json:"video_hash,omitempty"`
+}
+
+func (f *WebzFile) GetIdx() int {
+	return f.Idx
+}
+
+func (f *WebzFile) GetPath() string {
+	return f.Path
+}
+
+func (f *WebzFile) GetName() string {
+	return f.Name
+}
+
+func (f *WebzFile) GetSize() int64 {
+	return f.Size
+}
+
+func (f *WebzFile) GetLink() string {
+	return f.Link
+}
+
+type GetWebzParams struct {
+	Ctx
+	Id       string
+	ClientIP string
+}
+
+type GetWebzData struct {
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  string     `json:"status"`
+	Files   []WebzFile `json:"files"`
+	AddedAt time.Time  `json:"added_at"`
+}
+
+type ListWebzParams struct {
+	Ctx
+	Limit    int // min 1, max 500, default 100
+	Offset   int // default 0
+	ClientIP string
+}
+
+type ListWebzDataItem struct {
+	Id      string     `json:"id"`
+	Hash    string     `json:"hash"`
+	Name    string     `json:"name"`
+	Size    int64      `json:"size"`
+	Status  string     `json:"status"`
+	AddedAt time.Time  `json:"added_at"`
+	Files   []WebzFile `json:"files"`
+}
+
+type ListWebzData struct {
+	Items      []ListWebzDataItem `json:"items"`
+	TotalItems int                `json:"total_items"`
+}
+
+type WebzStore interface {
+	GetWebz(params *GetWebzParams) (*GetWebzData, error)
+	ListWebz(params *ListWebzParams) (*ListWebzData, error)
+}

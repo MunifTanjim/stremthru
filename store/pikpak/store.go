@@ -17,6 +17,11 @@ import (
 	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
+var (
+	_ store.Store     = (*StoreClient)(nil)
+	_ store.WebzStore = (*StoreClient)(nil)
+)
+
 func toSize(sizeStr string) int64 {
 	size, err := strconv.Atoi(sizeStr)
 	if err != nil {
@@ -34,6 +39,7 @@ type StoreClient struct {
 	Name             store.StoreName
 	client           *APIClient
 	listMagnetsCache cache.Cache[[]store.ListMagnetsDataItem]
+	listFilesCache   cache.Cache[[]File]
 }
 
 func NewStoreClient(config *StoreClientConfig) *StoreClient {
@@ -50,6 +56,10 @@ func NewStoreClient(config *StoreClientConfig) *StoreClient {
 			Lifetime: 5 * time.Minute,
 		})
 	}()
+	c.listFilesCache = cache.NewCache[[]File](&cache.CacheConfig{
+		Name:     "store:pikpak:listFiles",
+		Lifetime: 5 * time.Minute,
+	})
 
 	return c
 }
@@ -449,60 +459,66 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 	lm := []store.ListMagnetsDataItem{}
 
 	if !s.listMagnetsCache.Get(s.getCacheKey(ctx, ""), &lm) {
+		var files []File
+		if !s.listFilesCache.Get(s.getCacheKey(ctx, ""), &files) {
+			files = []File{}
+			pageToken := ""
+			for {
+				myPackFolder, err := s.getMyPackFolder(ctx)
+				if err != nil {
+					return nil, err
+				}
+				start := time.Now()
+				res, err := s.client.ListFiles(&ListFilesParams{
+					Ctx:      Ctx{Ctx: params.Ctx},
+					Limit:    500,
+					ParentId: myPackFolder.Id,
+					Filters: map[string]map[string]any{
+						"trashed": {"eq": false},
+						"phase":   {"eq": FilePhaseComplete},
+					},
+					PageToken: pageToken,
+				})
+				stats.Record(s.Name, "list_files", time.Since(start), err != nil)
+				if err != nil {
+					return nil, err
+				}
+
+				files = append(files, res.Data.Files...)
+				pageToken = res.Data.NextPageToken
+				if pageToken == "" {
+					break
+				}
+			}
+			s.listFilesCache.Add(s.getCacheKey(ctx, ""), files)
+		}
+
 		items := []store.ListMagnetsDataItem{}
-		pageToken := ""
-		for {
-			myPackFolder, err := s.getMyPackFolder(ctx)
+		for i := range files {
+			f := &files[i]
+			addedAt, err := time.Parse(time.RFC3339, f.CreatedTime)
 			if err != nil {
-				return nil, err
+				addedAt = time.Unix(0, 0)
 			}
-			start := time.Now()
-			res, err := s.client.ListFiles(&ListFilesParams{
-				Ctx:      Ctx{Ctx: params.Ctx},
-				Limit:    500,
-				ParentId: myPackFolder.Id,
-				Filters: map[string]map[string]any{
-					"trashed": {"eq": false},
-					"phase":   {"eq": FilePhaseComplete},
-				},
-				PageToken: pageToken,
-			})
-			stats.Record(s.Name, "list_files", time.Since(start), err != nil)
+			if !strings.HasPrefix(f.Params.URL, "magnet:") {
+				continue
+			}
+			magnet, err := core.ParseMagnetLink(f.Params.URL)
 			if err != nil {
-				return nil, err
+				continue
 			}
-
-			for i := range res.Data.Files {
-				f := &res.Data.Files[i]
-				addedAt, err := time.Parse(time.RFC3339, f.CreatedTime)
-				if err != nil {
-					addedAt = time.Unix(0, 0)
-				}
-				if !strings.HasPrefix(f.Params.URL, "magnet:") {
-					continue
-				}
-				magnet, err := core.ParseMagnetLink(f.Params.URL)
-				if err != nil {
-					continue
-				}
-				item := store.ListMagnetsDataItem{
-					Id:      f.Id,
-					Name:    f.Name,
-					Hash:    magnet.Hash,
-					Size:    toSize(f.Size),
-					Status:  store.MagnetStatusDownloading,
-					AddedAt: addedAt,
-				}
-				if f.Phase == FilePhaseComplete {
-					item.Status = store.MagnetStatusDownloaded
-				}
-				items = append(items, item)
+			item := store.ListMagnetsDataItem{
+				Id:      f.Id,
+				Name:    f.Name,
+				Hash:    magnet.Hash,
+				Size:    toSize(f.Size),
+				Status:  store.MagnetStatusDownloading,
+				AddedAt: addedAt,
 			}
-
-			pageToken = res.Data.NextPageToken
-			if pageToken == "" {
-				break
+			if f.Phase == FilePhaseComplete {
+				item.Status = store.MagnetStatusDownloaded
 			}
+			items = append(items, item)
 		}
 
 		slices.SortFunc(items, func(a, b store.ListMagnetsDataItem) int {
@@ -542,6 +558,142 @@ func (s *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 
 	data := &store.RemoveMagnetData{
 		Id: params.Id,
+	}
+	return data, nil
+}
+
+func (s *StoreClient) ListWebz(params *store.ListWebzParams) (*store.ListWebzData, error) {
+	ctx := Ctx{Ctx: params.Ctx}
+
+	var files []File
+	if !s.listFilesCache.Get(s.getCacheKey(ctx, ""), &files) {
+		files = []File{}
+		pageToken := ""
+		for {
+			myPackFolder, err := s.getMyPackFolder(ctx)
+			if err != nil {
+				return nil, err
+			}
+			start := time.Now()
+			res, err := s.client.ListFiles(&ListFilesParams{
+				Ctx:      Ctx{Ctx: params.Ctx},
+				Limit:    500,
+				ParentId: myPackFolder.Id,
+				Filters: map[string]map[string]any{
+					"trashed": {"eq": false},
+					"phase":   {"eq": FilePhaseComplete},
+				},
+				PageToken: pageToken,
+			})
+			stats.Record(s.Name, "list_files", time.Since(start), err != nil)
+			if err != nil {
+				return nil, err
+			}
+
+			files = append(files, res.Data.Files...)
+			pageToken = res.Data.NextPageToken
+			if pageToken == "" {
+				break
+			}
+		}
+		s.listFilesCache.Add(s.getCacheKey(ctx, ""), files)
+	}
+
+	items := []store.ListWebzDataItem{}
+	for i := range files {
+		f := &files[i]
+		addedAt, err := time.Parse(time.RFC3339, f.CreatedTime)
+		if err != nil {
+			addedAt = time.Unix(0, 0)
+		}
+		if strings.HasPrefix(f.Params.URL, "magnet:") {
+			continue
+		}
+		item := store.ListWebzDataItem{
+			Id:      f.Id,
+			Name:    f.Name,
+			Hash:    "",
+			Size:    toSize(f.Size),
+			Status:  string(store.MagnetStatusDownloading),
+			AddedAt: addedAt,
+		}
+		if f.Phase == FilePhaseComplete {
+			item.Status = string(store.MagnetStatusDownloaded)
+		}
+		items = append(items, item)
+	}
+
+	slices.SortFunc(items, func(a, b store.ListWebzDataItem) int {
+		return b.AddedAt.Compare(a.AddedAt)
+	})
+
+	totalItems := len(items)
+	startIdx := min(params.Offset, totalItems)
+	endIdx := min(startIdx+params.Limit, totalItems)
+	items = items[startIdx:endIdx]
+
+	data := &store.ListWebzData{
+		Items:      items,
+		TotalItems: totalItems,
+	}
+
+	return data, nil
+}
+
+func (s *StoreClient) GetWebz(params *store.GetWebzParams) (*store.GetWebzData, error) {
+	ctx := Ctx{Ctx: params.Ctx}
+	start := time.Now()
+	res, err := s.client.GetFile(&GetFileParams{
+		Ctx:    ctx,
+		FileId: params.Id,
+	})
+	stats.Record(s.Name, "get_webz", time.Since(start), err != nil)
+	if err != nil {
+		return nil, err
+	}
+	addedAt, err := time.Parse(time.RFC3339, res.Data.CreatedTime)
+	if err != nil {
+		addedAt = time.Unix(0, 0)
+	}
+	data := &store.GetWebzData{
+		Id:      res.Data.Id,
+		Name:    res.Data.Name,
+		Hash:    "",
+		Size:    -1,
+		Status:  string(store.MagnetStatusDownloading),
+		Files:   []store.WebzFile{},
+		AddedAt: addedAt,
+	}
+	if res.Data.Phase == FilePhaseComplete {
+		data.Status = string(store.MagnetStatusDownloaded)
+		if res.Data.Kind == FileKindFolder {
+			files, err := s.listFilesFlat(ctx, data.Id, nil, nil, data.Id)
+			if err != nil {
+				return nil, err
+			}
+			for i := range files {
+				f := &files[i]
+				data.Files = append(data.Files, store.WebzFile{
+					Idx:  f.Idx,
+					Link: f.Link,
+					Name: f.Name,
+					Path: f.Path,
+					Size: f.Size,
+				})
+			}
+			data.Size = 0
+			for i := range files {
+				data.Size += files[i].Size
+			}
+		} else {
+			data.Files = append(data.Files, store.WebzFile{
+				Idx:  -1,
+				Link: LockedFileLink("").create(data.Id, data.Id),
+				Name: data.Name,
+				Path: "/" + data.Name,
+				Size: toSize(res.Data.Size),
+			})
+		}
 	}
 	return data, nil
 }

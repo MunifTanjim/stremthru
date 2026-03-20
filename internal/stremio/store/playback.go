@@ -115,30 +115,42 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, data.Link, http.StatusFound)
 	} else if idr.isWebDL || videoId == WEBDL_META_ID_INDICATOR {
 		storeName := ctx.Store.GetName()
-		rParams := &stremio_store_webdl.GenerateLinkParams{
-			Link:     link,
-			CLientIP: ctx.ClientIP,
-		}
-		rParams.APIKey = ctx.StoreAuthToken
+		var stLink string
 		var lerr error
-		data, err := stremio_store_webdl.GenerateLink(rParams, storeName)
-		if err == nil {
-			if data.Link == "" {
-				store_video.Redirect(store_video.StoreVideoNameDownloading, w, r)
-				return
+		switch storeName {
+		case store.StoreNamePikPak:
+			linkData, err := shared.GenerateStremThruLink(r, &ctx.Context, url, fileName)
+			if err != nil {
+				lerr = err
+			} else {
+				stLink = linkData.Link
 			}
-			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
-				if ctx.IsProxyAuthorized {
-					tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
-					if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
-						data.Link = proxyLink
-					} else {
-						lerr = err
+		default:
+			rParams := &stremio_store_webdl.GenerateLinkParams{
+				Link:     link,
+				CLientIP: ctx.ClientIP,
+			}
+			rParams.APIKey = ctx.StoreAuthToken
+			data, err := stremio_store_webdl.GenerateLink(rParams, storeName)
+			if err == nil {
+				if data.Link == "" {
+					store_video.Redirect(store_video.StoreVideoNameDownloading, w, r)
+					return
+				}
+				if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
+					if ctx.IsProxyAuthorized {
+						tunnelType := config.StoreTunnel.GetTypeForStream(string(ctx.Store.GetName()))
+						if proxyLink, err := shared.CreateProxyLink(r, data.Link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err == nil {
+							data.Link = proxyLink
+						} else {
+							lerr = err
+						}
 					}
 				}
+				stLink = data.Link
+			} else {
+				lerr = err
 			}
-		} else {
-			lerr = err
 		}
 		if lerr != nil {
 			LogError(r, "failed to generate stremthru link", lerr)
@@ -146,8 +158,8 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stremLinkCache.Add(cacheKey, data.Link)
-		http.Redirect(w, r, data.Link, http.StatusFound)
+		stremLinkCache.Add(cacheKey, stLink)
+		http.Redirect(w, r, stLink, http.StatusFound)
 	} else {
 		stLink, err := shared.GenerateStremThruLink(r, &ctx.Context, url, fileName)
 		if err != nil {

@@ -132,53 +132,100 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 }
 
 func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idStoreCode string, log *logger.Logger) []CachedCatalogItem {
-	items := []CachedCatalogItem{}
-
 	idPrefix := getIdPrefix(idStoreCode)
 
 	cacheKey := getCatalogCacheKey(idStoreCode, storeToken)
+
+	var items []CachedCatalogItem
+
 	if !catalogCache.Get(cacheKey, &items) {
+		items = []CachedCatalogItem{}
+
 		storeName := s.GetName()
 
-		offset := 0
-		hasMore := true
-		for hasMore && offset < max_fetch_list_items {
-			start := time.Now()
-			params := &stremio_store_webdl.ListWebDLsParams{
-				Limit:    fetch_list_limit,
-				Offset:   offset,
-				ClientIP: clientIp,
-			}
-			params.APIKey = storeToken
-			res, err := stremio_store_webdl.ListWebDLs(params, storeName)
-			if err != nil {
-				log.Error("failed to list webdls", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
-				break
-			}
-			count := len(res.Items)
-			log.Debug("fetched webdls", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
+		switch storeName {
+		case store.StoreNamePikPak:
+			if webzStore, ok := s.(store.WebzStore); ok {
+				offset := 0
+				hasMore := true
+				for hasMore && offset < max_fetch_list_items {
+					start := time.Now()
+					params := &store.ListWebzParams{
+						Limit:    fetch_list_limit,
+						Offset:   offset,
+						ClientIP: clientIp,
+					}
+					params.APIKey = storeToken
+					res, err := webzStore.ListWebz(params)
+					if err != nil {
+						log.Error("failed to list webz", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
+						break
+					}
 
-			start = time.Now()
-			for i := range res.Items {
-				item := &res.Items[i]
-				if item.Status == store.MagnetStatusDownloaded {
-					cItem := CachedCatalogItem{stremio.MetaPreview{
-						Id:          idPrefix + item.Id,
-						Type:        ContentTypeOther,
-						Name:        item.Name,
-						PosterShape: stremio.MetaPosterShapePoster,
-					}, item.Hash}
-					cItem.Description = getMetaPreviewDescriptionForWebDL(cItem.Hash, item.Name, false)
-					items = append(items, cItem)
+					for i := range res.Items {
+						item := &res.Items[i]
+						if item.Status == string(store.MagnetStatusDownloaded) {
+							cItem := CachedCatalogItem{stremio.MetaPreview{
+								Id:          idPrefix + item.Id,
+								Type:        ContentTypeOther,
+								Name:        item.Name,
+								PosterShape: stremio.MetaPosterShapePoster,
+							}, item.Hash}
+							cItem.Description = getMetaPreviewDescriptionForWebDL(cItem.Hash, item.Name, false)
+							items = append(items, cItem)
+						}
+					}
+					count := len(res.Items)
+					log.Debug("fetched webz", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
+
+					offset += fetch_list_limit
+					hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
+
+					time.Sleep(250 * time.Millisecond)
 				}
 			}
-			log.Debug("processed webdls", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
+		default:
+			offset := 0
+			hasMore := true
+			for hasMore && offset < max_fetch_list_items {
+				start := time.Now()
+				params := &stremio_store_webdl.ListWebDLsParams{
+					Limit:    fetch_list_limit,
+					Offset:   offset,
+					ClientIP: clientIp,
+				}
+				params.APIKey = storeToken
+				res, err := stremio_store_webdl.ListWebDLs(params, storeName)
+				if err != nil {
+					log.Error("failed to list webdls", "error", err, "duration", time.Since(start).String(), "store.name", storeName, "offset", offset)
+					break
+				}
+				count := len(res.Items)
+				log.Debug("fetched webdls", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
-			offset += fetch_list_limit
-			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
+				start = time.Now()
+				for i := range res.Items {
+					item := &res.Items[i]
+					if item.Status == store.MagnetStatusDownloaded {
+						cItem := CachedCatalogItem{stremio.MetaPreview{
+							Id:          idPrefix + item.Id,
+							Type:        ContentTypeOther,
+							Name:        item.Name,
+							PosterShape: stremio.MetaPosterShapePoster,
+						}, item.Hash}
+						cItem.Description = getMetaPreviewDescriptionForWebDL(cItem.Hash, item.Name, false)
+						items = append(items, cItem)
+					}
+				}
+				log.Debug("processed webz", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
-			time.Sleep(500 * time.Millisecond)
+				offset += fetch_list_limit
+				hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
+
+				time.Sleep(500 * time.Millisecond)
+			}
 		}
+
 		catalogCache.Add(cacheKey, items)
 	}
 
