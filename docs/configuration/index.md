@@ -269,6 +269,22 @@ Only used when using StremThru to interact with the Store. Not affected by `STRE
 StremThru will _try_ to automatically adjust `STREMTHRU_TUNNEL` to reflect `STREMTHRU_STORE_TUNNEL`.
 :::
 
+## Peer
+
+### `STREMTHRU_PEER_FLAG`
+
+Comma-separated list of flags to control peer behavior.
+
+| Value  | Description                                                           |
+| ------ | --------------------------------------------------------------------- |
+| `lazy` | Fetch data from peer asynchronously in background instead of blocking |
+
+**Example:**
+
+```sh
+STREMTHRU_PEER_FLAG=lazy
+```
+
 ## Vault
 
 Vault is used for storing sensitive data, e.g. password, api key etc.

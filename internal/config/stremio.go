@@ -54,7 +54,7 @@ func parseStremio() StremioConfig {
 		},
 		Torz: stremioConfigTorz{
 			IndexerMaxTimeout:     mustParseDuration("stremio torz indexer max timeout", getEnv("STREMTHRU_STREMIO_TORZ_INDEXER_MAX_TIMEOUT"), 2*time.Second, 60*time.Second),
-			LazyPull:              strings.ToLower(getEnv("STREMTHRU_STREMIO_TORZ_LAZY_PULL")) == "true",
+			LazyPull:              strings.ToLower(getEnv("STREMTHRU_STREMIO_TORZ_LAZY_PULL")) == "true" || PeerFlag.Lazy,
 			PublicMaxIndexerCount: util.MustParseInt(getEnv("STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_INDEXER_COUNT")),
 			PublicMaxStoreCount:   util.MustParseInt(getEnv("STREMTHRU_STREMIO_TORZ_PUBLIC_MAX_STORE_COUNT")),
 		},
