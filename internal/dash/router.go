@@ -32,6 +32,7 @@ func AddEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/stats/torrents", authed(dash_api.HandleGetTorrentsStats))
 	router.HandleFunc("/stats/server", authed(dash_api.HandleGetServerStats))
 	router.HandleFunc("/stats/torznab-indexers", authed(dash_api.HandleGetTorznabIndexerStats))
+	router.HandleFunc("/stats/stores", authed(dash_api.HandleGetStoreStats))
 
 	dash_api.AddIMDBEndpoints(router)
 	dash_api.AddWorkerEndpoints(router)

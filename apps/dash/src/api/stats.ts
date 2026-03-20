@@ -67,6 +67,29 @@ type TorznabIndexerSyncStats = {
 
 const HOUR = 60 * 60 * 1000;
 
+export type StoreStatsEntry = {
+  methods: StoreMethodStats[];
+  name: string;
+};
+
+type StoreMethodStats = {
+  avg_duration_ms: number;
+  error_count: number;
+  error_rate: number;
+  max_duration_ms: number;
+  min_duration_ms: number;
+  name: string;
+  p50_duration_ms: number;
+  p95_duration_ms: number;
+  p99_duration_ms: number;
+  requests_per_minute: number;
+  total_count: number;
+};
+
+type StoreStats = {
+  stores: StoreStatsEntry[];
+};
+
 export function useIMDBTitleStats() {
   return useQuery({
     queryFn: async () => {
@@ -113,6 +136,20 @@ export function useTorznabIndexerStats() {
     },
     queryKey: ["/stats/torznab-indexers"],
     staleTime: 1 * HOUR,
+  });
+}
+
+const MINUTE = 60 * 1000;
+
+export function useStoreStats() {
+  return useQuery({
+    queryFn: async () => {
+      const { data } = await api<StoreStats>("/stats/stores");
+      return data;
+    },
+    queryKey: ["/stats/stores"],
+    refetchInterval: 1 * MINUTE,
+    staleTime: 30 * 1000,
   });
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 func torrentStatusToMagnetStatus(status TorrentStatus) store.MagnetStatus {
@@ -133,9 +134,11 @@ func (c *StoreClient) GetName() store.StoreName {
 }
 
 func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := c.client.GetUser(&GetUserParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +212,6 @@ func (f *GetTorrentInfoDataFile) toStoreMagnetFile() store.MagnetFile {
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
 	var magnet *core.MagnetLink
-	var err error
 	var isPrivate bool
 	if params.Magnet != "" {
 		m, err := core.ParseMagnetLink(params.Magnet)
@@ -265,30 +267,36 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	if t == nil {
 		var id string
 		if params.Magnet != "" {
+			start := time.Now()
 			res, err := c.client.AddMagnet(&AddMagnetParams{
 				Ctx:    params.Ctx,
 				Magnet: magnet.RawLink,
 				IP:     params.ClientIP,
 			})
+			stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 			if err != nil {
 				return nil, err
 			}
 			id = res.Data.Id
 		} else {
+			start := time.Now()
 			res, err := c.client.AddTorrent(&AddTorrentParams{
 				Ctx:  params.Ctx,
 				File: params.Torrent,
 				IP:   params.ClientIP,
 			})
+			stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 			if err != nil {
 				return nil, err
 			}
 			id = res.Data.Id
 		}
+		start := time.Now()
 		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
 			Ctx: params.Ctx,
 			Id:  id,
 		})
+		stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -296,6 +304,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 
 	if t.Status != TorrentStatusQueued && t.Status != TorrentStatusDownloading && t.Status != TorrentStatusDownloaded {
+		var err error
 		t, err = c.waitForTorrentStatus(params.Ctx, t, TorrentStatusWaitingFilesSelection, 5, 5*time.Second)
 		if err != nil {
 			return nil, err
@@ -381,11 +390,13 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 }
 
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
+	start := time.Now()
 	res, err := c.client.UnrestrictLink(&UnrestrictLinkParams{
 		Ctx:  params.Ctx,
 		Link: params.Link,
 		IP:   params.ClientIP,
 	})
+	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -415,10 +426,12 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	if v := c.getCachedGetMagnet(params, params.Id); v != nil {
 		return v, nil
 	}
+	start := time.Now()
 	res, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
 		Ctx: params.Ctx,
 		Id:  params.Id,
 	})
+	stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -455,11 +468,13 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
+	start := time.Now()
 	res, err := c.client.ListTorrents(&ListTorrentsParams{
 		Ctx:    params.Ctx,
 		Limit:  params.Limit,
 		Offset: params.Offset,
 	})
+	stats.Record(c.Name, "list_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -492,10 +507,12 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 }
 
 func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.RemoveMagnetData, error) {
+	start := time.Now()
 	_, err := c.client.DeleteTorrent(&DeleteTorrentParams{
 		Ctx: params.Ctx,
 		Id:  params.Id,
 	})
+	stats.Record(c.Name, "remove_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

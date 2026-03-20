@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 func toSize(sizeStr string) int64 {
@@ -178,12 +179,14 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		return data, nil
 	}
 
+	start := time.Now()
 	res, err := s.client.AddFile(&AddFileParams{
 		Ctx: ctx,
 		URL: AddFileParamsURL{
 			URL: magnet.RawLink,
 		},
 	})
+	stats.Record(s.Name, "add_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -270,10 +273,12 @@ func (s *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 		return nil, error
 	}
 	ctx := Ctx{Ctx: params.Ctx}
+	start := time.Now()
 	res, err := s.client.GetFile(&GetFileParams{
 		Ctx:    ctx,
 		FileId: fileId,
 	})
+	stats.Record(s.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -337,10 +342,12 @@ func (c *StoreClient) listFilesFlat(ctx Ctx, folderId string, result []store.Mag
 
 func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnetData, error) {
 	ctx := Ctx{Ctx: params.Ctx}
+	start := time.Now()
 	res, err := s.client.GetFile(&GetFileParams{
 		Ctx:    ctx,
 		FileId: params.Id,
 	})
+	stats.Record(s.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -388,9 +395,11 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := s.client.GetUser(&GetUserParams{
 		Ctx: Ctx{Ctx: params.Ctx},
 	})
+	stats.Record(s.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -412,6 +421,7 @@ func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 }
 
 func (s *StoreClient) getMyPackFolder(ctx Ctx) (*File, error) {
+	start := time.Now()
 	res, err := s.client.ListFiles(&ListFilesParams{
 		Ctx: ctx,
 		Filters: map[string]map[string]any{
@@ -419,6 +429,7 @@ func (s *StoreClient) getMyPackFolder(ctx Ctx) (*File, error) {
 			"phase":   {"eq": FilePhaseComplete},
 		},
 	})
+	stats.Record(s.Name, "list_files", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -445,6 +456,7 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 			if err != nil {
 				return nil, err
 			}
+			start := time.Now()
 			res, err := s.client.ListFiles(&ListFilesParams{
 				Ctx:      Ctx{Ctx: params.Ctx},
 				Limit:    500,
@@ -455,6 +467,7 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 				},
 				PageToken: pageToken,
 			})
+			stats.Record(s.Name, "list_files", time.Since(start), err != nil)
 			if err != nil {
 				return nil, err
 			}
@@ -515,10 +528,12 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 
 func (s *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.RemoveMagnetData, error) {
 	ctx := Ctx{Ctx: params.Ctx}
+	start := time.Now()
 	_, err := s.client.Trash(&TrashParams{
 		Ctx: ctx,
 		Ids: []string{params.Id},
 	})
+	stats.Record(s.Name, "remove_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

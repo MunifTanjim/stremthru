@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -164,9 +165,11 @@ func (c *StoreClient) GetName() store.StoreName {
 }
 
 func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := c.client.GetAccountInfo(&GetAccountInfoParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +191,9 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 func (c *StoreClient) getCachedMagnetFiles(apiKey string, magnet string, includeLink bool) ([]store.MagnetFile, error) {
 	params := &CreateDirectDownloadLinkParams{Src: magnet}
 	params.APIKey = apiKey
+	start := time.Now()
 	res, err := c.client.CreateDirectDownloadLink(params)
+	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +281,9 @@ func (c *StoreClient) checkMagnet(params *store.CheckMagnetParams, includeLinkAn
 					Items: cMissingHashes,
 				}
 				ccParams.APIKey = params.APIKey
+				start := time.Now()
 				res, err := c.client.CheckCache(ccParams)
+				stats.Record(c.Name, "check_torz", time.Since(start), err != nil)
 				if err != nil {
 					hasError = true
 					errs[i] = err
@@ -398,7 +405,9 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 func getTransferById(c *StoreClient, apiKey string, id string) (*ListTransfersDataItem, error) {
 	params := &ListTransfersParams{}
 	params.APIKey = apiKey
+	start := time.Now()
 	res, err := c.client.ListTransfers(params)
+	stats.Record(c.Name, "list_transfers", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -569,7 +578,9 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	} else {
 		ct_params.File = params.Torrent
 	}
+	start := time.Now()
 	ct_res, err := c.client.CreateTransfer(ct_params)
+	stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -721,17 +732,21 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
 	lm := []store.ListMagnetsDataItem{}
 	if !c.listMagnetsCache.Get(c.getCacheKey(params, ""), &lm) {
+		start := time.Now()
 		sf_res, err := c.client.SearchFolders(&SearchFoldersParams{
 			Ctx:   params.Ctx,
 			Query: CachedMagnetIdPrefix,
 		})
+		stats.Record(c.Name, "search_folders", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
 
+		start = time.Now()
 		lt_res, err := c.client.ListTransfers(&ListTransfersParams{
 			Ctx: params.Ctx,
 		})
+		stats.Record(c.Name, "list_transfers", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -816,7 +831,9 @@ func (c *StoreClient) deleteTransferById(apiKey string, transferId string) error
 
 	dt_params := &DeleteTransferParams{Id: transferId}
 	dt_params.APIKey = apiKey
+	start := time.Now()
 	_, err = c.client.DeleteTransfer(dt_params)
+	stats.Record(c.Name, "remove_transfer", time.Since(start), err != nil)
 	if err != nil {
 		return err
 	}
@@ -837,10 +854,12 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 			return data, nil
 		}
 
+		start := time.Now()
 		_, err = c.client.DeleteFolder(&DeleteFolderParams{
 			Ctx: params.Ctx,
 			Id:  folder.Id,
 		})
+		stats.Record(c.Name, "remove_folder", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}

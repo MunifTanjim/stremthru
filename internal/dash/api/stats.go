@@ -21,6 +21,7 @@ import (
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
 	"github.com/MunifTanjim/stremthru/internal/trakt"
 	"github.com/MunifTanjim/stremthru/internal/tvdb"
+	store_stats "github.com/MunifTanjim/stremthru/store/stats"
 )
 
 var cachedTorrentsStats = cache.NewCachedValue(cache.CachedValueConfig[*torrent_info.Stats]{
@@ -297,4 +298,23 @@ func HandleGetTorznabIndexerStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	SendData(w, r, 200, stats)
+}
+
+type StoreStatsResponse struct {
+	Stores []store_stats.StoreStatsSnapshot `json:"stores"`
+}
+
+func HandleGetStoreStats(w http.ResponseWriter, r *http.Request) {
+	if !shared.IsMethod(r, http.MethodGet) {
+		ErrorMethodNotAllowed(r).Send(w, r)
+		return
+	}
+
+	window := 1 * time.Hour
+	stores := store_stats.GetSnapshot(window)
+	if stores == nil {
+		stores = []store_stats.StoreStatsSnapshot{}
+	}
+
+	SendData(w, r, 200, StoreStatsResponse{Stores: stores})
 }

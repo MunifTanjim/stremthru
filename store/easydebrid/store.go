@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -94,10 +95,12 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 		magnet = &m
 	}
+	start := time.Now()
 	res, err := s.client.LookupLinkDetails(&LookupLinkDetailsParams{
 		Ctx:  params.Ctx,
 		URLs: []string{magnet.RawLink},
 	})
+	stats.Record(s.Name, "add_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -185,10 +188,12 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 	ldByHash := map[string]LookupLinkDetailsDataItem{}
 	if len(missingHashes) > 0 {
+		start := time.Now()
 		res, err := s.client.LookupLinkDetails(&LookupLinkDetailsParams{
 			Ctx:  params.Ctx,
 			URLs: missingLinks,
 		})
+		stats.Record(s.Name, "check_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -258,11 +263,13 @@ func (s *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	if err != nil {
 		return nil, err
 	}
+	start := time.Now()
 	res, err := s.client.GenerateLink(&GenerateLinkParams{
 		Ctx:      params.Ctx,
 		URL:      magnet.Link,
 		ClientIP: params.ClientIP,
 	})
+	stats.Record(s.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -285,10 +292,12 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	if err != nil {
 		return nil, err
 	}
+	start := time.Now()
 	res, err := s.client.LookupLinkDetails(&LookupLinkDetailsParams{
 		Ctx:  params.Ctx,
 		URLs: []string{magnet.Link},
 	})
+	stats.Record(s.Name, "check_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -328,9 +337,11 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := s.client.GetUserDetails(&GetUserDetailsParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(s.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

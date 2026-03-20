@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -57,9 +58,11 @@ func (c *StoreClient) GetName() store.StoreName {
 }
 
 func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := c.client.GetUser(&GetUserParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -127,10 +130,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	var magnet *UploadMagnetDataMagnet
 	var isPrivate bool
 	if params.Magnet != "" {
+		start := time.Now()
 		um, err := c.client.UploadMagnet(&UploadMagnetParams{
 			Ctx:     params.Ctx,
 			Magnets: []string{params.Magnet},
 		})
+		stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -141,10 +146,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			return nil, err
 		}
 		isPrivate = util.PtrToBool(mii.Private, false)
+		start := time.Now()
 		uf, err := c.client.UploadFile(&UploadFileParams{
 			Ctx:   params.Ctx,
 			Files: []*multipart.FileHeader{params.Torrent},
 		})
+		stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -185,10 +192,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	if magnet.Ready {
 		data.Status = store.MagnetStatusDownloaded
 
+		start := time.Now()
 		ms, err := c.client.GetMagnetStatus(&GetMagnetStatusParams{
 			Ctx: params.Ctx,
 			Id:  magnet.Id,
 		})
+		stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -251,10 +260,12 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		return nil, error
 	}
 
+	start := time.Now()
 	ms, err := c.client.GetMagnetStatus(&GetMagnetStatusParams{
 		Ctx: params.Ctx,
 		Id:  id,
 	})
+	stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -289,9 +300,11 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
 	lm := []store.ListMagnetsDataItem{}
 	if !c.listMagnetsCache.Get(c.getCacheKey(params, ""), &lm) {
+		start := time.Now()
 		res, err := c.client.GetAllMagnetStatus(&GetAllMagnetStatusParams{
 			Ctx: params.Ctx,
 		})
+		stats.Record(c.Name, "list_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -336,10 +349,12 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 		return nil, error
 	}
 
+	start := time.Now()
 	_, err = c.client.DeleteMagnet(&DeleteMagnetParams{
 		Ctx: params.Ctx,
 		Id:  id,
 	})
+	stats.Record(c.Name, "remove_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -351,10 +366,12 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 }
 
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
+	start := time.Now()
 	ul, err := c.client.UnlockLink(&UnlockLinkParams{
 		Ctx:  params.Ctx,
 		Link: params.Link,
 	})
+	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -45,9 +46,11 @@ func (c *StoreClient) GetName() store.StoreName {
 }
 
 func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := c.client.GetAccountInfo(&GetAccountInfoParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +148,9 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	} else {
 		ast_params.File = params.Torrent
 	}
+	start := time.Now()
 	res, err := c.client.AddSeedboxTorrent(ast_params)
+	stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +190,13 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 }
 
 func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnetData, error) {
+	start := time.Now()
 	res, err := c.client.ListSeedboxTorrents(&ListSeedboxTorrentsParams{
 		Ctx: params.Ctx,
 		Ids: []string{params.Id},
 		IP:  params.ClientIP,
 	})
+	stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -246,12 +253,14 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 	remainingItems := origLimit
 	hasMore := true
 	for hasMore {
+		start := time.Now()
 		res, err := c.client.ListSeedboxTorrents(&ListSeedboxTorrentsParams{
 			Ctx:     params.Ctx,
 			PerPage: limit,
 			Page:    page,
 			IP:      params.ClientIP,
 		})
+		stats.Record(c.Name, "list_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -298,10 +307,12 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 }
 
 func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.RemoveMagnetData, error) {
+	start := time.Now()
 	res, err := c.client.RemoveSeedboxTorrents(&RemoveSeedboxTorrentParams{
 		Ctx: params.Ctx,
 		Ids: []string{params.Id},
 	})
+	stats.Record(c.Name, "remove_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

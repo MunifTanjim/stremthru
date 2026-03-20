@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 var (
@@ -84,10 +85,12 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 	if v := c.getCachedGetUser(params); v != nil {
 		return v, nil
 	}
+	start := time.Now()
 	res, err := c.client.GetUser(&GetUserParams{
 		Ctx:      params.Ctx,
 		Settings: true,
 	})
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +162,9 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			ListFiles: true,
 		}
 		ctcParams.APIKey = params.APIKey
+		start := time.Now()
 		res, err := c.client.CheckTorrentsCached(ctcParams)
+		stats.Record(c.Name, "check_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -262,7 +267,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 
 	var magnet *core.MagnetLink
-	var err error
+
 	if params.Magnet != "" {
 		m, err := core.ParseMagnetLink(params.Magnet)
 		if err != nil {
@@ -274,7 +279,9 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		ctParams.File = params.Torrent
 	}
 
+	start := time.Now()
 	res, err := c.client.CreateTorrent(ctParams)
+	stats.Record(c.Name, "add_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -292,11 +299,14 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		Status: store.MagnetStatusQueued,
 		Files:  []store.MagnetFile{},
 	}
+
+	start = time.Now()
 	t, err := c.client.GetTorrent(&GetTorrentParams{
 		Ctx:         params.Ctx,
 		Id:          res.Data.TorrentId,
 		BypassCache: true,
 	})
+	stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -359,12 +369,15 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	if v := c.getCachedGeneratedLink(params, torrentId, fileId); v != nil {
 		return v, nil
 	}
+
+	start := time.Now()
 	res, err := c.client.RequestDownloadLink(&RequestDownloadLinkParams{
 		Ctx:       params.Ctx,
 		TorrentId: torrentId,
 		FileId:    fileId,
 		UserIP:    params.ClientIP,
 	})
+	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -385,19 +398,24 @@ func (c *StoreClient) setCachedGetMagnet(params *store.GetMagnetParams, v *store
 	c.getMagnetCache.Add(params.GetAPIKey(c.client.apiKey)+":"+params.Id, *v)
 }
 
-func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnetData, error) {
+func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (_ *store.GetMagnetData, err error) {
 	if v := c.getCachedGetMagnet(params); v != nil {
 		return v, nil
 	}
 	id, err := strconv.Atoi(params.Id)
 	if err != nil {
-		return nil, err
+		error := core.NewAPIError("invalid id").WithCause(err)
+		error.StatusCode = http.StatusBadRequest
+		error.StoreName = string(store.StoreNameTorBox)
+		return nil, error
 	}
+	start := time.Now()
 	res, err := c.client.GetTorrent(&GetTorrentParams{
 		Ctx:         params.Ctx,
 		Id:          id,
 		BypassCache: true,
 	})
+	stats.Record(c.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -443,12 +461,14 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
+	start := time.Now()
 	res, err := c.client.ListTorrents(&ListTorrentsParams{
 		Ctx:         params.Ctx,
 		BypassCache: true,
 		Limit:       params.Limit,
 		Offset:      params.Offset,
 	})
+	stats.Record(c.Name, "list_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -491,11 +511,13 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	if err != nil {
 		return nil, err
 	}
+	start := time.Now()
 	_, err = c.client.ControlTorrent(&ControlTorrentParams{
 		Ctx:       params.Ctx,
 		TorrentId: id,
 		Operation: ControlTorrentOperationDelete,
 	})
+	stats.Record(c.Name, "remove_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +531,9 @@ func (c *StoreClient) CheckNewz(params *store.CheckNewzParams) (*store.CheckNewz
 		ListFiles: true,
 	}
 	cucParams.APIKey = params.APIKey
+	start := time.Now()
 	res, err := c.client.CheckUsenetCached(cucParams)
+	stats.Record(c.Name, "check_newz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +578,9 @@ func (c *StoreClient) AddNewz(params *store.AddNewzParams) (*store.AddNewzData, 
 		Link: params.Link,
 		File: params.File,
 	}
+	start := time.Now()
 	res, err := c.client.CreateUsenetDownload(rParams)
+	stats.Record(c.Name, "add_newz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +602,9 @@ func (c *StoreClient) GetNewz(params *store.GetNewzParams) (*store.GetNewzData, 
 		Id:          id,
 		BypassCache: true,
 	}
+	start := time.Now()
 	res, err := c.client.GetUsenetDownload(rParams)
+	stats.Record(c.Name, "get_newz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -609,13 +637,15 @@ func (c *StoreClient) GetNewz(params *store.GetNewzParams) (*store.GetNewzData, 
 	return data, nil
 }
 
-func (c *StoreClient) ListNewz(params *store.ListNewzParams) (*store.ListNewzData, error) {
+func (c *StoreClient) ListNewz(params *store.ListNewzParams) (_ *store.ListNewzData, err error) {
+	start := time.Now()
 	res, err := c.client.ListUsenetDownload(&ListUsenetDownloadParams{
 		Ctx:         params.Ctx,
 		BypassCache: true,
 		Limit:       params.Limit,
 		Offset:      params.Offset,
 	})
+	stats.Record(c.Name, "list_newz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -657,11 +687,13 @@ func (c *StoreClient) RemoveNewz(params *store.RemoveNewzParams) (*store.RemoveN
 	if err != nil {
 		return nil, err
 	}
+	start := time.Now()
 	_, err = c.client.ControlUsenetDownload(&ControlUsenetDownloadParams{
 		Ctx:       params.Ctx,
 		UsenetId:  id,
 		Operation: ControlUsenetDownloadOperationDelete,
 	})
+	stats.Record(c.Name, "remove_newz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -677,12 +709,14 @@ func (c *StoreClient) GenerateNewzLink(params *store.GenerateNewzLinkParams) (*s
 		error.Cause = err
 		return nil, error
 	}
+	start := time.Now()
 	res, err := c.client.RequestUsenetDownloadLink(&RequestUsenetDownloadLinkParams{
 		Ctx:      params.Ctx,
 		UsenetId: usenetId,
 		FileId:   fileId,
 		UserIP:   params.ClientIP,
 	})
+	stats.Record(c.Name, "generate_newz_link", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}

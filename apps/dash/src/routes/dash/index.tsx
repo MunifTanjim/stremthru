@@ -5,6 +5,7 @@ import { useInterval } from "react-use";
 
 import { useIMDBTitleStats, useServerStats } from "@/api/stats";
 import { ListStatsCard } from "@/components/lists-stats-card";
+import { StoreStatsCard } from "@/components/store-stats-card";
 import { TorrentsStatsCard } from "@/components/torrents-stats-card";
 import {
   Card,
@@ -87,6 +88,8 @@ function RouteComponent() {
       </Card>
 
       <ListStatsCard />
+
+      <StoreStatsCard />
     </>
   );
 }

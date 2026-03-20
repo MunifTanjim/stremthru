@@ -12,6 +12,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -107,10 +108,12 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		data.AddedAt = cdl.AddedAt
 		data.Size = cdl.Size
 	} else {
+		start := time.Now()
 		res, err := s.client.AddCloudDownload(&AddCloudDownloadParams{
 			Ctx: params.Ctx,
 			URL: magnet.RawLink,
 		})
+		stats.Record(s.Name, "add_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -124,10 +127,12 @@ func (s *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	}
 
 	if data.Status == store.MagnetStatusDownloaded {
+		start := time.Now()
 		res, err := s.client.ExploreCloudDownload(&ExploreCloudDownloadParams{
 			Ctx:       params.Ctx,
 			RequestId: data.Id,
 		})
+		stats.Record(s.Name, "get_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -158,11 +163,13 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			magnetByHash[m.Hash] = m
 		}
 	}
+	start := time.Now()
 	res, err := s.client.GetCacheInfo(&GetCacheInfoParams{
 		Ctx:          params.Ctx,
 		URLs:         magnets,
 		IncludeFiles: true,
 	})
+	stats.Record(s.Name, "check_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,10 +209,12 @@ func (s *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	if err != nil {
 		return nil, err
 	}
+	start := time.Now()
 	res, err := s.client.ExploreCloudDownload(&ExploreCloudDownloadParams{
 		Ctx:       params.Ctx,
 		RequestId: id,
 	})
+	stats.Record(s.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -243,10 +252,12 @@ func getMagnetStatus(status CloudDownloadStatus) store.MagnetStatus {
 }
 
 func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnetData, error) {
+	start := time.Now()
 	res, err := s.client.ExploreCloudDownload(&ExploreCloudDownloadParams{
 		Ctx:       params.Ctx,
 		RequestId: params.Id,
 	})
+	stats.Record(s.Name, "get_torz", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -283,9 +294,11 @@ func (s *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 }
 
 func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	res, err := s.client.GetAccountInfo(&GetAccountInfoParams{
 		Ctx: params.Ctx,
 	})
+	stats.Record(s.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -339,9 +352,11 @@ func (s *StoreClient) findCloudDownloadByHash(ctx Ctx, hash string, mustFind, re
 func (s *StoreClient) getCloudHistory(ctx Ctx, refresh bool) ([]store.ListMagnetsDataItem, error) {
 	items := []store.ListMagnetsDataItem{}
 	if refresh || !s.listMagnetsCache.Get(s.getCacheKey(&ctx, ""), &items) {
+		start := time.Now()
 		res, err := s.client.GetCloudHistory(&GetCloudHistoryParams{
 			Ctx: ctx,
 		})
+		stats.Record(s.Name, "list_torz", time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -385,7 +400,7 @@ func (s *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 }
 
 func (s *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.RemoveMagnetData, error) {
-	err := UpstreamErrorWithCause(errors.New("not supported"))
-	err.StatusCode = http.StatusNotImplemented
-	return nil, err
+	upErr := UpstreamErrorWithCause(errors.New("not supported"))
+	upErr.StatusCode = http.StatusNotImplemented
+	return nil, upErr
 }
