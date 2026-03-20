@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.99.1](https://github.com/MunifTanjim/stremthru/compare/0.99.0...0.99.1) (2026-03-20)
+
+
+### Bug Fixes
+
+* **torznab/indexer:** fix sync stats query for postgres ([ac199b4](https://github.com/MunifTanjim/stremthru/commit/ac199b4f198593a550ef03ee49171e801fedbfe2))
+
 ## [0.99.0](https://github.com/MunifTanjim/stremthru/compare/0.98.11...0.99.0) (2026-03-20)
 
 
