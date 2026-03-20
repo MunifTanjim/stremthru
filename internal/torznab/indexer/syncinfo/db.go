@@ -404,7 +404,7 @@ type IndexerSyncStats struct {
 var query_get_stats = fmt.Sprintf(
 	`SELECT
 		si.%s,
-		i.%s,
+		MAX(i.%s),
 		COUNT(1) AS total_count,
 		SUM(CASE WHEN si.%s IS NOT NULL THEN 1 ELSE 0 END) AS synced_count,
 		SUM(CASE WHEN si.%s IN ('%s', '%s') THEN 1 ELSE 0 END) AS queued_count,
@@ -414,7 +414,7 @@ var query_get_stats = fmt.Sprintf(
 	FROM %s si
 	JOIN %s i ON i.%s = si.%s
 	GROUP BY si.%s
-	ORDER BY i.%s`,
+	ORDER BY MAX(i.%s)`,
 	Column.IndexerId,
 	indexer.Column.Name,
 	Column.SyncedAt,
