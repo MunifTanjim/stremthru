@@ -82,7 +82,11 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	for _, imdbId := range imdbIds {
 		wg.Go(func() {
 			torznab_indexer_syncinfo.QueueJob(imdbId)
-			buddy.PullTorrentsByStremId(imdbId, "")
+			if config.PeerFlag.Lazy {
+				go buddy.PullTorrentsByStremId(imdbId, "")
+			} else {
+				buddy.PullTorrentsByStremId(imdbId, "")
+			}
 		})
 	}
 	wg.Wait()
