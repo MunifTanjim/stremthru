@@ -65,7 +65,7 @@ Navigate to **Stremio Addons > Newz** in your StremThru instance. Configure the 
 
 | Value     | Description                                                              |
 | --------- | ------------------------------------------------------------------------ |
-| StremThru | Combines results from the Newznab indexers configured in the dashboard   |
+| StremThru | Combines results from the Newznab indexers configured in the dashboard - user:pass from `STREMTHRU_AUTH` must be specified as the API Key |
 | Generic   | Uses a Newznab-compatible indexer directly - provide the URL and API key |
 | Torbox    | Uses Torbox's built-in indexer - only usable with the Torbox store       |
 
