@@ -51,7 +51,7 @@ docker compose up -d stremthru
 
 ### Prerequisites
 
-- [Go](https://go.dev/) 1.25 or later
+- [Go](https://go.dev/) 1.26 or later
 - [Make](https://www.gnu.org/software/make/)
 
 ### Build and Run
