@@ -63,11 +63,11 @@ Navigate to **Stremio Addons > Newz** in your StremThru instance. Configure the 
 
 **Indexer** controls where NZBs are searched:
 
-| Value     | Description                                                              |
-| --------- | ------------------------------------------------------------------------ |
-| StremThru | Combines results from the Newznab indexers configured in the dashboard   |
-| Generic   | Uses a Newznab-compatible indexer directly - provide the URL and API key |
-| Torbox    | Uses Torbox's built-in indexer - only usable with the Torbox store       |
+| Value     | Description                                                                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| StremThru | Combines results from the Newznab indexers configured in the dashboard - use creds from [`STREMTHRU_AUTH`](/configuration/#stremthru-auth) as API Key |
+| Generic   | Uses a Newznab-compatible indexer directly - provide the URL and API key                                                                              |
+| Torbox    | Uses Torbox's built-in indexer - only usable with the Torbox store                                                                                    |
 
 **Store** controls how content is downloaded and streamed:
 
