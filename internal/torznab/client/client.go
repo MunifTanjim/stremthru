@@ -101,6 +101,8 @@ func (r *Response[T]) Unmarshal(res *http.Response, body []byte, v any) error {
 				return err
 			}
 			r.Error = &xmlError
+			r.Error.StatusCode = res.StatusCode
+			r.Error.RetryAfter = time.Duration(util.SafeParseInt(res.Header.Get("Retry-After"), 0)) * time.Second
 			return nil
 		default:
 			err := xml.Unmarshal(body, &r.Data)
