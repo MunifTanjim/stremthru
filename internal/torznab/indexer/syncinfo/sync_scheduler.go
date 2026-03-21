@@ -1,8 +1,11 @@
 package torznab_indexer_syncinfo
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,6 +17,7 @@ import (
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 	"github.com/alitto/pond/v2"
 )
 
@@ -35,13 +39,10 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 		timeLimit := interval - interval/10
 		startTime := time.Now()
 
-		rateLimitTotalWaitThreshold := timeLimit / 2
-
 		type indexerTask struct {
 			indexer           *torznab_indexer.TorznabIndexer
 			client            tznc.Indexer
 			rateLimitExceeded atomic.Bool
-			rateLimitedWait   atomic.Int64
 		}
 
 		processIndexerTask := func(task *indexerTask) (hasMore bool) {
@@ -148,12 +149,11 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 								recordProgress(queries, sQuery)
 								continue
 							} else if !result.Allowed {
-								if time.Duration(task.rateLimitedWait.Load())+result.RetryAfter > rateLimitTotalWaitThreshold {
+								if timeLeft := timeLimit - time.Since(startTime); result.RetryAfter > timeLeft {
 									task.rateLimitExceeded.Store(true)
 									log.Warn("rate limited, stopping indexer processing", "indexer", indexer.Name, "retry_after", result.RetryAfter.String())
 									return
 								}
-								task.rateLimitedWait.Add(int64(result.RetryAfter))
 								if err := rl.Wait(); err != nil {
 									task.rateLimitExceeded.Store(true)
 									log.Error("rate limit wait failed", "error", err, "indexer", indexer.Name)
@@ -167,6 +167,27 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 						start := time.Now()
 						qResults, err := client.Search(query)
 						if err != nil {
+							if e, ok := errors.AsType[*znab.Error](err); ok {
+								switch e.StatusCode {
+								case http.StatusBadRequest:
+									if strings.Contains(e.Description, "429 Too Many Requests") {
+										task.rateLimitExceeded.Store(true)
+										log.Warn("too many requests detected from bad request error, stopping indexer processing", "indexer", indexer.Name)
+										return
+									}
+								case http.StatusTooManyRequests:
+									if e.RetryAfter > 0 {
+										if timeLeft := timeLimit - time.Since(startTime); e.RetryAfter < timeLeft {
+											log.Warn("too many requests, waiting before retrying", "indexer", indexer.Name, "retry_after", e.RetryAfter.String())
+											time.Sleep(e.RetryAfter)
+											continue
+										}
+									}
+									task.rateLimitExceeded.Store(true)
+									log.Warn("too many requests, stopping indexer processing", "indexer", indexer.Name)
+									return
+								}
+							}
 							log.Error("indexer search failed", "error", err, "indexer", indexer.Name, "query", sQuery.Query, "duration", time.Since(start).String())
 							sQuery.Error = err.Error()
 							recordProgress(queries, sQuery)

@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"time"
 )
 
 type Error struct {
 	XMLName     xml.Name `xml:"error"`
 	Code        int      `xml:"code,attr"`
 	Description string   `xml:"description,attr"`
+
+	StatusCode int           `xml:"-"`
+	RetryAfter time.Duration `xml:"-"`
 }
 
 func (e Error) Error() string {
