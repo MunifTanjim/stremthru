@@ -54,4 +54,12 @@ func RunSchemaMigration(uri db.ConnectionURI, database *db.DB) {
 
 	l.Println()
 	l.Print("========================\n\n")
+
+	switch uri.Dialect {
+	case db.DBDialectSQLite:
+		if _, err := database.DB.Exec("PRAGMA optimize=0x10002;"); err != nil {
+			log.Fatalf("[db] failed to run optimize: %v\n", err)
+		}
+	case db.DBDialectPostgres:
+	}
 }

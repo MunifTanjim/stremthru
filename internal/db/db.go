@@ -210,6 +210,11 @@ func Open() *DB {
 			log.Fatalf("[db] failed to open: %v\n", err)
 		}
 		db.DB = database
+		db.onClose = func() error {
+			err := db.DB.Close()
+			return err
+		}
+
 	case DBDialectPostgres:
 		pool, err := pgxpool.New(context.Background(), connUri.DSN())
 		if err != nil {

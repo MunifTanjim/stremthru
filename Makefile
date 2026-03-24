@@ -15,10 +15,10 @@ test:
 	STREMTHRU_ENV=test go test -v ./...
 
 build: clean
-	go build --tags "fts5"
+	go build --tags "sqlite_fts5,sqlite_stat4"
 
 run:
-	go run --tags "fts5" .
+	go run --tags "sqlite_fts5,sqlite_stat4" .
 
 docker-build:
 	docker buildx build \

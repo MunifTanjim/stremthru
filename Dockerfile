@@ -26,7 +26,7 @@ COPY apps/dash/.output/public/ ./internal/dash/fs/
 
 ENV CGO_ENABLED=1
 ENV XX_GO_PREFER_C_COMPILER=zig
-RUN xx-go build --tags 'fts5' -ldflags='-s -w -linkmode external -extldflags "-static"' -o stremthru
+RUN xx-go build --tags 'sqlite_fts5,sqlite_stat4' -ldflags='-s -w -linkmode external -extldflags "-static"' -o stremthru
 RUN xx-verify --static stremthru
 
 FROM alpine
