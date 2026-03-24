@@ -68,6 +68,13 @@ func (o ChannelItem) ToTorz() *tznc.Torz {
 				t.Hash = m.Hash
 			}
 		}
+	} else if magnetUrl := o.Attributes.Get(znab.TorznabAttrNameMagnetURL); strings.HasPrefix(magnetUrl, "magnet:?") {
+		t.MagnetLink = magnetUrl
+		if t.Hash == "" {
+			if m, err := core.ParseMagnetLink(t.MagnetLink); err == nil {
+				t.Hash = m.Hash
+			}
+		}
 	} else if strings.HasPrefix(o.Enclosure.URL, "http") {
 		t.SourceLink = o.Enclosure.URL
 	}
