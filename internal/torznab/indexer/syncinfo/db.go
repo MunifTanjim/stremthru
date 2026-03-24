@@ -294,11 +294,12 @@ func HasSyncPending() bool {
 }
 
 var query_get_sync_pending_by_indexer = fmt.Sprintf(
-	"SELECT %s FROM %s WHERE %s AND %s = ? ORDER BY %s DESC LIMIT 1000",
+	"SELECT %s FROM %s WHERE %s AND %s = ? ORDER BY (%s IS NULL) DESC, %s DESC LIMIT 1000",
 	db.JoinColumnNames(columns...),
 	TableName,
 	query_get_pending_cond,
 	Column.IndexerId,
+	Column.SyncedAt,
 	Column.QueuedAt,
 )
 
