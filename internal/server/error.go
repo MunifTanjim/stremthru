@@ -219,3 +219,9 @@ func ErrorInternalServerError(r *http.Request) *APIError {
 	err.InjectRequest(r)
 	return err
 }
+
+func ErrorServiceUnavailable(r *http.Request) *APIError {
+	err := NewAPIError(http.StatusServiceUnavailable, "Service Unavailable", ErrorCodeServiceUnavailable)
+	err.InjectRequest(r)
+	return err
+}

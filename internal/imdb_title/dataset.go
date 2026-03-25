@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/logger"
+	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
@@ -138,6 +139,9 @@ func SyncDataset() error {
 	if err := ds.Process(); err != nil {
 		return err
 	}
+
+	server.ActivateMaintenance(60 * time.Second)
+	defer server.DeactivateMaintenance()
 
 	log.Info("rebuilding fts...")
 	if err := RebuildFTS(); err != nil {

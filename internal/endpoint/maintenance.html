@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%2210 0 100 100%22><text y=%22.90em%22 font-size=%2290%22>✨</text></svg>"></link>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>StremThru - Maintenance</title>
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 48px;
+      }
+
+      .container {
+        max-width: 500px;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      #countdown {
+        font-size: 2rem;
+        font-weight: bold;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+
+  <body class="container">
+    <main class="text-center">
+      {{if .EndsAtUnix}}
+      <h1>🛠️ Maintenance Ongoing</h1>
+      <p>{{.Description}}</p>
+      <p id="countdown"></p>
+      <script>
+        (function () {
+          const endsAt = new Date({{.EndsAtUnix}} * 1000);
+          const el = document.getElementById("countdown");
+
+          function update() {
+            const diff = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+            const mins = Math.floor(diff / 60);
+            const secs = diff % 60;
+            el.textContent =
+              String(mins).padStart(2, "0") +
+              ":" +
+              String(secs).padStart(2, "0");
+            if (diff <= 0) {
+              location.reload();
+              return;
+            }
+            setTimeout(update, 1000);
+          }
+          update();
+        })();
+      </script>
+      {{else}}
+      <h1>StremThru</h1>
+      <p>No maintenance ongoing. Everything's running! ✅</p>
+      <p><a href="/">Go to Home</a></p>
+      {{end}}
+    </main>
+  </body>
+</html>

@@ -78,6 +78,18 @@ var ErrorInternalServerError = func(r *http.Request, msg string) *core.APIError 
 	return err
 }
 
+var ErrorServiceUnavailable = func(r *http.Request, msg string) *core.APIError {
+	if msg == "" {
+		msg = "service unavilable"
+	}
+
+	err := core.NewAPIError(msg)
+	err.InjectReq(r)
+	err.Code = core.ErrorCodeServiceUnavailable
+	err.StatusCode = http.StatusServiceUnavailable
+	return err
+}
+
 var ErrorBadGateway = func(r *http.Request, msg string) *core.APIError {
 	if msg == "" {
 		msg = "bad gateway"

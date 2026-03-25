@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_addon "github.com/MunifTanjim/stremthru/internal/stremio/addon"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/stremio"
 )
 
@@ -131,6 +132,9 @@ func handleResource(w http.ResponseWriter, r *http.Request) {
 
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if stremio_shared.HandleMaintenance(w, r) {
+			return
+		}
 		ctx := server.GetReqCtx(r)
 		ctx.Log = log.WithCtx(r.Context(), "req.id", ctx.RequestId)
 		next.ServeHTTP(w, r)

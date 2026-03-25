@@ -42,6 +42,11 @@ func handleRecordTorrents(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleListTorrents(w http.ResponseWriter, r *http.Request) {
+	if server.IsMaintenanceActive() {
+		server.ErrorServiceUnavailable(r).Send(w, r)
+		return
+	}
+
 	query := r.URL.Query()
 	sid := query.Get("sid")
 	if sid == "" {
@@ -90,6 +95,12 @@ func handleTorrentStats(w http.ResponseWriter, r *http.Request) {
 		shared.ErrorMethodNotAllowed(r).Send(w, r)
 		return
 	}
+
+	if server.IsMaintenanceActive() {
+		server.ErrorServiceUnavailable(r).Send(w, r)
+		return
+	}
+
 	stats, err := torrentStatsCached.Get()
 	if err != nil {
 		SendError(w, r, err)

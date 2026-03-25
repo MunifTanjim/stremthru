@@ -377,6 +377,10 @@ function useNavItems(): NavItem[] {
           path: "/dash/settings/ratelimit-configs",
           title: "Rate Limit Configs",
         },
+        {
+          path: "/dash/settings/maintenance",
+          title: "Maintenance",
+        },
       ],
       path: "/dash/settings",
       title: "Settings",

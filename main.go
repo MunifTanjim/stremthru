@@ -57,6 +57,7 @@ func main() {
 	endpoint.AddRootEndpoint(mux)
 	endpoint.AddDashEndpoint(mux)
 	endpoint.AddAuthEndpoints(mux)
+	endpoint.AddMaintenanceEndpoint(mux)
 	endpoint.AddHealthEndpoints(mux)
 	endpoint.AddMetaEndpoints(mux)
 	endpoint.AddProxyEndpoints(mux)

@@ -39,6 +39,7 @@ import { Route as DashTorrentSyncInfoRouteImport } from './routes/dash/torrent/s
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
 import { Route as DashSyncStremioStremioRouteImport } from './routes/dash/sync/stremio-stremio'
 import { Route as DashSettingsRatelimitConfigsRouteImport } from './routes/dash/settings/ratelimit-configs'
+import { Route as DashSettingsMaintenanceRouteImport } from './routes/dash/settings/maintenance'
 
 const DashRoute = DashRouteImport.update({
   id: '/dash',
@@ -193,6 +194,11 @@ const DashSettingsRatelimitConfigsRoute =
     path: '/ratelimit-configs',
     getParentRoute: () => DashSettingsRoute,
   } as any)
+const DashSettingsMaintenanceRoute = DashSettingsMaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => DashSettingsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/dash': typeof DashRouteWithChildren
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/settings/maintenance': typeof DashSettingsMaintenanceRoute
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
@@ -231,6 +238,7 @@ export interface FileRoutesByTo {
   '/dash/proxy': typeof DashProxyRoute
   '/dash/workers': typeof DashWorkersRoute
   '/dash': typeof DashIndexRoute
+  '/dash/settings/maintenance': typeof DashSettingsMaintenanceRoute
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
@@ -264,6 +272,7 @@ export interface FileRoutesById {
   '/dash/vault': typeof DashVaultRouteWithChildren
   '/dash/workers': typeof DashWorkersRoute
   '/dash/': typeof DashIndexRoute
+  '/dash/settings/maintenance': typeof DashSettingsMaintenanceRoute
   '/dash/settings/ratelimit-configs': typeof DashSettingsRatelimitConfigsRoute
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/settings/maintenance'
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
     | '/dash/proxy'
     | '/dash/workers'
     | '/dash'
+    | '/dash/settings/maintenance'
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/dash/vault'
     | '/dash/workers'
     | '/dash/'
+    | '/dash/settings/maintenance'
     | '/dash/settings/ratelimit-configs'
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
@@ -592,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashSettingsRatelimitConfigsRouteImport
       parentRoute: typeof DashSettingsRoute
     }
+    '/dash/settings/maintenance': {
+      id: '/dash/settings/maintenance'
+      path: '/maintenance'
+      fullPath: '/dash/settings/maintenance'
+      preLoaderRoute: typeof DashSettingsMaintenanceRouteImport
+      parentRoute: typeof DashSettingsRoute
+    }
   }
 }
 
@@ -608,11 +627,13 @@ const DashListsRouteWithChildren = DashListsRoute._addFileChildren(
 )
 
 interface DashSettingsRouteChildren {
+  DashSettingsMaintenanceRoute: typeof DashSettingsMaintenanceRoute
   DashSettingsRatelimitConfigsRoute: typeof DashSettingsRatelimitConfigsRoute
   DashSettingsIndexRoute: typeof DashSettingsIndexRoute
 }
 
 const DashSettingsRouteChildren: DashSettingsRouteChildren = {
+  DashSettingsMaintenanceRoute: DashSettingsMaintenanceRoute,
   DashSettingsRatelimitConfigsRoute: DashSettingsRatelimitConfigsRoute,
   DashSettingsIndexRoute: DashSettingsIndexRoute,
 }

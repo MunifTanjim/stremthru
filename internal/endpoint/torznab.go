@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torznab"
 	"github.com/MunifTanjim/stremthru/internal/znab"
@@ -40,6 +41,11 @@ func handleTorznab(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=7200")
 		sendZnabResponse(w, r, 200, torznab.StremThruIndexer.Capabilities(), o)
 	case "search", "tvsearch", "movie":
+		if server.IsMaintenanceActive() {
+			sendZnabResponse(w, r, http.StatusServiceUnavailable, znab.ErrorUnknownError("server is under maintenance"), o)
+			return
+		}
+
 		query, err := torznab.ParseQuery(r.URL.Query())
 		if err != nil {
 			sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter(err.Error()), o)
