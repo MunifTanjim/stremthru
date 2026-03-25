@@ -79,6 +79,15 @@ func (files Files) HasVideo() bool {
 	return false
 }
 
+func (files Files) HasMaliciousFile() bool {
+	for i := range files {
+		if strings.ToLower(filepath.Ext(files[i].Path)) == ".exe" {
+			return true
+		}
+	}
+	return false
+}
+
 func (files Files) Value() (driver.Value, error) {
 	return json.Marshal(files)
 }
