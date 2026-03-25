@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -775,6 +776,10 @@ func get_upsert_query(count int) string {
 		query_upsert_on_conflict
 }
 
+func shouldDiscardTorrentTitle(hash, ttitle string) bool {
+	return ttitle == "" || ttitle == hash || strings.HasPrefix(ttitle, "magnet:?") || strings.ToLower(filepath.Ext(ttitle)) == ".exe"
+}
+
 func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discardFileIdx bool) error {
 	if len(items) == 0 {
 		return nil
@@ -820,15 +825,15 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 				}
 			}
 
-			fingerprint := xxh3.HashString(t.TorrentTitle + "|" + strconv.FormatInt(t.Size, 10) + "|" + strconv.FormatBool(t.Private))
-			var prev prevRecordData
-			if prevRecordCache.Get(t.Hash, &prev) && (prev.Source == tSource || prev.Source == string(TorrentInfoSourceDHT) || prev.Fingerprint == fingerprint) {
-				upsertSkipCount.Add(1)
+			if shouldDiscardTorrentTitle(t.Hash, t.TorrentTitle) {
 				count--
 				continue
 			}
 
-			if t.TorrentTitle == "" || t.TorrentTitle == t.Hash || strings.HasPrefix(t.TorrentTitle, "magnet:?") {
+			fingerprint := xxh3.HashString(t.TorrentTitle + "|" + strconv.FormatInt(t.Size, 10) + "|" + strconv.FormatBool(t.Private))
+			var prev prevRecordData
+			if prevRecordCache.Get(t.Hash, &prev) && (prev.Source == tSource || prev.Source == string(TorrentInfoSourceDHT) || prev.Fingerprint == fingerprint) {
+				upsertSkipCount.Add(1)
 				count--
 				continue
 			}
