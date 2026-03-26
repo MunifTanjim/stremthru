@@ -68,8 +68,9 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 				}
 
 				queriesBySid, err := znabsearch.BuildQueriesForTorznab(client, znabsearch.QueryBuilderConfig{
-					Meta: meta,
-					NSId: nsid,
+					Meta:       meta,
+					NSId:       nsid,
+					SearchMode: string(indexer.SearchMode),
 				})
 				if err != nil {
 					log.Error("failed to build queries for indexer", "error", err, "indexer", indexer.Name, "sid", item.SId)

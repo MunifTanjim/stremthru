@@ -8,6 +8,7 @@ export type TorznabIndexer = {
   id: number;
   name: string;
   rate_limit_config_id: null | string;
+  search_mode: TorznabIndexerSearchMode;
   type: TorznabIndexerType;
   updated_at: string;
   url: string;
@@ -17,16 +18,19 @@ type CreateTorznabIndexerParams = {
   api_key: string;
   name: string;
   rate_limit_config_id: null | string;
+  search_mode?: TorznabIndexerSearchMode;
   type?: TorznabIndexerType;
   url: string;
 };
 
+type TorznabIndexerSearchMode = "auto" | "query";
 type TorznabIndexerType = "generic" | "jackett";
 
 type UpdateTorznabIndexerParams = {
   api_key?: string;
   name?: string;
   rate_limit_config_id: null | string;
+  search_mode?: TorznabIndexerSearchMode;
 };
 
 export function useTorznabIndexerMutation() {

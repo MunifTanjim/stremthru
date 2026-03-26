@@ -285,12 +285,14 @@ function TorznabIndexerFormSheet({
       api_key: "",
       name: editItem?.name ?? "",
       rate_limit_config_id: editItem?.rate_limit_config_id ?? "",
+      search_mode: editItem?.search_mode ?? "auto",
       type: editItem?.type ?? "jackett",
       url: editItem?.url ?? "",
     }),
     [
       editItem?.name,
       editItem?.rate_limit_config_id,
+      editItem?.search_mode,
       editItem?.type,
       editItem?.url,
     ],
@@ -305,6 +307,7 @@ function TorznabIndexerFormSheet({
           id: editItem.id,
           name: value.name,
           rate_limit_config_id: value.rate_limit_config_id || null,
+          search_mode: value.search_mode,
         });
         toast.success("Updated successfully!");
       } else {
@@ -312,6 +315,7 @@ function TorznabIndexerFormSheet({
           api_key: value.api_key,
           name: value.name,
           rate_limit_config_id: value.rate_limit_config_id || null,
+          search_mode: value.search_mode,
           type: value.type,
           url: value.url,
         });
@@ -384,6 +388,18 @@ function TorznabIndexerFormSheet({
                   <field.Select
                     label="Rate Limit Config"
                     options={rateLimitConfigOptions}
+                  />
+                )}
+              </form.AppField>
+              <form.AppField name="search_mode">
+                {(field) => (
+                  <field.Select
+                    label="Search Mode"
+                    options={[
+                      { label: "Auto", value: "auto" },
+                      { label: "Query", value: "query" },
+                    ]}
+                    required
                   />
                 )}
               </form.AppField>

@@ -99,12 +99,16 @@ type IndexerQuery struct {
 }
 
 type QueryBuilderConfig struct {
-	Meta *QueryMeta
-	NSId *torrent_stream.NormalizedStremId
+	Meta       *QueryMeta
+	NSId       *torrent_stream.NormalizedStremId
+	SearchMode string // auto / query
 }
 
 func BuildQueriesForTorznab(client tznc.Indexer, conf QueryBuilderConfig) (map[string][]IndexerQuery, error) {
-	nsid, meta := conf.NSId, conf.Meta
+	nsid, meta, searchMode := conf.NSId, conf.Meta, conf.SearchMode
+	if searchMode == "" {
+		searchMode = "auto"
+	}
 
 	queriesBySid := map[string][]IndexerQuery{}
 
@@ -122,7 +126,7 @@ func BuildQueriesForTorznab(client tznc.Indexer, conf QueryBuilderConfig) (map[s
 	}
 
 	query.SetLimit(-1)
-	if !nsid.IsAnime && query.IsSupported(znab.SearchParamIMDBId) {
+	if searchMode != "query" && !nsid.IsAnime && query.IsSupported(znab.SearchParamIMDBId) {
 		query.Set(znab.SearchParamIMDBId, nsid.Id)
 		sid := nsid.ToClean()
 		isExact := !nsid.IsSeries()

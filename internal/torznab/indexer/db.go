@@ -24,12 +24,28 @@ func decrypt(value string) (string, error) {
 
 const TableName = "torznab_indexer"
 
+type SearchMode string
+
+const (
+	SearchModeAuto  SearchMode = "auto"
+	SearchModeQuery SearchMode = "query"
+)
+
 type IndexerType string
 
 const (
 	IndexerTypeGeneric IndexerType = "generic"
 	IndexerTypeJackett IndexerType = "jackett"
 )
+
+func (sm SearchMode) IsValid() bool {
+	switch sm {
+	case SearchModeAuto, SearchModeQuery:
+		return true
+	default:
+		return false
+	}
+}
 
 func (it IndexerType) IsValid() bool {
 	switch it {
@@ -47,6 +63,7 @@ type TorznabIndexer struct {
 	URL               string
 	APIKey            string
 	RateLimitConfigId sql.NullString
+	SearchMode        SearchMode
 	Disabled          bool
 	CAt               db.Timestamp
 	UAt               db.Timestamp
@@ -207,6 +224,7 @@ var Column = struct {
 	URL               string
 	APIKey            string
 	RateLimitConfigId string
+	SearchMode        string
 	Disabled          string
 	CAt               string
 	UAt               string
@@ -217,6 +235,7 @@ var Column = struct {
 	URL:               "url",
 	APIKey:            "api_key",
 	RateLimitConfigId: "rate_limit_config_id",
+	SearchMode:        "search_mode",
 	Disabled:          "disabled",
 	CAt:               "cat",
 	UAt:               "uat",
@@ -229,6 +248,7 @@ var columns = []string{
 	Column.URL,
 	Column.APIKey,
 	Column.RateLimitConfigId,
+	Column.SearchMode,
 	Column.Disabled,
 	Column.CAt,
 	Column.UAt,
@@ -261,7 +281,7 @@ func GetAll() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -287,7 +307,7 @@ func GetAllEnabled() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -320,7 +340,7 @@ func GetById(id int64) (*TorznabIndexer, error) {
 	row := db.QueryRow(query_get_by_id, id)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -340,7 +360,7 @@ func GetByURL(url string) (*TorznabIndexer, error) {
 	row := db.QueryRow(query_get_by_url, url)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -350,7 +370,7 @@ func GetByURL(url string) (*TorznabIndexer, error) {
 }
 
 var query_insert = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
+	`INSERT INTO %s (%s) VALUES (?,?,?,?,?,?)`,
 	TableName,
 	db.JoinColumnNames(
 		Column.Type,
@@ -358,16 +378,21 @@ var query_insert = fmt.Sprintf(
 		Column.URL,
 		Column.APIKey,
 		Column.RateLimitConfigId,
+		Column.SearchMode,
 	),
 )
 
 func (i *TorznabIndexer) Insert() error {
+	if i.SearchMode == "" {
+		i.SearchMode = SearchModeAuto
+	}
 	_, err := db.Exec(query_insert,
 		i.Type,
 		i.Name,
 		i.URL,
 		i.APIKey,
 		i.RateLimitConfigId,
+		i.SearchMode,
 	)
 	if err != nil {
 		return err
@@ -388,6 +413,7 @@ var query_update = fmt.Sprintf(
 		fmt.Sprintf(`%s = ?`, Column.URL),
 		fmt.Sprintf(`%s = ?`, Column.APIKey),
 		fmt.Sprintf(`%s = ?`, Column.RateLimitConfigId),
+		fmt.Sprintf(`%s = ?`, Column.SearchMode),
 		fmt.Sprintf(`%s = ?`, Column.Disabled),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
@@ -400,6 +426,7 @@ func (i *TorznabIndexer) Update() error {
 		i.URL,
 		i.APIKey,
 		i.RateLimitConfigId,
+		i.SearchMode,
 		i.Disabled,
 		i.Id,
 	)
