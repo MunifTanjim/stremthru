@@ -20,6 +20,7 @@ type TorznabIndexerResponse struct {
 	RateLimitConfigId *string `json:"rate_limit_config_id"`
 	SearchMode        string  `json:"search_mode"`
 	Disabled          bool    `json:"disabled"`
+	OnlyAnime         bool    `json:"only_anime"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
 }
@@ -38,6 +39,7 @@ func toTorznabIndexerResponse(item *torznab_indexer.TorznabIndexer) TorznabIndex
 		RateLimitConfigId: rateLimitConfigId,
 		SearchMode:        string(item.SearchMode),
 		Disabled:          item.Disabled,
+		OnlyAnime:         item.OnlyAnime,
 		CreatedAt:         item.CAt.Format(time.RFC3339),
 		UpdatedAt:         item.UAt.Format(time.RFC3339),
 	}
@@ -65,6 +67,7 @@ type CreateTorznabIndexerRequest struct {
 	Name              string                      `json:"name,omitempty"`
 	RateLimitConfigId *string                     `json:"rate_limit_config_id"`
 	SearchMode        torznab_indexer.SearchMode  `json:"search_mode"`
+	OnlyAnime         bool                        `json:"only_anime"`
 }
 
 var ErrorInvalidTorznabCredentials = errors.New("invalid torznab credentials or connection failed")
@@ -108,6 +111,8 @@ func handleCreateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	} else {
 		indexer.SearchMode = torznab_indexer.SearchModeAuto
 	}
+
+	indexer.OnlyAnime = request.OnlyAnime
 
 	if !indexer.SearchMode.IsValid() {
 		ErrorBadRequest(r).Append(Error{
@@ -176,6 +181,7 @@ type UpdateTorznabIndexerRequest struct {
 	Name              string                     `json:"name,omitempty"`
 	RateLimitConfigId *string                    `json:"rate_limit_config_id"`
 	SearchMode        torznab_indexer.SearchMode `json:"search_mode"`
+	OnlyAnime         bool                       `json:"only_anime"`
 }
 
 func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
@@ -215,6 +221,8 @@ func handleUpdateTorznabIndexer(w http.ResponseWriter, r *http.Request) {
 	if request.SearchMode != "" {
 		indexer.SearchMode = request.SearchMode
 	}
+
+	indexer.OnlyAnime = request.OnlyAnime
 
 	if !indexer.SearchMode.IsValid() {
 		ErrorBadRequest(r).Append(Error{

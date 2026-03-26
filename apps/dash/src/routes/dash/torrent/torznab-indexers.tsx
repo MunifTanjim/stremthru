@@ -284,6 +284,7 @@ function TorznabIndexerFormSheet({
     () => ({
       api_key: "",
       name: editItem?.name ?? "",
+      only_anime: editItem?.only_anime ?? false,
       rate_limit_config_id: editItem?.rate_limit_config_id ?? "",
       search_mode: editItem?.search_mode ?? "auto",
       type: editItem?.type ?? "jackett",
@@ -291,6 +292,7 @@ function TorznabIndexerFormSheet({
     }),
     [
       editItem?.name,
+      editItem?.only_anime,
       editItem?.rate_limit_config_id,
       editItem?.search_mode,
       editItem?.type,
@@ -306,6 +308,7 @@ function TorznabIndexerFormSheet({
           api_key: value.api_key,
           id: editItem.id,
           name: value.name,
+          only_anime: value.only_anime,
           rate_limit_config_id: value.rate_limit_config_id || null,
           search_mode: value.search_mode,
         });
@@ -314,6 +317,7 @@ function TorznabIndexerFormSheet({
         await create.mutateAsync({
           api_key: value.api_key,
           name: value.name,
+          only_anime: value.only_anime,
           rate_limit_config_id: value.rate_limit_config_id || null,
           search_mode: value.search_mode,
           type: value.type,
@@ -402,6 +406,9 @@ function TorznabIndexerFormSheet({
                     required
                   />
                 )}
+              </form.AppField>
+              <form.AppField name="only_anime">
+                {(field) => <field.Checkbox label="Only Anime" />}
               </form.AppField>
             </div>
           </ScrollArea>

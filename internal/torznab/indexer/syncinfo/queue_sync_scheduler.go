@@ -62,6 +62,10 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 			for i := range indexers {
 				indexer := &indexers[i]
 
+				if indexer.OnlyAnime && !nsid.IsAnime {
+					continue
+				}
+
 				client, ok := clientById[indexer.Id]
 				if !ok {
 					continue

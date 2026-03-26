@@ -65,6 +65,7 @@ type TorznabIndexer struct {
 	RateLimitConfigId sql.NullString
 	SearchMode        SearchMode
 	Disabled          bool
+	OnlyAnime         bool
 	CAt               db.Timestamp
 	UAt               db.Timestamp
 
@@ -226,6 +227,7 @@ var Column = struct {
 	RateLimitConfigId string
 	SearchMode        string
 	Disabled          string
+	OnlyAnime         string
 	CAt               string
 	UAt               string
 }{
@@ -237,6 +239,7 @@ var Column = struct {
 	RateLimitConfigId: "rate_limit_config_id",
 	SearchMode:        "search_mode",
 	Disabled:          "disabled",
+	OnlyAnime:         "only_anime",
 	CAt:               "cat",
 	UAt:               "uat",
 }
@@ -250,6 +253,7 @@ var columns = []string{
 	Column.RateLimitConfigId,
 	Column.SearchMode,
 	Column.Disabled,
+	Column.OnlyAnime,
 	Column.CAt,
 	Column.UAt,
 }
@@ -281,7 +285,7 @@ func GetAll() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.OnlyAnime, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -307,7 +311,7 @@ func GetAllEnabled() ([]TorznabIndexer, error) {
 	items := []TorznabIndexer{}
 	for rows.Next() {
 		item := TorznabIndexer{}
-		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+		if err := rows.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.OnlyAnime, &item.CAt, &item.UAt); err != nil {
 			return nil, err
 		}
 		items = append(items, item)
@@ -340,7 +344,7 @@ func GetById(id int64) (*TorznabIndexer, error) {
 	row := db.QueryRow(query_get_by_id, id)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.OnlyAnime, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -360,7 +364,7 @@ func GetByURL(url string) (*TorznabIndexer, error) {
 	row := db.QueryRow(query_get_by_url, url)
 
 	item := TorznabIndexer{}
-	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.CAt, &item.UAt); err != nil {
+	if err := row.Scan(&item.Id, &item.Type, &item.Name, &item.URL, &item.APIKey, &item.RateLimitConfigId, &item.SearchMode, &item.Disabled, &item.OnlyAnime, &item.CAt, &item.UAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -370,7 +374,7 @@ func GetByURL(url string) (*TorznabIndexer, error) {
 }
 
 var query_insert = fmt.Sprintf(
-	`INSERT INTO %s (%s) VALUES (?,?,?,?,?,?)`,
+	`INSERT INTO %s (%s) VALUES (?,?,?,?,?,?,?)`,
 	TableName,
 	db.JoinColumnNames(
 		Column.Type,
@@ -379,6 +383,7 @@ var query_insert = fmt.Sprintf(
 		Column.APIKey,
 		Column.RateLimitConfigId,
 		Column.SearchMode,
+		Column.OnlyAnime,
 	),
 )
 
@@ -393,6 +398,7 @@ func (i *TorznabIndexer) Insert() error {
 		i.APIKey,
 		i.RateLimitConfigId,
 		i.SearchMode,
+		i.OnlyAnime,
 	)
 	if err != nil {
 		return err
@@ -415,6 +421,7 @@ var query_update = fmt.Sprintf(
 		fmt.Sprintf(`%s = ?`, Column.RateLimitConfigId),
 		fmt.Sprintf(`%s = ?`, Column.SearchMode),
 		fmt.Sprintf(`%s = ?`, Column.Disabled),
+		fmt.Sprintf(`%s = ?`, Column.OnlyAnime),
 		fmt.Sprintf(`%s = %s`, Column.UAt, db.CurrentTimestamp),
 	}, ", "),
 	Column.Id,
@@ -428,6 +435,7 @@ func (i *TorznabIndexer) Update() error {
 		i.RateLimitConfigId,
 		i.SearchMode,
 		i.Disabled,
+		i.OnlyAnime,
 		i.Id,
 	)
 	return err
