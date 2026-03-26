@@ -16,4 +16,7 @@ const (
 	TorznabAttrNameUploadVolumeFactor   ChannelItemAttrName = "uploadvolumefactor"
 	TorznabAttrNameCoverURL             ChannelItemAttrName = "coverurl"
 	TorznabAttrNameSize                 ChannelItemAttrName = "size"
+
+	TorznabAttrNameIndexerHost ChannelItemAttrName = "indexerhost"
+	TorznabAttrNameIndexerName ChannelItemAttrName = "indexername"
 )

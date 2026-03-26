@@ -1,7 +1,6 @@
 package torznab
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -10,11 +9,11 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	torznab_indexer_syncinfo "github.com/MunifTanjim/stremthru/internal/torznab/indexer/syncinfo"
+	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
 
@@ -37,6 +36,41 @@ func (sti stremThruIndexer) Info() znab.Info {
 var lastMappedIMDBIdCached struct {
 	imdbId  string
 	staleAt time.Time
+}
+
+func toFeedItem(tInfo torrent_info.TorrentInfo, imdbId string) FeedItem {
+	var category Category
+	switch tInfo.Category {
+	case torrent_info.TorrentInfoCategoryMovie:
+		category = CategoryMovies
+	case torrent_info.TorrentInfoCategorySeries:
+		category = CategoryTV
+	case torrent_info.TorrentInfoCategoryXXX:
+		category = CategoryXXX
+	default:
+		category = CategoryOther
+	}
+	audio := strings.Join(tInfo.Audio, ", ")
+	if len(tInfo.Channels) > 0 {
+		audio += " | " + strings.Join(tInfo.Channels, ", ")
+	}
+	return FeedItem{
+		Audio:       audio,
+		Category:    category,
+		Codec:       tInfo.Codec,
+		IMDB:        imdbId,
+		InfoHash:    tInfo.Hash,
+		Language:    strings.Join(tInfo.Languages, ", "),
+		Leechers:    tInfo.Leechers,
+		PublishDate: tInfo.CreatedAt.Time,
+		Resolution:  tInfo.Resolution,
+		Seeders:     tInfo.Seeders,
+		Site:        tInfo.Site,
+		Size:        tInfo.Size,
+		Title:       tInfo.TorrentTitle,
+		Year:        tInfo.Year,
+		IndexerName: jackett.GetIndexerName(tInfo.Indexer),
+	}
 }
 
 func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
@@ -78,10 +112,18 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 		return []FeedItem{}, nil
 	}
 
+	sidSuffix := ""
+	if q.Season != "" {
+		sidSuffix += ":" + q.Season
+		if q.Ep != "" {
+			sidSuffix += ":" + q.Ep
+		}
+	}
+
 	var wg sync.WaitGroup
 	for _, imdbId := range imdbIds {
 		wg.Go(func() {
-			torznab_indexer_syncinfo.QueueJob(imdbId)
+			torznab_indexer_syncinfo.QueueJob(imdbId + sidSuffix)
 			if config.PeerFlag.Lazy {
 				go buddy.PullTorrentsByStremId(imdbId, "")
 			} else {
@@ -91,174 +133,49 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	}
 	wg.Wait()
 
-	args := []any{}
-	var query strings.Builder
-	query.WriteString(
-		fmt.Sprintf(
-			"SELECT ito.%s, %s FROM %s ito INNER JOIN %s ti ON ti.%s = ito.%s WHERE ito.%s ",
-			imdb_torrent.Column.TId,
-			db.JoinPrefixedColumnNames("ti.", torrent_info.Columns...),
-			imdb_torrent.TableName,
-			torrent_info.TableName,
-			torrent_info.Column.Hash,
-			imdb_torrent.Column.Hash,
-			imdb_torrent.Column.TId,
-		),
-	)
-	if len(imdbIds) == 1 {
-		query.WriteString("= ?")
-		args = append(args, imdbIds[0])
-	} else {
-		query_in_imdbids, arg_imdbids := db.InStringValues(imdbIds)
-		query.WriteString(query_in_imdbids)
-		args = append(args, arg_imdbids...)
+	var mu sync.Mutex
+	imdbIDByHash := map[string]string{}
+	hashesByIMDBID := map[string][]string{}
+
+	for _, imdbId := range imdbIds {
+		wg.Go(func() {
+			stremId := imdbId + sidSuffix
+			hashes, err := torrent_info.ListHashesByStremId(stremId)
+			if err != nil {
+				log.Error("failed to list hashes by strem id", "error", err, "stremId", stremId)
+				return
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			for _, hash := range hashes {
+				if _, exists := imdbIDByHash[hash]; !exists {
+					imdbIDByHash[hash] = imdbId
+					hashesByIMDBID[imdbId] = append(hashesByIMDBID[imdbId], hash)
+				}
+			}
+		})
 	}
-	if q.Season != "" {
-		query.WriteString(
-			fmt.Sprintf(
-				" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
-				torrent_info.Column.Seasons,
-				torrent_info.Column.Seasons,
-			),
-		)
-		args = append(args, q.Season, "%,"+q.Season+",%")
+	wg.Wait()
+
+	allHashes := make([]string, 0, len(imdbIDByHash))
+	for _, imdbID := range imdbIds {
+		hashes := hashesByIMDBID[imdbID]
+		allHashes = append(allHashes, hashes...)
 	}
-	if q.Ep != "" {
-		if q.Season != "" {
-			query.WriteString(
-				fmt.Sprintf(
-					" AND (ti.%s = '' OR ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
-					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
-				),
-			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
-		} else {
-			query.WriteString(
-				fmt.Sprintf(
-					" AND (ti.%s = ? OR CONCAT(',', ti.%s, ',') LIKE ?)",
-					torrent_info.Column.Episodes,
-					torrent_info.Column.Episodes,
-				),
-			)
-			args = append(args, q.Ep, "%,"+q.Ep+",%")
-		}
-	}
-	query.WriteString(
-		fmt.Sprintf(
-			" AND ti.%s = %s AND ti.%s != -1",
-			torrent_info.Column.Private, db.BooleanFalse,
-			torrent_info.Column.Size,
-		),
-	)
-	rows, err := db.Query(query.String(), args...)
+
+	tInfoByHash, err := torrent_info.GetByHashes(allHashes)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	items := []FeedItem{}
-	for rows.Next() {
-		var imdbId string
-		var tInfo torrent_info.TorrentInfo
-		if err := rows.Scan(
-			&imdbId,
-
-			&tInfo.Hash,
-			&tInfo.TorrentTitle,
-
-			&tInfo.Indexer,
-			&tInfo.Source,
-			&tInfo.Category,
-			&tInfo.CreatedAt,
-			&tInfo.UpdatedAt,
-			&tInfo.ParsedAt,
-			&tInfo.ParserVersion,
-			&tInfo.ParserInput,
-
-			&tInfo.Seeders,
-			&tInfo.Leechers,
-			&tInfo.Private,
-
-			&tInfo.Audio,
-			&tInfo.BitDepth,
-			&tInfo.Channels,
-			&tInfo.Codec,
-			&tInfo.Commentary,
-			&tInfo.Complete,
-			&tInfo.Container,
-			&tInfo.Convert,
-			&tInfo.Date,
-			&tInfo.Documentary,
-			&tInfo.Dubbed,
-			&tInfo.Edition,
-			&tInfo.EpisodeCode,
-			&tInfo.Episodes,
-			&tInfo.Extended,
-			&tInfo.Extension,
-			&tInfo.Group,
-			&tInfo.HDR,
-			&tInfo.Hardcoded,
-			&tInfo.Languages,
-			&tInfo.Network,
-			&tInfo.Proper,
-			&tInfo.Quality,
-			&tInfo.Region,
-			&tInfo.ReleaseTypes,
-			&tInfo.Remastered,
-			&tInfo.Repack,
-			&tInfo.Resolution,
-			&tInfo.Retail,
-			&tInfo.Seasons,
-			&tInfo.Site,
-			&tInfo.Size,
-			&tInfo.Subbed,
-			&tInfo.ThreeD,
-			&tInfo.Title,
-			&tInfo.Uncensored,
-			&tInfo.Unrated,
-			&tInfo.Upscaled,
-			&tInfo.Volumes,
-			&tInfo.Year,
-			&tInfo.YearEnd,
-		); err != nil {
-			return nil, err
+	for _, hash := range allHashes {
+		tInfo, ok := tInfoByHash[hash]
+		if !ok || tInfo.Private {
+			continue
 		}
-		var category Category
-		switch tInfo.Category {
-		case torrent_info.TorrentInfoCategoryMovie:
-			category = CategoryMovies
-		case torrent_info.TorrentInfoCategorySeries:
-			category = CategoryTV
-		case torrent_info.TorrentInfoCategoryXXX:
-			category = CategoryXXX
-		default:
-			category = CategoryOther
-		}
-		audio := strings.Join(tInfo.Audio, ", ")
-		if len(tInfo.Channels) > 0 {
-			audio += " | " + strings.Join(tInfo.Channels, ", ")
-		}
-		items = append(items, FeedItem{
-			Audio:       audio,
-			Category:    category,
-			Codec:       tInfo.Codec,
-			IMDB:        imdbId,
-			InfoHash:    tInfo.Hash,
-			Language:    strings.Join(tInfo.Languages, ", "),
-			Leechers:    tInfo.Leechers,
-			PublishDate: tInfo.CreatedAt.Time,
-			Resolution:  tInfo.Resolution,
-			Seeders:     tInfo.Seeders,
-			Site:        tInfo.Site,
-			Size:        tInfo.Size,
-			Title:       tInfo.TorrentTitle,
-			Year:        tInfo.Year,
-		})
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		items = append(items, toFeedItem(tInfo, imdbIDByHash[hash]))
 	}
 
 	if q.Offset > 0 {

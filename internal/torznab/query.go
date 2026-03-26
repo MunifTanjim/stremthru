@@ -17,6 +17,7 @@ type Query struct {
 	Extended         bool
 	Categories       []int
 	APIKey           string
+	Output           string // json / xml
 
 	// identifier types
 	TVDBId   string
@@ -46,6 +47,10 @@ func (query Query) HasMovies() bool {
 
 func (query Query) ToValues() *url.Values {
 	v := url.Values{}
+
+	if query.Output != "" {
+		v.Set("o", query.Output)
+	}
 
 	if query.Type != "" {
 		v.Set("t", query.Type)
@@ -139,6 +144,12 @@ func ParseQuery(q url.Values) (Query, error) {
 
 	for key, vals := range q {
 		switch strings.ToLower(key) {
+		case "o":
+			if len(vals) > 1 {
+				return query, errors.New("Multiple o parameters not allowed")
+			}
+			query.Output = vals[0]
+
 		case "t":
 			if len(vals) > 1 {
 				return query, errors.New("Multiple t parameters not allowed")

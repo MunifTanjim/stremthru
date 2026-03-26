@@ -36,6 +36,9 @@ type FeedItem struct {
 	Site       string
 	Size       int64
 	Year       int
+
+	IndexerName string
+	IndexerHost string
 }
 
 func (ri FeedItem) toChannelItem() ChannelItem {
@@ -85,6 +88,13 @@ func (ri FeedItem) toChannelItem() ChannelItem {
 	}
 	if ri.Year != 0 {
 		attrs = append(attrs, znab.ChannelItemAttr{Name: "year", Value: strconv.Itoa(ri.Year)})
+	}
+
+	if ri.IndexerHost != "" {
+		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.TorznabAttrNameIndexerHost, Value: ri.IndexerHost})
+	}
+	if ri.IndexerName != "" {
+		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.TorznabAttrNameIndexerName, Value: ri.IndexerName})
 	}
 
 	return ChannelItem{

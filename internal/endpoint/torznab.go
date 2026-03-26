@@ -2,14 +2,18 @@ package endpoint
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torznab"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
+
+var regexSeasonEpisode = regexp.MustCompile(`(?i)\s*S(\d+)(?:E(\d+))?\b`)
 
 func sendZnabResponse(w http.ResponseWriter, r *http.Request, statusCode int, data any, o string) {
 	switch o {
@@ -23,14 +27,15 @@ func sendZnabResponse(w http.ResponseWriter, r *http.Request, statusCode int, da
 }
 
 func handleTorznab(w http.ResponseWriter, r *http.Request) {
-	t := r.URL.Query().Get("t")
+	reqQuery := r.URL.Query()
 
+	t := reqQuery.Get("t")
 	if t == "" {
 		http.Redirect(w, r, r.URL.Path+"?t=caps", http.StatusTemporaryRedirect)
 		return
 	}
 
-	o := strings.ToLower(r.URL.Query().Get("o"))
+	o := strings.ToLower(reqQuery.Get("o"))
 	if o != "" && o != "json" && o != "xml" {
 		shared.SendXML(w, r, 200, znab.ErrorIncorrectParameter("invalid output format"))
 		return
@@ -46,10 +51,26 @@ func handleTorznab(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		query, err := torznab.ParseQuery(r.URL.Query())
+		query, err := torznab.ParseQuery(reqQuery)
 		if err != nil {
 			sendZnabResponse(w, r, 200, znab.ErrorIncorrectParameter(err.Error()), o)
 			return
+		}
+		if query.Q != "" && query.Season == "" && query.Ep == "" {
+			if m := regexSeasonEpisode.FindStringSubmatch(query.Q); m != nil {
+				if season := util.SafeParseInt(m[1], -1); season != -1 {
+					query.Season = util.IntToString(season)
+				}
+				if len(m) > 2 {
+					if ep := util.SafeParseInt(m[2], -1); ep != -1 {
+						query.Ep = util.IntToString(ep)
+					}
+				}
+				query.Q = strings.TrimSpace(regexSeasonEpisode.ReplaceAllString(query.Q, ""))
+
+				http.Redirect(w, r, r.URL.Path+"?"+query.Encode(), http.StatusTemporaryRedirect)
+				return
+			}
 		}
 		items, err := torznab.StremThruIndexer.Search(query)
 		if err != nil {
