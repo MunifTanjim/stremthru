@@ -24,6 +24,9 @@ const (
 	NewznabAttrNameSubs       ChannelItemAttrName = "subs"       // Subtitle languages
 	NewznabAttrNameReview     ChannelItemAttrName = "review"     // Review text/description
 
+	NewznabAttrNameIndexerHost ChannelItemAttrName = "indexerhost"
+	NewznabAttrNameIndexerName ChannelItemAttrName = "indexername"
+
 	// TV attributes
 
 	NewznabAttrNameSeason     ChannelItemAttrName = "season"     // Numeric season

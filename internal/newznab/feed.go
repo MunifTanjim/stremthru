@@ -102,6 +102,13 @@ func (fi FeedItem) toChannelItem() ChannelItem {
 		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.NewznabAttrNamePassword, Value: "1"})
 	}
 
+	if fi.Indexer.Host != "" {
+		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.NewznabAttrNameIndexerHost, Value: fi.Indexer.Host})
+	}
+	if fi.Indexer.Name != "" {
+		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.NewznabAttrNameIndexerName, Value: fi.Indexer.Name})
+	}
+
 	return ChannelItem{
 		ChannelItem: znab.ChannelItem{
 			Category:    fi.Category.Name,
