@@ -8,6 +8,7 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/torznab/generic"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 )
 
@@ -100,6 +101,11 @@ var jackettCache = cache.NewLRUCache[*jackett.Client](&cache.CacheConfig{
 	Name:     "stremio:userdata:indexers:jackett",
 })
 
+var genericTorznabCache = cache.NewLRUCache[*generic.TorznabClient](&cache.CacheConfig{
+	Lifetime: 2 * time.Hour,
+	Name:     "stremio:userdata:indexers:generic",
+})
+
 func (ud *UserDataIndexers) Compress() {
 	for i := range ud.Indexers {
 		indexer := &ud.Indexers[i]
@@ -123,6 +129,21 @@ func (ud *UserDataIndexers) Prepare() ([]torznab_client.Indexer, error) {
 		apiKey := indexer.APIKey
 
 		switch indexer.Name {
+		case IndexerNameGeneric:
+			key := baseURL + ":" + apiKey
+			var client *generic.TorznabClient
+			if !genericTorznabCache.Get(key, &client) {
+				client = generic.NewClient(&generic.TorznabClientConfig{
+					BaseURL: baseURL,
+					APIKey:  apiKey,
+				})
+				err := genericTorznabCache.Add(key, client)
+				if err != nil {
+					return indexers, err
+				}
+			}
+			indexers = append(indexers, client)
+
 		case IndexerNameJackett:
 			u := jackett.TorznabURL(baseURL)
 			if err := u.Parse(); err != nil {

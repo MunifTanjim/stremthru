@@ -103,11 +103,15 @@ func NewNewznabIndexer(url, apiKey string) (*NewznabIndexer, error) {
 }
 
 func (idxr *NewznabIndexer) SetAPIKey(apiKey string) error {
+	if apiKey == "" {
+		return nil
+	}
 	encAPIKey, err := encrypt(apiKey)
 	if err != nil {
 		return err
 	}
 	idxr.APIKey = encAPIKey
+	idxr.apikey = apiKey
 	return nil
 }
 
@@ -180,14 +184,6 @@ var columns = []string{
 	Column.Disabled,
 	Column.CAt,
 	Column.UAt,
-}
-
-var columnsInsert = []string{
-	Column.Type,
-	Column.Name,
-	Column.URL,
-	Column.APIKey,
-	Column.RateLimitConfigId,
 }
 
 var query_get_all = fmt.Sprintf(
@@ -289,7 +285,13 @@ func GetByURL(url string) (*NewznabIndexer, error) {
 var query_insert = fmt.Sprintf(
 	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
 	TableName,
-	db.JoinColumnNames(columnsInsert...),
+	db.JoinColumnNames(
+		Column.Type,
+		Column.Name,
+		Column.URL,
+		Column.APIKey,
+		Column.RateLimitConfigId,
+	),
 )
 
 func (idxr *NewznabIndexer) Insert() error {

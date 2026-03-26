@@ -21,7 +21,7 @@ type CreateTorznabIndexerParams = {
   url: string;
 };
 
-type TorznabIndexerType = "jackett";
+type TorznabIndexerType = "generic" | "jackett";
 
 type UpdateTorznabIndexerParams = {
   api_key?: string;

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/internal/znab"
 	"github.com/anacrolix/torrent/metainfo"
 )
 
@@ -130,6 +133,48 @@ func (t *Torz) EnsureMagnet() error {
 	torzFileCache.Add(t.SourceLink, cachedTorz)
 
 	return nil
+}
+
+func TorzFromChannelItem(o *znab.ChannelItem, attrs znab.ChannelItemAttrs) *Torz {
+	t := &Torz{}
+	t.Hash = strings.ToLower(attrs.Get(znab.TorznabAttrNameInfoHash))
+	t.Title = o.Title
+	if size, err := strconv.ParseInt(attrs.Get(znab.TorznabAttrNameSize), 10, 64); err == nil && size > 0 {
+		t.Size = size
+	} else if o.Size > 0 {
+		t.Size = o.Size
+	} else if o.Enclosure.Length > 0 {
+		t.Size = o.Enclosure.Length
+	}
+	t.Seeders = util.SafeParseInt(attrs.Get(znab.TorznabAttrNameSeeders), 0)
+	if leechers := util.SafeParseInt(attrs.Get(znab.TorznabAttrNameLeechers), 0); leechers > 0 {
+		t.Leechers = leechers
+	} else if peers := util.SafeParseInt(attrs.Get(znab.TorznabAttrNamePeers), 0); peers > t.Seeders {
+		t.Leechers = peers - t.Seeders
+	}
+	if minr := util.SafeParseFloat(attrs.Get(znab.TorznabAttrNameMinimumRatio), 0); minr > 0 {
+		t.Private = true
+	} else if minst := util.SafeParseFloat(attrs.Get(znab.TorznabAttrNameMinimumSeedTime), 0); minst > 0 {
+		t.Private = true
+	}
+	if strings.HasPrefix(o.Enclosure.URL, "magnet:?") {
+		t.MagnetLink = o.Enclosure.URL
+		if t.Hash == "" {
+			if m, err := core.ParseMagnetLink(t.MagnetLink); err == nil {
+				t.Hash = m.Hash
+			}
+		}
+	} else if magnetUrl := attrs.Get(znab.TorznabAttrNameMagnetURL); strings.HasPrefix(magnetUrl, "magnet:?") {
+		t.MagnetLink = magnetUrl
+		if t.Hash == "" {
+			if m, err := core.ParseMagnetLink(t.MagnetLink); err == nil {
+				t.Hash = m.Hash
+			}
+		}
+	} else if strings.HasPrefix(o.Enclosure.URL, "http") {
+		t.SourceLink = o.Enclosure.URL
+	}
+	return t
 }
 
 type Indexer interface {

@@ -80,6 +80,7 @@ type ChannelItem struct {
 	GUID        string               `xml:"guid,omitempty" json:"guid,omitempty"`
 	Link        string               `xml:"link,omitempty" json:"link,omitempty"`
 	PublishDate string               `xml:"pubDate,omitempty" json:"pubDate,omitempty"` // Mon, 02 Jan 2006 15:04:05 -0700
+	Size        int64                `xml:"size,omitempty" json:"size,omitempty"`
 	Title       string               `xml:"title,omitempty" json:"title,omitempty"`
 	Attributes  ChannelItemAttrs     `xml:"-" json:"attr"`
 }

@@ -285,9 +285,15 @@ function TorznabIndexerFormSheet({
       api_key: "",
       name: editItem?.name ?? "",
       rate_limit_config_id: editItem?.rate_limit_config_id ?? "",
+      type: editItem?.type ?? "jackett",
       url: editItem?.url ?? "",
     }),
-    [editItem?.name, editItem?.rate_limit_config_id, editItem?.url],
+    [
+      editItem?.name,
+      editItem?.rate_limit_config_id,
+      editItem?.type,
+      editItem?.url,
+    ],
   );
 
   const form = useAppForm({
@@ -306,6 +312,7 @@ function TorznabIndexerFormSheet({
           api_key: value.api_key,
           name: value.name,
           rate_limit_config_id: value.rate_limit_config_id || null,
+          type: value.type,
           url: value.url,
         });
         toast.success("Created successfully!");
@@ -344,6 +351,19 @@ function TorznabIndexerFormSheet({
 
           <ScrollArea className="overflow-hidden">
             <div className="flex flex-col gap-4 px-4">
+              <form.AppField name="type">
+                {(field) => (
+                  <field.Select
+                    disabled={Boolean(editItem)}
+                    label="Type"
+                    options={[
+                      { label: "Generic", value: "generic" },
+                      { label: "Jackett", value: "jackett" },
+                    ]}
+                    required
+                  />
+                )}
+              </form.AppField>
               <form.AppField name="name">
                 {(field) => <field.Input label="Name" type="text" />}
               </form.AppField>
@@ -352,6 +372,7 @@ function TorznabIndexerFormSheet({
                   <field.Input
                     disabled={Boolean(editItem)}
                     label="Torznab URL"
+                    required
                   />
                 )}
               </form.AppField>

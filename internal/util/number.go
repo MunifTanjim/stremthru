@@ -25,10 +25,18 @@ func SafeParseInt(str string, fallbackValue int) int {
 	return val
 }
 
+func SafeParseFloat(str string, fallbackValue float64) float64 {
+	val, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return fallbackValue
+	}
+	return val
+}
+
 func ZeroPadInt(n int, length int) string {
 	return fmt.Sprintf("%0"+strconv.Itoa(length)+"d", n)
 }
 
-func IntToString(i int) string {
+func IntToString[T ~int | int8 | int16 | int32 | int64](i T) string {
 	return strconv.FormatInt(int64(i), 10)
 }

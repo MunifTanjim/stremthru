@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/ratelimit"
+	"github.com/MunifTanjim/stremthru/internal/torznab/generic"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
 	rrl "github.com/nccapo/rate-limiter"
 )
@@ -26,12 +27,13 @@ const TableName = "torznab_indexer"
 type IndexerType string
 
 const (
+	IndexerTypeGeneric IndexerType = "generic"
 	IndexerTypeJackett IndexerType = "jackett"
 )
 
 func (it IndexerType) IsValid() bool {
 	switch it {
-	case IndexerTypeJackett:
+	case IndexerTypeGeneric, IndexerTypeJackett:
 		return true
 	default:
 		return false
@@ -48,6 +50,8 @@ type TorznabIndexer struct {
 	Disabled          bool
 	CAt               db.Timestamp
 	UAt               db.Timestamp
+
+	apikey string
 }
 
 type torznabIndexerRateLimiter struct {
@@ -79,6 +83,16 @@ func (idxr TorznabIndexer) GetRateLimiter() (*torznabIndexerRateLimiter, error) 
 
 func NewTorznabIndexer(indexerType IndexerType, url, apiKey string) (*TorznabIndexer, error) {
 	switch indexerType {
+	case IndexerTypeGeneric:
+		indexer := &TorznabIndexer{
+			Type: indexerType,
+			URL:  url,
+		}
+		err := indexer.SetAPIKey(apiKey)
+		if err != nil {
+			return nil, err
+		}
+		return indexer, nil
 	case IndexerTypeJackett:
 		u := jackett.TorznabURL(url)
 		if err := u.Parse(); err != nil {
@@ -100,11 +114,15 @@ func NewTorznabIndexer(indexerType IndexerType, url, apiKey string) (*TorznabInd
 }
 
 func (i *TorznabIndexer) SetAPIKey(apiKey string) error {
+	if apiKey == "" {
+		return nil
+	}
 	encAPIKey, err := encrypt(apiKey)
 	if err != nil {
 		return err
 	}
 	i.APIKey = encAPIKey
+	i.apikey = apiKey
 	return nil
 }
 
@@ -112,11 +130,43 @@ func (i *TorznabIndexer) GetAPIKey() (string, error) {
 	if i.APIKey == "" {
 		return "", nil
 	}
-	return decrypt(i.APIKey)
+	if i.apikey == "" {
+		apikey, err := decrypt(i.APIKey)
+		if err != nil {
+			return "", err
+		}
+		i.apikey = apikey
+	}
+	return i.apikey, nil
 }
 
 func (i *TorznabIndexer) Validate() error {
 	switch i.Type {
+	case IndexerTypeGeneric:
+		apiKey, err := i.GetAPIKey()
+		if err != nil {
+			return fmt.Errorf("failed to decrypt api key: %w", err)
+		}
+
+		client := generic.NewClient(&generic.TorznabClientConfig{
+			BaseURL: i.URL,
+			APIKey:  apiKey,
+		})
+
+		caps, err := client.GetCaps()
+		if err != nil {
+			return fmt.Errorf("failed to fetch capabilities: %w", err)
+		}
+
+		if i.Name == "" {
+			if caps.Server.Title != "" {
+				i.Name = caps.Server.Title
+			} else {
+				i.Name = client.BaseURL.Host
+			}
+		}
+
+		return nil
 	case IndexerTypeJackett:
 		u := jackett.TorznabURL(i.URL)
 		if err := u.Parse(); err != nil {
@@ -182,14 +232,6 @@ var columns = []string{
 	Column.Disabled,
 	Column.CAt,
 	Column.UAt,
-}
-
-var columnsInsert = []string{
-	Column.Type,
-	Column.Name,
-	Column.URL,
-	Column.APIKey,
-	Column.RateLimitConfigId,
 }
 
 var query_exists = fmt.Sprintf(
@@ -310,7 +352,13 @@ func GetByURL(url string) (*TorznabIndexer, error) {
 var query_insert = fmt.Sprintf(
 	`INSERT INTO %s (%s) VALUES (?,?,?,?,?)`,
 	TableName,
-	db.JoinColumnNames(columnsInsert...),
+	db.JoinColumnNames(
+		Column.Type,
+		Column.Name,
+		Column.URL,
+		Column.APIKey,
+		Column.RateLimitConfigId,
+	),
 )
 
 func (i *TorznabIndexer) Insert() error {

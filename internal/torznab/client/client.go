@@ -111,6 +111,14 @@ func (r *Response[T]) Unmarshal(res *http.Response, body []byte, v any) error {
 			}
 			return nil
 		}
+	case res.StatusCode >= 400 && strings.Contains(contentType, "text/plain"):
+		r.Error = &znab.Error{
+			Code:        900,
+			Description: string(body),
+		}
+		r.Error.StatusCode = res.StatusCode
+		r.Error.RetryAfter = time.Duration(util.SafeParseInt(res.Header.Get("Retry-After"), 0)) * time.Second
+		return nil
 	default:
 		return errors.New("unexpected content type: " + contentType)
 	}

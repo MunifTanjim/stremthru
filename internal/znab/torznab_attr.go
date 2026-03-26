@@ -9,9 +9,11 @@ const (
 	TorznabAttrNameGenre                ChannelItemAttrName = "genre"
 	TorznabAttrNameSeeders              ChannelItemAttrName = "seeders"
 	TorznabAttrNamePeers                ChannelItemAttrName = "peers"
+	TorznabAttrNameLeechers             ChannelItemAttrName = "leechers"
 	TorznabAttrNameMinimumRatio         ChannelItemAttrName = "minimumratio"
 	TorznabAttrNameMinimumSeedTime      ChannelItemAttrName = "minimumseedtime"
 	TorznabAttrNameDownloadVolumeFactor ChannelItemAttrName = "downloadvolumefactor"
 	TorznabAttrNameUploadVolumeFactor   ChannelItemAttrName = "uploadvolumefactor"
 	TorznabAttrNameCoverURL             ChannelItemAttrName = "coverurl"
+	TorznabAttrNameSize                 ChannelItemAttrName = "size"
 )

@@ -36,7 +36,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 			indexer := &indexers[i]
 
 			switch indexer.Type {
-			case torznab_indexer.IndexerTypeJackett:
+			case torznab_indexer.IndexerTypeGeneric, torznab_indexer.IndexerTypeJackett:
 				client, err := indexer.GetClient()
 				if err != nil {
 					log.Error("failed to create torznab client", "error", err, "id", indexer.Id)

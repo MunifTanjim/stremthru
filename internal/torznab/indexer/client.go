@@ -7,8 +7,15 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/cache"
 	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/torznab/generic"
 	"github.com/MunifTanjim/stremthru/internal/torznab/jackett"
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
+
+var genericCache = cache.NewLRUCache[*generic.TorznabClient](&cache.CacheConfig{
+	Lifetime: 3 * time.Hour,
+	Name:     "torznab:indexer:generic",
+})
 
 var jackettCache = cache.NewLRUCache[*jackett.Client](&cache.CacheConfig{
 	Lifetime: 3 * time.Hour,
@@ -17,6 +24,25 @@ var jackettCache = cache.NewLRUCache[*jackett.Client](&cache.CacheConfig{
 
 func (tidxr TorznabIndexer) GetClient() (torznab_client.Indexer, error) {
 	switch tidxr.Type {
+	case IndexerTypeGeneric:
+		apiKey, err := tidxr.GetAPIKey()
+		if err != nil {
+			return nil, err
+		}
+
+		cacheKey := util.IntToString(tidxr.Id)
+		var client *generic.TorznabClient
+		if !genericCache.Get(cacheKey, &client) {
+			client = generic.NewClient(&generic.TorznabClientConfig{
+				BaseURL: tidxr.URL,
+				APIKey:  apiKey,
+			})
+			err := genericCache.Add(cacheKey, client)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return client, nil
 	case IndexerTypeJackett:
 		apiKey, err := tidxr.GetAPIKey()
 		if err != nil {
