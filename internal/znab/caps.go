@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"strings"
+	"sync"
 )
 
 type CapsServer struct {
@@ -90,7 +91,8 @@ type CapsSearchingItem struct {
 	SupportedParams CapsSearchingItemSupportedParams `xml:"supportedParams,attr" json:"supportedParams,omitempty"`
 	SearchEngine    string                           `xml:"searchEngine,attr,omitempty" json:"searchEngine,omitempty"` // raw
 
-	supportedParam map[SearchParam]struct{} `xml:"-" json:"-"`
+	supportedParam     map[SearchParam]struct{} `xml:"-" json:"-"`
+	supportedParamOnce sync.Once
 }
 
 func (csi *CapsSearchingItem) IsZero() bool {
@@ -102,12 +104,12 @@ func (csi *CapsSearchingItem) IsEmpty() bool {
 }
 
 func (csi *CapsSearchingItem) SupportsParam(param SearchParam) bool {
-	if len(csi.supportedParam) == 0 {
+	csi.supportedParamOnce.Do(func() {
 		csi.supportedParam = make(map[SearchParam]struct{}, len(csi.SupportedParams))
 		for _, p := range csi.SupportedParams {
 			csi.supportedParam[p] = struct{}{}
 		}
-	}
+	})
 	_, ok := csi.supportedParam[param]
 	return ok
 }
