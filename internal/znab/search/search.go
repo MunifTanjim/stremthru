@@ -3,6 +3,7 @@ package znabsearch
 import (
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,15 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/znab"
 )
+
+var regexMultipleWhitespace = regexp.MustCompile(`\s+`)
+
+func normalizeAnimeTitle(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, "-", " ")
+	s = regexMultipleWhitespace.ReplaceAllString(s, " ")
+	return strings.TrimSpace(s)
+}
 
 type QueryMeta struct {
 	Titles     []string
@@ -56,15 +66,18 @@ func GetQueryMeta(log *logger.Logger, sid string) (*QueryMeta, *torrent_stream.N
 				seenTitle := util.NewSet[string]()
 				for i := range titles {
 					title := &titles[i]
-					if seenTitle.Has(title.Value) {
+					normalizedTitle := normalizeAnimeTitle(title.Value)
+					if seenTitle.Has(normalizedTitle) {
 						continue
 					}
-					seenTitle.Add(title.Value)
-					meta.Titles = append(meta.Titles, title.Value)
+					seenTitle.Add(normalizedTitle)
+					meta.Titles = append(meta.Titles, normalizedTitle)
 					if meta.Year == 0 && title.Year != "" {
 						meta.Year = util.SafeParseInt(title.Year, 0)
 					}
 				}
+			} else {
+				log.Warn("AniDB episode map not found", "anidb_id", nsid.Id, "episode", aniEp)
 			}
 		}
 	} else {
