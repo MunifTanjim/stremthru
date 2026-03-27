@@ -179,6 +179,7 @@ func TorzFromChannelItem(o *znab.ChannelItem, attrs znab.ChannelItemAttrs) *Torz
 
 type Indexer interface {
 	GetId() string
+	GetName() string
 	NewSearchQuery(fn func(caps Caps) Function) (*Query, error)
 	Search(query url.Values) ([]Torz, error)
 }

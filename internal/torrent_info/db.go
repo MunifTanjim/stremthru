@@ -704,7 +704,7 @@ var query_upsert_cond_should_update_size = fmt.Sprintf(
 	query_upsert_cond_new_source_is_dht, query_upsert_cond_old_size_missing,
 )
 var query_upsert_cond_should_update_indexer = fmt.Sprintf(
-	`(EXCLUDED.%s != '' AND ti.%s != EXCLUDED.%s)`,
+	`(EXCLUDED.%s NOT IN ('', 'bitmagnet') AND ti.%s != EXCLUDED.%s)`,
 	Column.Indexer, Column.Indexer, Column.Indexer,
 )
 var query_upsert_cond_should_update_category = fmt.Sprintf(

@@ -169,6 +169,8 @@ func (i *TorznabIndexer) Validate() error {
 		client := generic.NewClient(&generic.TorznabClientConfig{
 			BaseURL: i.URL,
 			APIKey:  apiKey,
+			ID:      i.Id,
+			Name:    i.Name,
 		})
 
 		caps, err := client.GetCaps()

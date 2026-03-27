@@ -36,6 +36,8 @@ func (tidxr TorznabIndexer) GetClient() (torznab_client.Indexer, error) {
 			client = generic.NewClient(&generic.TorznabClientConfig{
 				BaseURL: tidxr.URL,
 				APIKey:  apiKey,
+				ID:      tidxr.Id,
+				Name:    tidxr.Name,
 			})
 			err := genericCache.Add(cacheKey, client)
 			if err != nil {

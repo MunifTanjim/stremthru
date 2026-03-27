@@ -2,31 +2,46 @@ package generic
 
 import (
 	"net/url"
-	"strings"
 
 	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
+	"github.com/MunifTanjim/stremthru/internal/util"
+)
+
+var (
+	_ torznab_client.Indexer = (*TorznabClient)(nil)
 )
 
 type TorznabClientConfig struct {
 	BaseURL   string
 	APIKey    string
 	UserAgent string
+	ID        int64
+	Name      string
 }
 
 type TorznabClient struct {
 	*torznab_client.Client
-	id string
+	id   string
+	name string
 }
 
 func (tc TorznabClient) GetId() string {
 	return tc.id
 }
 
+func (tc TorznabClient) GetName() string {
+	return tc.name
+}
+
 func (tc TorznabClient) Search(query url.Values) ([]torznab_client.Torz, error) {
+	caps, err := tc.GetCaps()
+	if err != nil {
+		return nil, err
+	}
 	params := &torznab_client.Ctx{}
 	params.Query = &query
 	var resp torznab_client.Response[SearchResponse]
-	_, err := tc.Client.Request("GET", "/api", params, &resp)
+	_, err = tc.Client.Request("GET", "/api", params, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +52,14 @@ func (tc TorznabClient) Search(query url.Values) ([]torznab_client.Torz, error) 
 		if item.Enclosure.Length == 0 {
 			continue
 		}
-		result = append(result, *item.ToTorz())
+		t := *item.ToTorz()
+		if t.Indexer == "" {
+			t.Indexer = caps.Server.Title
+		}
+		if t.Indexer == "" {
+			t.Indexer = tc.GetName()
+		}
+		result = append(result, t)
 	}
 	return result, nil
 }
@@ -48,7 +70,11 @@ func NewClient(conf *TorznabClientConfig) *TorznabClient {
 		APIKey:    conf.APIKey,
 		UserAgent: conf.UserAgent,
 	})
-	u := tc.BaseURL
-	id := u.Host + "/" + strings.Trim(u.Path, "/")
-	return &TorznabClient{Client: tc, id: id}
+	var id string
+	if conf.ID != 0 {
+		id = "generic/" + util.IntToString(conf.ID)
+	} else {
+		id = tc.BaseURL.Host
+	}
+	return &TorznabClient{Client: tc, id: id, name: conf.Name}
 }

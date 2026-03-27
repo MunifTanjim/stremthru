@@ -10,6 +10,10 @@ import (
 	torznab_client "github.com/MunifTanjim/stremthru/internal/torznab/client"
 )
 
+var (
+	_ torznab_client.Indexer = (*TorznabClient)(nil)
+)
+
 type torznabURL struct {
 	raw       string
 	BaseURL   string
@@ -112,11 +116,24 @@ type TorznabClientConfig struct {
 
 type TorznabClient struct {
 	*torznab_client.Client
-	id string
+	id   string
+	name string
 }
 
 func (tc TorznabClient) GetId() string {
 	return "jackett/" + tc.id
+}
+
+func (tc *TorznabClient) GetName() string {
+	if tc.name == "" {
+		switch tc.id {
+		case "all":
+			tc.name = "Jackett"
+		default:
+			tc.name = GetIndexerName(tc.id)
+		}
+	}
+	return tc.name
 }
 
 func (tc TorznabClient) Search(query url.Values) ([]torznab_client.Torz, error) {
