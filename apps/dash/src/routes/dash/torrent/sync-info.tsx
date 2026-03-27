@@ -95,7 +95,7 @@ function QueriesPopover({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-96 p-0">
-        <ScrollArea className="max-h-80">
+        <ScrollArea className="h-fit max-h-80">
           <div className="flex flex-col divide-y">
             {queries.map((q) => (
               <div className="flex flex-col gap-1 p-3" key={q.query}>
