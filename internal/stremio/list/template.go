@@ -592,12 +592,14 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 						Pattern: "/users/{user_slug}/watchlist",
 						Examples: []string{
 							"/users/garycrawfordgc/watchlist",
+							"https://app.trakt.tv/users/garycrawfordgc/watchlist",
 						},
 					},
 					{
 						Pattern: "/users/{user_slug}/lists/{list_slug}",
 						Examples: []string{
 							"/users/garycrawfordgc/lists/latest-releases",
+							"https://app.trakt.tv/users/garycrawfordgc/lists/latest-releases",
 						},
 					},
 					{Pattern: "/movies/boxoffice"},
@@ -605,7 +607,9 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 						Pattern: "/{movies,shows}/anticipated",
 						Examples: []string{
 							"/movies/anticipated",
+							"https://app.trakt.tv/movies/anticipated",
 							"/shows/anticipated",
+							"https://app.trakt.tv/shows/anticipated",
 						},
 					},
 					{
@@ -626,21 +630,27 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 						Pattern: "/{movies,shows}/popular",
 						Examples: []string{
 							"/movies/popular",
+							"https://app.trakt.tv/movies/popular",
 							"/shows/popular",
+							"https://app.trakt.tv/shows/popular",
 						},
 					},
 					{
 						Pattern: "/{movies,shows}/recommendations",
 						Examples: []string{
 							"/movies/recommendations",
+							"https://app.trakt.tv/movies/recommended",
 							"/shows/recommendations",
+							"https://app.trakt.tv/shows/recommended",
 						},
 					},
 					{
 						Pattern: "/{movies,shows}/trending",
 						Examples: []string{
 							"/movies/trending",
+							"https://app.trakt.tv/movies/trending",
 							"/shows/trending",
+							"https://app.trakt.tv/shows/trending",
 						},
 					},
 					{
@@ -654,6 +664,7 @@ var executeTemplate = func() stremio_template.Executor[TemplateData] {
 						Pattern: "/users/{own_user_slug}/progress",
 						Examples: []string{
 							"/users/garycrawfordgc/progress",
+							"https://app.trakt.tv/users/garycrawfordgc/progress",
 						},
 					},
 				},

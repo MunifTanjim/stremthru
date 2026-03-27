@@ -522,7 +522,7 @@ func getUserData(r *http.Request, isAuthed bool) (*UserData, error) {
 				}
 				ud.Lists[idx] = "tmdb:" + list.Id
 
-			case "trakt.tv":
+			case "trakt.tv", "app.trakt.tv":
 				if !isTraktTvConfigured {
 					if TraktEnabled {
 						udErr.list_urls[idx] = "Trakt.tv Auth Code is required"
