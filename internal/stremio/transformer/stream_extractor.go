@@ -463,6 +463,8 @@ func (se StreamExtractor) Parse(stream *stremio.Stream, sType string) *StreamExt
 	if r.Store.Code != "" {
 		r.Store.Code = strings.ToUpper(r.Store.Code)
 		switch r.Store.Code {
+		case "DBD":
+			r.Store.Code = "DR"
 		case "PKP":
 			r.Store.Code = "PP"
 		case "TRB":
