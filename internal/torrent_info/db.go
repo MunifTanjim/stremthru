@@ -1734,3 +1734,208 @@ func MarkForReparseBelowVersion(version int) error {
 	_, err := db.Exec(query_mark_for_reparse_below_version, version)
 	return err
 }
+
+type SearchItemsItem struct {
+	Hash         string              `json:"hash"`
+	TorrentTitle string              `json:"t_title"`
+	Source       TorrentInfoSource   `json:"src"`
+	Category     TorrentInfoCategory `json:"category"`
+	Size         int64               `json:"size"`
+	Indexer      string              `json:"indexer"`
+	Seeders      int                 `json:"seeders"`
+	Leechers     int                 `json:"leechers"`
+	Private      bool                `json:"private"`
+	CreatedAt    db.Timestamp        `json:"created_at"`
+	IMDBId       string              `json:"imdb_id"`
+}
+
+var search_items_columns = strings.Join([]string{
+	"ti." + Column.Hash,
+	"ti." + Column.TorrentTitle,
+	"ti." + Column.Source,
+	"ti." + Column.Category,
+	"ti." + Column.Size,
+	"ti." + Column.Indexer,
+	"ti." + Column.Seeders,
+	"ti." + Column.Leechers,
+	"ti." + Column.Private,
+	"ti." + Column.CreatedAt,
+}, ", ")
+
+func scanSearchItem(rows *sql.Rows) (SearchItemsItem, error) {
+	var item SearchItemsItem
+	if err := rows.Scan(
+		&item.Hash,
+		&item.TorrentTitle,
+		&item.Source,
+		&item.Category,
+		&item.Size,
+		&item.Indexer,
+		&item.Seeders,
+		&item.Leechers,
+		&item.Private,
+		&item.CreatedAt,
+	); err != nil {
+		return item, err
+	}
+	return item, nil
+}
+
+func fillSearchItemsIMDBID(items []SearchItemsItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	hashes := make([]string, len(items))
+	for i, item := range items {
+		hashes[i] = item.Hash
+	}
+	inQuery, inArgs := db.InStringValues(hashes)
+	query := fmt.Sprintf(
+		"SELECT %s, %s FROM %s WHERE %s %s",
+		imdb_torrent.Column.Hash, imdb_torrent.Column.TId,
+		imdb_torrent.TableName, imdb_torrent.Column.Hash, inQuery,
+	)
+	rows, err := db.Query(query, inArgs...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	imdbByHash := map[string]string{}
+	for rows.Next() {
+		var hash, tid string
+		if err := rows.Scan(&hash, &tid); err != nil {
+			return err
+		}
+		imdbByHash[hash] = tid
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for i := range items {
+		if imdbid, ok := imdbByHash[items[i].Hash]; ok {
+			items[i].IMDBId = imdbid
+		}
+	}
+	return nil
+}
+
+func SearchItemByHash(hash string) (*SearchItemsItem, error) {
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s ti WHERE ti.%s = ?",
+		search_items_columns, TableName, Column.Hash,
+	)
+	rows, err := db.Query(query, hash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		item, err := scanSearchItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		items := []SearchItemsItem{item}
+		if err := fillSearchItemsIMDBID(items); err != nil {
+			return nil, err
+		}
+		return &items[0], nil
+	}
+	return nil, rows.Err()
+}
+
+func SearchItemsByIMDBID(imdbID string) ([]SearchItemsItem, error) {
+	hashes, hashErr := ListHashesByStremId(imdbID)
+	if hashErr != nil {
+		return nil, hashErr
+	}
+	if len(hashes) == 0 {
+		return []SearchItemsItem{}, nil
+	}
+	in_hashes_query, in_hashes_args := db.InStringValues(hashes)
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s ti WHERE ti.%s %s ORDER BY ti.%s DESC, ti.%s ASC",
+		search_items_columns, TableName, Column.Hash, in_hashes_query,
+		Column.CreatedAt, Column.Hash,
+	)
+
+	rows, err := db.Query(query, in_hashes_args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []SearchItemsItem{}
+	for rows.Next() {
+		item, err := scanSearchItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := fillSearchItemsIMDBID(items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+type SearchItemsByTitleParams struct {
+	Title  string
+	Cursor string
+	Limit  int
+}
+
+func SearchItemsByTitle(params SearchItemsByTitleParams) ([]SearchItemsItem, error) {
+	title := params.Title
+	if strings.ContainsAny(title, "*?") {
+		title = strings.ReplaceAll(title, "*", "%")
+		title = strings.ReplaceAll(title, "?", "_")
+	} else {
+		title = "%" + title + "%"
+	}
+
+	conditions := []string{"ti." + Column.TorrentTitle + " LIKE ?"}
+	args := []any{title}
+
+	if params.Cursor != "" {
+		subquery := fmt.Sprintf("(SELECT %s FROM %s WHERE %s = ?)", Column.CreatedAt, TableName, Column.Hash)
+		conditions = append(conditions, fmt.Sprintf(
+			"(ti.%s < %s OR (ti.%s = %s AND ti.%s > ?))",
+			Column.CreatedAt, subquery, Column.CreatedAt, subquery, Column.Hash,
+		))
+		args = append(args, params.Cursor, params.Cursor, params.Cursor)
+	}
+
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s ti WHERE %s ORDER BY ti.%s DESC, ti.%s ASC LIMIT ?",
+		search_items_columns, TableName,
+		strings.Join(conditions, " AND "), Column.CreatedAt, Column.Hash,
+	)
+	args = append(args, params.Limit)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := []SearchItemsItem{}
+	for rows.Next() {
+		item, err := scanSearchItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := fillSearchItemsIMDBID(items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

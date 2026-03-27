@@ -36,6 +36,7 @@ func AddEndpoints(mux *http.ServeMux) {
 
 	dash_api.AddIMDBEndpoints(router)
 	dash_api.AddWorkerEndpoints(router)
+	dash_api.AddTorrentInfoEndpoints(router)
 	dash_api.AddTorznabIndexerSyncInfoEndpoints(router)
 	dash_api.AddRateLimitEndpoints(router)
 	dash_api.AddMaintenanceEndpoints(router)

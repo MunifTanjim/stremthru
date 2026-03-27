@@ -273,6 +273,10 @@ function useNavItems(): NavItem[] {
           path: "/dash/torrent",
           title: "Stats",
         },
+        {
+          path: "/dash/torrent/torrent-info",
+          title: "Info",
+        },
       ],
       path: "/dash/torrent",
       title: "Torrent",

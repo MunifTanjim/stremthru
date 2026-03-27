@@ -38,6 +38,14 @@ export default defineConfig([
       pluginQuery.configs["flat/recommended"],
     ],
     files: ["apps/dash/**/*.{ts,tsx}"],
+    rules: {
+      "perfectionist/sort-objects": [
+        "error",
+        {
+          ignorePattern: ["useInfiniteQuery"],
+        },
+      ],
+    },
   },
   {
     files: ["apps/dash/src/components/ui/**"],
