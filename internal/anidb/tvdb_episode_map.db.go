@@ -306,6 +306,8 @@ func (ms AniDBTVDBEpisodeMaps) GetByAnidbEpisode(ep int) *AniDBTVDBEpisodeMap {
 			if ep <= m.End {
 				return m
 			}
+		default:
+			return m
 		}
 	}
 	return nil
