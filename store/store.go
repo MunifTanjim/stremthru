@@ -25,6 +25,22 @@ const (
 	StoreNameTorBox     StoreName = "torbox"
 )
 
+func (n StoreName) String() string {
+	return string(n)
+}
+
+var StoreNames = []StoreName{
+	StoreNameAlldebrid,
+	StoreNameDebrider,
+	StoreNameDebridLink,
+	StoreNameEasyDebrid,
+	StoreNameOffcloud,
+	StoreNamePikPak,
+	StoreNamePremiumize,
+	StoreNameRealDebrid,
+	StoreNameTorBox,
+}
+
 type StoreCode string
 
 const (

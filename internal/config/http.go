@@ -24,7 +24,7 @@ const (
 
 type TunnelMap map[string]url.URL
 
-func (tm TunnelMap) hasProxy() bool {
+func (tm TunnelMap) HasProxy() bool {
 	for _, proxyUrl := range tm {
 		if proxyUrl.Host != "" {
 			return true
@@ -179,18 +179,18 @@ type StoreTunnelConfig struct {
 
 type StoreTunnelConfigMap map[string]StoreTunnelConfig
 
-func (stc StoreTunnelConfigMap) isEnabledForAPI(name string) bool {
+func (stc StoreTunnelConfigMap) IsEnabledForAPI(name string) bool {
 	if c, ok := stc[name]; ok {
 		return c.api
 	}
 	if name != "*" {
-		return stc.isEnabledForAPI("*")
+		return stc.IsEnabledForAPI("*")
 	}
 	return true
 }
 
 func (stc StoreTunnelConfigMap) GetTypeForAPI(name string) TunnelType {
-	enabled := stc.isEnabledForAPI(name)
+	enabled := stc.IsEnabledForAPI(name)
 	if enabled {
 		return TUNNEL_TYPE_FORCED
 	}
@@ -467,3 +467,24 @@ func (ipr *IPResolver) GetTunnelIPByHostname() (map[string]string, error) {
 	err := ipr.resolveTunnelIPMap()
 	return ipr.proxyIpByHostname, err
 }
+
+var IP = func() *IPResolver {
+	ip := &IPResolver{
+		checkers: strings.Split(getEnv("STREMTHRU_IP_CHECKER"), ","),
+	}
+	ip.validate()
+
+	if Tunnel.HasProxy() {
+		defaultProxyHost := Tunnel.GetDefaultProxyHost()
+		ipMap, err := ip.GetTunnelIPByProxyHost()
+		if err != nil {
+			if defaultProxyHost != "" && ipMap[defaultProxyHost] == "" {
+				log.Panicf("Failed to resolve Tunnel IP Map: %v\n", err)
+			} else {
+				log.Printf("Failed to resolve Tunnel IP Map: %v\n\n", err)
+			}
+		}
+	}
+
+	return ip
+}()

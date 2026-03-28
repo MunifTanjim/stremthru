@@ -378,6 +378,10 @@ function useNavItems(): NavItem[] {
       icon: Settings,
       items: [
         {
+          path: "/dash/settings/config",
+          title: "Config",
+        },
+        {
           path: "/dash/settings/ratelimit-configs",
           title: "Rate Limit Configs",
         },

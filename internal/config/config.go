@@ -206,6 +206,14 @@ func (m AuthMap) IsAdmin(user string) bool {
 	return ok && isAdmin
 }
 
+func (m AuthMap) ListUsers() map[string]string {
+	users := make(map[string]string, len(m.user_pass))
+	for user := range m.user_pass {
+		users[user] = ""
+	}
+	return users
+}
+
 func (m AuthMap) GetSABnzbdUser(apikey string) string {
 	for user, key := range m.sabnzbd_apikey {
 		if key == apikey {
@@ -419,7 +427,6 @@ type Config struct {
 	StoreContentCachedStaleTime storeContentCachedStaleTimeMap
 	StoreClientUserAgent        string
 	ContentProxyConnectionLimit ContentProxyConnectionLimitMap
-	IP                          *IPResolver
 
 	DataDir     string
 	VaultSecret string
@@ -538,11 +545,18 @@ var config = func() Config {
 	}
 
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI")
+	if _, err := url.Parse(databaseUri); err != nil {
+		log.Fatalf("invalid database uri: %v", err)
+	}
 	databaseReplicaUris := []string{}
 	for uri := range strings.FieldsFuncSeq(getEnv("STREMTHRU_DATABASE_REPLICA_URIS"), func(c rune) bool {
 		return c == ','
 	}) {
-		databaseReplicaUris = append(databaseReplicaUris, strings.TrimSpace(uri))
+		uri = strings.TrimSpace(uri)
+		if _, err := url.Parse(uri); err != nil {
+			log.Fatalf("invalid database replica uri: %v", err)
+		}
+		databaseReplicaUris = append(databaseReplicaUris, uri)
 	}
 
 	feature := FeatureConfig{
@@ -656,10 +670,10 @@ var config = func() Config {
 		}
 	}
 
-	ip := &IPResolver{
-		checkers: strings.Split(getEnv("STREMTHRU_IP_CHECKER"), ","),
+	redisUri := getEnv("STREMTHRU_REDIS_URI")
+	if _, err := url.Parse(redisUri); err != nil {
+		log.Fatalf("invalid redis uri: %v", err)
 	}
-	ip.validate()
 
 	return Config{
 		LogLevel:  logLevel,
@@ -675,7 +689,7 @@ var config = func() Config {
 		PeerFlag:                    peerFlag,
 		HasPeer:                     len(peerUrl) > 0,
 		PullPeerURL:                 pullPeerUrl,
-		RedisURI:                    getEnv("STREMTHRU_REDIS_URI"),
+		RedisURI:                    redisUri,
 		DatabaseURI:                 databaseUri,
 		DatabaseReplicaURIs:         databaseReplicaUris,
 		Feature:                     feature,
@@ -686,7 +700,6 @@ var config = func() Config {
 		StoreContentCachedStaleTime: storeContentCachedStaleTimeMap,
 		StoreClientUserAgent:        getEnv("STREMTHRU_STORE_CLIENT_USER_AGENT"),
 		ContentProxyConnectionLimit: contentProxyConnectionMap,
-		IP:                          ip,
 		DataDir:                     dataDir,
 		VaultSecret:                 vaultSecret,
 	}
@@ -717,7 +730,6 @@ var StoreContentCachedStaleTime = config.StoreContentCachedStaleTime
 var StoreClientUserAgent = config.StoreClientUserAgent
 var ContentProxyConnectionLimit = config.ContentProxyConnectionLimit
 var InstanceId = strings.ReplaceAll(uuid.NewString(), "-", "")
-var IP = config.IP
 
 var IsTrusted = func() bool {
 	rootHost := util.MustDecodeBase64("c3RyZW10aHJ1LjEzMzc3MDAxLnh5eg==")
@@ -754,73 +766,48 @@ type AppState struct {
 }
 
 func PrintConfig(state *AppState) {
-	hasTunnel := Tunnel.hasProxy()
-	defaultProxyHost := Tunnel.GetDefaultProxyHost()
-
-	machineIP := IP.GetMachineIP()
-	var tunnelIpByProxyHost map[string]string
-	if hasTunnel {
-		ipMap, err := IP.GetTunnelIPByProxyHost()
-		if err != nil {
-			if defaultProxyHost != "" && ipMap[defaultProxyHost] == "" {
-				log.Panicf("Failed to resolve Tunnel IP Map: %v\n", err)
-			} else {
-				log.Printf("Failed to resolve Tunnel IP Map: %v\n\n", err)
-			}
-		}
-		tunnelIpByProxyHost = ipMap
-	}
+	data := BuildConfigDisplay(state.StoreNames)
 
 	l := log.New(os.Stderr, "=", 0)
 	l.Println("====== StremThru =======")
-	l.Printf(" Time: %v\n", ServerStartTime.Format(time.RFC3339))
-	l.Printf(" Version: %v\n", Version)
-	l.Printf(" Addr: %v\n", ListenAddr)
-	if Environment != "" {
-		l.Printf(" Env: %v\n", Environment)
+	l.Printf(" Time: %v\n", data.Server.StartedAt.Format(time.RFC3339))
+	l.Printf(" Version: %v\n", data.Server.Version)
+	l.Printf(" Addr: %v\n", data.Server.ListenAddr)
+	if data.Server.Environment != "" {
+		l.Printf(" Env: %v\n", data.Server.Environment)
 	}
 	l.Println("========================")
 	l.Println()
 
-	l.Printf("  Log Level: %s\n", LogLevel.String())
-	l.Printf(" Log Format: %s\n", LogFormat)
+	l.Printf("  Log Level: %s\n", data.Server.LogLevel)
+	l.Printf(" Log Format: %s\n", data.Server.LogFormat)
 	l.Println()
 
-	if hasTunnel {
+	if !data.Tunnel.Disabled {
 		l.Println(" Tunnel:")
-		if defaultProxy := Tunnel.getProxy("*"); defaultProxy != nil && defaultProxy.Host != "" {
+		if data.Tunnel.Default != "" {
 			defaultProxyConfig := ""
 			if noProxy := getEnv("NO_PROXY"); noProxy == "*" {
 				defaultProxyConfig = " (disabled)"
 			}
-			l.Println("   Default: " + defaultProxy.Redacted() + defaultProxyConfig)
-			l.Println("   [Store]: " + defaultProxy.Redacted())
+			l.Println("   Default: " + data.Tunnel.Default + defaultProxyConfig)
+			l.Println("   [Store]: " + data.Tunnel.Default)
 		}
 
-		if len(Tunnel) > 1 {
+		if len(data.Tunnel.ByHost) > 0 {
 			l.Println("   By Host:")
-			for hostname, proxy := range Tunnel {
-				if hostname == "*" {
-					continue
-				}
-
-				if proxy.Host == "" {
-					if defaultProxyHost != "" {
-						l.Println("     " + hostname + ": (disabled)")
-					}
-				} else {
-					l.Println("     " + hostname + ": " + proxy.Redacted())
-				}
+			for hostname, proxy := range data.Tunnel.ByHost {
+				l.Println("     " + hostname + ": " + proxy)
 			}
 		}
 
 		l.Println()
 	}
 
-	l.Println(" Machine IP: " + machineIP)
-	if hasTunnel {
+	l.Println(" Machine IP: " + data.Network.MachineIP)
+	if len(data.Network.TunnelIPs) > 0 {
 		l.Println("  Tunnel IP: ")
-		for proxyHost, tunnelIp := range tunnelIpByProxyHost {
+		for proxyHost, tunnelIp := range data.Network.TunnelIPs {
 			if tunnelIp == "" {
 				tunnelIp = "(unresolved)"
 			}
@@ -829,53 +816,28 @@ func PrintConfig(state *AppState) {
 	}
 	l.Println()
 
-	l.Printf("   Base URL: %s\n", BaseURL.String())
+	l.Printf("   Base URL: %s\n", data.Instance.BaseURL)
 	l.Println()
 
-	if !IsPublicInstance {
+	if len(data.Users) > 0 {
 		l.Println(" Users:")
-		for user := range Auth.user_pass {
-			stores := StoreAuthToken.ListStores(user)
-			preferredStore := StoreAuthToken.GetPreferredStore(user)
-			if len(stores) == 0 {
-				stores = append(stores, preferredStore)
-			} else if len(stores) > 1 {
-				for i := range stores {
-					if stores[i] == preferredStore {
-						stores[i] = "*" + stores[i]
-					}
-				}
-			}
-			l.Println("   - " + user)
-			l.Println("       store: " + strings.Join(stores, ","))
-			if cpcl := ContentProxyConnectionLimit.Get(user); cpcl > 0 {
-				l.Println("       content_proxy_connection_limit: " + strconv.FormatUint(uint64(cpcl), 10))
+		for _, user := range data.Users {
+			l.Println("   - " + user.Name)
+			l.Println("       store: " + strings.Join(user.Stores, ","))
+			if user.ContentProxyConnectionLimit > 0 {
+				l.Println("       content_proxy_connection_limit: " + strconv.FormatUint(uint64(user.ContentProxyConnectionLimit), 10))
 			}
 		}
 		l.Println()
 	}
 
 	l.Println(" Stores:")
-	for _, store := range state.StoreNames {
+	for _, s := range data.Stores.Items {
 		storeConfig := ""
-		if !IsPublicInstance && StoreContentProxy.IsEnabled(string(store)) {
-			storeConfig += "content_proxy"
+		if s.Config != "" {
+			storeConfig = " (" + s.Config + ")"
 		}
-		if hasTunnel {
-			if StoreTunnel.isEnabledForAPI(string(store)) {
-				if storeConfig != "" {
-					storeConfig += ","
-				}
-				storeConfig += "tunnel:api"
-				if !IsPublicInstance && StoreTunnel.GetTypeForStream(string(store)) == TUNNEL_TYPE_FORCED {
-					storeConfig += "+stream"
-				}
-			}
-		}
-		if storeConfig != "" {
-			storeConfig = " (" + storeConfig + ")"
-		}
-		l.Println("   - " + string(store) + storeConfig)
+		l.Println("   - " + s.Name + storeConfig)
 	}
 	l.Println()
 
@@ -889,265 +851,100 @@ func PrintConfig(state *AppState) {
 		}
 	}
 
-	if HasBuddy {
+	if data.Network.BuddyURL != "" {
 		l.Println(" Buddy URI:")
-		l.Println("   " + BuddyURL)
+		l.Println("   " + data.Network.BuddyURL)
 		l.Println()
 	}
 
-	if HasPeer {
-		u, err := url.Parse(PeerURL)
-		if err != nil {
-			l.Panicf(" Invalid Peer URI: %v\n", err)
-		}
-		u.User = url.UserPassword("", PeerAuthToken)
+	if data.Network.PeerURL != "" {
 		peerFlags := ""
-		if PeerFlag.Lazy {
-			peerFlags = "lazy"
-		}
-		if PeerFlag.NoSpillTorz {
-			if peerFlags != "" {
-				peerFlags += ","
-			}
-			peerFlags += "no_spill_torz"
-		}
-		if peerFlags != "" {
-			peerFlags = " (" + peerFlags + ")"
+		if data.Network.PeerFlags != "" {
+			peerFlags = " (" + data.Network.PeerFlags + ")"
 		}
 		l.Println(" Peer URI" + peerFlags + ":")
-		l.Println("   " + u.Redacted())
+		l.Println("   " + data.Network.PeerURL)
 		l.Println()
 	}
-	if PullPeerURL != "" {
-		u, err := url.Parse(PullPeerURL)
-		if err != nil {
-			l.Panicf(" Invalid (Pull) Peer URI: %v\n", err)
-		}
+	if data.Network.PullPeerURL != "" {
 		l.Println(" (Pull) Peer URI:")
-		l.Println("   " + u.Redacted())
+		l.Println("   " + data.Network.PullPeerURL)
 		l.Println()
 	}
 
-	if RedisURI != "" {
-		uri, err := getRedactedURI(RedisURI)
-		if err != nil {
-			l.Panicf(" Invalid Redis URI: %v\n", err)
-		}
+	if !data.Redis.Disabled {
 		l.Println(" Redis URI:")
-		l.Println("   " + uri)
+		l.Println("   " + data.Redis.URI)
 		l.Println()
 	}
 
-	uri, err := getRedactedURI(DatabaseURI)
-	if err != nil {
-		l.Panicf(" Invalid Database URI: %v\n", err)
-	}
 	l.Println(" Database URI:")
-	l.Println("   " + uri)
-	if len(DatabaseReplicaURIs) > 0 {
+	l.Println("   " + data.Database.URI)
+	if len(data.Database.ReplicaURIs) > 0 {
 		l.Println(" Replica URIs:")
-		for _, replicaUri := range DatabaseReplicaURIs {
-			uri, err := getRedactedURI(replicaUri)
-			if err != nil {
-				l.Panicf(" Invalid Database Replica URI: %v\n", err)
-			}
+		for _, uri := range data.Database.ReplicaURIs {
 			l.Println("   " + uri)
 		}
 	}
 	l.Println()
 
 	l.Println(" Features:")
-	for _, feature := range features {
+	for _, feature := range data.Features {
 		disabled := ""
-		switch feature {
-		case FeatureDMMHashlist:
-			if !Feature.HasDMMHashlist() {
-				disabled = " (disabled)"
-			}
-		case FeatureIMDBTitle:
-			if !Feature.HasIMDBTitle() {
-				disabled = " (disabled)"
-			}
-		case FeatureVault:
-			if !Feature.HasVault() {
-				disabled = " (disabled)"
-			}
-		case FeatureStremioList:
-			if !Feature.HasStremioList() {
-				disabled = " (disabled)"
-			}
-		case FeatureStremioNewz:
-			if !Feature.HasStremioNewz() {
-				disabled = " (disabled)"
-			}
-		default:
-			if !Feature.IsEnabled(feature) {
-				disabled = " (disabled)"
-			}
+		if !feature.Enabled {
+			disabled = " (disabled)"
 		}
-		l.Println("   - " + feature + disabled)
-		if disabled != "" {
-			continue
-		}
-		switch feature {
-		case FeatureStremioList:
-			l.Println("       public max list count: " + strconv.Itoa(Stremio.List.PublicMaxListCount))
-		case FeatureStremioNewz:
-			l.Println("       indexer max timeout: " + Stremio.Newz.IndexerMaxTimeout.String())
-		case FeatureStremioStore:
-			l.Println("       catalog item limit: " + strconv.Itoa(Stremio.Store.CatalogItemLimit))
-			l.Println("       catalog cache time: " + Stremio.Store.CatalogCacheTime.String())
-		case FeatureStremioTorz:
-			if disabled != "" {
-				break
+		l.Println("   - " + feature.Name + disabled)
+		if feature.Enabled && len(feature.Settings) > 0 {
+			for key, value := range feature.Settings {
+				l.Println("       " + key + ": " + value)
 			}
-			l.Println("            indexer max timeout: " + Stremio.Torz.IndexerMaxTimeout.String())
-			l.Println("       public max indexer count: " + strconv.Itoa(Stremio.Torz.PublicMaxIndexerCount))
-			l.Println("         public max store count: " + strconv.Itoa(Stremio.Torz.PublicMaxStoreCount))
-			if Stremio.Torz.LazyPull {
-				l.Println("                    [lazy pull]")
-			}
-		case FeatureStremioWrap:
-			l.Println("       public max upstream count: " + strconv.Itoa(Stremio.Wrap.PublicMaxUpstreamCount))
-			l.Println("          public max store count: " + strconv.Itoa(Stremio.Wrap.PublicMaxStoreCount))
-		case FeatureVault:
-			l.Println("       secret: " + strings.Repeat("*", len(VaultSecret)))
 		}
 	}
 	l.Println()
 
 	l.Println(" Integrations:")
-	for _, integration := range []string{"anilist.co", "bitmagnet.io", "github.com", "kitsu.app", "letterboxd.com", "mdblist.com", "serializd.com", "themoviedb.org", "trakt.tv", "thetvdb.com"} {
-		switch integration {
-		case "anilist.co":
-			disabled := ""
-			if !Feature.IsEnabled(FeatureAnime) {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("       list stale time: " + Integration.AniList.ListStaleTime.String())
-			}
-		case "bitmagnet.io":
-			if Integration.Bitmagnet.IsEnabled() {
-				l.Println("   - " + integration)
-				l.Println("              base_url: " + Integration.Bitmagnet.BaseURL.String())
-				l.Println("          database_uri: " + util.MustParseURL(Integration.Bitmagnet.DatabaseURI).Redacted())
-			}
-		case "github.com":
-			disabled := ""
-			if !Integration.GitHub.HasDefaultCredentials() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("                  user: " + Integration.GitHub.User)
-				l.Println("                 token: " + Integration.GitHub.Token[0:13] + "..." + Integration.GitHub.Token[len(Integration.GitHub.Token)-3:])
-			}
-		case "kitsu.app":
-			disabled := ""
-			if !Feature.IsEnabled(FeatureAnime) || !Integration.Kitsu.HasDefaultCredentials() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				if Integration.Kitsu.ClientId != "" {
-					l.Println("             client_id: " + Integration.Kitsu.ClientId[0:3] + "..." + Integration.Kitsu.ClientId[len(Integration.Kitsu.ClientId)-3:])
-				}
-				if Integration.Kitsu.ClientSecret != "" {
-					l.Println("         client_secret: " + Integration.Kitsu.ClientSecret[0:3] + "..." + Integration.Kitsu.ClientSecret[len(Integration.Kitsu.ClientSecret)-3:])
-				}
-				l.Println("                 email: " + Integration.Kitsu.Email)
-				l.Println("              password: " + "*******")
-			}
-		case "letterboxd.com":
-			hasIntegration := true
-			info := ""
-			if Integration.Letterboxd.IsPiggybacked() {
-				info = " (piggybacked)"
-			} else if !Integration.Letterboxd.IsEnabled() {
-				hasIntegration = false
-				info = " (disabled)"
-			}
-			l.Println("   - " + integration + info)
-			if Integration.Letterboxd.IsEnabled() {
-				l.Println("             client_id: " + Integration.Letterboxd.ClientId[0:3] + "..." + Integration.Letterboxd.ClientId[len(Integration.Letterboxd.ClientId)-3:])
-				l.Println("         client_secret: " + Integration.Letterboxd.ClientSecret[0:3] + "..." + Integration.Letterboxd.ClientSecret[len(Integration.Letterboxd.ClientSecret)-3:])
-				l.Println("            user_agent: " + Integration.Letterboxd.UserAgent)
-			}
-			if hasIntegration {
-				l.Println("       list stale time: " + Integration.Letterboxd.ListStaleTime.String())
-			}
-		case "mdblist.com":
-			l.Println("   - " + integration)
-			l.Println("       list stale time: " + Integration.MDBList.ListStaleTime.String())
-		case "serializd.com":
-			disabled := ""
-			if !Integration.TMDB.IsEnabled() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			l.Println("       list stale time: " + Integration.Serializd.ListStaleTime.String())
-		case "themoviedb.org":
-			disabled := ""
-			if !Integration.TMDB.IsEnabled() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("          access_token: " + Integration.TMDB.AccessToken[0:3] + "..." + Integration.TMDB.AccessToken[len(Integration.TMDB.AccessToken)-3:])
-				l.Println("       list stale time: " + Integration.TMDB.ListStaleTime.String())
-			}
-		case "trakt.tv":
-			disabled := ""
-			if !Integration.Trakt.IsEnabled() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("             client_id: " + Integration.Trakt.ClientId[0:3] + "..." + Integration.Trakt.ClientId[len(Integration.Trakt.ClientId)-3:])
-				l.Println("         client_secret: " + Integration.Trakt.ClientSecret[0:3] + "..." + Integration.Trakt.ClientSecret[len(Integration.Trakt.ClientSecret)-3:])
-				l.Println("       list stale time: " + Integration.Trakt.ListStaleTime.String())
-			}
-		case "thetvdb.com":
-			disabled := ""
-			if !Integration.TVDB.IsEnabled() {
-				disabled = " (disabled)"
-			}
-			l.Println("   - " + integration + disabled)
-			if disabled == "" {
-				l.Println("               api_key: " + Integration.TVDB.APIKey[0:3] + "..." + Integration.TVDB.APIKey[len(Integration.TVDB.APIKey)-3:])
-				l.Println("       list stale time: " + Integration.TVDB.ListStaleTime.String())
+	for _, integration := range data.Integrations {
+		disabled := ""
+		if !integration.Enabled {
+			disabled = " (disabled)"
+		}
+		l.Println("   - " + integration.Name + disabled)
+		if len(integration.Settings) > 0 {
+			for key, value := range integration.Settings {
+				l.Println("       " + key + ": " + value)
 			}
 		}
 	}
 	l.Println()
 
-	if Feature.HasVault() {
+	if !data.Newz.Disabled {
 		l.Println(" Newz:")
-		l.Println("   max conn. per stream: " + strconv.Itoa(Newz.MaxConnectionPerStream))
-		l.Println("    nzb file cache size: " + util.ToSize(Newz.NZBFileCacheSize))
-		l.Println("     nzb file cache ttl: " + Newz.NZBFileCacheTTL.String())
-		l.Println("      nzb file max size: " + util.ToSize(Newz.NZBFileMaxSize))
-		l.Println("     segment cache size: " + util.ToSize(Newz.SegmentCacheSize))
-		l.Println("     stream buffer size: " + util.ToSize(Newz.StreamBufferSize))
+		l.Println("   max conn. per stream: " + data.Newz.MaxConnectionPerStream)
+		l.Println("    nzb file cache size: " + data.Newz.NZBFileCacheSize)
+		l.Println("     nzb file cache ttl: " + data.Newz.NZBFileCacheTTL)
+		l.Println("      nzb file max size: " + data.Newz.NZBFileMaxSize)
+		l.Println("     segment cache size: " + data.Newz.SegmentCacheSize)
+		l.Println("     stream buffer size: " + data.Newz.StreamBufferSize)
 		l.Println()
 	}
 
 	l.Println(" Torz:")
-	if !IsPublicInstance {
-		l.Println("   torrent file cache size: " + util.ToSize(Torz.TorrentFileCacheSize))
-		l.Println("    torrent file cache ttl: " + Torz.TorrentFileCacheTTL.String())
+	if data.Torz.TorrentFileCacheSize != "" {
+		l.Println("   torrent file cache size: " + data.Torz.TorrentFileCacheSize)
 	}
-	l.Println("     torrent file max size: " + util.ToSize(Torz.TorrentFileMaxSize))
+	if data.Torz.TorrentFileCacheTTL != "" {
+		l.Println("    torrent file cache ttl: " + data.Torz.TorrentFileCacheTTL)
+	}
+	l.Println("     torrent file max size: " + data.Torz.TorrentFileMaxSize)
 	l.Println()
 
 	l.Println(" Instance ID:")
-	l.Println("   " + InstanceId)
+	l.Println("   " + data.Instance.ID)
 	l.Println()
 
 	l.Println(" Data Directory:")
-	l.Println("   " + DataDir)
+	l.Println("   " + data.Server.DataDir)
 	l.Println()
 
 	l.Print("========================\n\n")

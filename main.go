@@ -17,22 +17,14 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/posthog"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/internal/worker"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
 func main() {
 	config.PrintConfig(&config.AppState{
-		StoreNames: []string{
-			string(store.StoreNameAlldebrid),
-			string(store.StoreNameDebridLink),
-			string(store.StoreNameEasyDebrid),
-			string(store.StoreNameOffcloud),
-			string(store.StoreNamePikPak),
-			string(store.StoreNamePremiumize),
-			string(store.StoreNameRealDebrid),
-			string(store.StoreNameTorBox),
-		},
+		StoreNames: util.SliceMapToString(store.StoreNames),
 	})
 
 	posthog.Init()

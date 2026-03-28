@@ -10,6 +10,14 @@ func SliceMapIntToString(elems []int) []string {
 	return strElems
 }
 
+func SliceMapToString[T interface{ String() string }](elems []T) []string {
+	strElems := make([]string, len(elems))
+	for i := range elems {
+		strElems[i] = elems[i].String()
+	}
+	return strElems
+}
+
 func FilterSlice[T any](s []T, predicate func(T) bool) []T {
 	result := make([]T, 0, len(s))
 	for _, v := range s {
