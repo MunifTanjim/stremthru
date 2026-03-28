@@ -220,12 +220,12 @@ func parseStoreTunnel(storeTunnel string, tunnelMap TunnelMap) StoreTunnelConfig
 		return c == ','
 	})
 
-	contentHostnameByStore := map[string]string{
-		"alldebrid":  "debrid.it",
-		"debridlink": "debrid.link",
-		"premiumize": "energycdn.com",
-		"realdebrid": "download.real-debrid.com",
-		"torbox":     "tb-cdn.st",
+	contentHostnameByStore := map[string][]string{
+		"alldebrid":  {"debrid.it"},
+		"debridlink": {"debrid.link"},
+		"premiumize": {"energycdn.com"},
+		"realdebrid": {"download.real-debrid.com"},
+		"torbox":     {"tb-cdn.cx", "tb-cdn.earth", "tb-cdn.io", "tb-cdn.pw", "tb-cdn.st"},
 	}
 
 	storeTunnelMap := make(StoreTunnelConfigMap)
@@ -238,21 +238,25 @@ func parseStoreTunnel(storeTunnel string, tunnelMap TunnelMap) StoreTunnelConfig
 
 			switch store {
 			case "*":
-				for _, hostname := range contentHostnameByStore {
-					if _, exists := tunnelMap[hostname]; !exists {
+				for _, hostnames := range contentHostnameByStore {
+					for _, hostname := range hostnames {
+						if _, exists := tunnelMap[hostname]; !exists {
+							if tunnel == "true" {
+								tunnelMap[hostname] = *tunnelMap.getProxy("*")
+							} else {
+								tunnelMap[hostname] = url.URL{}
+							}
+						}
+					}
+				}
+			default:
+				if hostnames, ok := contentHostnameByStore[store]; ok {
+					for _, hostname := range hostnames {
 						if tunnel == "true" {
 							tunnelMap[hostname] = *tunnelMap.getProxy("*")
 						} else {
 							tunnelMap[hostname] = url.URL{}
 						}
-					}
-				}
-			default:
-				if hostname, ok := contentHostnameByStore[store]; ok {
-					if tunnel == "true" {
-						tunnelMap[hostname] = *tunnelMap.getProxy("*")
-					} else {
-						tunnelMap[hostname] = url.URL{}
 					}
 				}
 			}
