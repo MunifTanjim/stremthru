@@ -38,6 +38,9 @@ type CheckTorrentsCachedDataItem struct {
 func (t CheckTorrentsCachedDataItem) GetName() string {
 	if len(t.Files) > 0 {
 		if _, rootFolder := util.RemoveRootFolderFromPath(t.Files[0].Name); rootFolder != "" {
+			if len(t.Name) > len(rootFolder) {
+				return t.Name
+			}
 			return rootFolder
 		}
 	}
@@ -203,6 +206,9 @@ type Torrent struct {
 func (t Torrent) GetName() string {
 	if len(t.Files) > 0 {
 		if _, rootFolder := util.RemoveRootFolderFromPath(t.Files[0].Name); rootFolder != "" {
+			if len(t.Name) > len(rootFolder) {
+				return t.Name
+			}
 			return rootFolder
 		}
 	}
