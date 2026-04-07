@@ -14,6 +14,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/stats"
 )
 
 type StoreClientConfig struct {
@@ -328,12 +329,14 @@ func progressToStatus(progress float64) store.MagnetStatus {
 }
 
 func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = c.client.GetVersion(cfg)
+	stats.Record(c.Name, "get_user", time.Since(start), err != nil)
 	if err != nil {
 		return nil, UpstreamErrorWithCause(err)
 	}
@@ -348,6 +351,7 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 }
 
 func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnetData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -425,10 +429,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 	}
 
+	stats.Record(c.Name, "add_magnet", time.Since(start), false)
 	return data, nil
 }
 
 func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.CheckMagnetData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -449,7 +455,7 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 	foundItemByHash := map[string]store.CheckMagnetDataItem{}
 
-	if data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(""), params.ClientIP, params.SId); err != nil {
+	if data, err := buddy.CheckMagnet(c, hashes, params.GetAPIKey(""), params.ClientIP, params.SId, false); err != nil {
 		return nil, err
 	} else {
 		for _, item := range data.Items {
@@ -550,10 +556,12 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 	go buddy.BulkTrackMagnet(c, tInfos, nil, "", params.GetAPIKey(""))
 
+	stats.Record(c.Name, "check_magnet", time.Since(start), false)
 	return data, nil
 }
 
 func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnetData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -600,10 +608,12 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 		})
 	}
 
+	stats.Record(c.Name, "get_magnet", time.Since(start), false)
 	return data, nil
 }
 
 func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListMagnetsData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -660,10 +670,12 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 		data.Items = append(data.Items, item)
 	}
 
+	stats.Record(c.Name, "list_magnets", time.Since(start), false)
 	return data, nil
 }
 
 func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.RemoveMagnetData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -672,6 +684,7 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	hash := strings.ToLower(params.Id)
 
 	err = c.client.DeleteTorrents(cfg, []string{hash}, true)
+	stats.Record(c.Name, "remove_magnet", time.Since(start), err != nil)
 	if err != nil {
 		return nil, UpstreamErrorWithCause(err)
 	}
@@ -691,6 +704,7 @@ func buildFileURL(fileBaseURL, fileName string) string {
 }
 
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
+	start := time.Now()
 	cfg, err := c.getConfig(params.GetAPIKey(""))
 	if err != nil {
 		return nil, err
@@ -741,5 +755,6 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 
 	link := buildFileURL(cfg.FileBaseURL, filePath)
 
+	stats.Record(c.Name, "generate_link", time.Since(start), false)
 	return &store.GenerateLinkData{Link: link}, nil
 }
