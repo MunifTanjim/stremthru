@@ -16,6 +16,7 @@ import (
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -403,7 +404,49 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 
 	ctx := storecontext.Get(r)
 	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
+	if err == nil && link != nil {
+		go maybeQueueMediaInfoProbe(ctx, payload.Link, link.Link)
+	}
 	SendResponse(w, r, 200, link, err)
+}
+
+func maybeQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink, generatedLink string) {
+	if ctx.Store.GetName().Code() != store.StoreCodeTorBox {
+		return
+	}
+
+	const prefix = "stremthru://store/torbox/"
+	if !strings.HasPrefix(lockedLink, prefix) {
+		return
+	}
+
+	decoded, err := util.Base64Decode(strings.TrimPrefix(lockedLink, prefix))
+	if err != nil {
+		return
+	}
+	torrentIdStr, fileIdStr, ok := strings.Cut(decoded, ":")
+	if !ok {
+		return
+	}
+	torrentId := torrentIdStr
+	fileId, err := strconv.Atoi(fileIdStr)
+	if err != nil {
+		return
+	}
+
+	params := &store.GetMagnetParams{Id: torrentId}
+	params.APIKey = ctx.StoreAuthToken
+	magnet, err := ctx.Store.GetMagnet(params)
+	if err != nil || magnet == nil {
+		return
+	}
+
+	for _, f := range magnet.Files {
+		if f.Idx == fileId {
+			torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, generatedLink)
+			return
+		}
+	}
 }
 
 type contentProxyConnection struct {
