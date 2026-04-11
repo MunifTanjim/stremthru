@@ -243,7 +243,6 @@ func handleStoreMagnetAdd(w http.ResponseWriter, r *http.Request) {
 			shared.ErrorBadRequest(r, "missing magnet link").Send(w, r)
 			return
 		}
-
 		ctx := storecontext.Get(r)
 
 		if payload.Magnet != "" {
