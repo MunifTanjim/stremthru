@@ -11,6 +11,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/nntp"
 	usenet_pool "github.com/MunifTanjim/stremthru/internal/usenet/pool"
 	usenet_server "github.com/MunifTanjim/stremthru/internal/usenet/server"
+	usenet_stats "github.com/MunifTanjim/stremthru/internal/usenet/stats"
 )
 
 var ErrServerLocked = errors.New("server is locked for modification")
@@ -127,11 +128,12 @@ func Close() {
 		return
 	}
 
+	usenet_stats.CleanupBackgroundJob()
 	globalManager.cancelPendingTimers()
 	globalManager.closePool()
 
 	if globalManager.log != nil {
-		globalManager.log.Info("global NNTP pool manager closed")
+		globalManager.log.Debug("global NNTP pool manager closed")
 	}
 }
 
@@ -157,6 +159,7 @@ func (m *Manager) closePool() {
 
 func (m *Manager) initialize() error {
 	m.log.Info("initializing global NNTP pool")
+	usenet_stats.InitBackgroundJob()
 	return m.rebuildPool()
 }
 
@@ -171,6 +174,17 @@ func (m *Manager) rebuildPool() error {
 	if err != nil {
 		m.log.Error("failed to create pool", "error", err)
 		return err
+	}
+
+	usenet_stats.ClearServers()
+	for i := range servers {
+		s := &servers[i]
+		usenet_stats.RegisterServer(s.ProviderId(), usenet_stats.ServerInfo{
+			Id:       s.Id,
+			Name:     s.Name,
+			Priority: s.Priority,
+			IsBackup: s.IsBackup,
+		})
 	}
 
 	oldPool := m.swapPool(newPool)

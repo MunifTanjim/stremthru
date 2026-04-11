@@ -1,6 +1,7 @@
 package newz
 
 import (
+	"context"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -311,7 +312,8 @@ func handleStoreNewzStreamFile(w http.ResponseWriter, r *http.Request) {
 		Password:     nzbInfo.Password,
 		ContentFiles: nzbInfo.ContentFiles.Data,
 	}
-	stream, err := pool.StreamByContentPath(r.Context(), nzbDoc, path, streamConfig)
+	streamCtx := context.WithValue(r.Context(), usenet_pool.NZBHashContextKey, id)
+	stream, err := pool.StreamByContentPath(streamCtx, nzbDoc, path, streamConfig)
 	if err != nil {
 		server.SendError(w, r, err)
 		return

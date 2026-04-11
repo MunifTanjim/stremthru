@@ -13,11 +13,16 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/nntp"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	usenet_stats "github.com/MunifTanjim/stremthru/internal/usenet/stats"
 )
 
 var ErrNoProvidersConfigured = errors.New("usenet: no providers configured")
 var ErrNoProvidersAvailable = errors.New("usenet: no available providers")
 var ErrArticleNotFound = errors.New("usenet: article not found")
+
+type contextKey string
+
+const NZBHashContextKey contextKey = "nzb_hash"
 
 type ProviderConfig struct {
 	nntp.PoolConfig
@@ -309,19 +314,28 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 
 			p.Log.Trace("fetch segment - connection acquired", "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId(), "use_backup", useBackup)
 
+			fetchStart := time.Now()
 			article, err := conn.Body("<" + messageId + ">")
 			if err != nil {
 				errs = append(errs, err)
 				if isArticleNotFoundError(err) {
+					providerId := conn.ProviderId()
+					if nzbHash, ok := ctx.Value(NZBHashContextKey).(string); ok {
+						usenet_stats.Record(usenet_stats.EventNameArticleNotFound, nzbHash, providerId, messageId, 0, 0)
+					}
 					conn.Release()
-					excludeProviders = append(excludeProviders, conn.ProviderId())
-					p.Log.Trace("fetch segment - article not found", "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId())
+					excludeProviders = append(excludeProviders, providerId)
+					p.Log.Trace("fetch segment - article not found", "segment_num", segment.Number, "message_id", messageId, "provider_id", providerId)
 					continue
 				}
 
+				providerId := conn.ProviderId()
 				conn.Destroy()
+				if nzbHash, ok := ctx.Value(NZBHashContextKey).(string); ok {
+					usenet_stats.Record(usenet_stats.EventNameConnectionError, nzbHash, providerId, messageId, 0, 0)
+				}
 				failedAttempts++
-				p.Log.Warn("fetch segment - failed to get body", "error", err, "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId())
+				p.Log.Warn("fetch segment - failed to get body", "error", err, "segment_num", segment.Number, "message_id", messageId, "provider_id", providerId)
 				continue
 			}
 
@@ -331,6 +345,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 			defer decoder.Close()
 
 			data, err := decoder.ReadAll()
+			fetchDuration := time.Since(fetchStart)
 
 			conn.Release()
 
@@ -342,6 +357,14 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 			}
 
 			segmentData := data.ToSegmentData()
+			bodySize := segment.Bytes
+			if bodySize == 0 {
+				bodySize = int64(len(segmentData.Body))
+			}
+			providerId := conn.ProviderId()
+			if nzbHash, ok := ctx.Value(NZBHashContextKey).(string); ok {
+				usenet_stats.Record(usenet_stats.EventNameSegmentFetched, nzbHash, providerId, messageId, fetchDuration, bodySize)
+			}
 
 			p.Log.Debug("fetch segment - decoded body", "segment_num", segment.Number, "message_id", messageId, "decoded_size", len(segmentData.Body))
 

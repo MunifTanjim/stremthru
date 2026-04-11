@@ -33,6 +33,8 @@ func AddEndpoints(mux *http.ServeMux) {
 	router.HandleFunc("/stats/server", authed(dash_api.HandleGetServerStats))
 	router.HandleFunc("/stats/torznab-indexers", authed(dash_api.HandleGetTorznabIndexerStats))
 	router.HandleFunc("/stats/stores", authed(dash_api.HandleGetStoreStats))
+	router.HandleFunc("/stats/usenet-servers/history", authed(dash_api.HandleGetUsenetServerStatsHistory))
+	router.HandleFunc("/stats/usenet-servers/timeseries", authed(dash_api.HandleGetUsenetServerStatsTimeSeries))
 
 	router.HandleFunc("/config", authed(dash_api.HandleGetConfig))
 

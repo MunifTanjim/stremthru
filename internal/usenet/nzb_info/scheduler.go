@@ -9,6 +9,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	usenetmanager "github.com/MunifTanjim/stremthru/internal/usenet/manager"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	usenet_pool "github.com/MunifTanjim/stremthru/internal/usenet/pool"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
 )
@@ -99,7 +100,8 @@ var scheduler = job.NewScheduler(&job.SchedulerConfig[JobData]{
 			if err != nil {
 				return err
 			}
-			content, err := pool.InspectNZBContent(context.Background(), nzbDoc, password)
+			inspectCtx := context.WithValue(context.Background(), usenet_pool.NZBHashContextKey, hash)
+			content, err := pool.InspectNZBContent(inspectCtx, nzbDoc, password)
 			if err != nil {
 				log.Warn("failed to inspect nzb content", "error", err)
 				UpdateStatus(hash, string(store.NewzStatusFailed))

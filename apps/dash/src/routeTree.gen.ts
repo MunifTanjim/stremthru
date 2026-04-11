@@ -28,6 +28,7 @@ import { Route as DashSettingsIndexRouteImport } from './routes/dash/settings/in
 import { Route as DashListsIndexRouteImport } from './routes/dash/lists/index'
 import { Route as DashVaultTraktAccountsRouteImport } from './routes/dash/vault/trakt-accounts'
 import { Route as DashVaultStremioAccountsRouteImport } from './routes/dash/vault/stremio-accounts'
+import { Route as DashUsenetStatsRouteImport } from './routes/dash/usenet/stats'
 import { Route as DashUsenetServersRouteImport } from './routes/dash/usenet/servers'
 import { Route as DashUsenetNzbQueueRouteImport } from './routes/dash/usenet/nzb-queue'
 import { Route as DashUsenetNzbInspectorRouteImport } from './routes/dash/usenet/nzb-inspector'
@@ -139,6 +140,11 @@ const DashVaultStremioAccountsRoute =
     path: '/stremio-accounts',
     getParentRoute: () => DashVaultRoute,
   } as any)
+const DashUsenetStatsRoute = DashUsenetStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => DashUsenetRoute,
+} as any)
 const DashUsenetServersRoute = DashUsenetServersRouteImport.update({
   id: '/servers',
   path: '/servers',
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/dash/usenet/nzb-inspector': typeof DashUsenetNzbInspectorRoute
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
+  '/dash/usenet/stats': typeof DashUsenetStatsRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/dash/usenet/nzb-inspector': typeof DashUsenetNzbInspectorRoute
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
+  '/dash/usenet/stats': typeof DashUsenetStatsRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists': typeof DashListsIndexRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/dash/usenet/nzb-inspector': typeof DashUsenetNzbInspectorRoute
   '/dash/usenet/nzb-queue': typeof DashUsenetNzbQueueRoute
   '/dash/usenet/servers': typeof DashUsenetServersRoute
+  '/dash/usenet/stats': typeof DashUsenetStatsRoute
   '/dash/vault/stremio-accounts': typeof DashVaultStremioAccountsRoute
   '/dash/vault/trakt-accounts': typeof DashVaultTraktAccountsRoute
   '/dash/lists/': typeof DashListsIndexRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-inspector'
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
+    | '/dash/usenet/stats'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-inspector'
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
+    | '/dash/usenet/stats'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/dash/usenet/nzb-inspector'
     | '/dash/usenet/nzb-queue'
     | '/dash/usenet/servers'
+    | '/dash/usenet/stats'
     | '/dash/vault/stremio-accounts'
     | '/dash/vault/trakt-accounts'
     | '/dash/lists/'
@@ -550,6 +562,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dash/vault/stremio-accounts'
       preLoaderRoute: typeof DashVaultStremioAccountsRouteImport
       parentRoute: typeof DashVaultRoute
+    }
+    '/dash/usenet/stats': {
+      id: '/dash/usenet/stats'
+      path: '/stats'
+      fullPath: '/dash/usenet/stats'
+      preLoaderRoute: typeof DashUsenetStatsRouteImport
+      parentRoute: typeof DashUsenetRoute
     }
     '/dash/usenet/servers': {
       id: '/dash/usenet/servers'
@@ -723,6 +742,7 @@ interface DashUsenetRouteChildren {
   DashUsenetNzbInspectorRoute: typeof DashUsenetNzbInspectorRoute
   DashUsenetNzbQueueRoute: typeof DashUsenetNzbQueueRoute
   DashUsenetServersRoute: typeof DashUsenetServersRoute
+  DashUsenetStatsRoute: typeof DashUsenetStatsRoute
   DashUsenetIndexRoute: typeof DashUsenetIndexRoute
 }
 
@@ -733,6 +753,7 @@ const DashUsenetRouteChildren: DashUsenetRouteChildren = {
   DashUsenetNzbInspectorRoute: DashUsenetNzbInspectorRoute,
   DashUsenetNzbQueueRoute: DashUsenetNzbQueueRoute,
   DashUsenetServersRoute: DashUsenetServersRoute,
+  DashUsenetStatsRoute: DashUsenetStatsRoute,
   DashUsenetIndexRoute: DashUsenetIndexRoute,
 }
 

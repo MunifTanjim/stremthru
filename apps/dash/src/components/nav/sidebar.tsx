@@ -298,6 +298,10 @@ function useNavItems(): NavItem[] {
         icon: NewspaperIcon,
         items: [
           {
+            path: "/dash/usenet/stats",
+            title: "Stats",
+          },
+          {
             path: "/dash/usenet/config",
             title: "Config",
           },

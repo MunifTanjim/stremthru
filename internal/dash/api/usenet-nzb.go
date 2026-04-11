@@ -1,6 +1,7 @@
 package dash_api
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -457,7 +458,8 @@ func handleStreamNZBFile(w http.ResponseWriter, r *http.Request) {
 		Password:     info.Password,
 		ContentFiles: info.ContentFiles.Data,
 	}
-	stream, err := pool.StreamByContentPath(r.Context(), nzbDoc, path, streamConfig)
+	streamCtx := context.WithValue(r.Context(), usenet_pool.NZBHashContextKey, info.Hash)
+	stream, err := pool.StreamByContentPath(streamCtx, nzbDoc, path, streamConfig)
 	if err != nil {
 		SendError(w, r, err)
 		return

@@ -1,6 +1,7 @@
 package stremio_newz
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -50,6 +51,7 @@ type stremResult struct {
 var usenetStremGroup singleflight.Group
 
 type usenetStremResult struct {
+	hash         string
 	contentPath  string
 	streamConfig *usenet_pool.StreamConfig
 	nzbDoc       *nzb.NZB
@@ -396,6 +398,7 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, ud *UserData
 		}
 
 		return &usenetStremResult{
+			hash:        hash,
 			contentPath: file.GetPath(),
 			streamConfig: &usenet_pool.StreamConfig{
 				Password:     info.Password,
@@ -414,7 +417,8 @@ func handleStreamFromUsenet(w http.ResponseWriter, r *http.Request, ud *UserData
 		return
 	}
 
-	stream, err := pool.StreamByContentPath(r.Context(), strem.nzbDoc, strem.contentPath, strem.streamConfig)
+	streamCtx := context.WithValue(r.Context(), usenet_pool.NZBHashContextKey, strem.hash)
+	stream, err := pool.StreamByContentPath(streamCtx, strem.nzbDoc, strem.contentPath, strem.streamConfig)
 	if err != nil {
 		log.Error("failed to create usenet stream", "error", err)
 		redirectToStaticVideo(w, r, "", store_video.StoreVideoName500)
