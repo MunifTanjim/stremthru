@@ -16,10 +16,9 @@ import (
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
-	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
+	"github.com/MunifTanjim/stremthru/internal/torz"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
-	"github.com/MunifTanjim/stremthru/store/torbox"
 )
 
 func getUser(ctx *storecontext.Context) (*store.User, error) {
@@ -406,32 +405,9 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := storecontext.Get(r)
 	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
 	if err == nil && link != nil {
-		go tryQueueMediaInfoProbe(ctx, payload.Link, link.Link)
+		go torz.TryQueueMediaInfoProbe(ctx, payload.Link, link.Link)
 	}
 	SendResponse(w, r, 200, link, err)
-}
-
-func tryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink, generatedLink string) {
-	if ctx.Store.GetName().Code() != store.StoreCodeTorBox {
-		return
-	}
-
-	id, fileId, err := torbox.LockedFileLink(lockedLink).Parse()
-	if err != nil {
-		return
-	}
-	params := &store.GetMagnetParams{Id: strconv.Itoa(id)}
-	params.APIKey = ctx.StoreAuthToken
-	magnet, err := ctx.Store.GetMagnet(params)
-	if err != nil {
-		return
-	}
-	for _, f := range magnet.Files {
-		if f.Link == lockedLink || f.Idx == fileId {
-			torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, generatedLink)
-			return
-		}
-	}
 }
 
 type contentProxyConnection struct {

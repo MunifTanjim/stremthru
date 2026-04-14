@@ -14,8 +14,10 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
+	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/torbox"
 )
 
 func handleStoreTorzCheck(w http.ResponseWriter, r *http.Request) {
@@ -311,5 +313,29 @@ func handleStoreTorzLinkGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go TryQueueMediaInfoProbe(ctx, payload.Link, data.Link)
+
 	server.SendData(w, r, 200, data)
+}
+
+func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink, generatedLink string) {
+	switch ctx.Store.GetName() {
+	case store.StoreNameTorBox:
+		id, fileId, err := torbox.LockedFileLink(lockedLink).Parse()
+		if err != nil {
+			return
+		}
+		params := &store.GetMagnetParams{Id: strconv.Itoa(id)}
+		params.APIKey = ctx.StoreAuthToken
+		magnet, err := ctx.Store.GetMagnet(params)
+		if err != nil {
+			return
+		}
+		for _, f := range magnet.Files {
+			if f.Link == lockedLink || f.Idx == fileId {
+				torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, generatedLink)
+				return
+			}
+		}
+	}
 }
