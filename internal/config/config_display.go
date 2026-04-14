@@ -150,7 +150,8 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 	data.Tunnel.ByHost = map[string]string{}
 	data.Tunnel.Disabled = !Tunnel.HasProxy()
 	if !data.Tunnel.Disabled {
-		for hostname, proxy := range Tunnel {
+		Tunnel.RLock()
+		for hostname, proxy := range Tunnel.data {
 			if hostname == "*" {
 				data.Tunnel.Default = proxy.Redacted()
 			} else if proxy.Host == "" {
@@ -159,6 +160,7 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 				data.Tunnel.ByHost[hostname] = proxy.Redacted()
 			}
 		}
+		Tunnel.RUnlock()
 	}
 
 	data.Network.MachineIP = IP.GetMachineIP()
