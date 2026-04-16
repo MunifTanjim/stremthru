@@ -55,6 +55,17 @@ type MediaInfo struct {
 	Subtitle    []MediaInfoSubtitle `json:"subtitle,omitempty"`
 	Format      *MediaInfoFormat    `json:"format,omitempty"`
 	HasChapters bool                `json:"has_chapters,omitempty"`
+	Source      string              `json:"src,omitempty"`
+}
+
+func (mi *MediaInfo) ShouldOverwrite(existing *MediaInfo) bool {
+	if existing == nil {
+		return true
+	}
+	if existing.Source == "" {
+		return false
+	}
+	return mi.Source == ""
 }
 
 func detectHDR(stream *ffprobe.Stream) []string {

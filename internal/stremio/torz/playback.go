@@ -262,6 +262,8 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 
 		if storeCode == store.StoreCodeTorBox {
 			torrent_stream.QueueMediaInfoProbe(magnet.Hash, file.GetPath(), glRes.Link)
+		} else if storeCode == store.StoreCodeRealDebrid && glRes.LinkId != "" {
+			torrent_stream.QueueStoreMediaInfoProbe(magnet.Hash, file.GetPath(), string(store.StoreCodeRealDebrid), ctx.StoreAuthToken, glRes.LinkId)
 		}
 
 		return &stremResult{

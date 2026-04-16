@@ -477,8 +477,8 @@ var query_record_cond_should_update_vhash = fmt.Sprintf(
 	Column.VideoHash, Column.VideoHash,
 )
 var query_record_cond_should_update_mi = fmt.Sprintf(
-	`(EXCLUDED.%s IS NOT NULL AND ts.%s IS NULL)`,
-	Column.MediaInfo, Column.MediaInfo,
+	`(EXCLUDED.%s IS NOT NULL AND (ts.%s IS NULL OR (ts.%s->>'src' IS NOT NULL AND EXCLUDED.%s->>'src' IS NULL)))`,
+	Column.MediaInfo, Column.MediaInfo, Column.MediaInfo, Column.MediaInfo,
 )
 var query_record_cond_should_update_src = fmt.Sprintf(
 	`((%s OR %s) AND (EXCLUDED.%s != 'mfn' OR ts.%s = 'mfn') AND EXCLUDED.%s != '')`,
@@ -626,18 +626,22 @@ func Record(items []InsertData, discardIdx bool) error {
 	return errors.Join(errs...)
 }
 
-var query_has_media_info = fmt.Sprintf(
-	"SELECT 1 FROM %s WHERE %s = ? AND %s = ? AND %s IS NOT NULL LIMIT 1",
+var query_get_media_info = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s = ? AND %s = ? AND %s IS NOT NULL LIMIT 1",
+	Column.MediaInfo,
 	TableName,
 	Column.Hash,
 	Column.Path,
 	Column.MediaInfo,
 )
 
-func HasMediaInfo(hash, path string) bool {
-	row := db.QueryRow(query_has_media_info, hash, path)
-	err := row.Scan(new(int))
-	return err == nil
+func GetMediaInfo(hash, path string) *media_info.MediaInfo {
+	var mi db.JSONB[media_info.MediaInfo]
+	row := db.QueryRow(query_get_media_info, hash, path)
+	if err := row.Scan(&mi); err != nil {
+		return nil
+	}
+	return &mi.Data
 }
 
 var query_set_media_info = fmt.Sprintf(

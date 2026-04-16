@@ -17,6 +17,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
+	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/torbox"
 )
 
@@ -313,12 +314,12 @@ func handleStoreTorzLinkGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go TryQueueMediaInfoProbe(ctx, payload.Link, data.Link)
+	go TryQueueMediaInfoProbe(ctx, payload.Link, data)
 
 	server.SendData(w, r, 200, data)
 }
 
-func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink, generatedLink string) {
+func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink string, linkData *store.GenerateLinkData) {
 	switch ctx.Store.GetName() {
 	case store.StoreNameTorBox:
 		id, fileId, err := torbox.LockedFileLink(lockedLink).Parse()
@@ -333,7 +334,24 @@ func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink, generatedLink
 		}
 		for _, f := range magnet.Files {
 			if f.Link == lockedLink || f.Idx == fileId {
-				torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, generatedLink)
+				torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, linkData.Link)
+				return
+			}
+		}
+	case store.StoreNameRealDebrid:
+		torrentId, _, err := realdebrid.LockedFileLink(lockedLink).Parse()
+		if err != nil {
+			return
+		}
+		params := &store.GetMagnetParams{Id: torrentId}
+		params.APIKey = ctx.StoreAuthToken
+		magnet, err := ctx.Store.GetMagnet(params)
+		if err != nil {
+			return
+		}
+		for _, f := range magnet.Files {
+			if f.Link == lockedLink {
+				torrent_stream.QueueStoreMediaInfoProbe(magnet.Hash, f.Path, string(store.StoreCodeRealDebrid), ctx.StoreAuthToken, linkData.LinkId)
 				return
 			}
 		}

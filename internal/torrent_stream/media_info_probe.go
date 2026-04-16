@@ -13,7 +13,12 @@ import (
 type MediaInfoProbeJobData struct {
 	Hash string
 	Path string
-	Link string
+
+	Link string // for ffprobe
+
+	StoreCode  string // for store probing
+	StoreToken string
+	LinkId     string
 }
 
 var mediaInfoProbeQueue = job_queue.NewMemoryJobQueue(job_queue.JobQueueConfig[MediaInfoProbeJobData]{
@@ -32,6 +37,16 @@ func QueueMediaInfoProbe(hash, path, link string) {
 	})
 }
 
+func QueueStoreMediaInfoProbe(hash, path, storeCode, storeToken, linkId string) {
+	mediaInfoProbeQueue.Queue(MediaInfoProbeJobData{
+		Hash:       hash,
+		Path:       path,
+		StoreCode:  storeCode,
+		StoreToken: storeToken,
+		LinkId:     linkId,
+	})
+}
+
 var _ = job.NewScheduler(&job.SchedulerConfig[MediaInfoProbeJobData]{
 	Id:       "probe-media-info",
 	Title:    "Probe Media Info",
@@ -46,12 +61,23 @@ var _ = job.NewScheduler(&job.SchedulerConfig[MediaInfoProbeJobData]{
 		log := j.Logger()
 
 		j.JobQueue().Process(func(data MediaInfoProbeJobData) error {
-			if existing := HasMediaInfo(data.Hash, data.Path); existing {
-				log.Trace("media info already exists", "hash", data.Hash, "path", data.Path)
+			existing := GetMediaInfo(data.Hash, data.Path)
+
+			candidate := &media_info.MediaInfo{Source: data.StoreCode}
+			if !candidate.ShouldOverwrite(existing) {
+				log.Trace("media info already exists, skipping probe", "hash", data.Hash, "path", data.Path)
 				return nil
 			}
 
-			mi, err := media_info.Probe(context.Background(), data.Link)
+			var mi *media_info.MediaInfo
+			var err error
+
+			if data.StoreCode != "" {
+				mi, err = media_info.ProbeStore(data.StoreCode, data.StoreToken, data.LinkId)
+			} else {
+				mi, err = media_info.Probe(context.Background(), data.Link)
+			}
+
 			if err != nil {
 				log.Error("failed to probe media info", "hash", data.Hash, "path", data.Path, "error", err)
 				return nil
@@ -62,7 +88,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[MediaInfoProbeJobData]{
 				return nil
 			}
 
-			log.Info("saved media info", "hash", data.Hash, "path", data.Path)
+			log.Info("saved media info", "hash", data.Hash, "path", data.Path, "src", mi.Source)
 			return nil
 		})
 		return nil

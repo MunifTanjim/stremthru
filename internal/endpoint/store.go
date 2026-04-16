@@ -405,7 +405,7 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := storecontext.Get(r)
 	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
 	if err == nil && link != nil {
-		go torz.TryQueueMediaInfoProbe(ctx, payload.Link, link.Link)
+		go torz.TryQueueMediaInfoProbe(ctx, payload.Link, link)
 	}
 	SendResponse(w, r, 200, link, err)
 }

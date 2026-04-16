@@ -1,9 +1,11 @@
 package realdebrid
 
 import (
+	"errors"
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,6 +45,31 @@ func torrentStatusToMagnetStatus(status TorrentStatus) store.MagnetStatus {
 	default:
 		return store.MagnetStatusUnknown
 	}
+}
+
+type LockedFileLink string
+
+const lockedFileLinkPrefix = "stremthru://store/realdebrid/"
+
+func (l LockedFileLink) Create(torrentId string, link string) string {
+	return lockedFileLinkPrefix + util.Base64Encode(torrentId+":"+link)
+}
+
+func (l LockedFileLink) Parse() (torrentId string, link string, err error) {
+	encoded := strings.TrimPrefix(string(l), lockedFileLinkPrefix)
+	decoded, err := util.Base64Decode(encoded)
+	if err != nil {
+		return "", "", err
+	}
+	torrentId, link, found := strings.Cut(decoded, ":")
+	if !found {
+		return "", "", errors.New("invalid locked file link format")
+	}
+	return torrentId, link, nil
+}
+
+func (l LockedFileLink) IsLockedFileLink() bool {
+	return strings.HasPrefix(string(l), lockedFileLinkPrefix)
 }
 
 type StoreClientConfig struct {
@@ -390,10 +417,22 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 }
 
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
+	link := params.Link
+	if LockedFileLink(link).IsLockedFileLink() {
+		_, rdLink, err := LockedFileLink(link).Parse()
+		if err != nil {
+			error := core.NewAPIError("invalid link")
+			error.StatusCode = http.StatusBadRequest
+			error.Cause = err
+			return nil, error
+		}
+		link = rdLink
+	}
+
 	start := time.Now()
 	res, err := c.client.UnrestrictLink(&UnrestrictLinkParams{
 		Ctx:  params.Ctx,
-		Link: params.Link,
+		Link: link,
 		IP:   params.ClientIP,
 	})
 	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
@@ -401,7 +440,8 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 		return nil, err
 	}
 	data := &store.GenerateLinkData{
-		Link: res.Data.Download,
+		Link:   res.Data.Download,
+		LinkId: res.Data.Id,
 	}
 	return data, nil
 }
@@ -453,7 +493,7 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 				idx++
 				link := ""
 				if totalLinks >= idx+1 {
-					link = res.Data.Links[idx]
+					link = LockedFileLink("").Create(res.Data.Id, res.Data.Links[idx])
 				}
 				smFile := f.toStoreMagnetFile()
 				smFile.Link = link
@@ -525,4 +565,8 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 		c.removeIdHashMapCache(params, params.Id, hash)
 	}
 	return data, nil
+}
+
+func (c *StoreClient) GetClient() *APIClient {
+	return c.client
 }

@@ -315,7 +315,8 @@ type RemoveMagnetParams struct {
 }
 
 type GenerateLinkData struct {
-	Link string `json:"link"`
+	Link   string `json:"link"`
+	LinkId string `json:"-"`
 }
 
 type GenerateLinkParams struct {

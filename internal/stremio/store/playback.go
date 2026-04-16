@@ -10,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	store_video "github.com/MunifTanjim/stremthru/internal/store/video"
 	stremio_store_webdl "github.com/MunifTanjim/stremthru/internal/stremio/store/webdl"
+	"github.com/MunifTanjim/stremthru/internal/torz"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -167,6 +168,8 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			store_video.Redirect("500", w, r)
 			return
 		}
+
+		go torz.TryQueueMediaInfoProbe(&ctx.Context, url, stLink)
 
 		stremLinkCache.Add(cacheKey, stLink.Link)
 		http.Redirect(w, r, stLink.Link, http.StatusFound)
