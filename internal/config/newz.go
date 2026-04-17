@@ -96,7 +96,7 @@ func parseNewzIndexerRequestHeader(queryHeaderBlob, grabHeaderBlob string) newzI
 	}
 	presetGrabHeaderBlob := map[string]string{
 		"chrome":  chromeHeaderBlob,
-		"nzbget":  util.MustDecodeBase64("QWNjZXB0OiAqLyoKVXNlci1BZ2VudDogbnpiZ2V0LzIxLjE="),
+		"nzbget":  util.MustDecodeBase64("QWNjZXB0OiAqLyoKVXNlci1BZ2VudDogbnpiZ2V0LzI2LjE="),
 		"sabnzbd": util.MustDecodeBase64("VXNlci1BZ2VudDogU0FCbnpiZC80LjUuNQ=="),
 	}
 
