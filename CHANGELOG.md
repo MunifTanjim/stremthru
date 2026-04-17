@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.100.0](https://github.com/MunifTanjim/stremthru/compare/0.99.1...0.100.0) (2026-04-17)
+
+
+### Features
+
+* add maintenance mode ([de44654](https://github.com/MunifTanjim/stremthru/commit/de446548e5f84853e6f8101087e278eb15c191ba))
+* **config:** update cdn hostnames for torbox ([62fc51a](https://github.com/MunifTanjim/stremthru/commit/62fc51a91099b4da16ce6b16e31edd1523674005))
+* **dash/settings:** add page for viewing config ([013b6d1](https://github.com/MunifTanjim/stremthru/commit/013b6d19096607f1e4a9361c2eeda16a1809a117))
+* **dash/torrent:** add page for torrent info ([f596c62](https://github.com/MunifTanjim/stremthru/commit/f596c62afd94199120bd22cd0e617a174bfd2237))
+* **newznab:** include indexer info in attributes ([5d590a0](https://github.com/MunifTanjim/stremthru/commit/5d590a0f8ef70f9d5cece1c42ceb8d66289fa622))
+* **stremio/list:** support new trakt domain ([d7110f5](https://github.com/MunifTanjim/stremthru/commit/d7110f5f37637240fd84630ec25af7c82a79ea7f))
+* **stremio/torz:** integrate media info in stream list ([5e0b3d7](https://github.com/MunifTanjim/stremthru/commit/5e0b3d755c1c5d663ac516ca8d9c1f2044f4702f))
+* **stremio:** hide noisy site in default stream template ([2ee0e74](https://github.com/MunifTanjim/stremthru/commit/2ee0e74cc3eeaa98925caea62273ae4884cfa2e5))
+* **torrent_stream:** queue media info probing from store endpoint ([e73258d](https://github.com/MunifTanjim/stremthru/commit/e73258d55ff283e8d3ae0759e1e3048a34ce722f))
+* **torrent_stream:** queue media info probing from store torz endpoint ([71457ed](https://github.com/MunifTanjim/stremthru/commit/71457ed14afd6fcfd0d96cc25a069dd5c2453910))
+* **torrent_stream:** support media info from realdebrid ([44ed542](https://github.com/MunifTanjim/stremthru/commit/44ed542da8ba78d8772fc49c302a0abc7d0d83e6))
+* **torznab/indexer:** add support for generic torznab ([d48cc69](https://github.com/MunifTanjim/stremthru/commit/d48cc69aff1b3188f87e326632669df92d692f36))
+* **torznab/indexer:** prioritize syncing never before synced items ([c591bfc](https://github.com/MunifTanjim/stremthru/commit/c591bfc002dcf62cddb4945fbc040c8bea3878a7))
+* **torznab/indexer:** support search mode for forcing query ([cd0f995](https://github.com/MunifTanjim/stremthru/commit/cd0f9953a3687e4a856261f24ba2de7e25d9dd36))
+* **torznab/indexer:** support toggle for anime only indexer ([bf42743](https://github.com/MunifTanjim/stremthru/commit/bf427433b6e6d561be910831c723f40aaf89449c))
+* **torznab:** extract season, ep and use proper db queries ([8d3bdad](https://github.com/MunifTanjim/stremthru/commit/8d3bdad88f5728202c5e3497322df45953f18c7a))
+* upgrade to golang 1.26 ([804da7d](https://github.com/MunifTanjim/stremthru/commit/804da7d995638e6debc69e4c7f1b4d6ce4a95b72))
+* **usenet:** add stats ([0670f3f](https://github.com/MunifTanjim/stremthru/commit/0670f3fb54e9cd14d51c1f3f968df3fa45dfeb4a))
+* **usenet:** support streaming for encrypted 7z archive ([5dace7a](https://github.com/MunifTanjim/stremthru/commit/5dace7a425deb87c5056ef0b4f684bca8aa7af95))
+
+
+### Bug Fixes
+
+* **anidb:** handle boundary-less map in AniDBTVDBEpisodeMaps.GetByAnidbEpisode ([ebdf58d](https://github.com/MunifTanjim/stremthru/commit/ebdf58dbd64a2ee3cf650251ba2e2a16b360d6dc))
+* **config:** fix concurrent map access for tunnel ([abf232a](https://github.com/MunifTanjim/stremthru/commit/abf232a066399f4659ffb8a1f0b980f692d1ccb7))
+* **dash/torrent:** fix scroll area for indexer queries popover ([45e6b21](https://github.com/MunifTanjim/stremthru/commit/45e6b21c86d069a659cc7a9dc7a34af031af5b21))
+* **stremio/transformer:** update extractor for mediafusion ([cd5a26c](https://github.com/MunifTanjim/stremthru/commit/cd5a26cf4eb21f4a716debe0612d1740572c5c54))
+* **stremio:** fix CatalogHandlerResponse json tags ([ddc38e5](https://github.com/MunifTanjim/stremthru/commit/ddc38e566e324ffc7b94c6bbeaf3b39f4e8915cc))
+* **torrent_info:** ignore malicious torrent title ([0ce4d1a](https://github.com/MunifTanjim/stremthru/commit/0ce4d1a5d142c3f122648b811145e3db5f44808c))
+* **torrent_stream:** ignore malicious file ([9cf1ccc](https://github.com/MunifTanjim/stremthru/commit/9cf1ccc305f1e958199c3f05d423554aa33c45be))
+* **torznab/indexer:** properly handle rate limit znab error ([36a3f40](https://github.com/MunifTanjim/stremthru/commit/36a3f40f17e18c04c700aad3bdb5217a36baea82))
+* **torznab/jackett:** consider magneturl attr for extracting info ([f27c7db](https://github.com/MunifTanjim/stremthru/commit/f27c7db32f1688f27c417b07cb90a09956b5642a))
+* **torznab:** record generic indexer name in torrrent_info ([50c4a74](https://github.com/MunifTanjim/stremthru/commit/50c4a7460a6195b600057a7a04f514008b123057))
+* **znab:** make CapsSearchingItem.SupportsParam concurrency safe ([36a81ed](https://github.com/MunifTanjim/stremthru/commit/36a81ededab5d832f3bf5ee0c40bbebe9fe295da))
+* **znab:** normalize anime title in GetQueryMeta ([2611dcd](https://github.com/MunifTanjim/stremthru/commit/2611dcd56f53c9c13ca0c921101a5b99abbf57ce))
+
+
+### Performance Improvements
+
+* **db:** run pragma optimize on startup for sqlite ([4e3a671](https://github.com/MunifTanjim/stremthru/commit/4e3a671ea198597a5c45492aa80c9d622dc52183))
+* **torznab/indexer:** optimize db indices ([8c22252](https://github.com/MunifTanjim/stremthru/commit/8c22252a7ef997b26a8a33ece8ab2519a1180c94))
+
 ## [0.99.1](https://github.com/MunifTanjim/stremthru/compare/0.99.0...0.99.1) (2026-03-20)
 
 
