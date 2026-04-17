@@ -56,6 +56,7 @@ type WorkerDetail struct {
 	Id       string        `json:"id"`
 	Title    string        `json:"title"`
 	Interval time.Duration `json:"interval"`
+	Disabled bool          `json:"-"`
 }
 
 var WorkerDetailsById = map[string]*WorkerDetail{
@@ -128,6 +129,7 @@ func NewWorker(conf *WorkerConfig) *Worker {
 	} else {
 		details.Id = conf.Name
 		details.Interval = conf.Interval
+		details.Disabled = conf.Disabled
 	}
 
 	if conf.Disabled {

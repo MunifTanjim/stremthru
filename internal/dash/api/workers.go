@@ -34,6 +34,9 @@ func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]*WorkerDetails, len(worker.WorkerDetailsById)+len(job.JobDetailsById))
 
 	for name, details := range worker.WorkerDetailsById {
+		if details.Disabled {
+			continue
+		}
 		data[name] = &WorkerDetails{
 			Id:       details.Id,
 			Title:    details.Title,
@@ -42,6 +45,9 @@ func handleGetWorkersDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for name, details := range job.JobDetailsById {
+		if details.Disabled {
+			continue
+		}
 		data[name] = &WorkerDetails{
 			Id:       details.Id,
 			Title:    details.Title,

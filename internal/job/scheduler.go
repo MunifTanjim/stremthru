@@ -105,6 +105,7 @@ type JobDetail struct {
 	Id       string        `json:"id"`
 	Title    string        `json:"title"`
 	Interval time.Duration `json:"interval"`
+	Disabled bool          `json:"-"`
 }
 
 const (
@@ -260,6 +261,7 @@ func NewScheduler[T any](conf *SchedulerConfig[T]) *Scheduler[T] {
 			Id:       conf.Id,
 			Interval: conf.Interval,
 			Title:    conf.Title,
+			Disabled: conf.Disabled,
 		}
 	}
 
