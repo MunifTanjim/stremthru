@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.1](https://github.com/MunifTanjim/stremthru/compare/0.100.0...0.100.1) (2026-04-17)
+
+
+### Bug Fixes
+
+* **stremio/torz:** handle nil pointer dereference for media info ([65ba38f](https://github.com/MunifTanjim/stremthru/commit/65ba38f711b2663c61b079aa37052693bf08016d))
+
 ## [0.100.0](https://github.com/MunifTanjim/stremthru/compare/0.99.1...0.100.0) (2026-04-17)
 
 
