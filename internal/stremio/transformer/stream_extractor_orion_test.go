@@ -27,7 +27,7 @@ func TestStreamExtractorOrionTorrent(t *testing.T) {
 				Result: &ptt.Result{
 					Channels:   []string{"7.1"},
 					Codec:      "HEVC",
-					Languages:  []string{"EN"},
+					Languages:  []string{"en"},
 					Resolution: "4K",
 					Site:       "torlock",
 					Size:       "26.6 GB",
@@ -75,7 +75,7 @@ func TestStreamExtractorOrionDebrid(t *testing.T) {
 				Result: &ptt.Result{
 					Channels:   []string{"7.1"},
 					Codec:      "HEVC",
-					Languages:  []string{"EN", "FR", "ES"},
+					Languages:  []string{"en", "fr", "es"},
 					Resolution: "4K",
 					Site:       "1337x",
 					Size:       "22.8 GB",
@@ -110,7 +110,7 @@ func TestStreamExtractorOrionDebrid(t *testing.T) {
 				Result: &ptt.Result{
 					Channels:   []string{"5.1"},
 					Codec:      "HEVC",
-					Languages:  []string{"EN"},
+					Languages:  []string{"en"},
 					Resolution: "4k",
 					Site:       "torrentscsv",
 					Size:       "5.31 GB",

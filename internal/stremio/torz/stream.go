@@ -581,21 +581,6 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 			}
 		}
 
-		fName := ""
-		fIdx := -1
-		fSize := int64(0)
-		fVideoHash := ""
-		if file != nil {
-			fIdx = file.Idx
-			fName = file.Name
-			if file.Size > 0 {
-				fSize = file.Size
-			}
-			fVideoHash = file.VideoHash
-		} else if core.HasVideoExtension(tInfo.TorrentTitle) {
-			fName = tInfo.TorrentTitle
-		}
-
 		pttr, err := tInfo.ToParsedResult()
 		if err != nil {
 			return nil, err
@@ -616,20 +601,52 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 			Kind:     stremio_transformer.StreamExtractorResultKindTorz,
 			Category: stremType,
 			File: stremio_transformer.StreamExtractorResultFile{
-				Name: fName,
-				Idx:  fIdx,
+				Idx: -1,
 			},
 		}
-		if fSize > 0 {
-			data.File.Size = util.ToSize(fSize)
+
+		fSize := int64(0)
+		fVideoHash := ""
+		if file != nil {
+			data.File.Idx = file.Idx
+			data.File.Name = file.Name
+			if file.Size > 0 {
+				fSize = file.Size
+				data.File.Size = util.ToSize(fSize)
+			}
+			fVideoHash = file.VideoHash
+
+			if file.MediaInfo != nil {
+				mi := file.MediaInfo
+				if len(mi.Audio) > 0 {
+					data.Languages = stremio_transformer.GetMediaInfoStreamLangs(mi.Audio)
+					if mi.Source == "" {
+						data.Channels = mi.Channels()
+					}
+				}
+				data.Subtitles = stremio_transformer.GetMediaInfoStreamLangs(mi.Subtitle)
+				if mi.Video.Codec != "" {
+					data.Codec = strings.ToUpper(mi.Video.Codec)
+				}
+				if len(mi.Video.HDR) > 0 {
+					data.HDR = mi.Video.HDR
+				}
+				if mi.Format != nil && mi.Format.BitRate > 0 {
+					data.BitRate = stremio_transformer.StreamExtractorResultBitRate(mi.Format.BitRate)
+				}
+			}
+
+		} else if core.HasVideoExtension(tInfo.TorrentTitle) {
+			data.File.Name = tInfo.TorrentTitle
 		}
+
 		wrappedStreams = append(wrappedStreams, WrappedStream{
 			R: data,
 			Stream: &stremio.Stream{
 				Name:        data.Addon.Name,
 				Description: data.TTitle,
 				InfoHash:    data.Hash,
-				FileIndex:   fIdx,
+				FileIndex:   data.File.Idx,
 				BehaviorHints: &stremio.StreamBehaviorHints{
 					Filename:   data.File.Name,
 					VideoSize:  fSize,

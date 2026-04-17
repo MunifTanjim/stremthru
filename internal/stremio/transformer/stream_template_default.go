@@ -12,9 +12,10 @@ var StreamTemplateDefault = StreamTemplateBlob{
 {{if ne .Quality ""}}💿 {{.Quality}} {{end}}{{if ne .Codec ""}}🎞️ {{.Codec}}{{end}}
 {{if ne (len .HDR) 0}}📺 {{str_join .HDR " "}} {{end -}}
 {{- if or (gt (len .Audio) 0) (gt (len .Channels) 0)}}🎧 {{if gt (len .Audio) 0}}{{str_join .Audio  ", "}}{{if gt (len .Channels) 0}} | {{end}}{{end}}{{if gt (len .Channels) 0}}{{str_join .Channels ", "}}{{end}}{{end}}
-{{if ne .Size ""}}{{if and (ne .File.Size "") (ne .File.Size .Size)}}💾 {{.File.Size}} {{end}}📦 {{.Size}}{{end}}{{if gt .Seeders 0}} 👤 {{.Seeders}}{{end}}{{if and (eq .Kind "newz") (not .Date.IsZero)}} ⏱️ {{.Age}}{{end}}{{if ne .Group ""}} ⚙️ {{.Group}}{{end}}{{if and (ne .Site "") (eq .Indexer.Name "")}} 🔗 {{.Site}}{{end}}{{if ne .Indexer.Name ""}} 🔍 {{.Indexer.Name}}{{end}}{{if ne (len .Languages) 0}}
-🌐 {{lang_join .Languages " " "emoji"}}
-{{- end}}{{if ne .File.Name ""}}
+{{if ne .Size ""}}{{if and (ne .File.Size "") (ne .File.Size .Size)}}💾 {{.File.Size}} {{end}}📦 {{.Size}}{{end}}{{if gt .BitRate 0}} 〽️ {{.BitRate}}{{end}}{{if gt .Seeders 0}} 👤 {{.Seeders}}{{end}}{{if and (eq .Kind "newz") (not .Date.IsZero)}} ⏱️ {{.Age}}{{end}}{{if ne (len .Languages) 0}}
+{{if ne (len .Subtitles) 0}}🎙️{{else}}🌐{{end}} {{lang_join .Languages " " "emoji"}}{{end}}{{if ne (len .Subtitles) 0}}
+💬 {{lang_join .Subtitles " " "emoji"}}{{end}}
+{{if ne .Group ""}}⚙️ {{.Group}} {{end}}{{if ne .Indexer.Name ""}}🔍 {{.Indexer.Name}}{{else if ne .Site ""}}🔗 {{.Site}}{{end}}{{if ne .File.Name ""}}
 📄 {{.File.Name}}{{else if ne .TTitle ""}}
 📁 {{.TTitle}}
 {{end}}

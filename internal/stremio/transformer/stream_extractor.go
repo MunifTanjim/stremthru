@@ -1,6 +1,7 @@
 package stremio_transformer
 
 import (
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -138,6 +139,8 @@ const (
 	StreamExtractorResultKindNewz StreamExtractorResultKind = "newz"
 )
 
+type StreamExtractorResultBitRate int64
+
 type StreamExtractorResult struct {
 	*ptt.Result
 
@@ -155,6 +158,10 @@ type StreamExtractorResult struct {
 	Seeders   int
 	Store     StreamExtractorResultStore
 	TTitle    string `expr:"-"`
+
+	BitRate   StreamExtractorResultBitRate
+	Duration  time.Duration
+	Subtitles []string
 }
 
 func (r *StreamExtractorResult) Age() string {
@@ -164,103 +171,232 @@ func (r *StreamExtractorResult) Age() string {
 	return util.FormatDuration(time.Since(r.Date), 1)
 }
 
+func (br StreamExtractorResultBitRate) String() string {
+	if br <= 0 {
+		return ""
+	}
+	Bps := float64(br) / 8
+	switch {
+	case Bps >= 1_000_000:
+		return fmt.Sprintf("%.1f MB/s", Bps/1_000_000)
+	case Bps >= 1_000:
+		return fmt.Sprintf("%.0f KB/s", Bps/1_000)
+	default:
+		return fmt.Sprintf("%d B/s", int64(Bps))
+	}
+}
+
 var language_to_code = map[string]string{
 	"dubbed":      "dub",
+	"dub":         "dub",
 	"dual audio":  "daud",
+	"daud":        "daud",
 	"multi audio": "maud",
+	"maud":        "maud",
 	"multi subs":  "msub",
+	"msub":        "msub",
 
 	"english":    "en",
+	"eng":        "en",
+	"en":         "en",
+	"'eng'":      "en",
+	"en-us":      "en",
 	"🇬🇧":         "en",
 	"🇺🇸":         "en",
 	"japanese":   "ja",
+	"jpn":        "ja",
+	"ja":         "ja",
 	"🇯🇵":         "ja",
 	"russian":    "ru",
+	"rus":        "ru",
+	"ru":         "ru",
 	"🇷🇺":         "ru",
 	"italian":    "it",
+	"ita":        "it",
+	"it":         "it",
 	"🇮🇹":         "it",
 	"portuguese": "pt",
+	"por":        "pt",
+	"pt":         "pt",
 	"🇵🇹":         "pt",
 	"🇧🇷":         "pt",
 	"spanish":    "es",
+	"spa":        "es",
+	"es":         "es",
+	"spa(la)":    "es-419",
+	"es-419":     "es-419",
+	"spa(mx)":    "es-mx",
+	"es-mx":      "es-mx",
 	"🇪🇸":         "es",
 	"latino":     "es-419",
 	"🇲🇽":         "es-mx",
 	"korean":     "ko",
+	"kor":        "ko",
+	"ko":         "ko",
 	"🇰🇷":         "ko",
 	"chinese":    "zh",
+	"zho":        "zh",
+	"zh":         "zh",
+	"zh-hans":    "zh",
 	"🇨🇳":         "zh",
 	"taiwanese":  "zh-tw",
+	"zh-tw":      "zh-tw",
 	"🇹🇼":         "zh-tw",
 	"french":     "fr",
+	"fra":        "fr",
+	"fr":         "fr",
 	"🇫🇷":         "fr",
 	"german":     "de",
+	"deu":        "de",
+	"de":         "de",
 	"🇩🇪":         "de",
 	"dutch":      "nl",
+	"nld":        "nl",
+	"nl":         "nl",
 	"🇳🇱":         "nl",
 	"hindi":      "hi",
+	"hin":        "hi",
+	"hi":         "hi",
 	"🇮🇳":         "hi",
 	"telugu":     "te",
+	"tel":        "te",
+	"te":         "te",
 	"tamil":      "ta",
+	"tam":        "ta",
+	"ta":         "ta",
 	"malayalam":  "ml",
+	"mal":        "ml",
+	"ml":         "ml",
 	"kannada":    "kn",
+	"kan":        "kn",
+	"kn":         "kn",
 	"marathi":    "mr",
+	"mar":        "mr",
+	"mr":         "mr",
 	"gujarati":   "gu",
+	"guj":        "gu",
+	"gu":         "gu",
 	"punjabi":    "pa",
+	"pan":        "pa",
+	"pa":         "pa",
 	"bengali":    "bn",
+	"ben":        "bn",
+	"bn":         "bn",
 	"🇧🇩":         "bn",
 	"polish":     "pl",
+	"pol":        "pl",
+	"pl":         "pl",
+	"pl-pl":      "pl",
 	"🇵🇱":         "pl",
 	"lithuanian": "lt",
+	"lit":        "lt",
+	"lt":         "lt",
 	"🇱🇹":         "lt",
 	"latvian":    "lv",
+	"lav":        "lv",
+	"lv":         "lv",
 	"🇱🇻":         "lv",
 	"estonian":   "et",
+	"est":        "et",
+	"et":         "et",
 	"🇪🇪":         "et",
 	"czech":      "cs",
+	"ces":        "cs",
+	"cs":         "cs",
 	"🇨🇿":         "cs",
 	"slovakian":  "sk",
+	"slk":        "sk",
+	"sk":         "sk",
 	"🇸🇰":         "sk",
 	"slovenian":  "sl",
+	"slv":        "sl",
+	"sl":         "sl",
 	"🇸🇮":         "sl",
 	"hungarian":  "hu",
+	"hun":        "hu",
+	"hu":         "hu",
 	"🇭🇺":         "hu",
 	"romanian":   "ro",
+	"ron":        "ro",
+	"ro":         "ro",
 	"🇷🇴":         "ro",
 	"bulgarian":  "bg",
+	"bul":        "bg",
+	"bg":         "bg",
 	"🇧🇬":         "bg",
 	"serbian":    "sr",
+	"srp":        "sr",
+	"sr":         "sr",
 	"🇷🇸":         "sr",
 	"croatian":   "hr",
+	"hrv":        "hr",
+	"hr":         "hr",
 	"🇭🇷":         "hr",
 	"ukrainian":  "uk",
+	"ukr":        "uk",
+	"uk":         "uk",
 	"🇺🇦":         "uk",
 	"greek":      "el",
+	"ell":        "el",
+	"el":         "el",
 	"🇬🇷":         "el",
 	"danish":     "da",
+	"dan":        "da",
+	"da":         "da",
 	"🇩🇰":         "da",
 	"finnish":    "fi",
+	"fin":        "fi",
+	"fi":         "fi",
 	"🇫🇮":         "fi",
 	"swedish":    "sv",
+	"swe":        "sv",
+	"sv":         "sv",
 	"🇸🇪":         "sv",
 	"norwegian":  "no",
+	"nor":        "no",
+	"no":         "no",
 	"🇳🇴":         "no",
 	"turkish":    "tr",
+	"tur":        "tr",
+	"tr":         "tr",
 	"🇹🇷":         "tr",
 	"arabic":     "ar",
+	"ara":        "ar",
+	"ar":         "ar",
 	"🇸🇦":         "ar",
 	"persian":    "fa",
+	"fas":        "fa",
+	"fa":         "fa",
 	"🇮🇷":         "fa",
 	"hebrew":     "he",
+	"heb":        "he",
+	"he":         "he",
 	"🇮🇱":         "he",
 	"vietnamese": "vi",
+	"vie":        "vi",
+	"vi":         "vi",
 	"🇻🇳":         "vi",
 	"indonesian": "id",
+	"ind":        "id",
+	"id":         "id",
 	"🇮🇩":         "id",
 	"malay":      "ms",
+	"msa":        "ms",
+	"ms":         "ms",
 	"🇲🇾":         "ms",
 	"thai":       "th",
+	"tha":        "th",
+	"th":         "th",
 	"🇹🇭":         "th",
+	"zxx":        "",
+	"":           "",
+}
+
+func GetLangCode(lang string) string {
+	if code, ok := language_to_code[strings.ToLower(lang)]; ok {
+		return code
+	}
+	return ""
 }
 
 func (se StreamExtractor) Parse(stream *stremio.Stream, sType string) *StreamExtractorResult {

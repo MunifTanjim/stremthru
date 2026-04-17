@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/MunifTanjim/stremthru/internal/util"
 	"gopkg.in/vansante/go-ffprobe.v2"
 )
+
+type MediaInfoStreamLanger interface {
+	Lang() string
+}
 
 type MediaInfoVideo struct {
 	Codec  string   `json:"codec,omitempty"`
@@ -32,6 +38,34 @@ type MediaInfoAudio struct {
 	VisualImpaired  bool `json:"visual_impaired,omitempty"`
 }
 
+func (s MediaInfoAudio) Lang() string {
+	return s.Language
+}
+
+func (aud *MediaInfoAudio) Channel() string {
+	if aud.ChannelLayout == "" {
+		switch aud.Channels {
+		case 0:
+			return ""
+		case 1:
+			return "mono"
+		case 2:
+			return "stereo"
+		default:
+			return strconv.Itoa(aud.Channels)
+		}
+	}
+	ch, _, _ := strings.Cut(aud.ChannelLayout, "(")
+	ch = strings.TrimSpace(ch)
+	switch ch {
+	case "", "mono", "stereo", "quad":
+		return ch
+	default:
+		ch, _, _ := strings.Cut(ch, " ")
+		return ch
+	}
+}
+
 type MediaInfoSubtitle struct {
 	Codec    string `json:"codec,omitempty"`
 	Language string `json:"lang,omitempty"`
@@ -40,6 +74,10 @@ type MediaInfoSubtitle struct {
 	Default         bool `json:"default,omitempty"`
 	Forced          bool `json:"forced,omitempty"`
 	HearingImpaired bool `json:"hearing_impaired,omitempty"`
+}
+
+func (s MediaInfoSubtitle) Lang() string {
+	return s.Language
 }
 
 type MediaInfoFormat struct {
@@ -56,6 +94,21 @@ type MediaInfo struct {
 	Format      *MediaInfoFormat    `json:"format,omitempty"`
 	HasChapters bool                `json:"has_chapters,omitempty"`
 	Source      string              `json:"src,omitempty"`
+}
+
+func (mi *MediaInfo) Channels() []string {
+	chs := make([]string, 0, 1)
+	seen := util.NewSet[string]()
+	for i := range mi.Audio {
+		aud := &mi.Audio[i]
+		ch := aud.Channel()
+		if seen.Has(ch) {
+			continue
+		}
+		seen.Add(ch)
+		chs = append(chs, ch)
+	}
+	return chs
 }
 
 func (mi *MediaInfo) ShouldOverwrite(existing *MediaInfo) bool {

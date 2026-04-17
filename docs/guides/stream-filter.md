@@ -13,6 +13,7 @@ Everything from parsed torrent title:
 - https://github.com/MunifTanjim/go-ptt/blob/main/README.md
 
 - **`Addon.Name`** (`string`)
+- **`BitRate`** (`int`): bit per second
 - **`Category`** (`string`): `movie`, `series`, `anime` etc.
 - **`Episode`** (`int`): episode number (`-1` for movies)
 - **`File.Name`** (`string`)
@@ -24,6 +25,7 @@ Everything from parsed torrent title:
 - **`Raw.Description`** (`string`)
 - **`Season`** (`int`): season number (`-1` for movies)
 - **`Seeders`** (`int`): number of seeders
+- **`Subtitles`** (`[]string`): language codes
 - **`Store.Name`** (string): `alldebrid`, `debrider`, `debridlink` `easydebrid`, `offcloud`, `pikpak`, `premiumize`, `realdebrid`, `torbox`
 - **`Store.Code`** (string): `AD`, `DR`, `DL`, `ED`, `OC`, `PP`, `PM`, `RD`, `TB`
 - **`Store.IsCached`** (bool): Cached on debrid service
