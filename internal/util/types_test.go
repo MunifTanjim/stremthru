@@ -57,6 +57,64 @@ func TestJSONTime_UnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestMapOrEmptyArray_UnmarshalJSON(t *testing.T) {
+	type item struct {
+		Name string `json:"name"`
+	}
+
+	for _, tc := range []struct {
+		name        string
+		input       string
+		expectLen   int
+		expectNil   bool
+		expectError bool
+	}{
+		{
+			name:      "empty array",
+			input:     `[]`,
+			expectLen: 0,
+		},
+		{
+			name:      "empty object",
+			input:     `{}`,
+			expectLen: 0,
+		},
+		{
+			name:      "valid object",
+			input:     `{"a":{"name":"alpha"},"b":{"name":"beta"}}`,
+			expectLen: 2,
+		},
+		{
+			name:      "null",
+			input:     `null`,
+			expectNil: true,
+		},
+		{
+			name:        "invalid json",
+			input:       `{invalid}`,
+			expectError: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var m MapOrEmptyArray[string, item]
+			err := json.Unmarshal([]byte(tc.input), &m)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			if tc.expectNil {
+				assert.Nil(t, m)
+			} else {
+				assert.NotNil(t, m)
+				assert.Len(t, m, tc.expectLen)
+			}
+		})
+	}
+}
+
 func TestJSONTime_RoundTrip(t *testing.T) {
 	for _, tc := range []struct {
 		name  string

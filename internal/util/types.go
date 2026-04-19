@@ -44,3 +44,18 @@ func (rt JSONTime) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(rt.Time)
 }
+
+type MapOrEmptyArray[K comparable, V any] map[K]V
+
+func (m *MapOrEmptyArray[K, V]) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '[' {
+		*m = make(MapOrEmptyArray[K, V])
+		return nil
+	}
+	var raw map[K]V
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*m = MapOrEmptyArray[K, V](raw)
+	return nil
+}

@@ -56,9 +56,9 @@ type GetMediaInfoData struct {
 	Bitrate  int     `json:"bitrate"`  // 1784482
 	Size     int64   `json:"size"`     // 825362868
 	Details  struct {
-		Video     map[string]MediaInfoVideo    `json:"video"`     // und1
-		Audio     map[string]MediaInfoAudio    `json:"audio"`     // eng1
-		Subtitles map[string]MediaInfoSubtitle `json:"subtitles"` // eng1 eng2 ara1 cze1 dan1 ger1 gre1 spa1 spa2 fin1 fre2 heb1 hin1 hun1 ind1 ita1 jpn1 kor1 may1 nob1 dut1 pol1 por1 por2 rum1 swe1 tha1 tur1 chi1 chi2
+		Video     util.MapOrEmptyArray[string, MediaInfoVideo]    `json:"video"`     // und1
+		Audio     util.MapOrEmptyArray[string, MediaInfoAudio]    `json:"audio"`     // eng1
+		Subtitles util.MapOrEmptyArray[string, MediaInfoSubtitle] `json:"subtitles"` // eng1 eng2 ara1 cze1 dan1 ger1 gre1 spa1 spa2 fin1 fre2 heb1 hin1 hun1 ind1 ita1 jpn1 kor1 may1 nob1 dut1 pol1 por1 por2 rum1 swe1 tha1 tur1 chi1 chi2
 	} `json:"details"`
 	PosterPath   string `json:"poster_path"`   // tmdb.jpg
 	BackdropPath string `json:"backdrop_path"` // tmdb.jpg
