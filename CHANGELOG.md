@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.100.2](https://github.com/MunifTanjim/stremthru/compare/0.100.1...0.100.2) (2026-04-19)
+
+
+### Bug Fixes
+
+* **newz:** update nzbget preset grab header ([c915f8b](https://github.com/MunifTanjim/stremthru/commit/c915f8bd53049dad1451018dd4c3183a18b288c2))
+* **store/realdebrid:** deal with inconsistent type in response ([abc9280](https://github.com/MunifTanjim/stremthru/commit/abc9280a9d21c53a2e7884bf42be9a25960d7459))
+* **worker:** hide disabled workers in dashboard ([40305e5](https://github.com/MunifTanjim/stremthru/commit/40305e5710d5995a20325a9b58fd9ffd3498f15b))
+
 ## [0.100.1](https://github.com/MunifTanjim/stremthru/compare/0.100.0...0.100.1) (2026-04-17)
 
 
