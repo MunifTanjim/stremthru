@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.3](https://github.com/MunifTanjim/stremthru/compare/0.100.2...0.100.3) (2026-04-20)
+
+
+### Bug Fixes
+
+* **config:** keep imdb_title enabled for stremio_newz ([c3647ab](https://github.com/MunifTanjim/stremthru/commit/c3647ab848767a77b4d1aea00402e7cbffbfae7f))
+
 ## [0.100.2](https://github.com/MunifTanjim/stremthru/compare/0.100.1...0.100.2) (2026-04-19)
 
 
