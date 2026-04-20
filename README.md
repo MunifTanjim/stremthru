@@ -82,6 +82,7 @@ Check [documentation](https://docs.stremthru.13377001.xyz/stremio-addons).
 
 - [DanaramaPyjama](https://x.com/danaramaps4)
 - [Debridio](https://debridio.com)
+- [FunkyPenguin](https://github.com/funkypenguin)
 
 ## License
 
