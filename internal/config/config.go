@@ -297,7 +297,7 @@ func (f FeatureConfig) HasDMMHashlist() bool {
 }
 
 func (f FeatureConfig) HasIMDBTitle() bool {
-	return !f.IsDisabled(FeatureIMDBTitle) && f.HasTorrentInfo()
+	return !f.IsDisabled(FeatureIMDBTitle) && (f.HasTorrentInfo() || f.HasStremioNewz())
 }
 
 func (f FeatureConfig) HasVault() bool {
