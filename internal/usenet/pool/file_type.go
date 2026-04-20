@@ -18,6 +18,7 @@ const (
 	FileTypePlain FileType = iota + 1
 	FileTypeRAR
 	FileType7z
+	FileTypePAR2
 )
 
 func (ft FileType) String() string {
@@ -28,6 +29,8 @@ func (ft FileType) String() string {
 		return "rar"
 	case FileType7z:
 		return "7z"
+	case FileTypePAR2:
+		return "par2"
 	default:
 		return "unknown"
 	}
@@ -37,6 +40,7 @@ var (
 	magicBytesRAR4 = []byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00}
 	magicBytesRAR5 = []byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x01, 0x00}
 	magicBytes7Zip = []byte{0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C}
+	magicBytesPAR2 = []byte{0x50, 0x41, 0x52, 0x32, 0x00, 0x50, 0x4B, 0x54}
 )
 
 // RAR patterns: .rar, .r00, .r01, .part01.rar
@@ -45,12 +49,21 @@ var rarRegex = regexp.MustCompile(`(?i)\.r(ar|\d+)$`)
 // 7z patterns: .7z, .7z.001, .7z.002
 var sevenZipRegex = regexp.MustCompile(`(?i)\.7z(\.\d+)?$`)
 
+var par2Regex = regexp.MustCompile(`(?i)\.par2$`)
+
 func DetectArchiveFileTypeByExtension(filename string) FileType {
 	if rarRegex.MatchString(filename) {
 		return FileTypeRAR
 	}
 	if sevenZipRegex.MatchString(filename) {
 		return FileType7z
+	}
+	return FileTypePlain
+}
+
+func DetectPAR2FileTypeByExtension(filename string) FileType {
+	if par2Regex.MatchString(filename) {
+		return FileTypePAR2
 	}
 	return FileTypePlain
 }
@@ -66,11 +79,27 @@ func DetectFileType(fileBytes []byte, filename string) FileType {
 			ftLog.Trace("file type - detected", "filename", filename, "type", FileType7z, "method", "magic_bytes")
 			return FileType7z
 		}
+
+		if bytes.HasPrefix(fileBytes, magicBytesPAR2) {
+			ftLog.Trace("file type - detected", "filename", filename, "type", FileTypePAR2, "method", "magic_bytes")
+			return FileTypePAR2
+		}
 	}
 
 	ft := DetectArchiveFileTypeByExtension(filename)
+	if ft != FileTypePlain {
+		ftLog.Trace("file type - detected", "filename", filename, "type", ft, "method", "extension")
+		return ft
+	}
+
+	ft = DetectPAR2FileTypeByExtension(filename)
+	if ft != FileTypePlain {
+		ftLog.Trace("file type - detected", "filename", filename, "type", ft, "method", "extension")
+		return ft
+	}
+
 	ftLog.Trace("file type - detected", "filename", filename, "type", FileTypePlain, "method", "default")
-	return ft
+	return FileTypePlain
 }
 
 var isVideoFile = func() func(filename string) bool {
