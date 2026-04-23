@@ -59,6 +59,17 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 		Private:      private,
 	}}, tInfoCategory, storeCode != store.StoreCodeRealDebrid)
 
+	// Skip external sharing (Buddy/Peer) for qBittorrent. qBit runs on the
+	// user's own infrastructure — its content is user-specific and has no
+	// value as shared cache state. More importantly, the Peer write sends
+	// `storeToken` as an Authorization header, and for qBit that token
+	// encodes the user's WebUI URL + username + password (see
+	// store/qbittorrent/client.go parseToken); forwarding it to the peer
+	// server would leak those credentials.
+	if s.GetName() == store.StoreNameQBittorrent {
+		return
+	}
+
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
 			Store:     s.GetName(),
@@ -120,6 +131,13 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, cached map[string
 	}
 	magnet_cache.BulkTouch(s.GetName().Code(), filesByHash, cached, true)
 	go torrent_info.Upsert(tInfos, tInfoCategory, storeCode != store.StoreCodeRealDebrid)
+
+	// Same reasoning as TrackMagnet above: qBittorrent runs on the user's own
+	// infra and its StoreToken embeds WebUI credentials in plaintext; never
+	// forward qBit data to shared Buddy/Peer services.
+	if s.GetName() == store.StoreNameQBittorrent {
+		return
+	}
 
 	if config.HasBuddy {
 		params := &TrackMagnetCacheParams{
