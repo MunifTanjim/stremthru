@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.100.4](https://github.com/MunifTanjim/stremthru/compare/0.100.3...0.100.4) (2026-04-25)
+
+
+### Bug Fixes
+
+* **stremio/store:** add missing media_info data for stream ([ef304bb](https://github.com/MunifTanjim/stremthru/commit/ef304bb600a5b8c70c55a6c92eb93c8ac6b61f28))
+* **usenet:** detect file alias from par2 ([68c2edb](https://github.com/MunifTanjim/stremthru/commit/68c2edb110478dcabb5bf79402cdb50904daf7fd))
+
 ## [0.100.3](https://github.com/MunifTanjim/stremthru/compare/0.100.2...0.100.3) (2026-04-20)
 
 
