@@ -565,6 +565,9 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 						IsProxied: matcher.IdR.isST && config.StoreContentProxy.IsEnabled(string(storeName)),
 					},
 				}
+				if !matcher.IdR.isUsenet && !matcher.IdR.isWebDL {
+					stremio_transformer.ApplyMediaInfo(data, torrent_stream.GetMediaInfo(cInfo.Hash, file.Path))
+				}
 				if matcher.IdR.isUsenet {
 					data.Addon.Name = "Usenet Store"
 					data.Kind = stremio_transformer.StreamExtractorResultKindNewz

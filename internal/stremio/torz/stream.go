@@ -616,32 +616,7 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 			}
 			fVideoHash = file.VideoHash
 
-			if file.MediaInfo != nil {
-				mi := file.MediaInfo
-				if len(mi.Audio) > 0 {
-					data.Languages = stremio_transformer.GetMediaInfoStreamLangs(mi.Audio)
-					if mi.Source == "" {
-						data.Channels = mi.Channels()
-					}
-				}
-				if len(mi.Subtitle) > 0 {
-					data.Subtitles = stremio_transformer.GetMediaInfoStreamLangs(mi.Subtitle)
-				}
-				if mi.Video != nil {
-					if mi.Video.Codec != "" {
-						data.Codec = strings.ToUpper(mi.Video.Codec)
-					}
-					if len(mi.Video.HDR) > 0 {
-						data.HDR = mi.Video.HDR
-					}
-				}
-				if mi.Format != nil {
-					if mi.Format.BitRate > 0 {
-						data.BitRate = stremio_transformer.StreamExtractorResultBitRate(mi.Format.BitRate)
-					}
-				}
-			}
-
+			stremio_transformer.ApplyMediaInfo(data, file.MediaInfo)
 		} else if core.HasVideoExtension(tInfo.TorrentTitle) {
 			data.File.Name = tInfo.TorrentTitle
 		}
