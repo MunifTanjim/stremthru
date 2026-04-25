@@ -3,12 +3,16 @@ package usenet_pool
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"errors"
+	"fmt"
+	"maps"
 	"path/filepath"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
+	"github.com/MunifTanjim/stremthru/internal/usenet/par2"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/alitto/pond/v2"
 	"github.com/nwaples/rardecode/v2"
@@ -21,6 +25,7 @@ type NZBContentFileType string
 const (
 	NZBContentFileTypeVideo   NZBContentFileType = "video"
 	NZBContentFileTypeArchive NZBContentFileType = "archive"
+	NZBContentFileTypeParity  NZBContentFileType = "parity"
 	NZBContentFileTypeOther   NZBContentFileType = "other"
 	NZBContentFileTypeUnknown NZBContentFileType = ""
 )
@@ -80,19 +85,25 @@ func isNZBStremable(c *NZBContent) bool {
 	return hasStreamableVideoInNZBContentFiles(c.Files)
 }
 
+func computeMD5_16k(data []byte) [16]byte {
+	if len(data) > 16384 {
+		data = data[:16384]
+	}
+	return md5.Sum(data)
+}
+
 type nzbArchiveFile struct {
+	entry    *NZBContentFile
 	filetype FileType
-	name     string
-	size     int64
 	volume   int
 }
 
 func (f *nzbArchiveFile) Name() string {
-	return f.name
+	return f.entry.Name
 }
 
 func (f *nzbArchiveFile) Size() int64 {
-	return f.size
+	return f.entry.Size
 }
 
 func (f *nzbArchiveFile) FileType() FileType {
@@ -103,14 +114,24 @@ func (f *nzbArchiveFile) Volume() int {
 	if f.volume >= 0 {
 		return f.volume
 	}
+	name := getEffectiveName(f)
 	switch f.filetype {
 	case FileTypeRAR:
-		return GetRARVolumeNumber(f.Name())
+		return GetRARVolumeNumber(name)
 	case FileType7z:
-		return Get7zVolumeNumber(f.Name())
+		return Get7zVolumeNumber(name)
 	default:
 		return -1
 	}
+}
+
+func (f *nzbArchiveFile) Alias() string {
+	return f.entry.Alias
+}
+
+type nzbParityFile struct {
+	entry   *NZBContentFile
+	nzbFile *nzb.File
 }
 
 func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password string) (*NZBContent, error) {
@@ -122,8 +143,6 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 	if len(nzbDoc.Files) == 0 {
 		return content, nil
 	}
-
-	var nzbArchiveFiles []*nzbArchiveFile
 
 	type segmentFetchResult struct {
 		nzbFile      *nzb.File
@@ -195,6 +214,17 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 		}
 	}
 
+	type par2MatchCandidate struct {
+		entry        *NZBContentFile
+		archiveFile  *nzbArchiveFile
+		nzbFile      *nzb.File
+		startSegment *SegmentData
+	}
+
+	var nzbArchiveFiles []*nzbArchiveFile
+	var nzbPAR2Files []*nzbParityFile
+	var par2Candidates []par2MatchCandidate
+
 	for _, fr := range fetchResults {
 		filename := fr.nzbFile.Name()
 
@@ -206,10 +236,11 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 		}
 		detectedType := DetectFileType(firstBytes, filename)
 
+		isParity := detectedType == FileTypePAR2
 		isArchive := detectedType == FileTypeRAR || detectedType == FileType7z
 		isVideoByExt := isVideoFile(filename)
 
-		entry := NZBContentFile{
+		entry := &NZBContentFile{
 			Name:       filename,
 			Size:       fr.nzbFile.Size(),
 			Streamable: true,
@@ -218,6 +249,8 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			entry.Type = NZBContentFileTypeArchive
 		} else if isVideoByExt {
 			entry.Type = NZBContentFileTypeVideo
+		} else if isParity {
+			entry.Type = NZBContentFileTypeParity
 		} else {
 			entry.Type = NZBContentFileTypeOther
 		}
@@ -235,16 +268,18 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			entry.Errors = append(entry.Errors, NZBContentFileErrorOpenFailed)
 		}
 
-		if !entry.Streamable {
-			content.Files = append(content.Files, entry)
+		if detectedType == FileTypePAR2 {
+			nzbPAR2Files = append(nzbPAR2Files, &nzbParityFile{
+				entry:   entry,
+				nzbFile: fr.nzbFile,
+			})
 			continue
 		}
 
-		if isArchive {
+		if isArchive && entry.Streamable {
 			af := &nzbArchiveFile{
+				entry:    entry,
 				filetype: detectedType,
-				name:     filename,
-				size:     fr.nzbFile.Size(),
 				volume:   -1,
 			}
 			if detectedType == FileTypeRAR && fr.startSegment != nil {
@@ -256,11 +291,100 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 					af.volume = vi.Number
 				}
 			}
-			nzbArchiveFiles = append(nzbArchiveFiles, af)
+			par2Candidates = append(par2Candidates, par2MatchCandidate{
+				archiveFile:  af,
+				nzbFile:      fr.nzbFile,
+				startSegment: fr.startSegment,
+			})
 			continue
 		}
 
-		content.Files = append(content.Files, entry)
+		par2Candidates = append(par2Candidates, par2MatchCandidate{
+			entry:        entry,
+			nzbFile:      fr.nzbFile,
+			startSegment: fr.startSegment,
+		})
+	}
+
+	if len(nzbPAR2Files) > 0 && len(par2Candidates) > 0 {
+		smallest := nzbPAR2Files[0].nzbFile
+		for _, pa := range nzbPAR2Files[1:] {
+			if pa.nzbFile.Size() < smallest.Size() {
+				smallest = pa.nzbFile
+			}
+		}
+
+		inspectLog.Debug("par2 index file found", "name", smallest.Name(), "size", smallest.Size(), "segments", smallest.SegmentCount())
+
+		par2Stream, err := NewFileStream(ctx, p, smallest, smallest.Size())
+		if err != nil {
+			inspectLog.Warn("failed to create par2 stream", "error", err, "name", smallest.Name())
+		} else {
+			decoder := par2.NewDecoder(par2Stream)
+			par2File, err := decoder.Decode()
+			if err != nil {
+				inspectLog.Warn("failed to decode par2 file", "error", err, "name", smallest.Name())
+			} else {
+				par2Index := make(map[[16]byte]*par2.FileDescriptionPacket, len(par2File.Files))
+				for i := range par2File.Files {
+					fd := &par2File.Files[i]
+					par2Index[fd.MD5_16k] = fd
+					inspectLog.Trace("par2 file entry", "filename", fd.Filename, "size", fd.Length, "md5_16k", fmt.Sprintf("%x", fd.MD5_16k))
+				}
+
+				inspectLog.Debug("par2 index built", "entries", len(par2Index))
+
+				for i := range par2Candidates {
+					c := &par2Candidates[i]
+					if c.startSegment == nil || len(c.startSegment.Body) == 0 {
+						continue
+					}
+					if c.startSegment.FileSize >= 16384 && len(c.startSegment.Body) < 16384 {
+						inspectLog.Trace("par2 match skipped: first segment too short for MD5_16k", "name", c.nzbFile.Name(), "body_len", len(c.startSegment.Body))
+						continue
+					}
+					hash := computeMD5_16k(c.startSegment.Body)
+					fd, matched := par2Index[hash]
+					inspectLog.Trace("candidate", "name", c.nzbFile.Name(), "md5_16k", fmt.Sprintf("%x", hash), "matched", matched)
+					if !matched {
+						continue
+					}
+					inspectLog.Trace("par2 matched file", "original_name", c.nzbFile.Name(), "par2_name", fd.Filename)
+
+					entry := c.entry
+					if c.archiveFile != nil {
+						entry = c.archiveFile.entry
+					}
+					entry.Alias = fd.Filename
+					if entry.Type == NZBContentFileTypeOther {
+						entry.Type = classifyNZBContentFileType(fd.Filename)
+					}
+					if entry.Type == NZBContentFileTypeArchive {
+						if c.archiveFile == nil {
+							c.archiveFile = &nzbArchiveFile{
+								entry:    entry,
+								filetype: DetectArchiveFileTypeByExtension(fd.Filename),
+								volume:   -1,
+							}
+						}
+					}
+				}
+			}
+			par2Stream.Close()
+		}
+	}
+
+	for i := range par2Candidates {
+		c := &par2Candidates[i]
+		if c.archiveFile != nil {
+			nzbArchiveFiles = append(nzbArchiveFiles, c.archiveFile)
+		} else if c.entry != nil {
+			content.Files = append(content.Files, *c.entry)
+		}
+	}
+
+	for _, pf := range nzbPAR2Files {
+		content.Files = append(content.Files, *pf.entry)
 	}
 
 	archiveGroups := groupArchiveVolumes(nzbArchiveFiles)
@@ -295,7 +419,7 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 					syntheticName = Generate7zVolumeName(group.BaseName, vol)
 				}
 				aliases[syntheticName] = f.Name()
-				if vol == 0 {
+				if isFirstVolume(group.FileType, vol) {
 					archiveName = syntheticName
 					entry.Alias = syntheticName
 				}
@@ -310,11 +434,15 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 			}
 			ufs.SetAliases(aliases)
 		} else {
-			partAliases := normalizeRARPartNames(group.Files)
-			if partAliases != nil {
-				ufs.SetAliases(partAliases)
+			aliases := map[string]string{}
+			if group.FileType == FileTypeRAR {
+				partAliases := normalizeRARPartNames(group.Files)
+				maps.Copy(aliases, partAliases)
 			}
 			for i, f := range group.Files {
+				if alias := f.Alias(); alias != "" {
+					aliases[alias] = f.Name()
+				}
 				vol := group.Volumes[i]
 				part := NZBContentFile{
 					Type:       NZBContentFileTypeArchive,
@@ -323,20 +451,20 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 					Volume:     group.Volumes[i],
 					Streamable: true,
 				}
-				for normalized, original := range partAliases {
-					if original == f.Name() {
-						part.Alias = normalized
-						if vol == 0 {
-							archiveName = normalized
-							entry.Alias = normalized
+				for alias, name := range aliases {
+					if name == f.Name() {
+						part.Alias = alias
+						if isFirstVolume(group.FileType, vol) {
+							archiveName = alias
+							entry.Alias = alias
 						}
 						break
 					}
 				}
 				entry.Parts = append(entry.Parts, part)
 			}
+			ufs.SetAliases(aliases)
 		}
-
 		var archive Archive
 		switch group.FileType {
 		case FileTypeRAR:

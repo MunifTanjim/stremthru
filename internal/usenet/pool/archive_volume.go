@@ -41,13 +41,14 @@ func normalizeRARPartNames[T simpleFile](files []T) map[string]string {
 
 	var parts []partInfo
 	for i, f := range files {
-		m := rarPartNumberRegex.FindStringSubmatchIndex(f.Name())
+		name := getEffectiveName(f)
+		m := rarPartNumberRegex.FindStringSubmatchIndex(name)
 		if m == nil {
 			continue
 		}
-		digitStr := f.Name()[m[2]:m[3]]
-		prefix := f.Name()[:m[2]]
-		suffix := f.Name()[m[3]:]
+		digitStr := name[m[2]:m[3]]
+		prefix := name[:m[2]]
+		suffix := name[m[3]:]
 		parts = append(parts, partInfo{
 			index:  i,
 			digits: digitStr,
@@ -119,6 +120,31 @@ type simpleFile interface {
 	Size() int64
 }
 
+type aliasedFile interface {
+	Alias() string
+}
+
+func isFirstVolume(fileType FileType, vol int) bool {
+	switch fileType {
+	case FileTypeRAR:
+		return vol == 0
+	case FileType7z:
+		return vol == 1
+	default:
+		return false
+	}
+}
+
+func getEffectiveName[T simpleFile](f T) string {
+	name := f.Name()
+	if af, ok := any(f).(aliasedFile); ok {
+		if alias := af.Alias(); alias != "" {
+			return alias
+		}
+	}
+	return name
+}
+
 type typedArchiveFile interface {
 	FileType() FileType
 	Volume() int
@@ -128,11 +154,12 @@ func getFileVolume[T simpleFile](f T, fileType FileType) int {
 	if tf, ok := any(f).(typedArchiveFile); ok {
 		return tf.Volume()
 	}
+	name := getEffectiveName(f)
 	switch fileType {
 	case FileTypeRAR:
-		return GetRARVolumeNumber(f.Name())
+		return GetRARVolumeNumber(name)
 	case FileType7z:
-		return Get7zVolumeNumber(f.Name())
+		return Get7zVolumeNumber(name)
 	default:
 		return -1
 	}
@@ -144,7 +171,8 @@ func groupArchiveVolumes[T simpleFile](
 	groups := make(map[string]*archiveVolumeGroup[T])
 
 	for _, f := range files {
-		baseName, fileType := getArchiveBaseName(f.Name())
+		name := getEffectiveName(f)
+		baseName, fileType := getArchiveBaseName(name)
 		aliased := false
 		if fileType == FileTypePlain {
 			if tf, ok := any(f).(typedArchiveFile); ok && tf.FileType() != FileTypePlain {

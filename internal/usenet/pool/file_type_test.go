@@ -25,6 +25,12 @@ func TestFileTypeDetection(t *testing.T) {
 			ft := DetectFileType(data, "archive.7z")
 			assert.Equal(t, FileType7z, ft)
 		})
+
+		t.Run("PAR2", func(t *testing.T) {
+			data := append(append([]byte{}, magicBytesPAR2...), make([]byte, 1000)...)
+			ft := DetectFileType(data, "recovery.par2")
+			assert.Equal(t, FileTypePAR2, ft)
+		})
 	})
 
 	t.Run("ExtensionBased", func(t *testing.T) {
@@ -46,6 +52,10 @@ func TestFileTypeDetection(t *testing.T) {
 			{"archive.7z", FileType7z},
 			{"archive.7z.001", FileType7z},
 			{"archive.7z.002", FileType7z},
+			{"recovery.par2", FileTypePAR2},
+			{"recovery.vol00+01.par2", FileTypePAR2},
+			{"recovery.vol01-03.par2", FileTypePAR2},
+			{"910a284f98ebf57f6a531cd96da48838.vol01-03.par2", FileTypePAR2},
 			{"unknown.txt", FileTypePlain},
 		}
 
