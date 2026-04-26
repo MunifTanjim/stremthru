@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.5](https://github.com/MunifTanjim/stremthru/compare/0.100.4...0.100.5) (2026-04-26)
+
+
+### Bug Fixes
+
+* **store/torbox:** deal with inconsistent data type ([4184c16](https://github.com/MunifTanjim/stremthru/commit/4184c1649839f7a29607f61ef8d5e5d9acc0d5fb))
+
 ## [0.100.4](https://github.com/MunifTanjim/stremthru/compare/0.100.3...0.100.4) (2026-04-25)
 
 
