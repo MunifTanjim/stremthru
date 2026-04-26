@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.6](https://github.com/MunifTanjim/stremthru/compare/0.100.5...0.100.6) (2026-04-26)
+
+
+### Bug Fixes
+
+* **stremio/wrap:** add workaround for non-standard p2p addon ([7ec4278](https://github.com/MunifTanjim/stremthru/commit/7ec427855c715fd3ffb437aafd4a9b3af7bb2153))
+
 ## [0.100.5](https://github.com/MunifTanjim/stremthru/compare/0.100.4...0.100.5) (2026-04-26)
 
 
