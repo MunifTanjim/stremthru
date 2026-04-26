@@ -246,7 +246,7 @@ func (ud UserData) fetchStream(ctx *Ctx, r *http.Request, rType, id string) (*st
 	uncachedStreams := []stremio.Stream{}
 	for i := range allStreams {
 		stream := &allStreams[i]
-		if stream.URL == "" && stream.InfoHash != "" {
+		if (stream.URL == "" || strings.HasPrefix(stream.URL, "magnet:?")) && stream.InfoHash != "" {
 			magnet, ok := magnetByHash[strings.ToLower(stream.InfoHash)]
 			if !ok {
 				continue
