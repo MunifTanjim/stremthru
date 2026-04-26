@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -57,5 +58,25 @@ func (m *MapOrEmptyArray[K, V]) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*m = MapOrEmptyArray[K, V](raw)
+	return nil
+}
+
+type StringOrInt int
+
+func (v *StringOrInt) UnmarshalJSON(data []byte) error {
+	var n int
+	if err := json.Unmarshal(data, &n); err == nil {
+		*v = StringOrInt(n)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return err
+	}
+	*v = StringOrInt(n)
 	return nil
 }

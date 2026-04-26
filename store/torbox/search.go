@@ -3,6 +3,8 @@ package torbox
 import (
 	"net/url"
 	"strconv"
+
+	"github.com/MunifTanjim/stremthru/internal/util"
 )
 
 type UsenetSearchByIDDataMetadata struct {
@@ -65,16 +67,16 @@ type UsenetSearchByIDDataNZB struct {
 	// 	Site       string `json:"site"`
 	// 	HDR        bool   `json:"hdr"`
 	// } `json:"title_parsed_data"`
-	Size       int64  `json:"size"`
-	Tracker    string `json:"tracker"`
-	Categories []int  `json:"categories"`
-	Files      int    `json:"files"`
-	NZB        string `json:"nzb"`
-	Age        string `json:"age"`
-	Type       string `json:"type"` // "usenet"
-	UserSearch bool   `json:"user_search"`
-	Cached     bool   `json:"cached"`
-	Owned      bool   `json:"owned"`
+	Size       int64              `json:"size"`
+	Tracker    string             `json:"tracker"`
+	Categories []util.StringOrInt `json:"categories"`
+	Files      int                `json:"files"`
+	NZB        string             `json:"nzb"`
+	Age        string             `json:"age"`
+	Type       string             `json:"type"` // "usenet"
+	UserSearch bool               `json:"user_search"`
+	Cached     bool               `json:"cached"`
+	Owned      bool               `json:"owned"`
 }
 
 type UsenetSearchByIDData struct {

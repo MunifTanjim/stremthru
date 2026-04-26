@@ -115,6 +115,40 @@ func TestMapOrEmptyArray_UnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestStringOrInt_UnmarshalJSON(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		input       string
+		expected    int
+		expectError bool
+	}{
+		{"integer", `42`, 42, false},
+		{"negative integer", `-5`, -5, false},
+		{"zero", `0`, 0, false},
+		{"string number", `"123"`, 123, false},
+		{"string negative", `"-99"`, -99, false},
+		{"string zero", `"0"`, 0, false},
+		{"invalid string", `"not-a-number"`, 0, true},
+		{"empty string", `""`, 0, true},
+		{"null", `null`, 0, false},
+		{"array", `[]`, 0, true},
+		{"object", `{}`, 0, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var v StringOrInt
+			err := json.Unmarshal([]byte(tc.input), &v)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, int(v))
+		})
+	}
+}
+
 func TestJSONTime_RoundTrip(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
