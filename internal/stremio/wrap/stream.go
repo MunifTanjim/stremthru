@@ -217,7 +217,7 @@ func (ud UserData) fetchStream(ctx *Ctx, r *http.Request, rType, id string) (*st
 	magnetByHash := map[string]core.MagnetLink{}
 	for i := range allStreams {
 		stream := &allStreams[i]
-		if stream.URL == "" && stream.InfoHash != "" {
+		if (stream.URL == "" || strings.HasPrefix(stream.URL, "magnet:?")) && stream.InfoHash != "" {
 			magnet, err := core.ParseMagnetLink(stream.InfoHash)
 			if err != nil {
 				continue
