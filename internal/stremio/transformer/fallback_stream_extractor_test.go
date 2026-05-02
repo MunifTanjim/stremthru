@@ -64,7 +64,7 @@ func TestFallbackStreamExtractor(t *testing.T) {
 			&StreamExtractorResult{
 				Result: &ptt.Result{
 					Codec:      "H264",
-					Languages:  []string{"en", "pt"},
+					Languages:  []string{"en", "pt-br"},
 					Quality:    "BluRay",
 					Resolution: "4k",
 					Size:       "24.42 GB",

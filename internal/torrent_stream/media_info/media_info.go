@@ -77,7 +77,20 @@ type MediaInfoSubtitle struct {
 }
 
 func (s MediaInfoSubtitle) Lang() string {
-	return s.Language
+	switch s.Language {
+	case "spa":
+		if strings.Contains(strings.ToLower(s.Title), "latin") {
+			return "spa(la)"
+		}
+		return s.Language
+	case "por":
+		if strings.Contains(strings.ToLower(s.Title), "br") {
+			return "por(br)"
+		}
+		return s.Language
+	default:
+		return s.Language
+	}
 }
 
 type MediaInfoFormat struct {
