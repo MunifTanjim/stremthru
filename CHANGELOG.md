@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.9](https://github.com/MunifTanjim/stremthru/compare/0.100.8...0.100.9) (2026-05-02)
+
+
+### Bug Fixes
+
+* **stremio:** improve language in transformer ([64d283b](https://github.com/MunifTanjim/stremthru/commit/64d283b222095830d0af9d34d671095119c26f4d))
+
 ## [0.100.8](https://github.com/MunifTanjim/stremthru/compare/0.100.7...0.100.8) (2026-05-02)
 
 
