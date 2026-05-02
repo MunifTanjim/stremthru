@@ -24,6 +24,9 @@ type contextKey string
 
 const NZBHashContextKey contextKey = "nzb_hash"
 
+// maxConnectionFailuresPerProvider limits retries per provider before excluding it
+const maxConnectionFailuresPerProvider = 2
+
 type ProviderConfig struct {
 	nntp.PoolConfig
 	Priority int
@@ -160,7 +163,11 @@ func (p *Pool) verifyProviders() {
 	wg.Wait()
 }
 
-func (p *Pool) GetConnection(ctx context.Context, excludeProvider []string, maxPriority int, useBackup bool) (*nntp.PooledConnection, error) {
+type ProviderExcluder interface {
+	IsExcluded(providerId string) bool
+}
+
+func (p *Pool) GetConnection(ctx context.Context, excluder ProviderExcluder, maxPriority int, useBackup bool) (*nntp.PooledConnection, error) {
 	p.providersMutex.RLock()
 	if len(p.providers) == 0 {
 		p.providersMutex.RUnlock()
@@ -177,7 +184,7 @@ func (p *Pool) GetConnection(ctx context.Context, excludeProvider []string, maxP
 		if provider.isBackup != useBackup {
 			continue
 		}
-		if slices.Contains(excludeProvider, provider.Id()) {
+		if excluder != nil && excluder.IsExcluded(provider.Id()) {
 			continue
 		}
 		providers = append(providers, provider)
@@ -252,6 +259,65 @@ func (p *Pool) getProviderPriorities(useBackup bool) []int {
 	return priorities
 }
 
+type providerExcluder struct {
+	excluded map[string]struct{}
+	failed   map[string]int      // track failures per provider to determine when to exclude
+	tried    map[string]struct{} // for round-robin: track providers tried in current cycle
+}
+
+func (ex *providerExcluder) IsExcluded(providerId string) bool {
+	if _, ok := ex.excluded[providerId]; ok {
+		return true
+	}
+	if _, ok := ex.tried[providerId]; ok {
+		return true
+	}
+	return false
+}
+
+func (ex *providerExcluder) markExcluded(providerId string) {
+	ex.excluded[providerId] = struct{}{}
+}
+
+func (ex *providerExcluder) markFailed(providerId string) {
+	ex.failed[providerId]++
+	if ex.failed[providerId] >= maxConnectionFailuresPerProvider {
+		ex.markExcluded(providerId)
+	}
+}
+
+func (ex *providerExcluder) markTried(providerId string) {
+	ex.tried[providerId] = struct{}{}
+}
+
+func (ex *providerExcluder) failureCount(providerId string) int {
+	return ex.failed[providerId]
+}
+
+func (ex *providerExcluder) excludedProviderCount() int {
+	return len(ex.excluded)
+}
+
+func (ex *providerExcluder) failedProviderCount() int {
+	return len(ex.failed)
+}
+
+func (ex *providerExcluder) triedProviderCount() int {
+	return len(ex.tried)
+}
+
+func (ex *providerExcluder) clearTried() {
+	clear(ex.tried)
+}
+
+func newProviderExcluder(capacity int) *providerExcluder {
+	return &providerExcluder{
+		excluded: make(map[string]struct{}, capacity),
+		failed:   map[string]int{},
+		tried:    map[string]struct{}{},
+	}
+}
+
 func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []string) (*SegmentData, error) {
 	messageId := segment.MessageId
 	if cachedData, ok := p.segmentCache.Get(messageId); ok {
@@ -260,9 +326,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 	}
 
 	result, err, _ := p.fetchGroup.Do(messageId, func() (any, error) {
-		var excludeProviders []string
 		errs := []error{}
-		failedAttempts := 0
 		useBackup := false
 		priorities := p.getProviderPriorities(useBackup)
 		priorityIdx := 0
@@ -271,16 +335,28 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 			currPriority = priorities[0]
 		}
 
-		for failedAttempts < 3 {
+		var anyArticleNotFound bool // track if any provider returned article not found
+
+		excluder := newProviderExcluder(len(p.providers))
+
+		for {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
 
-			if len(excludeProviders) > 0 || priorityIdx > 0 || useBackup {
-				p.Log.Trace("fetch segment - retry", "segment_num", segment.Number, "message_id", messageId, "failed_attempts", failedAttempts, "excluded_providers", len(excludeProviders), "curr_priority", currPriority, "use_backup", useBackup)
+			if excluder.excludedProviderCount() > 0 || priorityIdx > 0 || useBackup {
+				p.Log.Trace("fetch segment - retry", "segment_num", segment.Number, "message_id", messageId, "excluded_providers", excluder.excludedProviderCount(), "failed_providers", excluder.failedProviderCount(), "tried_providers", excluder.triedProviderCount(), "curr_priority", currPriority, "use_backup", useBackup)
 			}
 
-			conn, err := p.GetConnection(ctx, excludeProviders, currPriority, useBackup)
+			var conn *nntp.PooledConnection
+			var err error
+
+			conn, err = p.GetConnection(ctx, excluder, currPriority, useBackup)
+			// All providers tried in this cycle? Reset tried providers and allow retries
+			if errors.Is(err, ErrNoProvidersAvailable) && excluder.triedProviderCount() > 0 {
+				excluder.clearTried()
+				conn, err = p.GetConnection(ctx, excluder, currPriority, useBackup)
+			}
 			if err != nil {
 				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 					return nil, err
@@ -292,7 +368,7 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 						p.Log.Trace("fetch segment - expanding to lower priority", "segment_num", segment.Number, "message_id", messageId, "new_priority", currPriority, "use_backup", useBackup)
 						continue
 					}
-					if !useBackup && len(excludeProviders) > 0 {
+					if !useBackup && anyArticleNotFound {
 						useBackup = true
 						priorities = p.getProviderPriorities(useBackup)
 						priorityIdx = 0
@@ -307,9 +383,8 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 					break
 				}
 				errs = append(errs, err)
-				failedAttempts++
 				p.Log.Warn("fetch segment - failed to get connection", "error", err, "segment_num", segment.Number, "message_id", messageId)
-				continue
+				break
 			}
 
 			p.Log.Trace("fetch segment - connection acquired", "segment_num", segment.Number, "message_id", messageId, "provider_id", conn.ProviderId(), "use_backup", useBackup)
@@ -324,7 +399,8 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 						usenet_stats.Record(usenet_stats.EventNameArticleNotFound, nzbHash, providerId, messageId, 0, 0)
 					}
 					conn.Release()
-					excludeProviders = append(excludeProviders, providerId)
+					anyArticleNotFound = true
+					excluder.markExcluded(providerId)
 					p.Log.Trace("fetch segment - article not found", "segment_num", segment.Number, "message_id", messageId, "provider_id", providerId)
 					continue
 				}
@@ -334,8 +410,9 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 				if nzbHash, ok := ctx.Value(NZBHashContextKey).(string); ok {
 					usenet_stats.Record(usenet_stats.EventNameConnectionError, nzbHash, providerId, messageId, 0, 0)
 				}
-				failedAttempts++
-				p.Log.Warn("fetch segment - failed to get body", "error", err, "segment_num", segment.Number, "message_id", messageId, "provider_id", providerId)
+				excluder.markFailed(providerId)
+				excluder.markTried(providerId)
+				p.Log.Warn("fetch segment - failed to get body", "error", err, "segment_num", segment.Number, "message_id", messageId, "provider_id", providerId, "failure_count", excluder.failureCount(providerId))
 				continue
 			}
 
@@ -351,7 +428,6 @@ func (p *Pool) fetchSegment(ctx context.Context, segment *nzb.Segment, groups []
 
 			if err != nil {
 				errs = append(errs, err)
-				failedAttempts++
 				p.Log.Warn("fetch segment - failed to decode", "error", err, "segment_num", segment.Number, "message_id", messageId)
 				break
 			}

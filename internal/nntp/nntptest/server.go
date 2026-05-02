@@ -16,6 +16,7 @@ type response struct {
 	statusLine  string
 	body        []string
 	isMultiLine bool
+	delay       time.Duration
 }
 
 type requestCommands []string
@@ -27,7 +28,8 @@ func (rcmds requestCommands) HasCommand(cmd string) bool {
 type Server struct {
 	listener        net.Listener
 	greeting        string
-	responses       map[string]response
+	responses       map[string][]response
+	responseIndex   map[string]int
 	requestCommands requestCommands
 	mu              sync.RWMutex
 	done            chan struct{}
@@ -42,10 +44,11 @@ func NewServer(t *testing.T, greeting string) *Server {
 	}
 
 	s := &Server{
-		listener:  listener,
-		greeting:  greeting,
-		responses: make(map[string]response),
-		done:      make(chan struct{}),
+		listener:      listener,
+		greeting:      greeting,
+		responses:     make(map[string][]response),
+		responseIndex: make(map[string]int),
+		done:          make(chan struct{}),
 	}
 
 	s.SetResponse("DATE", "111 20260101000000")
@@ -77,30 +80,48 @@ func (s *Server) Close() {
 }
 
 func (s *Server) SetResponse(command, statusLine string, body ...[]string) {
+	s.SetResponseWithDelay(command, 0, statusLine, body...)
+}
+
+func (s *Server) SetResponseWithDelay(command string, delay time.Duration, statusLine string, body ...[]string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	response := response{statusLine: statusLine}
+	resp := response{statusLine: statusLine, delay: delay}
 	if len(body) > 0 {
-		response.body = []string{}
+		resp.body = []string{}
 		for _, lines := range body {
-			response.body = append(response.body, lines...)
+			resp.body = append(resp.body, lines...)
 		}
-		response.isMultiLine = true
+		resp.isMultiLine = true
 	}
-	s.responses[command] = response
+	s.responses[command] = append(s.responses[command], resp)
+}
+
+// nextResponse returns the next response for a key and advances the index.
+// Caller must hold s.mu.
+func (s *Server) nextResponse(key string, responses []response) response {
+	idx := s.responseIndex[key]
+	resp := responses[idx]
+	if idx < len(responses)-1 {
+		s.responseIndex[key] = idx + 1
+	}
+	return resp
 }
 
 func (s *Server) getResponse(command string) (response, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	if response, ok := s.responses[command]; ok {
-		return response, true
+	if responses, ok := s.responses[command]; ok && len(responses) > 0 {
+		return s.nextResponse(command, responses), true
 	}
 
-	for cmd, response := range s.responses {
+	for cmd, responses := range s.responses {
 		if strings.HasSuffix(cmd, " *") && strings.HasPrefix(command, strings.TrimSuffix(cmd, "*")) {
-			return response, true
+			if len(responses) == 0 {
+				continue
+			}
+			return s.nextResponse(cmd, responses), true
 		}
 	}
 
@@ -170,6 +191,9 @@ func (s *Server) handleConn(conn net.Conn) {
 		}
 
 		if response, ok := s.getResponse(line); ok {
+			if response.delay > 0 {
+				time.Sleep(response.delay)
+			}
 			fmt.Fprintf(conn, "%s\r\n", response.statusLine)
 			for _, bodyLine := range response.body {
 				fmt.Fprintf(conn, "%s\r\n", bodyLine)
