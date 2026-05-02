@@ -7,6 +7,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -82,6 +83,21 @@ var nzbFetchErrCache = cache.NewCache[string](&cache.CacheConfig{
 })
 
 func HashNZBFileLink(link string) string {
+	if u, err := url.Parse(link); err == nil {
+		if strings.HasSuffix(strings.TrimSuffix(u.Path, "/"), "/api") {
+			q := u.Query()
+			t, id := q.Get("t"), q.Get("id")
+			if t == "get" && id != "" {
+				for key := range q {
+					if key != "t" && key != "id" {
+						q.Del(key)
+					}
+				}
+				u.RawQuery = q.Encode()
+				return util.MD5Hash(u.String())
+			}
+		}
+	}
 	return util.MD5Hash(cleanNZBFileLink(link))
 }
 
