@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.100.8](https://github.com/MunifTanjim/stremthru/compare/0.100.7...0.100.8) (2026-05-02)
+
+
+### Bug Fixes
+
+* **usenet:** improve provider utilization logic ([1d855fc](https://github.com/MunifTanjim/stremthru/commit/1d855fc878bbaab074c0a9b0b891b962b98fd325))
+
 ## [0.100.7](https://github.com/MunifTanjim/stremthru/compare/0.100.6...0.100.7) (2026-04-26)
 
 
