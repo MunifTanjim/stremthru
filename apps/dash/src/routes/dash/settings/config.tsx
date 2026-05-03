@@ -314,6 +314,7 @@ function RouteComponent() {
       <IntegrationsSection integrations={data.integrations} />
       <NewzSection newz={data.newz} />
       <TorzSection torz={data.torz} />
+      <WebDAVSection webdav={data.webdav} />
     </div>
   );
 }
@@ -491,6 +492,45 @@ function UsersSection({ users }: { users: ConfigData["users"] }) {
           </MiniCard>
         ))}
       </div>
+    </ConfigSection>
+  );
+}
+
+function WebDAVSection({ webdav }: { webdav: ConfigData["webdav"] }) {
+  return (
+    <ConfigSection
+      gradient="from-violet-500 to-purple-500"
+      icon="W"
+      title="WebDAV"
+    >
+      <ConfigEntry
+        label="File Extension Filter"
+        value={
+          <div className="flex flex-wrap gap-1">
+            {webdav.file_ext_filter.video.map((ext) => (
+              <Badge
+                className="border-transparent bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
+                key={ext}
+              >
+                {ext}
+              </Badge>
+            ))}
+            {webdav.file_ext_filter.subtitle.map((ext) => (
+              <Badge
+                className="border-transparent bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-100"
+                key={ext}
+              >
+                {ext}
+              </Badge>
+            ))}
+            {webdav.file_ext_filter.other.map((ext) => (
+              <Badge key={ext} variant="secondary">
+                {ext}
+              </Badge>
+            ))}
+          </div>
+        }
+      />
     </ConfigSection>
   );
 }

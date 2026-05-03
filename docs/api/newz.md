@@ -200,6 +200,24 @@ StremThru exposes a Newznab-compatible API endpoint that can be used with tools 
 
 **Output format:** Controlled by the `o` query parameter (`xml` default, `json` supported).
 
+## WebDAV Endpoint
+
+**`/v0/webdav/newz/`**
+
+StremThru exposes a WebDAV endpoint for browsing and streaming Newz content using any WebDAV-compatible client.
+
+**Authentication:** HTTP Basic Auth using `STREMTHRU_AUTH` credentials.
+
+**Directory Structure:**
+
+```
+/v0/webdav/newz/
+└── {newz-name}/
+    └── {file-name}
+```
+
+**File Filtering:** Only files matching [`STREMTHRU_WEBDAV_FILE_EXT_FILTER`](/configuration/#stremthru-webdav-file-ext-filter) are exposed.
+
 ## SABnzbd Endpoint
 
 **`GET /v0/sabnzbd/api`**

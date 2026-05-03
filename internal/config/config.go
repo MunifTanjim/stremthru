@@ -94,6 +94,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE":                "10GB",
 		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
 		"STREMTHRU_NEWZ_NZB_LINK_TYPE":                     "*:proxy",
+		"STREMTHRU_WEBDAV_FILE_EXT_FILTER":                 ":video:,:subtitle:",
 	},
 }
 
@@ -937,6 +938,10 @@ func PrintConfig(state *AppState) {
 		l.Println("    torrent file cache ttl: " + data.Torz.TorrentFileCacheTTL)
 	}
 	l.Println("     torrent file max size: " + data.Torz.TorrentFileMaxSize)
+	l.Println()
+
+	l.Println(" WebDAV:")
+	l.Println("   file ext filter: " + strings.Join(WebDAVFileExtFilter.raw, ","))
 	l.Println()
 
 	l.Println(" Instance ID:")

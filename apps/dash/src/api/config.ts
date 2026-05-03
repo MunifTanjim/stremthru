@@ -15,6 +15,7 @@ export type ConfigData = {
   torz: ConfigTorz;
   tunnel: ConfigTunnel;
   users?: ConfigUser[];
+  webdav: ConfigWebDAV;
 };
 
 type ConfigDatabase = {
@@ -90,8 +91,8 @@ type ConfigStores = {
 };
 
 type ConfigTorz = {
-  torrent_file_cache_size: string;
-  torrent_file_cache_ttl: string;
+  torrent_file_cache_size?: string;
+  torrent_file_cache_ttl?: string;
   torrent_file_max_size: string;
 };
 
@@ -106,6 +107,14 @@ type ConfigUser = {
   is_admin: boolean;
   name: string;
   stores: string[];
+};
+
+type ConfigWebDAV = {
+  file_ext_filter: {
+    other: string[];
+    subtitle: string[];
+    video: string[];
+  };
 };
 
 export function useConfig() {

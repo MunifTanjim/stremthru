@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -95,9 +96,20 @@ type ConfigDisplayNewz struct {
 }
 
 type ConfigDisplayTorz struct {
-	TorrentFileCacheSize string `json:"torrent_file_cache_size"`
-	TorrentFileCacheTTL  string `json:"torrent_file_cache_ttl"`
+	TorrentFileCacheSize string `json:"torrent_file_cache_size,omitempty"`
+	TorrentFileCacheTTL  string `json:"torrent_file_cache_ttl,omitempty"`
 	TorrentFileMaxSize   string `json:"torrent_file_max_size"`
+}
+
+type ConfigDisplayWebDAVFileExtFilter struct {
+	Video    []string `json:"video"`
+	Subtitle []string `json:"subtitle"`
+	Other    []string `json:"other"`
+}
+
+type ConfigDisplayWebDAV struct {
+	FileExtFilter ConfigDisplayWebDAVFileExtFilter `json:"file_ext_filter"`
+	raw           []string                         `json:"-"`
 }
 
 type ConfigDisplay struct {
@@ -113,6 +125,7 @@ type ConfigDisplay struct {
 	Integrations []ConfigDisplayIntegration `json:"integrations"`
 	Newz         ConfigDisplayNewz          `json:"newz"`
 	Torz         ConfigDisplayTorz          `json:"torz"`
+	WebDAV       ConfigDisplayWebDAV        `json:"webdav"`
 }
 
 func redactURI(uri string) string {
@@ -284,6 +297,20 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 	if !IsPublicInstance {
 		data.Torz.TorrentFileCacheSize = util.ToSize(Torz.TorrentFileCacheSize)
 		data.Torz.TorrentFileCacheTTL = Torz.TorrentFileCacheTTL.String()
+	}
+
+	data.WebDAV.FileExtFilter.Video = []string{}
+	data.WebDAV.FileExtFilter.Subtitle = []string{}
+	data.WebDAV.FileExtFilter.Other = []string{}
+	for _, ext := range slices.Sorted(WebDAVFileExtFilter.Seq()) {
+		extension := strings.TrimPrefix(ext, ".")
+		if util.FileExtVideo.Has(ext) {
+			data.WebDAV.FileExtFilter.Video = append(data.WebDAV.FileExtFilter.Video, extension)
+		} else if util.FileExtSubtitle.Has(ext) {
+			data.WebDAV.FileExtFilter.Subtitle = append(data.WebDAV.FileExtFilter.Subtitle, extension)
+		} else {
+			data.WebDAV.FileExtFilter.Other = append(data.WebDAV.FileExtFilter.Other, extension)
+		}
 	}
 
 	return data

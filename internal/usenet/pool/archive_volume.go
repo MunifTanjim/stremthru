@@ -89,7 +89,7 @@ func normalizeRARPartNames[T simpleFile](files []T) map[string]string {
 	return aliases
 }
 
-func getArchiveBaseName(filename string) (baseName string, fileType FileType) {
+func GetArchiveBaseName(filename string) (baseName string, fileType FileType) {
 	lower := strings.ToLower(filename)
 
 	if matches := rarPartNumberRegex.FindStringSubmatch(lower); len(matches) > 0 {
@@ -172,7 +172,7 @@ func groupArchiveVolumes[T simpleFile](
 
 	for _, f := range files {
 		name := getEffectiveName(f)
-		baseName, fileType := getArchiveBaseName(name)
+		baseName, fileType := GetArchiveBaseName(name)
 		aliased := false
 		if fileType == FileTypePlain {
 			if tf, ok := any(f).(typedArchiveFile); ok && tf.FileType() != FileTypePlain {
