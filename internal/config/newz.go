@@ -2,6 +2,7 @@ package config
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -84,22 +85,49 @@ type newzConfig struct {
 	NZBFileMaxSize         int64
 	SegmentCacheSize       int64
 	StreamBufferSize       int64
+
+	sabnzbdVersion string
+}
+
+var chromeHeaderBlob = util.MustDecodeBase64("VXNlci1BZ2VudDogTW96aWxsYS81LjAgKE1hY2ludG9zaDsgSW50ZWwgTWFjIE9TIFggMTBfMTVfNykgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0My4wLjAuMCBTYWZhcmkvNTM3LjM2CkFjY2VwdDogdGV4dC9odG1sLGFwcGxpY2F0aW9uL3hodG1sK3htbCxhcHBsaWNhdGlvbi94bWw7cT0wLjksaW1hZ2UvYXZpZixpbWFnZS93ZWJwLGltYWdlL2FwbmcsKi8qO3E9MC44LGFwcGxpY2F0aW9uL3NpZ25lZC1leGNoYW5nZTt2PWIzO3E9MC43CkFjY2VwdC1MYW5ndWFnZTogZW4tVVMsZW47cT0wLjkKUHJpb3JpdHk6IHU9MCwgaQpTZWMtQ2gtVWE6ICJHb29nbGUgQ2hyb21lIjt2PSIxNDMiLCAiQ2hyb21pdW0iO3Y9IjE0MyIsICJOb3QgQShCcmFuZCI7dj0iMjQiClNlYy1DaC1VYS1Nb2JpbGU6ID8wClNlYy1DaC1VYS1QbGF0Zm9ybTogIm1hY09TIgpTZWMtRmV0Y2gtRGVzdDogZG9jdW1lbnQKU2VjLUZldGNoLU1vZGU6IG5hdmlnYXRlClNlYy1GZXRjaC1TaXRlOiBzYW1lLXNpdGUKU2VjLUZldGNoLVVzZXI6ID8xClVwZ3JhZGUtSW5zZWN1cmUtUmVxdWVzdHM6IDE=")
+var presetQueryHeaderBlob = map[string]string{
+	"chrome":   chromeHeaderBlob,
+	"prowlarr": util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogUHJvd2xhcnIvMi4zLjAuNTIzNiAoYWxwaW5lIDMuMjMuMyk="),
+	"radarr":   util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogUmFkYXJyLzYuMC41LjEwMjkxIChhbHBpbmUgMy4yMy4zKQ=="),
+	"sonarr":   util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogU29uYXJyLzQuMC4xNi4yOTQ0IChhbHBpbmUgMy4yMy4zKQ=="),
+}
+var presetGrabHeaderBlob = map[string]string{
+	"chrome":  chromeHeaderBlob,
+	"nzbget":  util.MustDecodeBase64("QWNjZXB0OiAqLyoKVXNlci1BZ2VudDogbnpiZ2V0LzI2LjE="),
+	"sabnzbd": util.MustDecodeBase64("VXNlci1BZ2VudDogU0FCbnpiZC80LjUuNQ=="),
+}
+
+var sabnzbdUserAgentVersionRegex = regexp.MustCompile(`(?i)\bsabnzbd/(\d+\.\d+\.\d+)\b`)
+
+func (c *newzConfig) GetSABnzbdVersion() string {
+	if c.sabnzbdVersion != "" {
+		return c.sabnzbdVersion
+	}
+	if ua := c.IndexerRequestHeader.Grab.Get("User-Agent"); ua != "" {
+		if matches := sabnzbdUserAgentVersionRegex.FindStringSubmatch(ua); len(matches) == 2 {
+			c.sabnzbdVersion = matches[1]
+			return c.sabnzbdVersion
+		}
+	}
+	for header := range strings.SplitSeq(presetGrabHeaderBlob["sabnzbd"], "\n") {
+		if k, v, ok := strings.Cut(header, ": "); ok && strings.EqualFold(k, "User-Agent") {
+			if matches := sabnzbdUserAgentVersionRegex.FindStringSubmatch(v); len(matches) == 2 {
+				c.sabnzbdVersion = matches[1]
+				return c.sabnzbdVersion
+			}
+			break
+		}
+	}
+	c.sabnzbdVersion = "4.5.5"
+	return c.sabnzbdVersion
 }
 
 func parseNewzIndexerRequestHeader(queryHeaderBlob, grabHeaderBlob string) newzIndexerRequestHeaderMap {
-	chromeHeaderBlob := util.MustDecodeBase64("VXNlci1BZ2VudDogTW96aWxsYS81LjAgKE1hY2ludG9zaDsgSW50ZWwgTWFjIE9TIFggMTBfMTVfNykgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzE0My4wLjAuMCBTYWZhcmkvNTM3LjM2CkFjY2VwdDogdGV4dC9odG1sLGFwcGxpY2F0aW9uL3hodG1sK3htbCxhcHBsaWNhdGlvbi94bWw7cT0wLjksaW1hZ2UvYXZpZixpbWFnZS93ZWJwLGltYWdlL2FwbmcsKi8qO3E9MC44LGFwcGxpY2F0aW9uL3NpZ25lZC1leGNoYW5nZTt2PWIzO3E9MC43CkFjY2VwdC1MYW5ndWFnZTogZW4tVVMsZW47cT0wLjkKUHJpb3JpdHk6IHU9MCwgaQpTZWMtQ2gtVWE6ICJHb29nbGUgQ2hyb21lIjt2PSIxNDMiLCAiQ2hyb21pdW0iO3Y9IjE0MyIsICJOb3QgQShCcmFuZCI7dj0iMjQiClNlYy1DaC1VYS1Nb2JpbGU6ID8wClNlYy1DaC1VYS1QbGF0Zm9ybTogIm1hY09TIgpTZWMtRmV0Y2gtRGVzdDogZG9jdW1lbnQKU2VjLUZldGNoLU1vZGU6IG5hdmlnYXRlClNlYy1GZXRjaC1TaXRlOiBzYW1lLXNpdGUKU2VjLUZldGNoLVVzZXI6ID8xClVwZ3JhZGUtSW5zZWN1cmUtUmVxdWVzdHM6IDE=")
-	presetQueryHeaderBlob := map[string]string{
-		"chrome":   chromeHeaderBlob,
-		"prowlarr": util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogUHJvd2xhcnIvMi4zLjAuNTIzNiAoYWxwaW5lIDMuMjMuMyk="),
-		"radarr":   util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogUmFkYXJyLzYuMC41LjEwMjkxIChhbHBpbmUgMy4yMy4zKQ=="),
-		"sonarr":   util.MustDecodeBase64("QWNjZXB0OiBhcHBsaWNhdGlvbi9yc3MreG1sLCB0ZXh0L3Jzcyt4bWwsIGFwcGxpY2F0aW9uL3htbCwgdGV4dC94bWwKVXNlci1BZ2VudDogU29uYXJyLzQuMC4xNi4yOTQ0IChhbHBpbmUgMy4yMy4zKQ=="),
-	}
-	presetGrabHeaderBlob := map[string]string{
-		"chrome":  chromeHeaderBlob,
-		"nzbget":  util.MustDecodeBase64("QWNjZXB0OiAqLyoKVXNlci1BZ2VudDogbnpiZ2V0LzI2LjE="),
-		"sabnzbd": util.MustDecodeBase64("VXNlci1BZ2VudDogU0FCbnpiZC80LjUuNQ=="),
-	}
-
 	indexerRequestHeader := newzIndexerRequestHeaderMap{
 		Query: newzIndexerRequestHeaderByType{
 			"*": http.Header{},

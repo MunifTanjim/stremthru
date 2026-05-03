@@ -3,6 +3,7 @@ package sabnzbd
 import (
 	"bytes"
 	"net/http"
+	"strings"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
@@ -85,6 +86,48 @@ func handleSabnzbdAPI(w http.ResponseWriter, r *http.Request) {
 	switch mode {
 	case "addurl":
 		handleSabnzbdAddUrl(w, r, user)
+	case "get_config":
+		host := r.URL.Hostname()
+		if host == "" {
+			host = config.BaseURL.Hostname()
+		}
+		port := r.URL.Port()
+		if port == "" {
+			port = config.BaseURL.Port()
+		}
+		shared.SendJSON(w, r, http.StatusOK, map[string]any{
+			"config": map[string]any{
+				"misc": map[string]any{
+					"host":     host,
+					"port":     port,
+					"username": "",
+					"password": "",
+					"api_key":  apikey,
+					"nzb_key":  apikey,
+					"url_base": strings.TrimSuffix(strings.Trim(r.URL.Path, "/"), "/api"),
+				},
+				"logging": map[string]any{
+					"log_level":    1,
+					"max_log_size": 5242880,
+					"log_backups":  5,
+				},
+				"categories": categories,
+				"servers":    servers,
+			},
+		})
+	case "fullstatus", "status":
+		shared.SendJSON(w, r, http.StatusOK, map[string]any{
+			"status": map[string]any{
+				"url_base": strings.TrimSuffix(strings.Trim(r.URL.Path, "/"), "/api"),
+				"apikey":   apikey,
+				"version":  version,
+				"servers":  servers,
+			},
+		})
+	case "version":
+		shared.SendJSON(w, r, http.StatusOK, map[string]string{
+			"version": version,
+		})
 	default:
 		shared.SendJSON(w, r, http.StatusOK, SabnzbdErrorResponse{
 			Status: false,
