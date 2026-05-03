@@ -61,7 +61,7 @@ func SyncDataset() error {
 		SleepDuration: 200 * time.Millisecond,
 	})
 
-	ds := util.NewTSVDataset(&util.TSVDatasetConfig[IMDBTitle]{
+	ds := util.NewSimpleTSVDataset(&util.SimpleTSVDatasetConfig[IMDBTitle]{
 		DatasetConfig: util.DatasetConfig{
 			Archive:     "gz",
 			DownloadDir: datasetDownloadDir,
