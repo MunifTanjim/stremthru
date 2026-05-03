@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.101.0](https://github.com/MunifTanjim/stremthru/compare/0.100.9...0.101.0) (2026-05-03)
+
+
+### Features
+
+* **sabnzbd:** support mode - get_config, status, version ([b243983](https://github.com/MunifTanjim/stremthru/commit/b243983c8429b664806f7a1bbf853fbcf1692b62))
+* **usenet:** add webdav endpoint ([ffcbb7c](https://github.com/MunifTanjim/stremthru/commit/ffcbb7ca942132731e57aaf1928be56a915a10a4))
+* **usenet:** support re-queue all nzbs ([5da1e0a](https://github.com/MunifTanjim/stremthru/commit/5da1e0a3c2de0a5cbac7ebdd0448fec0ef476cae))
+
+
+### Bug Fixes
+
+* **imdb_title:** fix dataset parsing error ([dbb8b2b](https://github.com/MunifTanjim/stremthru/commit/dbb8b2bfeca9e69210e22616f0b89a5992542fa1))
+* **usenet:** do not set alias unnecessarily ([5965ee3](https://github.com/MunifTanjim/stremthru/commit/5965ee3733fe3a03bfe10a97732bd2c837aa95a7))
+* **usenet:** fix HashNZBFileLink for newznab api t=get ([a7e7b54](https://github.com/MunifTanjim/stremthru/commit/a7e7b549a2ce57ef9faef656abad70061651cd64))
+
 ## [0.100.9](https://github.com/MunifTanjim/stremthru/compare/0.100.8...0.100.9) (2026-05-02)
 
 
