@@ -48,6 +48,12 @@ type NZBContentFile struct {
 	Parts      []NZBContentFile   `json:"parts,omitempty"`
 }
 
+func (f *NZBContentFile) setAlias(alias string) {
+	if f.Name != alias {
+		f.Alias = alias
+	}
+}
+
 type NZBContent struct {
 	Files      []NZBContentFile
 	Streamable bool
@@ -355,7 +361,7 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 					if c.archiveFile != nil {
 						entry = c.archiveFile.entry
 					}
-					entry.Alias = fd.Filename
+					entry.setAlias(fd.Filename)
 					if entry.Type == NZBContentFileTypeOther {
 						entry.Type = classifyNZBContentFileType(fd.Filename)
 					}
@@ -421,16 +427,17 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 				aliases[syntheticName] = f.Name()
 				if isFirstVolume(group.FileType, vol) {
 					archiveName = syntheticName
-					entry.Alias = syntheticName
+					entry.setAlias(syntheticName)
 				}
-				entry.Parts = append(entry.Parts, NZBContentFile{
+				part := NZBContentFile{
 					Type:       NZBContentFileTypeArchive,
 					Name:       f.Name(),
-					Alias:      syntheticName,
 					Size:       f.Size(),
 					Volume:     vol,
 					Streamable: true,
-				})
+				}
+				part.setAlias(syntheticName)
+				entry.Parts = append(entry.Parts, part)
 			}
 			ufs.SetAliases(aliases)
 		} else {
@@ -453,10 +460,10 @@ func (p *Pool) InspectNZBContent(ctx context.Context, nzbDoc *nzb.NZB, password 
 				}
 				for alias, name := range aliases {
 					if name == f.Name() {
-						part.Alias = alias
+						part.setAlias(alias)
 						if isFirstVolume(group.FileType, vol) {
 							archiveName = alias
-							entry.Alias = alias
+							entry.setAlias(alias)
 						}
 						break
 					}
