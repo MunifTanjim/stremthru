@@ -238,6 +238,19 @@ func GetAll() ([]NZBInfo, error) {
 	return infos, nil
 }
 
+var query_update_hash = fmt.Sprintf(
+	`UPDATE %s SET %s = ?, %s = %s WHERE %s = ?`,
+	TableName,
+	Column.Hash,
+	Column.UAt, db.CurrentTimestamp,
+	Column.Id,
+)
+
+func UpdateHash(id string, newHash string) error {
+	_, err := db.Exec(query_update_hash, newHash, id)
+	return err
+}
+
 var query_delete_by_id = fmt.Sprintf(
 	`DELETE FROM %s WHERE %s = ?`,
 	TableName,

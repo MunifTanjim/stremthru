@@ -152,6 +152,10 @@ type NZBResponse struct {
 	UpdatedAt  string                   `json:"updated_at"`
 }
 
+type RequeueAllResponse struct {
+	Count int `json:"count"`
+}
+
 func toNZBContentFileResponse(file usenet_pool.NZBContentFile) NZBContentFileResponse {
 	resp := NZBContentFileResponse{
 		Type:       string(file.Type),
@@ -411,6 +415,29 @@ func handleRequeueNZB(w http.ResponseWriter, r *http.Request) {
 	SendData(w, r, 200, toNzbQueueItemResponse(queueItem))
 }
 
+func handleRequeueAllNZB(w http.ResponseWriter, r *http.Request) {
+	items, err := nzb_info.GetAll()
+	if err != nil {
+		SendError(w, r, err)
+		return
+	}
+
+	count := 0
+	for _, info := range items {
+		if info.Status == "downloading" || info.URL == "" {
+			continue
+		}
+		nzb_info.RehashIfNeeded(&info)
+		_, err := nzb_info.QueueJob(info.User, info.Name, info.URL, "", 0, info.Password)
+		if err != nil {
+			continue
+		}
+		count++
+	}
+
+	SendData(w, r, 200, RequeueAllResponse{Count: count})
+}
+
 func handleStreamNZBFile(w http.ResponseWriter, r *http.Request) {
 	ctx := GetReqCtx(r)
 
@@ -497,6 +524,14 @@ func AddUsenetNZBEndpoints(router *http.ServeMux) {
 		switch r.Method {
 		case http.MethodGet:
 			handleGetNZBs(w, r)
+		default:
+			ErrorMethodNotAllowed(r).Send(w, r)
+		}
+	}))
+	router.HandleFunc("/usenet/nzb/requeue-all", authed(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handleRequeueAllNZB(w, r)
 		default:
 			ErrorMethodNotAllowed(r).Send(w, r)
 		}

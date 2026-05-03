@@ -614,7 +614,11 @@ export const Route = createFileRoute("/dash/usenet/nzb")({
 
 function RouteComponent() {
   const nzbInfo = useNzbInfo();
-  const { remove: removeItem, requeue: requeueItem } = useNzbInfoMutation();
+  const {
+    remove: removeItem,
+    requeue: requeueItem,
+    requeueAll: requeueAllItems,
+  } = useNzbInfoMutation();
   const [detailItem, setDetailItem] = useState<null | NZBInfoItem>(null);
 
   const table = useDataTable({
@@ -636,6 +640,50 @@ function RouteComponent() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">NZB Info</h2>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="outline">
+              <RefreshCw className="mr-2 size-4" />
+              Re-queue
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Re-queue all NZBs?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will re-process all NZBs.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  disabled={requeueAllItems.isPending}
+                  onClick={() => {
+                    toast.promise(requeueAllItems.mutateAsync(), {
+                      error(err: APIError) {
+                        console.error(err);
+                        return {
+                          closeButton: true,
+                          message: err.message,
+                        };
+                      },
+                      loading: "Re-queuing all...",
+                      success(data) {
+                        return {
+                          closeButton: true,
+                          message: `Re-queued ${data.count} NZBs`,
+                        };
+                      },
+                    });
+                  }}
+                >
+                  Requeue All
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {nzbInfo.isLoading ? (

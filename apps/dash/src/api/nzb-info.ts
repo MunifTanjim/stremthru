@@ -58,7 +58,15 @@ export function useNzbInfoMutation() {
     },
   });
 
-  return { remove, requeue };
+  const requeueAll = useMutation({
+    mutationFn: requeueAllNzbInfoItems,
+    onSuccess: async (_, __, ___, ctx) => {
+      await ctx.client.invalidateQueries({ queryKey: ["/usenet/nzb"] });
+      await ctx.client.invalidateQueries({ queryKey: ["/usenet/queue"] });
+    },
+  });
+
+  return { remove, requeue, requeueAll };
 }
 
 async function deleteNzbInfoItem(id: string) {
@@ -67,6 +75,11 @@ async function deleteNzbInfoItem(id: string) {
 
 async function getNzbInfoItems() {
   const { data } = await api<NZBInfoItem[]>("/usenet/nzb");
+  return data;
+}
+
+async function requeueAllNzbInfoItems() {
+  const { data } = await api<{ count: number }>("POST /usenet/nzb/requeue-all");
   return data;
 }
 

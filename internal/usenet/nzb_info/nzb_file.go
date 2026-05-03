@@ -110,6 +110,14 @@ func cleanNZBFileLink(link string) string {
 	return link
 }
 
+func RehashIfNeeded(info *NZBInfo) error {
+	newHash := HashNZBFileLink(info.URL)
+	if info.Hash == newHash {
+		return nil
+	}
+	return UpdateHash(info.Id, newHash)
+}
+
 var nzbFileFetchSG singleflight.Group
 
 var nzbFileFetcher = func() *http.Client {
