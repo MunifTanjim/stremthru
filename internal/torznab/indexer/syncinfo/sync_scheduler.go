@@ -10,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/job"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
@@ -28,7 +27,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 	Title:        "Sync Torznab Indexer",
 	Interval:     30 * time.Minute,
 	RunExclusive: true,
-	Disabled:     !config.Feature.HasVault(),
+	Disabled:     queue.IsDisabled(),
 	ShouldSkip: func() bool {
 		return !HasSyncPending()
 	},

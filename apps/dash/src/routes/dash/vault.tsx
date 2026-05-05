@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 
-import { useServerStats } from "@/api/stats";
+import { useFeature } from "@/hooks/use-feature";
 
 export const Route = createFileRoute("/dash/vault")({
   component: RouteComponent,
@@ -10,9 +10,9 @@ export const Route = createFileRoute("/dash/vault")({
 });
 
 function RouteComponent() {
-  const { data: server } = useServerStats();
+  const features = useFeature();
 
-  if (server && !server.feature.vault) {
+  if (features.isReady && !features.get("vault")) {
     return <Navigate to="/dash" />;
   }
 

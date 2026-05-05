@@ -112,7 +112,12 @@ func HandleGetIMDBTitleStats(w http.ResponseWriter, r *http.Request) {
 }
 
 type ServerStatsFeature struct {
-	Vault bool `json:"vault"`
+	IMDBTitle bool `json:"imdb_title"`
+	Meta      bool `json:"meta"`
+	Newz      bool `json:"newz"`
+	Torz      bool `json:"torz"`
+	Sync      bool `json:"sync"`
+	Vault     bool `json:"vault"`
 }
 
 type ServerStatsIntegration struct {
@@ -122,7 +127,6 @@ type ServerStatsIntegration struct {
 type ServerStats struct {
 	Version     string                 `json:"version"`
 	StartedAt   time.Time              `json:"started_at"`
-	Feature     ServerStatsFeature     `json:"feature"`
 	Integration ServerStatsIntegration `json:"integration"`
 }
 
@@ -135,9 +139,6 @@ func HandleGetServerStats(w http.ResponseWriter, r *http.Request) {
 	data := ServerStats{
 		Version:   config.Version,
 		StartedAt: config.ServerStartTime,
-		Feature: ServerStatsFeature{
-			Vault: config.Feature.HasVault(),
-		},
 		Integration: ServerStatsIntegration{
 			Trakt: config.Integration.Trakt.IsEnabled(),
 		},

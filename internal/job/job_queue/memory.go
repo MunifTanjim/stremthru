@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var _ JobQueue[any] = (*MemoryJobQueue[any])(nil)
+
 type jobQueueItem[T any] struct {
 	v T
 	t time.Time
@@ -19,6 +21,10 @@ type MemoryJobQueue[T any] struct {
 	getGroupKey  func(item *T) string
 	debounceTime time.Duration
 	disabled     bool
+}
+
+func (q *MemoryJobQueue[T]) IsDisabled() bool {
+	return q.disabled
 }
 
 func (q *MemoryJobQueue[T]) Queue(item T, priority ...int) error {

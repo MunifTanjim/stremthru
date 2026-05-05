@@ -343,7 +343,7 @@ func InitWorkers() func() {
 	workers := []*Worker{}
 
 	if worker := InitParseTorrentWorker(&WorkerConfig{
-		Disabled:     !config.Feature.HasTorrentInfo(),
+		Disabled:     !config.Feature.HasTorz(),
 		Name:         "parse-torrent",
 		Interval:     5 * time.Minute,
 		RunExclusive: true,
@@ -829,7 +829,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitSyncStremioTraktWorker(&WorkerConfig{
-		Disabled:          !config.Feature.HasVault() || !config.Integration.Trakt.IsEnabled(),
+		Disabled:          !config.Feature.HasSync() || !config.Integration.Trakt.IsEnabled(),
 		Name:              "sync-stremio-trakt",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 5 * time.Minute,
@@ -844,7 +844,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitSyncStremioStremioWorker(&WorkerConfig{
-		Disabled:          !config.Feature.HasVault(),
+		Disabled:          !config.Feature.HasSync(),
 		Name:              "sync-stremio-stremio",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 5 * time.Minute,

@@ -11,6 +11,10 @@ import (
 )
 
 func AddEndpoints(mux *http.ServeMux) {
+	if !config.Feature.HasNewz() || !config.Feature.HasVault() {
+		return
+	}
+
 	handler := &webdav.Handler{
 		Prefix:     "/v0/webdav/newz/",
 		FileSystem: NewFileSystem(),

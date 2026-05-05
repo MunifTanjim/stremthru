@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -230,81 +229,6 @@ const (
 	StremioAddonWrap     string = "wrap"
 )
 
-const (
-	FeatureAnime           string = "anime"
-	FeatureDMMHashlist     string = "dmm_hashlist"
-	FeatureIMDBTitle       string = "imdb_title"
-	FeatureStremioList     string = "stremio_list"
-	FeatureStremioNewz     string = "stremio_newz"
-	FeatureStremioP2P      string = "stremio_p2p"
-	FeatureStremioSidekick string = "stremio_sidekick"
-	FeatureStremioStore    string = "stremio_store"
-	FeatureStremioTorz     string = "stremio_torz"
-	FeatureStremioWrap     string = "stremio_wrap"
-	FeatureVault           string = "vault"
-	FeatureProbeMediaInfo  string = "probe_media_info"
-)
-
-var features = []string{
-	FeatureAnime,
-	FeatureDMMHashlist,
-	FeatureIMDBTitle,
-	FeatureStremioList,
-	FeatureStremioNewz,
-	FeatureStremioP2P,
-	FeatureStremioSidekick,
-	FeatureStremioStore,
-	FeatureStremioTorz,
-	FeatureStremioWrap,
-	FeatureVault,
-	FeatureProbeMediaInfo,
-}
-
-type FeatureConfig struct {
-	enabled  []string
-	disabled []string
-}
-
-func (f FeatureConfig) IsDisabled(name string) bool {
-	return slices.Contains(f.disabled, name)
-}
-
-func (f FeatureConfig) IsEnabled(name string) bool {
-	if f.IsDisabled(name) {
-		return false
-	}
-
-	if len(f.enabled) == 0 {
-		return true
-	}
-
-	return slices.Contains(f.enabled, name)
-}
-
-func (f FeatureConfig) HasStremioList() bool {
-	return f.IsEnabled(FeatureStremioList)
-}
-
-func (f FeatureConfig) HasStremioNewz() bool {
-	return f.IsEnabled(FeatureStremioNewz)
-}
-
-func (f FeatureConfig) HasTorrentInfo() bool {
-	return f.IsEnabled(FeatureStremioStore) || f.IsEnabled(FeatureStremioTorz)
-}
-
-func (f FeatureConfig) HasDMMHashlist() bool {
-	return !f.IsDisabled(FeatureDMMHashlist) && f.HasTorrentInfo()
-}
-
-func (f FeatureConfig) HasIMDBTitle() bool {
-	return !f.IsDisabled(FeatureIMDBTitle) && (f.HasTorrentInfo() || f.HasStremioNewz())
-}
-
-func (f FeatureConfig) HasVault() bool {
-	return !f.IsDisabled(FeatureVault) && VaultSecret != ""
-}
-
 type StoreContentProxyMap map[string]bool
 
 func (scp StoreContentProxyMap) IsEnabled(name string) bool {
@@ -420,7 +344,6 @@ type Config struct {
 	RedisURI                    string
 	DatabaseURI                 string
 	DatabaseReplicaURIs         []string
-	Feature                     FeatureConfig
 	Version                     string
 	LandingPage                 string
 	ServerStartTime             time.Time
@@ -560,38 +483,6 @@ var config = func() Config {
 		databaseReplicaUris = append(databaseReplicaUris, uri)
 	}
 
-	feature := FeatureConfig{
-		disabled: []string{FeatureAnime, FeatureStremioP2P},
-	}
-	for _, name := range strings.FieldsFunc(strings.TrimSpace(getEnv("STREMTHRU_FEATURE")), func(c rune) bool {
-		return c == ','
-	}) {
-		switch {
-		case strings.HasPrefix(name, "-"):
-			name = strings.TrimPrefix(name, "-")
-			if slices.Contains(feature.enabled, name) {
-				log.Fatalf("feature conflict, trying to disable already enabled feature: -%s", name)
-			} else {
-				feature.disabled = append(feature.disabled, name)
-			}
-		case strings.HasPrefix(name, "+"):
-			name = strings.TrimPrefix(name, "+")
-			if slices.Contains(feature.disabled, name) {
-				feature.disabled = slices.DeleteFunc(feature.disabled, func(feat string) bool {
-					return feat == name
-				})
-			} else {
-				log.Fatalf("feature conflict, trying to force enable a not disabled feature: +%s", name)
-			}
-		default:
-			if slices.Contains(feature.disabled, name) {
-				log.Fatalf("feature conflict, trying to enable already disabled feature: %s", name)
-			} else {
-				feature.enabled = append(feature.enabled, name)
-			}
-		}
-	}
-
 	storeContentProxyList := strings.FieldsFunc(getEnv("STREMTHRU_STORE_CONTENT_PROXY"), func(c rune) bool {
 		return c == ','
 	})
@@ -693,7 +584,6 @@ var config = func() Config {
 		RedisURI:                    redisUri,
 		DatabaseURI:                 databaseUri,
 		DatabaseReplicaURIs:         databaseReplicaUris,
-		Feature:                     feature,
 		Version:                     "0.101.5", // x-release-please-version
 		LandingPage:                 getEnv("STREMTHRU_LANDING_PAGE"),
 		ServerStartTime:             time.Now(),
@@ -722,7 +612,6 @@ var PullPeerURL = config.PullPeerURL
 var RedisURI = config.RedisURI
 var DatabaseURI = config.DatabaseURI
 var DatabaseReplicaURIs = config.DatabaseReplicaURIs
-var Feature = config.Feature
 var Version = config.Version
 var LandingPage = config.LandingPage
 var ServerStartTime = config.ServerStartTime

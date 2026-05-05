@@ -1,6 +1,7 @@
 package nzb_info
 
 import (
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/job/job_queue"
 )
 
@@ -19,6 +20,7 @@ var queue = job_queue.NewPersistentJobQueue(JobQueueName, job_queue.JobQueueConf
 	GetKey: func(item *JobData) string {
 		return HashNZBFileLink(item.URL)
 	},
+	Disabled: !config.Feature.HasNewz() || !config.Feature.HasVault(),
 })
 
 type JobEntry = job_queue.JobQueueEntry[JobData]

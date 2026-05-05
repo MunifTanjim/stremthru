@@ -2,6 +2,10 @@
 
 The Meta API provides metadata for contents.
 
+::: info Feature Required
+This API requires the [`meta`](/configuration/features) feature to be enabled.
+:::
+
 ## Endpoints
 
 ### Get ID Map

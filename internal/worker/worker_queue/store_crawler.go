@@ -19,5 +19,5 @@ var StoreCrawlerQueue = WorkerQueue[StoreCrawlerQueueItem]{
 	transform: func(item *StoreCrawlerQueueItem) *StoreCrawlerQueueItem {
 		return item
 	},
-	Disabled: !config.Feature.HasTorrentInfo(),
+	Disabled: !config.Feature.HasTorz(),
 }

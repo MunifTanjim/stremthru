@@ -427,7 +427,9 @@ function StoresSection({ stores }: { stores: ConfigData["stores"] }) {
 }
 
 function TorzSection({ torz }: { torz: ConfigData["torz"] }) {
-  const settingsCount = Object.keys(torz).length;
+  if (torz.disabled) return null;
+
+  const settingsCount = Object.keys(torz).length - 1;
 
   return (
     <CollapsibleConfigSection

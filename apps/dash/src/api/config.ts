@@ -91,6 +91,7 @@ type ConfigStores = {
 };
 
 type ConfigTorz = {
+  disabled: boolean;
   torrent_file_cache_size?: string;
   torrent_file_cache_ttl?: string;
   torrent_file_max_size: string;

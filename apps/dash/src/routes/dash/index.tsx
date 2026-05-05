@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFeature } from "@/hooks/use-feature";
 
 export const Route = createFileRoute("/dash/")({
   component: RouteComponent,
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/dash/")({
 });
 
 function RouteComponent() {
+  const features = useFeature();
   const imdbTitleStats = useIMDBTitleStats();
 
   const serverStats = useServerStats();
@@ -60,36 +62,38 @@ function RouteComponent() {
         </CardHeader>
       </Card>
 
-      <TorrentsStatsCard />
+      {features.get("torz") && <TorrentsStatsCard />}
 
-      <Card className="py-4 sm:py-0">
-        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
-            <CardTitle>IMDB Titles</CardTitle>
-            <CardDescription>
-              Overview of IMDB titles in database
-            </CardDescription>
-          </div>
-          <div className="flex">
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-muted-foreground text-xs">
-                Total Titles
-              </span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {imdbTitleStats.isLoading ? (
-                  <Skeleton className="h-8 w-24" />
-                ) : (
-                  (imdbTitleStats.data?.total_count.toLocaleString() ?? 0)
-                )}
-              </span>
+      {features.get("imdb_title") && (
+        <Card className="py-4 sm:py-0">
+          <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
+              <CardTitle>IMDB Titles</CardTitle>
+              <CardDescription>
+                Overview of IMDB titles in database
+              </CardDescription>
             </div>
-          </div>
-        </CardHeader>
-      </Card>
+            <div className="flex">
+              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+                <span className="text-muted-foreground text-xs">
+                  Total Titles
+                </span>
+                <span className="text-lg font-bold leading-none sm:text-3xl">
+                  {imdbTitleStats.isLoading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    (imdbTitleStats.data?.total_count.toLocaleString() ?? 0)
+                  )}
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
-      <ListStatsCard />
+      {features.get("meta") && <ListStatsCard />}
 
-      <StoreStatsCard />
+      {(features.get("newz") || features.get("torz")) && <StoreStatsCard />}
     </>
   );
 }

@@ -27,7 +27,7 @@ features:
     details: Integration for torrent — background sync, crowdsourced data, torznab indexers, multi-debrid integration etc.
     link: /stremio-addons/torz
   - title: Usenet Support
-    details: Integration for Usenet — server management, newznab indexers, streaming over NNTP etc.
+    details: Integration for Usenet — server management, newznab indexers, streaming over NNTP, SABnzbd, WebDAV etc.
     link: /stremio-addons/newz
   - title: Content Proxy
     details: Proxy content from stores with byte serving support. Tunnel traffic through HTTP(S) proxies when direct access isn't available.

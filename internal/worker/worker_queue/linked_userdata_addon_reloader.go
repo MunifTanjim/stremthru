@@ -19,5 +19,5 @@ var LinkedUserdataAddonReloaderQueue = WorkerQueue[UserdataAddonReloaderQueueIte
 	transform: func(item *UserdataAddonReloaderQueueItem) *UserdataAddonReloaderQueueItem {
 		return item
 	},
-	Disabled: !config.Feature.HasVault(),
+	Disabled: !config.Feature.HasVault() || !config.Feature.HasStremioAddon(),
 }

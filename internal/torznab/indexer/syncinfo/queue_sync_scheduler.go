@@ -3,7 +3,6 @@ package torznab_indexer_syncinfo
 import (
 	"time"
 
-	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/job"
 	tznc "github.com/MunifTanjim/stremthru/internal/torznab/client"
 	torznab_indexer "github.com/MunifTanjim/stremthru/internal/torznab/indexer"
@@ -17,7 +16,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 	Title:        "Queue Torznab Indexer Sync",
 	Interval:     10 * time.Minute,
 	RunExclusive: true,
-	Disabled:     !config.Feature.HasVault(),
+	Disabled:     queue.IsDisabled(),
 	Queue:        queue,
 	ShouldSkip: func() bool {
 		return queue.IsEmpty() || !torznab_indexer.Exists()

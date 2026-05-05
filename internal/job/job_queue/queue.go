@@ -5,6 +5,7 @@ import (
 )
 
 type JobQueue[T any] interface {
+	IsDisabled() bool
 	Queue(item T, priority ...int) error
 	IsEmpty() bool
 	Process(f func(item T) error)
