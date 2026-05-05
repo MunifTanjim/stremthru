@@ -3,11 +3,16 @@ package torz
 import (
 	"net/http"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	storemiddleware "github.com/MunifTanjim/stremthru/internal/store/middleware"
 )
 
 func AddEndpoints(mux *http.ServeMux) {
+	if !config.Feature.HasTorz() {
+		return
+	}
+
 	withStore := server.Middleware(storemiddleware.WithStoreContext, storemiddleware.RequireStore)
 
 	mux.HandleFunc("/v0/store/torz", withStore(func(w http.ResponseWriter, r *http.Request) {

@@ -137,7 +137,9 @@ func handleSabnzbdAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddEndpoints(mux *http.ServeMux) {
-	if config.Feature.HasVault() {
-		mux.HandleFunc("/v0/sabnzbd/api", handleSabnzbdAPI)
+	if !config.Feature.HasNewz() || !config.Feature.HasVault() {
+		return
 	}
+
+	mux.HandleFunc("/v0/sabnzbd/api", handleSabnzbdAPI)
 }

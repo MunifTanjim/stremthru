@@ -96,6 +96,7 @@ type ConfigDisplayNewz struct {
 }
 
 type ConfigDisplayTorz struct {
+	Disabled             bool   `json:"disabled"`
 	TorrentFileCacheSize string `json:"torrent_file_cache_size,omitempty"`
 	TorrentFileCacheTTL  string `json:"torrent_file_cache_ttl,omitempty"`
 	TorrentFileMaxSize   string `json:"torrent_file_max_size"`
@@ -279,7 +280,7 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 
 	data.Integrations = buildConfigIntegrations()
 
-	data.Newz.Disabled = !Feature.HasVault()
+	data.Newz.Disabled = !Feature.HasNewz()
 	if !data.Newz.Disabled {
 		data.Newz.MaxConnectionPerStream = strconv.Itoa(Newz.MaxConnectionPerStream)
 		data.Newz.NZBFileCacheSize = util.ToSize(Newz.NZBFileCacheSize)
@@ -293,10 +294,13 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 		}
 	}
 
-	data.Torz.TorrentFileMaxSize = util.ToSize(Torz.TorrentFileMaxSize)
-	if !IsPublicInstance {
-		data.Torz.TorrentFileCacheSize = util.ToSize(Torz.TorrentFileCacheSize)
-		data.Torz.TorrentFileCacheTTL = Torz.TorrentFileCacheTTL.String()
+	data.Torz.Disabled = !Feature.HasTorz()
+	if !data.Torz.Disabled {
+		data.Torz.TorrentFileMaxSize = util.ToSize(Torz.TorrentFileMaxSize)
+		if !IsPublicInstance {
+			data.Torz.TorrentFileCacheSize = util.ToSize(Torz.TorrentFileCacheSize)
+			data.Torz.TorrentFileCacheTTL = Torz.TorrentFileCacheTTL.String()
+		}
 	}
 
 	data.WebDAV.FileExtFilter.Video = []string{}
@@ -326,12 +330,26 @@ func buildConfigFeatures() []ConfigDisplayFeature {
 			enabled = Feature.HasDMMHashlist()
 		case FeatureIMDBTitle:
 			enabled = Feature.HasIMDBTitle()
-		case FeatureVault:
-			enabled = Feature.HasVault()
+		case FeatureMeta:
+			enabled = Feature.HasMeta()
+		case FeatureNewz:
+			enabled = Feature.HasNewz()
+		case FeatureSync:
+			enabled = Feature.HasSync()
+		case FeatureTorz:
+			enabled = Feature.HasTorz()
 		case FeatureStremioList:
 			enabled = Feature.HasStremioList()
 		case FeatureStremioNewz:
 			enabled = Feature.HasStremioNewz()
+		case FeatureStremioTorz:
+			enabled = Feature.HasStremioTorz()
+		case FeatureStremioStore:
+			enabled = Feature.HasStremioStore()
+		case FeatureVault:
+			enabled = Feature.HasVault()
+		case FeatureProbeMediaInfo:
+			enabled = Feature.HasProbeMediaInfo()
 		default:
 			enabled = Feature.IsEnabled(name)
 		}

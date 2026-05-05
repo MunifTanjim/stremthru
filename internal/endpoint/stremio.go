@@ -15,12 +15,10 @@ import (
 )
 
 func AddStremioEndpoints(mux *http.ServeMux) {
-	stremio_root.AddStremioEndpoints(mux)
-
-	if config.Feature.IsEnabled(config.FeatureStremioList) {
+	if config.Feature.HasStremioList() {
 		stremio_list.AddEndpoints(mux)
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioStore) {
+	if config.Feature.HasStremioStore() {
 		stremio_store.AddStremioStoreEndpoints(mux)
 	}
 	if config.Feature.IsEnabled(config.FeatureStremioWrap) {
@@ -30,10 +28,14 @@ func AddStremioEndpoints(mux *http.ServeMux) {
 		stremio_sidekick.AddStremioSidekickEndpoints(mux)
 		stremio_disabled.AddStremioDisabledEndpoints(mux)
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioTorz) {
+	if config.Feature.HasStremioTorz() {
 		stremio_torz.AddStremioTorzEndpoints(mux)
 	}
 	if config.Feature.HasStremioNewz() {
 		stremio_newz.AddStremioNewzEndpoints(mux)
+	}
+
+	if config.Feature.HasStremioAddon() || config.Feature.IsEnabled(config.FeatureStremioSidekick) {
+		stremio_root.AddStremioEndpoints(mux)
 	}
 }

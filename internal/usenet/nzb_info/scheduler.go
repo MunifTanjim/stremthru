@@ -28,6 +28,7 @@ func isValidName(name string) bool {
 }
 
 var scheduler = job.NewScheduler(&job.SchedulerConfig[JobData]{
+	Disabled:     queue.IsDisabled(),
 	Id:           schedulerId,
 	Title:        "Process NZB",
 	RunExclusive: true,

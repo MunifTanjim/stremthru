@@ -52,6 +52,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/hooks/auth";
+import { useFeature } from "@/hooks/use-feature";
 import { FileRouteTypes } from "@/routeTree.gen";
 
 import { useTheme } from "../theme";
@@ -232,6 +233,7 @@ function NavUser() {
 
 function useNavItems(): NavItem[] {
   const { data: server } = useServerStats();
+  const features = useFeature();
   return useMemo(() => {
     const items: NavItem[] = [
       {
@@ -253,7 +255,10 @@ function useNavItems(): NavItem[] {
         path: "/dash",
         title: "Dashboard",
       },
-      {
+    ];
+
+    if (features.get("meta")) {
+      const list: NavItem = {
         icon: LayoutList,
         items: [
           {
@@ -263,47 +268,58 @@ function useNavItems(): NavItem[] {
         ],
         path: "/dash/lists",
         title: "Lists",
-      },
-    ];
-
-    const torrents: NavItem = {
-      icon: MagnetIcon,
-      items: [
-        {
-          path: "/dash/torrent",
-          title: "Stats",
-        },
-        {
-          path: "/dash/torrent/torrent-info",
-          title: "Info",
-        },
-      ],
-      path: "/dash/torrent",
-      title: "Torrent",
-    };
-    if (server?.feature.vault) {
-      torrents.items!.push({
-        path: "/dash/torrent/torznab-indexers",
-        title: "Indexers",
-      });
-      torrents.items!.push({
-        path: "/dash/torrent/sync-info",
-        title: "Sync Info",
-      });
+      };
+      items.push(list);
     }
-    items.push(torrents);
 
-    if (server?.feature.vault) {
+    if (features.get("torz")) {
+      const torrents: NavItem = {
+        icon: MagnetIcon,
+        items: [
+          {
+            path: "/dash/torrent",
+            title: "Stats",
+          },
+          {
+            path: "/dash/torrent/torrent-info",
+            title: "Info",
+          },
+        ],
+        path: "/dash/torrent",
+        title: "Torrent",
+      };
+      if (features.get("vault")) {
+        torrents.items!.push(
+          {
+            path: "/dash/torrent/torznab-indexers",
+            title: "Indexers",
+          },
+          {
+            path: "/dash/torrent/sync-info",
+            title: "Sync Info",
+          },
+        );
+      }
+      items.push(torrents);
+    }
+
+    if (features.get("newz")) {
       const usenet: NavItem = {
         icon: NewspaperIcon,
         items: [
           {
-            path: "/dash/usenet/stats",
-            title: "Stats",
-          },
-          {
             path: "/dash/usenet/config",
             title: "Config",
+          },
+        ],
+        path: "/dash/usenet",
+        title: "Usenet",
+      };
+      if (features.get("vault")) {
+        usenet.items!.push(
+          {
+            path: "/dash/usenet/stats",
+            title: "Stats",
           },
           {
             path: "/dash/usenet/indexers",
@@ -325,12 +341,12 @@ function useNavItems(): NavItem[] {
             path: "/dash/usenet/nzb-queue",
             title: "NZB Queue",
           },
-        ],
-        path: "/dash/usenet",
-        title: "Usenet",
-      };
+        );
+      }
       items.push(usenet);
+    }
 
+    if (features.get("vault")) {
       const vault: NavItem = {
         icon: Lock,
         items: [
@@ -346,7 +362,7 @@ function useNavItems(): NavItem[] {
         path: "/dash/vault/stremio-accounts",
         title: "Stremio Accounts",
       });
-      if (server.integration.trakt) {
+      if (server?.integration.trakt) {
         vault.items!.push({
           path: "/dash/vault/trakt-accounts",
           title: "Trakt Accounts",
@@ -354,28 +370,30 @@ function useNavItems(): NavItem[] {
       }
       items.push(vault);
 
-      const sync: NavItem = {
-        icon: CalendarSyncIcon,
-        items: [
-          {
-            path: "/dash/sync",
-            title: "Overview",
-          },
-        ],
-        path: "/dash/sync",
-        title: "Sync",
-      };
-      sync.items!.push({
-        path: "/dash/sync/stremio-stremio",
-        title: "Stremio ↔ Stremio",
-      });
-      if (server.integration.trakt) {
+      if (features.get("sync")) {
+        const sync: NavItem = {
+          icon: CalendarSyncIcon,
+          items: [
+            {
+              path: "/dash/sync",
+              title: "Overview",
+            },
+          ],
+          path: "/dash/sync",
+          title: "Sync",
+        };
         sync.items!.push({
-          path: "/dash/sync/stremio-trakt",
-          title: "Stremio ↔ Trakt",
+          path: "/dash/sync/stremio-stremio",
+          title: "Stremio ↔ Stremio",
         });
+        if (server?.integration.trakt) {
+          sync.items!.push({
+            path: "/dash/sync/stremio-trakt",
+            title: "Stremio ↔ Trakt",
+          });
+        }
+        items.push(sync);
       }
-      items.push(sync);
     }
 
     const settings: NavItem = {
@@ -400,5 +418,5 @@ function useNavItems(): NavItem[] {
     items.push(settings);
 
     return items;
-  }, [server?.feature.vault, server?.integration.trakt]);
+  }, [features, server?.integration.trakt]);
 }

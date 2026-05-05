@@ -16,7 +16,7 @@ var queue = job_queue.NewMemoryJobQueue(job_queue.JobQueueConfig[JobData]{
 	GetKey: func(item *JobData) string {
 		return item.SId
 	},
-	Disabled: !config.Feature.HasVault(),
+	Disabled: !config.Feature.HasTorz() || !config.Feature.HasVault(),
 })
 
 func QueueJob(sid string) {

@@ -26,7 +26,7 @@ var mediaInfoProbeQueue = job_queue.NewMemoryJobQueue(job_queue.JobQueueConfig[M
 		return item.Hash + ":" + item.Path
 	},
 	DebounceTime: 5 * time.Minute,
-	Disabled:     !config.Feature.IsEnabled(config.FeatureProbeMediaInfo),
+	Disabled:     !config.Feature.HasProbeMediaInfo(),
 })
 
 func QueueMediaInfoProbe(hash, path, link string) {
@@ -52,7 +52,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[MediaInfoProbeJobData]{
 	Title:    "Probe Media Info",
 	Interval: 10 * time.Minute,
 	Queue:    mediaInfoProbeQueue,
-	Disabled: !config.Feature.IsEnabled(config.FeatureProbeMediaInfo),
+	Disabled: !config.Feature.HasProbeMediaInfo(),
 	ShouldSkip: func() bool {
 		return mediaInfoProbeQueue.IsEmpty()
 	},

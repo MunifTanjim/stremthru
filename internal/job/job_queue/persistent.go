@@ -7,6 +7,12 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 )
 
+func exponentialBackoff(errorCount int, delay time.Duration) time.Duration {
+	return time.Duration(1<<max(errorCount-1, 0)) * delay
+}
+
+var _ JobQueue[any] = (*PersistentJobQueue[any])(nil)
+
 type PersistentJobQueue[T any] struct {
 	name         string
 	getKey       func(item *T) string
@@ -17,8 +23,8 @@ type PersistentJobQueue[T any] struct {
 	disabled     bool
 }
 
-func exponentialBackoff(errorCount int, delay time.Duration) time.Duration {
-	return time.Duration(1<<max(errorCount-1, 0)) * delay
+func (q *PersistentJobQueue[T]) IsDisabled() bool {
+	return q.disabled
 }
 
 func (q *PersistentJobQueue[T]) Queue(item T, priority ...int) error {

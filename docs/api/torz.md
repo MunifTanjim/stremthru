@@ -2,6 +2,10 @@
 
 The Torz API provides endpoints for managing Torrent content through StremThru's store interface.
 
+::: info Feature Required
+This API requires the [`torz`](/configuration/features) feature to be enabled.
+:::
+
 ## Enums
 
 ### TorzStatus

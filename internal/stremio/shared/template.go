@@ -11,7 +11,7 @@ import (
 func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 	addons := []stremio_template.BaseDataStremThruAddon{}
 
-	if config.Feature.IsEnabled(config.FeatureStremioList) {
+	if config.Feature.HasStremioList() {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "List",
 			URL:  "/stremio/list",
@@ -23,13 +23,13 @@ func GetStremThruAddons() []stremio_template.BaseDataStremThruAddon {
 			URL:  "/stremio/wrap",
 		})
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioStore) {
+	if config.Feature.HasStremioStore() {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "Store",
 			URL:  "/stremio/store",
 		})
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioTorz) {
+	if config.Feature.HasStremioTorz() {
 		addons = append(addons, stremio_template.BaseDataStremThruAddon{
 			Name: "Torz",
 			URL:  "/stremio/torz",

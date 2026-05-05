@@ -750,7 +750,7 @@ var query_upsert_on_conflict = fmt.Sprintf(
 	}, " OR "),
 )
 
-var noTorrentInfo = !config.Feature.HasTorrentInfo()
+var noTorrentInfo = !config.Feature.HasTorz()
 
 var upsertSkipCount atomic.Int64
 var upsertAllowCount atomic.Int64

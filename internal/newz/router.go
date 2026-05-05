@@ -10,7 +10,7 @@ import (
 )
 
 func AddEndpoints(mux *http.ServeMux) {
-	if !config.Feature.HasVault() {
+	if !config.Feature.HasNewz() {
 		return
 	}
 

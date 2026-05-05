@@ -21,9 +21,6 @@ type ListsStats = Record<
 >;
 
 type ServerStats = {
-  feature: {
-    vault: boolean;
-  };
   integration: {
     trakt: boolean;
   };

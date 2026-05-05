@@ -32,7 +32,7 @@ func getAddonCatalog(r *http.Request) *stremio.AddonCatalogHandlerResponse {
 			TransportUrl:  shared.ExtractRequestBaseURL(r).JoinPath("stremio/wrap/manifest.json").String(),
 		})
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioStore) {
+	if config.Feature.HasStremioStore() {
 		manifest, _ := stremio_store.GetManifest(r, &stremio_store.UserData{})
 		addons = append(addons, stremio.Addon{
 			Manifest:      *manifest,
@@ -40,7 +40,7 @@ func getAddonCatalog(r *http.Request) *stremio.AddonCatalogHandlerResponse {
 			TransportUrl:  shared.ExtractRequestBaseURL(r).JoinPath("stremio/store/manifest.json").String(),
 		})
 	}
-	if config.Feature.IsEnabled(config.FeatureStremioTorz) {
+	if config.Feature.HasStremioTorz() {
 		addons = append(addons, stremio.Addon{
 			Manifest:      *stremio_torz.GetManifest(r, &stremio_torz.UserData{}),
 			TransportName: "http",

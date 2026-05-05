@@ -112,7 +112,7 @@ func handleTorrentStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddTorrentEndpoints(mux *http.ServeMux) {
-	if !config.Feature.HasTorrentInfo() {
+	if !config.Feature.HasTorz() {
 		return
 	}
 

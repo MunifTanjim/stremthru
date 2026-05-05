@@ -2,6 +2,10 @@
 
 The Newz API provides endpoints for managing Usenet content through StremThru's store interface.
 
+::: info Feature Required
+This API requires the [`newz`](/configuration/features) feature to be enabled.
+:::
+
 ## Enums
 
 ### NewzStatus
@@ -194,6 +198,10 @@ The generated direct link should be valid for 12 hours.
 
 **`GET /v0/newznab/api`**
 
+::: info Feature Required
+[`vault`](/configuration/features) feature needs to be enabled and configured properly.
+:::
+
 StremThru exposes a Newznab-compatible API endpoint that can be used with tools like Prowlarr, Radarr, Sonarr etc.
 
 **Authentication:** Uses the `STREMTHRU_AUTH` credentials, passed via the `apikey` query parameter.
@@ -203,6 +211,10 @@ StremThru exposes a Newznab-compatible API endpoint that can be used with tools 
 ## WebDAV Endpoint
 
 **`/v0/webdav/newz/`**
+
+::: info Feature Required
+[`vault`](/configuration/features) feature needs to be enabled and configured properly.
+:::
 
 StremThru exposes a WebDAV endpoint for browsing and streaming Newz content using any WebDAV-compatible client.
 
@@ -222,11 +234,11 @@ StremThru exposes a WebDAV endpoint for browsing and streaming Newz content usin
 
 **`GET /v0/sabnzbd/api`**
 
-StremThru exposes a SABnzbd-compatible API endpoint that can be used with tools like Sonarr, Radarr, Prowlarr etc. to send NZBs to StremThru for processing.
-
-::: info Prerequisite
-[`Vault`](/configuration/#vault) is required for this.
+::: info Feature Required
+[`vault`](/configuration/features) feature needs to be enabled and configured properly.
 :::
+
+StremThru exposes a SABnzbd-compatible API endpoint that can be used with tools like Sonarr, Radarr, Prowlarr etc. to send NZBs to StremThru for processing.
 
 **Authentication:** Uses the [`STREMTHRU_AUTH_SABNZBD`](/configuration/newz#stremthru-auth-sabnzbd) credentials, passed via the `apikey` query parameter.
 
