@@ -306,19 +306,14 @@ function useNavItems(): NavItem[] {
     if (features.get("newz")) {
       const usenet: NavItem = {
         icon: NewspaperIcon,
-        items: [
-          {
-            path: "/dash/usenet/config",
-            title: "Config",
-          },
-        ],
+        items: [],
         path: "/dash/usenet",
         title: "Usenet",
       };
       if (features.get("vault")) {
         usenet.items!.push(
           {
-            path: "/dash/usenet/stats",
+            path: "/dash/usenet",
             title: "Stats",
           },
           {

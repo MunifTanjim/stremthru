@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { DateTime } from "luxon";
 import { useState } from "react";
 
 import { type ConfigData, useConfig } from "@/api/config";
+import { type UsenetConfig, useUsenetConfig } from "@/api/usenet";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,6 +13,12 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+
+const queryTypeLabels: Record<string, string> = {
+  "*": "Any/Fallback",
+  movie: "Movie",
+  tv: "TV",
+};
 
 export const Route = createFileRoute("/dash/settings/config")({
   component: RouteComponent,
@@ -181,6 +188,23 @@ function FeaturesSection({ features }: { features: ConfigData["features"] }) {
   );
 }
 
+function HeaderTable({ headers }: { headers: Record<string, string> }) {
+  const entries = Object.entries(headers);
+  if (entries.length === 0) {
+    return <div className="text-muted-foreground text-sm">None</div>;
+  }
+  return (
+    <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+      {entries.map(([key, value]) => (
+        <div className="contents" key={key}>
+          <div className="text-muted-foreground font-medium">{key}</div>
+          <div className="truncate">{value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function IntegrationsSection({
   integrations,
 }: {
@@ -247,22 +271,76 @@ function NetworkSection({ network }: { network: ConfigData["network"] }) {
 }
 
 function NewzSection({ newz }: { newz: ConfigData["newz"] }) {
+  const { data: usenetConfig, isLoading } = useUsenetConfig();
+
   if (newz.disabled) return null;
 
+  const configFields: { key: keyof UsenetConfig; label: string }[] = [
+    { key: "nzb_cache_size", label: "NZB Cache Size" },
+    { key: "nzb_cache_ttl", label: "NZB Cache TTL" },
+    { key: "nzb_max_file_size", label: "NZB Max File Size" },
+    { key: "segment_cache_size", label: "Segment Cache Size" },
+    { key: "stream_buffer_size", label: "Stream Buffer Size" },
+    { key: "max_connection_per_stream", label: "Max Connection Per Stream" },
+  ];
+
+  const settingsCount = configFields.length;
+
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-orange-500 to-amber-500"
-      headerExtra={
-        <Link
-          className="text-primary text-sm hover:underline"
-          to="/dash/usenet/config"
-        >
-          View Config
-        </Link>
-      }
       icon="N"
+      settingsCount={settingsCount}
       title="Newz"
-    />
+    >
+      {isLoading ? (
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      ) : usenetConfig ? (
+        <>
+          <div className="grid grid-cols-2 gap-x-4">
+            {configFields.map(({ key, label }) => (
+              <ConfigEntry
+                key={key}
+                label={label}
+                value={String(usenetConfig[key])}
+              />
+            ))}
+          </div>
+          <div className="mt-4 border-t pt-4">
+            <h3 className="mb-3 text-sm font-semibold">
+              Indexer Request Headers
+            </h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <h4 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+                  Query Headers
+                </h4>
+                <div className="flex flex-col gap-3">
+                  {Object.entries(
+                    usenetConfig.indexer_request_header.query,
+                  ).map(([queryType, headers]) => (
+                    <div key={queryType}>
+                      <div className="mb-1 text-sm font-medium">
+                        {queryTypeLabels[queryType] ?? queryType}
+                      </div>
+                      <HeaderTable headers={headers} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+                  Grab Headers
+                </h4>
+                <HeaderTable
+                  headers={usenetConfig.indexer_request_header.grab}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </CollapsibleConfigSection>
   );
 }
 
