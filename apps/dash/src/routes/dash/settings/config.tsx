@@ -30,12 +30,14 @@ export const Route = createFileRoute("/dash/settings/config")({
 function CollapsibleConfigSection({
   children,
   gradient,
+  headerExtra,
   icon,
   settingsCount,
   title,
 }: {
   children: React.ReactNode;
   gradient: string;
+  headerExtra?: React.ReactNode;
   icon: string;
   settingsCount: number;
   title: string;
@@ -50,6 +52,7 @@ function CollapsibleConfigSection({
               <SectionIcon gradient={gradient} letter={icon} />
               <CardTitle>{title}</CardTitle>
               <div className="ml-auto flex items-center gap-2">
+                {headerExtra}
                 <span className="text-muted-foreground text-xs">
                   {settingsCount} settings
                 </span>
@@ -87,47 +90,20 @@ function ConfigEntry({
   );
 }
 
-function ConfigSection({
-  children,
-  gradient,
-  headerExtra,
-  icon,
-  title,
-}: {
-  children?: React.ReactNode;
-  gradient: string;
-  headerExtra?: React.ReactNode;
-  icon: string;
-  title: string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <SectionIcon gradient={gradient} letter={icon} />
-          <CardTitle>{title}</CardTitle>
-          {headerExtra && <div className="ml-auto">{headerExtra}</div>}
-        </div>
-      </CardHeader>
-      {children && (
-        <CardContent className="flex flex-col gap-0">{children}</CardContent>
-      )}
-    </Card>
-  );
-}
-
 function DatabaseSection({ database }: { database: ConfigData["database"] }) {
+  const settingsCount = 1 + (database.replica_uris?.length ?? 0);
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-amber-500 to-yellow-500"
       icon="D"
+      settingsCount={settingsCount}
       title="Database"
     >
       <ConfigEntry label="URI" value={database.uri} />
       {database.replica_uris?.map((uri, i) => (
         <ConfigEntry key={uri} label={`Replica ${i + 1}`} value={uri} />
       ))}
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -169,9 +145,10 @@ function FeatureItem({
 
 function FeaturesSection({ features }: { features: ConfigData["features"] }) {
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-emerald-500 to-green-600"
       icon="F"
+      settingsCount={features.length}
       title="Features"
     >
       <div className="flex flex-col gap-2">
@@ -184,7 +161,7 @@ function FeaturesSection({ features }: { features: ConfigData["features"] }) {
           />
         ))}
       </div>
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -211,9 +188,10 @@ function IntegrationsSection({
   integrations: ConfigData["integrations"];
 }) {
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-purple-500 to-violet-500"
       icon="I"
+      settingsCount={integrations.length}
       title="Integrations"
     >
       <div className="flex flex-col gap-2">
@@ -226,7 +204,7 @@ function IntegrationsSection({
           />
         ))}
       </div>
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -239,10 +217,17 @@ function MiniCard({ children }: { children: React.ReactNode }) {
 }
 
 function NetworkSection({ network }: { network: ConfigData["network"] }) {
+  const settingsCount =
+    1 +
+    (network.tunnel_ips ? Object.keys(network.tunnel_ips).length : 0) +
+    (network.buddy_url ? 1 : 0) +
+    (network.peer_url ? 1 : 0) +
+    (network.pull_peer_url ? 1 : 0);
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-blue-500 to-blue-700"
       icon="N"
+      settingsCount={settingsCount}
       title="Network"
     >
       <ConfigEntry label="Machine IP" value={network.machine_ip} />
@@ -266,7 +251,7 @@ function NetworkSection({ network }: { network: ConfigData["network"] }) {
       {network.pull_peer_url && (
         <ConfigEntry label="Pull Peer URL" value={network.pull_peer_url} />
       )}
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -358,9 +343,10 @@ function RouteComponent() {
   return (
     <div className="flex flex-col gap-6">
       <ServerSection server={data.server} />
-      <ConfigSection
+      <CollapsibleConfigSection
         gradient="from-slate-500 to-gray-500"
         icon="I"
+        settingsCount={4}
         title="Instance"
       >
         <ConfigEntry label="Instance ID" value={data.instance.id} />
@@ -373,18 +359,19 @@ function RouteComponent() {
           label="Stremio Locked"
           value={data.instance.stremio_locked ? "true" : "false"}
         />
-      </ConfigSection>
+      </CollapsibleConfigSection>
       <NetworkSection network={data.network} />
       <TunnelSection tunnel={data.tunnel} />
       <DatabaseSection database={data.database} />
       {!data.redis.disabled && (
-        <ConfigSection
+        <CollapsibleConfigSection
           gradient="from-red-500 to-orange-500"
           icon="R"
+          settingsCount={1}
           title="Redis"
         >
           <ConfigEntry label="URI" value={data.redis.uri} />
-        </ConfigSection>
+        </CollapsibleConfigSection>
       )}
       <UsersSection users={data.users} />
       <StoresSection stores={data.stores} />
@@ -415,8 +402,9 @@ function SectionIcon({
 
 function ServerSection({ server }: { server: ConfigData["server"] }) {
   const startedAt = DateTime.fromISO(server.started_at);
+  const settingsCount = 6 + (server.environment ? 1 : 0);
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-indigo-500 to-violet-500"
       headerExtra={
         <Badge className="text-xs" variant="secondary">
@@ -424,6 +412,7 @@ function ServerSection({ server }: { server: ConfigData["server"] }) {
         </Badge>
       }
       icon="S"
+      settingsCount={settingsCount}
       title="Server"
     >
       {server.environment && (
@@ -441,7 +430,7 @@ function ServerSection({ server }: { server: ConfigData["server"] }) {
         label="Posthog"
         value={server.posthog_enabled ? "enabled" : "disabled"}
       />
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -459,9 +448,10 @@ function StatusDot({ enabled }: { enabled: boolean }) {
 
 function StoresSection({ stores }: { stores: ConfigData["stores"] }) {
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-teal-500 to-emerald-500"
       icon="S"
+      settingsCount={1 + stores.items.length}
       title="Stores"
     >
       <ConfigEntry
@@ -500,7 +490,7 @@ function StoresSection({ stores }: { stores: ConfigData["stores"] }) {
           </MiniCard>
         ))}
       </div>
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
@@ -538,21 +528,33 @@ function TorzSection({ torz }: { torz: ConfigData["torz"] }) {
 
 function TunnelSection({ tunnel }: { tunnel: ConfigData["tunnel"] }) {
   if (tunnel.disabled) return null;
+  const settingsCount =
+    1 + (tunnel.by_host ? Object.keys(tunnel.by_host).length : 0);
   return (
-    <ConfigSection gradient="from-sky-500 to-cyan-500" icon="T" title="Tunnel">
+    <CollapsibleConfigSection
+      gradient="from-sky-500 to-cyan-500"
+      icon="T"
+      settingsCount={settingsCount}
+      title="Tunnel"
+    >
       <ConfigEntry label="Default" value={tunnel.default} />
       {tunnel.by_host &&
         Object.entries(tunnel.by_host).map(([host, proxy]) => (
           <ConfigEntry key={host} label={host} value={proxy} />
         ))}
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
 function UsersSection({ users }: { users: ConfigData["users"] }) {
   if (!users || users.length === 0) return null;
   return (
-    <ConfigSection gradient="from-pink-500 to-rose-500" icon="U" title="Users">
+    <CollapsibleConfigSection
+      gradient="from-pink-500 to-rose-500"
+      icon="U"
+      settingsCount={users.length}
+      title="Users"
+    >
       <div className="flex flex-col gap-2">
         {users.map((user) => (
           <MiniCard key={user.name}>
@@ -572,15 +574,16 @@ function UsersSection({ users }: { users: ConfigData["users"] }) {
           </MiniCard>
         ))}
       </div>
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
 
 function WebDAVSection({ webdav }: { webdav: ConfigData["webdav"] }) {
   return (
-    <ConfigSection
+    <CollapsibleConfigSection
       gradient="from-violet-500 to-purple-500"
       icon="W"
+      settingsCount={1}
       title="WebDAV"
     >
       <ConfigEntry
@@ -611,6 +614,6 @@ function WebDAVSection({ webdav }: { webdav: ConfigData["webdav"] }) {
           </div>
         }
       />
-    </ConfigSection>
+    </CollapsibleConfigSection>
   );
 }
