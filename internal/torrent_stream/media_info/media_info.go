@@ -12,6 +12,8 @@ import (
 	"gopkg.in/vansante/go-ffprobe.v2"
 )
 
+const Version = 1
+
 type MediaInfoStreamLanger interface {
 	Lang() string
 }
@@ -29,6 +31,7 @@ type MediaInfoAudio struct {
 	Codec         string `json:"codec,omitempty"`
 	Language      string `json:"lang,omitempty"`
 	Profile       string `json:"profile,omitempty"`
+	Title         string `json:"title,omitempty"`
 
 	Commentary      bool `json:"commentary,omitempty"`
 	Default         bool `json:"default,omitempty"`
@@ -107,6 +110,7 @@ type MediaInfo struct {
 	Format      *MediaInfoFormat    `json:"format,omitempty"`
 	HasChapters bool                `json:"has_chapters,omitempty"`
 	Source      string              `json:"src,omitempty"`
+	Version     int                 `json:"v,omitempty"`
 }
 
 func (mi *MediaInfo) Channels() []string {
@@ -129,6 +133,9 @@ func (mi *MediaInfo) ShouldOverwrite(existing *MediaInfo) bool {
 		return true
 	}
 	if existing.Source == "" {
+		if existing.Version < 1 {
+			return true
+		}
 		return false
 	}
 	return mi.Source == ""
@@ -205,6 +212,7 @@ func Probe(ctx context.Context, url string) (*MediaInfo, error) {
 			Codec:         stream.CodecName,
 			Language:      getTagString(&stream, "language"),
 			Profile:       stream.Profile,
+			Title:         getTagString(&stream, "title"),
 
 			Commentary:      stream.Disposition.Comment == 1,
 			Default:         stream.Disposition.Default == 1,

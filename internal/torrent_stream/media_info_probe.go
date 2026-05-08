@@ -83,6 +83,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[MediaInfoProbeJobData]{
 				return nil
 			}
 
+			mi.Version = media_info.Version
 			if err := SetMediaInfo(data.Hash, data.Path, mi); err != nil {
 				log.Error("failed to save media info", "error", err, "hash", data.Hash, "path", data.Path)
 				return nil
