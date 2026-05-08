@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.101.1](https://github.com/MunifTanjim/stremthru/compare/0.101.0...0.101.1) (2026-05-08)
+
+
+### Bug Fixes
+
+* **stremio/store:** add stremthru usenet prefix to getIdPrefixes ([5eff9e4](https://github.com/MunifTanjim/stremthru/commit/5eff9e4b91626917cae67486db7f132d3789bf8c))
+* **torrent_stream:** save title for audio streams in mediainfo ([de7bb54](https://github.com/MunifTanjim/stremthru/commit/de7bb54cedf8e402e6cecdb904856b807e170288))
+
 ## [0.101.0](https://github.com/MunifTanjim/stremthru/compare/0.100.9...0.101.0) (2026-05-03)
 
 
