@@ -49,7 +49,7 @@ func FetchLetterboxdUserIdentifier(userName string) (lid string, err error) {
 	if id, err := GetUserIdByName(userName); err != nil {
 		log.Warn("failed to get user id from database", "error", err, "user_name", userName)
 	} else if id != "" {
-		letterboxdIdentifierCache.Add(urlPath, lid)
+		letterboxdIdentifierCache.Add(urlPath, id)
 		return id, nil
 	}
 
@@ -93,7 +93,7 @@ func FetchLetterboxdListIdentifier(userName, listSlug string) (lid string, err e
 	if id, err := GetListIdByUserNameAndSlug(userName, listSlug); err != nil {
 		log.Warn("failed to get list id from database", "error", err, "user_name", userName, "slug", listSlug)
 	} else if id != "" {
-		letterboxdIdentifierCache.Add(urlPath, lid)
+		letterboxdIdentifierCache.Add(urlPath, id)
 		return id, nil
 	}
 	return fetchLetterboxdIdentifier(urlPath)
