@@ -281,7 +281,7 @@ function useNavItems(): NavItem[] {
             title: "Stats",
           },
           {
-            path: "/dash/torrent/torrent-info",
+            path: "/dash/torrent/info",
             title: "Info",
           },
         ],

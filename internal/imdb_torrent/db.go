@@ -83,3 +83,191 @@ func GetLastMappedIMDBId() (string, error) {
 	err := row.Scan(&lastIMDBId)
 	return lastIMDBId, err
 }
+
+// MappingItem represents a torrent-to-IMDB mapping with enriched data
+type MappingItem struct {
+	Hash      string       `json:"hash"`
+	TTitle    string       `json:"t_title"`
+	TId       string       `json:"tid"`
+	IMDBTitle string       `json:"imdb_title"`
+	IMDBYear  int          `json:"imdb_year"`
+	IMDBType  string       `json:"imdb_type"`
+	UAt       db.Timestamp `json:"uat"`
+}
+
+// sidToTidExpr returns dialect-specific SQL to extract IMDB ID from torrent_stream.sid
+func sidToTidExpr() string {
+	switch db.Dialect {
+	case db.DBDialectSQLite:
+		return "SUBSTR(ts.sid, 1, INSTR(ts.sid || ':', ':') - 1)"
+	case db.DBDialectPostgres:
+		return "SPLIT_PART(ts.sid, ':', 1)"
+	default:
+		return "ts.sid"
+	}
+}
+
+// GetMappingsByHashes returns mapping items for the given hashes
+// includeMapped: include items with mappings
+// includeUnmapped: include items without mappings
+func GetMappingsByHashes(hashes []string, cursor string, limit int, includeMapped, includeUnmapped bool) ([]MappingItem, error) {
+	if len(hashes) == 0 {
+		return []MappingItem{}, nil
+	}
+
+	placeholders := util.RepeatJoin("?", len(hashes), ",")
+	sidExpr := sidToTidExpr()
+
+	var query string
+	var args []any
+
+	if includeUnmapped && !includeMapped {
+		query = fmt.Sprintf(
+			`SELECT
+				ti.hash,
+				ti.t_title,
+				'' AS tid,
+				'' AS imdb_title,
+				0 AS imdb_year,
+				'' AS imdb_type,
+				ti.created_at AS uat
+			FROM torrent_info ti
+			LEFT JOIN %s it ON it.%s = ti.hash
+			LEFT JOIN torrent_stream ts ON ts.h = ti.hash AND ts.sid LIKE 'tt%%'
+			WHERE ti.hash IN (%s)
+				AND (it.%s IS NULL OR it.%s = '')
+				AND ts.h IS NULL`,
+			TableName, Column.Hash,
+			placeholders,
+			Column.Hash, Column.TId,
+		)
+
+		args = make([]any, 0, len(hashes)+4)
+		for _, h := range hashes {
+			args = append(args, h)
+		}
+
+		if cursor != "" {
+			query += " AND (ti.created_at < (SELECT created_at FROM torrent_info WHERE hash = ?) OR (ti.created_at = (SELECT created_at FROM torrent_info WHERE hash = ?) AND ti.hash > ?))"
+			args = append(args, cursor, cursor, cursor)
+		}
+
+		query += " ORDER BY ti.created_at DESC, ti.hash ASC LIMIT ?"
+	} else if !includeUnmapped && includeMapped {
+		query = fmt.Sprintf(
+			`SELECT hash, t_title, tid, imdb_title, imdb_year, imdb_type, uat FROM (
+				SELECT ti.hash, ti.t_title, it.%s AS tid, imt.title AS imdb_title, imt.year AS imdb_year, imt.type AS imdb_type, it.%s AS uat
+				FROM torrent_info ti
+				JOIN %s it ON it.%s = ti.hash AND it.%s != ''
+				JOIN imdb_title imt ON imt.tid = it.%s
+				WHERE ti.hash IN (%s)
+
+				UNION
+
+				SELECT ti.hash, ti.t_title, imt.tid AS tid, imt.title AS imdb_title, imt.year AS imdb_year, imt.type AS imdb_type, ts.uat AS uat
+				FROM torrent_info ti
+				JOIN torrent_stream ts ON ts.h = ti.hash AND ts.sid LIKE 'tt%%'
+				JOIN imdb_title imt ON imt.tid = %s
+				WHERE ti.hash IN (%s)
+			) combined`,
+			Column.TId, Column.UAt,
+			TableName, Column.Hash, Column.TId,
+			Column.TId,
+			placeholders,
+			sidExpr,
+			placeholders,
+		)
+
+		args = make([]any, 0, len(hashes)*2+4)
+		for _, h := range hashes {
+			args = append(args, h)
+		}
+		for _, h := range hashes {
+			args = append(args, h)
+		}
+
+		if cursor != "" {
+			query += fmt.Sprintf(
+				" WHERE (uat < (SELECT %s FROM %s WHERE %s = ?) OR (uat = (SELECT %s FROM %s WHERE %s = ?) AND hash > ?))",
+				Column.UAt, TableName, Column.Hash,
+				Column.UAt, TableName, Column.Hash,
+			)
+			args = append(args, cursor, cursor, cursor)
+		}
+
+		query += " ORDER BY uat DESC, hash ASC LIMIT ?"
+	} else {
+		query = fmt.Sprintf(
+			`SELECT
+				ti.hash,
+				ti.t_title,
+				COALESCE(it.%s, imt_ts.tid, '') AS tid,
+				COALESCE(imt_it.title, imt_ts.title, '') AS imdb_title,
+				COALESCE(imt_it.year, imt_ts.year, 0) AS imdb_year,
+				COALESCE(imt_it.type, imt_ts.type, '') AS imdb_type,
+				COALESCE(it.%s, ts.uat, ti.created_at) AS uat
+			FROM torrent_info ti
+			LEFT JOIN %s it ON it.%s = ti.hash
+			LEFT JOIN imdb_title imt_it ON imt_it.tid = it.%s
+			LEFT JOIN torrent_stream ts ON ts.h = ti.hash AND ts.sid LIKE 'tt%%'
+			LEFT JOIN imdb_title imt_ts ON imt_ts.tid = %s
+			WHERE ti.hash IN (%s)`,
+			Column.TId,
+			Column.UAt,
+			TableName, Column.Hash,
+			Column.TId,
+			sidExpr,
+			placeholders,
+		)
+
+		args = make([]any, 0, len(hashes)+4)
+		for _, h := range hashes {
+			args = append(args, h)
+		}
+
+		if cursor != "" {
+			query += fmt.Sprintf(
+				" AND (COALESCE(it.%s, ts.uat, ti.created_at) < (SELECT COALESCE(it2.%s, ti2.created_at) FROM torrent_info ti2 LEFT JOIN %s it2 ON it2.%s = ti2.hash WHERE ti2.hash = ?) OR (COALESCE(it.%s, ts.uat, ti.created_at) = (SELECT COALESCE(it2.%s, ti2.created_at) FROM torrent_info ti2 LEFT JOIN %s it2 ON it2.%s = ti2.hash WHERE ti2.hash = ?) AND ti.hash > ?))",
+				Column.UAt, Column.UAt, TableName, Column.Hash,
+				Column.UAt, Column.UAt, TableName, Column.Hash,
+			)
+			args = append(args, cursor, cursor, cursor)
+		}
+
+		query += fmt.Sprintf(" ORDER BY COALESCE(it.%s, ts.uat, ti.created_at) DESC, ti.hash ASC LIMIT ?", Column.UAt)
+
+	}
+
+	args = append(args, limit)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		log.Error("failed to get mappings by hashes", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]MappingItem, 0, limit)
+	for rows.Next() {
+		var item MappingItem
+		if err := rows.Scan(
+			&item.Hash,
+			&item.TTitle,
+			&item.TId,
+			&item.IMDBTitle,
+			&item.IMDBYear,
+			&item.IMDBType,
+			&item.UAt,
+		); err != nil {
+			log.Error("failed to scan mapping item", "error", err)
+			return nil, err
+		}
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
