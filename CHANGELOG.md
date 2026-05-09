@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.101.2](https://github.com/MunifTanjim/stremthru/compare/0.101.1...0.101.2) (2026-05-09)
+
+
+### Bug Fixes
+
+* **letterboxd:** fix typo for cache write ([176c18a](https://github.com/MunifTanjim/stremthru/commit/176c18a46a0e1d720dc229fa4b31957e9f43f8db))
+
 ## [0.101.1](https://github.com/MunifTanjim/stremthru/compare/0.101.0...0.101.1) (2026-05-08)
 
 
