@@ -2,7 +2,7 @@ import { CommandLoading } from "cmdk";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 
-import { IMDBTitle, useIMDBAutocomplete } from "@/api/imdb";
+import { AniDBTitle, useAniDBAutocomplete } from "@/api/anidb";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 import { Button } from "./ui/button";
@@ -22,17 +22,17 @@ import {
 } from "./ui/item";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
-export function IMDBSearch({
+export function AniDBSearch({
   onSelect,
   triggerLabel = "Search...",
 }: {
-  onSelect: (title: IMDBTitle) => void;
+  onSelect: (title: AniDBTitle) => void;
   triggerLabel?: string;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [_searchQuery, setSearchQuery] = useState("");
   const searchQuery = useDebouncedValue(_searchQuery, 300);
-  const autocompleteResults = useIMDBAutocomplete(searchQuery);
+  const autocompleteResults = useAniDBAutocomplete(searchQuery);
 
   return (
     <Popover onOpenChange={setSearchOpen} open={searchOpen}>
@@ -51,7 +51,7 @@ export function IMDBSearch({
         <Command shouldFilter={false}>
           <CommandInput
             onValueChange={setSearchQuery}
-            placeholder="Search IMDB titles..."
+            placeholder="Search AniDB titles..."
             value={_searchQuery}
           />
           <CommandList>
@@ -60,7 +60,7 @@ export function IMDBSearch({
                 Searching...
               </CommandLoading>
             ) : (
-              <CommandEmpty>IMDB Titles</CommandEmpty>
+              <CommandEmpty>AniDB Titles</CommandEmpty>
             )}
             {autocompleteResults.data?.map((title) => (
               <CommandItem
@@ -81,6 +81,8 @@ export function IMDBSearch({
                     <ItemTitle>{title.title}</ItemTitle>
                     <ItemDescription>
                       <span className="text-muted-foreground text-xs">
+                        {title.season && `S${title.season}`}
+                        {title.season && title.year && " · "}
                         {title.year}
                       </span>
                     </ItemDescription>

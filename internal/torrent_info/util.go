@@ -1,6 +1,8 @@
 package torrent_info
 
-import "strings"
+import (
+	"strings"
+)
 
 func GetCategoryFromStremId(sid, sType string) TorrentInfoCategory {
 	if sType == "movie" {
