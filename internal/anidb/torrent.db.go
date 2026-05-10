@@ -91,6 +91,28 @@ var query_upsert_torrents_after_values = fmt.Sprintf(
 	}, ", "),
 )
 
+func DeleteTorrentsByHashes(hashes []string) error {
+	if len(hashes) == 0 {
+		return nil
+	}
+
+	for cHashes := range slices.Chunk(hashes, 1000) {
+		placeholders := util.RepeatJoin("?", len(cHashes), ",")
+		query := fmt.Sprintf("DELETE FROM %s WHERE %s IN (%s)", TorrentTableName, TorrentColumn.Hash, placeholders)
+		args := make([]any, len(cHashes))
+		for i, h := range cHashes {
+			args[i] = h
+		}
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			log.Error("failed to delete anidb torrent by hashes", "error", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func UpsertTorrents(items []AniDBTorrent) error {
 	if len(items) == 0 {
 		return nil

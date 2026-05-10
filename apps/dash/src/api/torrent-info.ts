@@ -1,4 +1,8 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
@@ -32,6 +36,21 @@ export type MappingParams = {
   q: string;
   unmapped?: boolean;
 };
+
+export type ReprocessRequest = {
+  hashes: string[];
+  targets?: ReprocessTarget[];
+};
+
+export type ReprocessResponse = {
+  mapped?: { anidb?: number; imdb?: number };
+  mode: "async" | "sync";
+  parsed?: number;
+  processed?: number;
+  queued?: number;
+};
+
+export type ReprocessTarget = "anidb" | "imdb";
 
 type MappingsListResponse<T> = {
   items: T[];
@@ -73,6 +92,18 @@ export function useIMDBMappings(params: MappingParams) {
       getIMDBMappings({ cursor: pageParam, limit, mode, q, unmapped }),
     initialPageParam: "",
     getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
+  });
+}
+
+export function useReprocessTorrents() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: reprocessTorrents,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/torrents/info/imdb"] });
+      queryClient.invalidateQueries({ queryKey: ["/torrents/info/anidb"] });
+    },
   });
 }
 
@@ -125,5 +156,13 @@ async function getIMDBMappings(params: {
   const query = searchParams.toString();
   const endpoint = `/torrents/info/imdb${query ? `?${query}` : ""}` as const;
   const { data } = await api<MappingsListResponse<IMDBMappingItem>>(endpoint);
+  return data;
+}
+
+async function reprocessTorrents(params: ReprocessRequest) {
+  const { data } = await api<ReprocessResponse>("/torrents/reprocess", {
+    body: params,
+    method: "POST",
+  });
   return data;
 }

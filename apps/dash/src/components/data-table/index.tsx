@@ -37,13 +37,9 @@ export function DataTable<TData>({ table }: { table: TTable<TData> }) {
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header, index, cells) => {
+              {headerGroup.headers.map((header) => {
                 const pinned = header.column.getIsPinned();
-                const style = createPinnedCellStyle({
-                  cell: header,
-                  index,
-                  totalCell: cells.length,
-                });
+                const style = prepareCellStyle({ cell: header });
                 return (
                   <TableHead
                     className={cn("border-b", {
@@ -74,13 +70,9 @@ export function DataTable<TData>({ table }: { table: TTable<TData> }) {
                 data-state={row.getIsSelected() && "selected"}
                 key={row.id}
               >
-                {row.getVisibleCells().map((cell, index, cells) => {
+                {row.getVisibleCells().map((cell) => {
                   const pinned = cell.column.getIsPinned();
-                  const style = createPinnedCellStyle({
-                    cell,
-                    index,
-                    totalCell: cells.length,
-                  });
+                  const style = prepareCellStyle({ cell });
                   return (
                     <TableCell
                       className={cn("border-b", {
@@ -116,32 +108,23 @@ export function DataTable<TData>({ table }: { table: TTable<TData> }) {
   );
 }
 
-function createPinnedCellStyle<TData>({
+function prepareCellStyle<TData>({
   cell,
-  index,
-  totalCell,
 }: {
   cell: Cell<TData, unknown> | Header<TData, unknown>;
-  index: number;
-  totalCell: number;
 }): CSSProperties | undefined {
-  const pinPosition = cell.column.getIsPinned();
-
-  switch (pinPosition) {
-    case "left": {
-      const bordersLeft = index !== 0 ? index + 1 : 0;
-      return {
-        left: cell.column.getStart("left") + bordersLeft,
-      };
-    }
-    case "right": {
-      const bordersRight = index === totalCell ? 0 : totalCell - (index + 1);
-      return {
-        right: cell.column.getAfter("right") + bordersRight,
-      };
-    }
-    default: {
-      return undefined;
-    }
+  const style: CSSProperties = {};
+  if (cell.column.columnDef.size) {
+    style.width = `${cell.column.getSize()}px`;
+    style.minWidth = style.width;
   }
+
+  const pinPosition = cell.column.getIsPinned();
+  if (pinPosition === "left") {
+    style.left = cell.column.getStart("left");
+  } else if (pinPosition === "right") {
+    style.right = cell.column.getAfter("right");
+  }
+
+  return style;
 }

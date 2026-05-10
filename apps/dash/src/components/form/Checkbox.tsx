@@ -1,6 +1,7 @@
+import type { CheckedState } from "@radix-ui/react-checkbox";
 import type { ComponentProps } from "react";
 
-import { Checkbox, CheckedState } from "../ui/checkbox";
+import { Checkbox } from "../ui/checkbox";
 import {
   Field,
   FieldContent,

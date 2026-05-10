@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { SearchIcon } from "lucide-react";
+import { RefreshCwIcon, SearchIcon } from "lucide-react";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { AniDBTitle } from "@/api/anidb";
 import { IMDBTitle } from "@/api/imdb";
@@ -10,8 +11,10 @@ import {
   AniDBMappingItem,
   IMDBMappingItem,
   MappingMode,
+  ReprocessTarget,
   useAniDBMappings,
   useIMDBMappings,
+  useReprocessTorrents,
 } from "@/api/torrent-info";
 import { AniDBSearch } from "@/components/anidb-search";
 import { DataTable } from "@/components/data-table";
@@ -19,6 +22,7 @@ import { useDataTable } from "@/components/data-table/use-data-table";
 import { IMDBSearch } from "@/components/imdb-search";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -46,6 +50,29 @@ const SERIES_TYPES = ["tvMiniSeries", "tvSeries"];
 // IMDB columns definition
 const imdbCol = createColumnHelper<IMDBMappingItem>();
 const imdbColumns: ColumnDef<IMDBMappingItem>[] = [
+  imdbCol.display({
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label="Select row"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableHiding: false,
+    enableSorting: false,
+    header: ({ table }) => (
+      <Checkbox
+        aria-label="Select all"
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    id: "select",
+    size: 32,
+  }),
   imdbCol.accessor("hash", {
     cell: ({ getValue }) => (
       <span className="font-mono text-xs">{getValue()}</span>
@@ -96,6 +123,28 @@ const imdbColumns: ColumnDef<IMDBMappingItem>[] = [
 // AniDB columns definition
 const anidbCol = createColumnHelper<AniDBMappingItem>();
 const anidbColumns: ColumnDef<AniDBMappingItem>[] = [
+  {
+    cell: ({ row }) => (
+      <Checkbox
+        aria-label="Select row"
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+      />
+    ),
+    enableHiding: false,
+    enableSorting: false,
+    header: ({ table }) => (
+      <Checkbox
+        aria-label="Select all"
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+      />
+    ),
+    id: "select",
+  },
   anidbCol.accessor("hash", {
     cell: ({ getValue }) => (
       <span className="font-mono text-xs">{getValue()}</span>
@@ -164,6 +213,9 @@ function RouteComponent() {
   const [season, setSeason] = useState("");
   const [episode, setEpisode] = useState("");
   const [anidbEpisode, setAnidbEpisode] = useState("");
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+
+  const reprocessMutation = useReprocessTorrents();
 
   const isSeries = selectedTitle && SERIES_TYPES.includes(selectedTitle.type);
   const isAniDBSeries =
@@ -192,12 +244,18 @@ function RouteComponent() {
   const imdbTable = useDataTable({
     columns: imdbColumns,
     data: imdbItems,
-    initialState: { columnPinning: { left: ["hash"] } },
+    getRowId: (row) => row.hash,
+    initialState: { columnPinning: { left: ["select", "hash"] } },
+    onRowSelectionChange: setRowSelection,
+    state: { rowSelection },
   });
   const anidbTable = useDataTable({
     columns: anidbColumns,
     data: anidbItems,
-    initialState: { columnPinning: { left: ["hash"] } },
+    getRowId: (row) => row.hash,
+    initialState: { columnPinning: { left: ["select", "hash"] } },
+    onRowSelectionChange: setRowSelection,
+    state: { rowSelection },
   });
 
   const currentQuery = tab === "imdb" ? imdbMappings : anidbMappings;
@@ -212,6 +270,33 @@ function RouteComponent() {
     setSeason("");
     setEpisode("");
     setAnidbEpisode("");
+    setRowSelection({});
+  };
+
+  const selectedHashes = Object.keys(rowSelection).filter(
+    (key) => rowSelection[key],
+  );
+
+  const handleReprocess = (hashes: string[], targets?: ReprocessTarget[]) => {
+    const effectiveTargets = targets ?? [tab];
+    reprocessMutation.mutate(
+      { hashes, targets: effectiveTargets },
+      {
+        onError: (error) => {
+          toast.error(`Error: ${error.message}`);
+        },
+        onSuccess: (data) => {
+          setRowSelection({});
+          if (data.mode === "sync") {
+            toast.success(
+              `Reprocessed: Parsed ${data.parsed}, Mapped IMDB ${data.mapped?.imdb ?? 0}, AniDB ${data.mapped?.anidb ?? 0}`,
+            );
+          } else {
+            toast.success(`Queued ${data.queued} torrents for reprocessing`);
+          }
+        },
+      },
+    );
   };
 
   const placeholder =
@@ -274,7 +359,7 @@ function RouteComponent() {
       </div>
 
       {/* Search */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex w-full flex-wrap gap-2">
         {mode === "by-id" ? (
           tab === "imdb" ? (
             <>
@@ -389,10 +474,33 @@ function RouteComponent() {
             </Button>
           </>
         )}
+
         {search && (
           <Button onClick={onClearSearch} variant="outline">
             Clear
           </Button>
+        )}
+
+        {/* Actions */}
+        {selectedHashes.length > 0 && (
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-muted-foreground text-sm">
+              {selectedHashes.length} selected
+            </span>
+            <Button
+              disabled={reprocessMutation.isPending}
+              onClick={() => handleReprocess(selectedHashes)}
+              variant="outline"
+            >
+              <RefreshCwIcon
+                className={`size-4 ${reprocessMutation.isPending ? "animate-spin" : ""}`}
+              />
+              Reprocess
+            </Button>
+            <Button onClick={() => setRowSelection({})} variant="ghost">
+              Clear
+            </Button>
+          </div>
         )}
       </div>
 
