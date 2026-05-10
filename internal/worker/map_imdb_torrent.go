@@ -11,6 +11,58 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 )
 
+type MapIMDBErrorHandler func(message string, err error, args ...any)
+
+type MapIMDBResult struct {
+	Item     *imdb_torrent.IMDBTorrent
+	Category torrent_info.TorrentInfoCategory
+}
+
+func MapTorrentToIMDB(hash string, tInfo torrent_info.TorrentInfo, onError MapIMDBErrorHandler) *MapIMDBResult {
+	if !tInfo.IsParsed() {
+		return nil
+	}
+
+	ito := imdb_torrent.IMDBTorrent{
+		Hash: hash,
+	}
+
+	if tInfo.Title == "" {
+		return &MapIMDBResult{Item: &ito}
+	}
+
+	var category torrent_info.TorrentInfoCategory
+	titleType := imdb_title.SearchTitleTypeUnknown
+	if tInfo.Category == torrent_info.TorrentInfoCategoryMovie {
+		titleType = imdb_title.SearchTitleTypeMovie
+		category = torrent_info.TorrentInfoCategoryMovie
+	} else if tInfo.Category == torrent_info.TorrentInfoCategorySeries || len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0 {
+		titleType = imdb_title.SearchTitleTypeShow
+		category = torrent_info.TorrentInfoCategorySeries
+	} else if tInfo.Category == torrent_info.TorrentInfoCategoryXXX {
+		// ¯\_(ツ)_/¯
+	} else {
+		titleType = imdb_title.SearchTitleTypeMovie
+		category = torrent_info.TorrentInfoCategoryMovie
+	}
+
+	imdbTitle, err := imdb_title.SearchOne(tInfo.Title, titleType, tInfo.Year, false)
+	if err != nil {
+		if onError != nil {
+			onError("failed to search imdb title", err, "title", tInfo.Title, "year", tInfo.Year)
+		}
+		return nil
+	}
+	if imdbTitle != nil {
+		switch {
+		case category == torrent_info.TorrentInfoCategorySeries && !imdb_title.IMDBTitleType(imdbTitle.Type).IsShow():
+		default:
+			ito.TId = imdbTitle.TId
+		}
+	}
+	return &MapIMDBResult{Item: &ito, Category: category}
+}
+
 func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 	conf.Executor = func(w *Worker) error {
 		if !isIMDBSyncedInLast24Hours() {
@@ -47,42 +99,18 @@ func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
 						torrent_info.TorrentInfoCategorySeries: {},
 					}
 					for hash, tInfo := range tInfoByHash {
-						if !tInfo.IsParsed() {
+						result := MapTorrentToIMDB(hash, tInfo, func(message string, err error, args ...any) {
+							if err != nil {
+								w.Log.Error(message, append([]any{"error", err}, args...)...)
+							}
+						})
+						if result == nil {
 							continue
 						}
-
-						ito := imdb_torrent.IMDBTorrent{
-							Hash: hash,
+						items = append(items, *result.Item)
+						if result.Category != "" {
+							hashesByCategory[result.Category] = append(hashesByCategory[result.Category], hash)
 						}
-
-						if tInfo.Title == "" {
-							items = append(items, ito)
-							continue
-						}
-
-						titleType := imdb_title.SearchTitleTypeUnknown
-						if tInfo.Category == torrent_info.TorrentInfoCategoryMovie {
-							titleType = imdb_title.SearchTitleTypeMovie
-							hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
-						} else if tInfo.Category == torrent_info.TorrentInfoCategorySeries || len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0 {
-							titleType = imdb_title.SearchTitleTypeShow
-							hashesByCategory[torrent_info.TorrentInfoCategorySeries] = append(hashesByCategory[torrent_info.TorrentInfoCategorySeries], hash)
-						} else if tInfo.Category == torrent_info.TorrentInfoCategoryXXX {
-							// ¯\_(ツ)_/¯
-						} else {
-							titleType = imdb_title.SearchTitleTypeMovie
-							hashesByCategory[torrent_info.TorrentInfoCategoryMovie] = append(hashesByCategory[torrent_info.TorrentInfoCategoryMovie], hash)
-						}
-
-						imdbTitle, err := imdb_title.SearchOne(tInfo.Title, titleType, tInfo.Year, false)
-						if err != nil {
-							w.Log.Error("failed to search imdb title", "error", err, "title", tInfo.Title, "year", tInfo.Year)
-							continue
-						}
-						if imdbTitle != nil {
-							ito.TId = imdbTitle.TId
-						}
-						items = append(items, ito)
 					}
 
 					if err := imdb_torrent.Insert(items); err != nil {
