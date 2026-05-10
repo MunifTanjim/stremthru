@@ -84,6 +84,28 @@ func GetLastMappedIMDBId() (string, error) {
 	return lastIMDBId, err
 }
 
+func DeleteByHashes(hashes []string) error {
+	if len(hashes) == 0 {
+		return nil
+	}
+
+	for cHashes := range slices.Chunk(hashes, 1000) {
+		placeholders := util.RepeatJoin("?", len(cHashes), ",")
+		query := fmt.Sprintf("DELETE FROM %s WHERE %s IN (%s)", TableName, Column.Hash, placeholders)
+		args := make([]any, len(cHashes))
+		for i, h := range cHashes {
+			args[i] = h
+		}
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			log.Error("failed to delete imdb torrent by hashes", "error", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // MappingItem represents a torrent-to-IMDB mapping with enriched data
 type MappingItem struct {
 	Hash      string       `json:"hash"`

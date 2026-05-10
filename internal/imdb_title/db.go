@@ -560,7 +560,7 @@ func sqliteSearchOne(title string, titleType SearchTitleType, year int, extendYe
 
 	for i := range items {
 		item := items[i]
-		title_matched := strings.ToLower(item.Title) == title || strings.ToLower(item.OrigTitle) == title
+		title_matched := strings.EqualFold(item.Title, title) || strings.EqualFold(item.OrigTitle, title)
 		year_matched := year == 0 || item.Year == 0 || year == item.Year
 
 		if title_matched && year_matched {
