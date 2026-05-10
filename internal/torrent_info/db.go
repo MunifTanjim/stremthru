@@ -260,9 +260,10 @@ func (ti *TorrentInfo) parse() error {
 	ti.Complete = r.Complete
 	ti.Container = r.Container
 	ti.Convert = r.Convert
+	ti.Date = db.DateOnly{}
 	if r.Date != "" {
 		if date, err := time.Parse(time.DateOnly, r.Date); err == nil {
-			ti.Date = db.DateOnly{Time: date}
+			ti.Date.Time = date
 		}
 	}
 	ti.Documentary = r.Documentary
@@ -292,11 +293,13 @@ func (ti *TorrentInfo) parse() error {
 	}
 	ti.Subbed = r.Subbed
 	ti.ThreeD = r.ThreeD
-	ti.Title = r.Title
+	ti.Title = strings.ToValidUTF8(r.Title, "�")
 	ti.Uncensored = r.Uncensored
 	ti.Unrated = r.Unrated
 	ti.Upscaled = r.Upscaled
 	ti.Volumes = r.Volumes
+	ti.Year = 0
+	ti.YearEnd = 0
 	if r.Year != "" {
 		year, year_end, _ := strings.Cut(r.Year, "-")
 		ti.Year, _ = strconv.Atoi(year)

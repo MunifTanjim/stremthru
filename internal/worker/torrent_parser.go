@@ -2,7 +2,6 @@ package worker
 
 import (
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/MunifTanjim/go-ptt"
@@ -24,8 +23,6 @@ func InitParseTorrentWorker(conf *WorkerConfig) *Worker {
 			w.Log.Warn("failed to parse", "error", err, "title", t.TorrentTitle)
 			return nil
 		}
-
-		t.Title = strings.ToValidUTF8(t.Title, "�")
 
 		return t
 	}
