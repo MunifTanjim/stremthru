@@ -614,6 +614,97 @@ func prepareAniDBTorrentMaps(tvdbMaps *anidb.AniDBTVDBEpisodeMapsResult, titles 
 	return tMaps, nil
 }
 
+type MapAniDBErrorHandler func(message string, err error, args ...any)
+
+func MapTorrentToAniDB(hash string, tInfo torrent_info.TorrentInfo, onError MapAniDBErrorHandler) []anidb.AniDBTorrent {
+	if !tInfo.IsParsed() {
+		return nil
+	}
+
+	if tInfo.Title == "" {
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+
+	anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, nil, 0, 1)
+	if err != nil {
+		if onError != nil {
+			onError("failed to search anidb title ids", err, "t_title", tInfo.Title)
+		}
+		return nil
+	}
+	if len(anidbTitleIds) == 0 {
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+	anidbId := anidbTitleIds[0]
+
+	tvdbMaps, err := anidb.GetTVDBEpisodeMaps(anidbId, true)
+	if err != nil {
+		if onError != nil {
+			onError("failed to get tvdb episode maps", err, "anidb_id", anidbId)
+		}
+		return nil
+	}
+
+	if tvdbMaps.Len() == 0 {
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+
+	tvdbId := tvdbMaps.GetTVDBId()
+
+	anidbTitles, err := tvdbMaps.GetAniDBTitles()
+	if err != nil {
+		if onError != nil {
+			onError("failed to get anidb titles from tvdb episode maps", err, "anidb_id", anidbId, "tvdb_id", tvdbId)
+		}
+		return nil
+	}
+
+	if anidbTitles[0].Type == "movie" && (len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0) {
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+
+	titleMatchRatio := 0
+	for i := range anidbTitles {
+		title := &anidbTitles[i]
+		titleMatchRatio = max(titleMatchRatio, fuzzy.UQRatio(tInfo.Title, title.Value))
+		if titleMatchRatio >= 85 {
+			break
+		}
+	}
+	if titleMatchRatio < 85 {
+		if onError != nil {
+			onError("title match ratio is low", nil, "anidb_id", anidbId, "tvdb_id", tvdbId, "t_title", tInfo.Title, "ratio", titleMatchRatio)
+		}
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+
+	torrentMaps, err := prepareAniDBTorrentMaps(tvdbMaps, anidbTitles, tInfo)
+	if err != nil {
+		if onError != nil {
+			onError("failed to match anidb ids in tvdb episode maps", err, "anidb_id", anidbId, "tvdb_id", tvdbId)
+		}
+		return nil
+	}
+
+	if len(torrentMaps) == 0 {
+		return []anidb.AniDBTorrent{{Hash: hash}}
+	}
+
+	items := make([]anidb.AniDBTorrent, 0, len(torrentMaps))
+	for _, tMap := range torrentMaps {
+		items = append(items, anidb.AniDBTorrent{
+			TId:          tMap.anidbId,
+			Hash:         hash,
+			SeasonType:   tMap.seasonType,
+			Season:       tMap.season,
+			EpisodeStart: tMap.episodeStart,
+			EpisodeEnd:   tMap.episodeEnd,
+			Episodes:     tMap.episodes,
+		})
+	}
+	return items
+}
+
 func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 	conf.Executor = func(w *Worker) error {
 		log := w.Log
@@ -679,101 +770,28 @@ func InitMapAniDBTorrentWorker(conf *WorkerConfig) *Worker {
 							continue
 						}
 
-						if tInfo.Title == "" {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-							continue
-						}
-
 						panicHints = panicHints[:0]
 						panicHints = append(panicHints, "tInfo.Hash="+tInfo.Hash)
 						panicHints = append(panicHints, "tInfo.TorrentTitle="+tInfo.TorrentTitle)
 
-						anidbTitleIds, err := anidb.SearchIdsByTitle(tInfo.Title, nil, 0, 1)
-						if err != nil {
-							log.Error("failed to search anidb title ids", "error", err, "title", tInfo.Title)
-							errs = append(errs, fmt.Errorf("failed to search anidb title ids: %w", err))
-							continue
-						}
-						if len(anidbTitleIds) == 0 {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-							continue
-						}
-						anidbId := anidbTitleIds[0]
-
-						panicHints = append(panicHints, "anidbId="+anidbId)
-
-						tvdbMaps, err := anidb.GetTVDBEpisodeMaps(anidbId, true)
-						if err != nil {
-							log.Error("failed to get tvdb episode maps", "error", err, "anidb_id", anidbId)
-							errs = append(errs, fmt.Errorf("failed to get tvdb episode maps: %w", err))
-							continue
-						}
-
-						if tvdbMaps.Len() == 0 {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-							continue
-						}
-
-						anidbTitles, err := tvdbMaps.GetAniDBTitles()
-						if err != nil {
-							log.Error("failed to get anidb titles from tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
-							errs = append(errs, fmt.Errorf("failed to get anidb titles from tvdb episode maps: %w", err))
-							continue
-						}
-
-						if anidbTitles[0].Type == "movie" && (len(tInfo.Seasons) > 0 || len(tInfo.Episodes) > 0) {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-							continue
-						}
-
-						titleMatchRatio := 0
-						for i := range anidbTitles {
-							title := &anidbTitles[i]
-							titleMatchRatio = max(titleMatchRatio, fuzzy.UQRatio(tInfo.Title, title.Value))
-							if titleMatchRatio >= 85 {
-								break
-							}
-						}
-						if titleMatchRatio < 85 {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-							log.Debug("title match ratio is low", "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId(), "t_title", tInfo.Title, "ratio", titleMatchRatio)
-							continue
-						}
-
-						torrentMaps, err := prepareAniDBTorrentMaps(tvdbMaps, anidbTitles, tInfo)
-						if err != nil {
-							log.Error("failed to match anidb ids in tvdb episode maps", "error", err, "anidb_id", anidbId, "tvdb_id", tvdbMaps.GetTVDBId())
-							errs = append(errs, fmt.Errorf("failed to match anidb ids in tvdb episode maps: %w", err))
-							continue
-						}
-
-						if len(torrentMaps) == 0 {
-							items = append(items, anidb.AniDBTorrent{
-								Hash: hash,
-							})
-						} else {
-							for _, tMap := range torrentMaps {
-								tor := anidb.AniDBTorrent{
-									TId:          tMap.anidbId,
-									Hash:         hash,
-									SeasonType:   tMap.seasonType,
-									Season:       tMap.season,
-									EpisodeStart: tMap.episodeStart,
-									EpisodeEnd:   tMap.episodeEnd,
-									Episodes:     tMap.episodes,
+						mapped := MapTorrentToAniDB(hash, tInfo, func(message string, err error, args ...any) {
+							for i := 0; i < len(args)-1; i += 2 {
+								if args[i] == "anidb_id" {
+									if anidbId, ok := args[i+1].(string); ok && anidbId != "" {
+										panicHints = append(panicHints, "anidbId="+anidbId)
+									}
+									break
 								}
-								items = append(items, tor)
 							}
+							if err != nil {
+								log.Error(message, append([]any{"error", err}, args...)...)
+								errs = append(errs, fmt.Errorf("%s: %w", message, err))
+							} else {
+								log.Debug(message, args...)
+							}
+						})
+						if mapped != nil {
+							items = append(items, mapped...)
 						}
 					}
 
