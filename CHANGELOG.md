@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.101.5](https://github.com/MunifTanjim/stremthru/compare/0.101.4...0.101.5) (2026-05-13)
+
+
+### Bug Fixes
+
+* **torz:** remove duplicate add torz tracking ([e488982](https://github.com/MunifTanjim/stremthru/commit/e488982ac8d74fa9ae9e33b3746e33f1aea186a5))
+
 ## [0.101.4](https://github.com/MunifTanjim/stremthru/compare/0.101.3...0.101.4) (2026-05-13)
 
 
