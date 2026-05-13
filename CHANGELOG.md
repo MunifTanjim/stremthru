@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.101.4](https://github.com/MunifTanjim/stremthru/compare/0.101.3...0.101.4) (2026-05-13)
+
+
+### Bug Fixes
+
+* **store/realdebrid:** track http status 451 for add torz ([d6af410](https://github.com/MunifTanjim/stremthru/commit/d6af410ad3d775bfa8e13485c98660a0f6c6fb9a))
+
 ## [0.101.3](https://github.com/MunifTanjim/stremthru/compare/0.101.2...0.101.3) (2026-05-13)
 
 
