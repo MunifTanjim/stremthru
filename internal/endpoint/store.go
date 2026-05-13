@@ -214,9 +214,7 @@ func addMagnet(ctx *storecontext.Context, magnet string, torrent *multipart.File
 		}
 	}
 	data, err := ctx.Store.AddMagnet(params)
-	if err == nil {
-		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Private, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
-	}
+	torz.TrackAddMagnet(ctx, magnet, data, err)
 	return data, err
 }
 

@@ -1,6 +1,7 @@
 package torz
 
 import (
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -76,6 +77,23 @@ func handleStoreTorzCheck(w http.ResponseWriter, r *http.Request) {
 	server.SendData(w, r, 200, data)
 }
 
+func TrackAddMagnet(ctx *storecontext.Context, link string, data *store.AddMagnetData, err error) {
+	if data != nil {
+		buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Private, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+		return
+	}
+	if err == nil || link == "" {
+		return
+	}
+	if m, _ := core.ParseMagnetLink(link); m.Hash != "" {
+		if uerr, ok := errors.AsType[*core.UpstreamError](err); ok {
+			if uerr.Code == server.ErrorCodeUnavailableForLegalReasons {
+				buddy.TrackMagnet(ctx.Store, m.Hash, "", 0, false, nil, "", true, ctx.StoreAuthToken)
+			}
+		}
+	}
+}
+
 type AddTorzPayload struct {
 	Link string `json:"link"`
 }
@@ -93,6 +111,7 @@ func addTorz(r *http.Request, ctx *storecontext.Context, link string, file *mult
 		}
 	}
 	data, err := ctx.Store.AddMagnet(params)
+	TrackAddMagnet(ctx, link, data, err)
 	if err != nil {
 		return nil, err
 	}
