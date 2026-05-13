@@ -42,6 +42,10 @@ func GetAllJob() ([]JobEntry, error) {
 	return job_queue.GetEntriesByName[JobData](JobQueueName)
 }
 
+func GetActiveJobs(limit int) ([]JobEntry, error) {
+	return job_queue.GetActiveEntriesByName[JobData](JobQueueName, limit)
+}
+
 func GetJobById(id string) (*JobEntry, error) {
 	return job_queue.GetEntryByKey[JobData](JobQueueName, id)
 }

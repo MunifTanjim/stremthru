@@ -357,3 +357,37 @@ func GetEntriesByName[T any](name string) ([]JobQueueEntry[T], error) {
 
 	return entries, nil
 }
+
+var query_get_active_entries_by_name = fmt.Sprintf(
+	`SELECT %s FROM %s WHERE %s = ? AND %s IN ('%s', '%s') ORDER BY %s DESC, %s ASC LIMIT ?`,
+	strings.Join(columns, ", "),
+	TableName,
+	Column.Name,
+	Column.Status,
+	EntryStatusQueued, EntryStatusProcessing,
+	Column.Priority,
+	Column.CreatedAt,
+)
+
+func GetActiveEntriesByName[T any](name string, limit int) ([]JobQueueEntry[T], error) {
+	rows, err := db.Query(query_get_active_entries_by_name, name, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	entries := []JobQueueEntry[T]{}
+	for rows.Next() {
+		e := JobQueueEntry[T]{}
+		if err := rows.Scan(&e.Name, &e.Key, &e.Payload, &e.Status, &e.Error, &e.Priority, &e.ProcessAfter, &e.CreatedAt, &e.UpdatedAt); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return entries, nil
+}
