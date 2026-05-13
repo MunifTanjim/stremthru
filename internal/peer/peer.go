@@ -13,6 +13,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/request"
 	"github.com/MunifTanjim/stremthru/internal/server"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
+	"github.com/MunifTanjim/stremthru/internal/torrent_mapping_review"
 	"github.com/MunifTanjim/stremthru/store"
 )
 
@@ -289,5 +290,26 @@ type FetchLetterboxdUserWatchlistParams struct {
 func (c APIClient) FetchLetterboxdUserWatchlist(params *FetchLetterboxdUserWatchlistParams) (request.APIResponse[meta_type.List], error) {
 	response := &Response[meta_type.List]{}
 	res, err := c.Request("GET", "/v0/meta/letterboxd/users/"+params.UserId+"/lists/watchlist", params, response)
+	return request.NewAPIResponse(res, response.Data), err
+}
+
+type ForwardMappingReviewParams struct {
+	request.Ctx
+	Hash      string                                   `json:"hash"`
+	Target    torrent_mapping_review.MappingTarget     `json:"target"`
+	Reason    torrent_mapping_review.ReviewReason      `json:"reason"`
+	PrevId    string                                   `json:"prev_id"`
+	MappingId string                                   `json:"mapping_id"`
+	Files     []torrent_mapping_review.FileCorrection  `json:"files"`
+	Comment   string                                   `json:"comment"`
+	IP        string                                   `json:"ip"`
+}
+
+type ForwardMappingReviewData struct{}
+
+func (c APIClient) ForwardMappingReview(params *ForwardMappingReviewParams) (request.APIResponse[ForwardMappingReviewData], error) {
+	params.JSON = params
+	response := &Response[ForwardMappingReviewData]{}
+	res, err := c.Request("POST", "/v0/torrent/mapping/review", params, response)
 	return request.NewAPIResponse(res, response.Data), err
 }

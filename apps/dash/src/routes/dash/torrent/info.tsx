@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ColumnDef, createColumnHelper } from "@tanstack/react-table";
-import { RefreshCwIcon, SearchIcon } from "lucide-react";
+import { MoreHorizontal, RefreshCwIcon, SearchIcon } from "lucide-react";
 import { DateTime } from "luxon";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -20,9 +20,16 @@ import { AniDBSearch } from "@/components/anidb-search";
 import { DataTable } from "@/components/data-table";
 import { useDataTable } from "@/components/data-table/use-data-table";
 import { IMDBSearch } from "@/components/imdb-search";
+import { TorrentMappingReviewSheet } from "@/components/torrent-mapping-review-sheet";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -49,157 +56,205 @@ const SERIES_TYPES = ["tvMiniSeries", "tvSeries"];
 
 // IMDB columns definition
 const imdbCol = createColumnHelper<IMDBMappingItem>();
-const imdbColumns: ColumnDef<IMDBMappingItem>[] = [
-  imdbCol.display({
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableHiding: false,
-    enableSorting: false,
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
+function getImdbColumns(
+  onReview: (item: IMDBMappingItem) => void,
+): ColumnDef<IMDBMappingItem>[] {
+  return [
+    imdbCol.display({
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label="Select row"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Select all"
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      id: "select",
+      size: 32,
+    }),
+    imdbCol.accessor("hash", {
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs">{getValue()}</span>
+      ),
+      header: "Hash",
+    }),
+    imdbCol.accessor("t_title", {
+      cell: ({ getValue }) => (
+        <Tooltip>
+          <TooltipTrigger>
+            <span className="inline-block max-w-sm truncate text-sm">
+              {getValue()}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{getValue()}</TooltipContent>
+        </Tooltip>
+      ),
+      header: "Torrent Title",
+    }),
+    imdbCol.accessor("imdb_id", {
+      header: "IMDB ID",
+    }),
+    imdbCol.accessor("imdb_title", {
+      cell: ({ row }) => {
+        const { imdb_title, imdb_type, imdb_year } = row.original;
+        if (!imdb_title) {
+          return <span className="text-muted-foreground">-</span>;
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    id: "select",
-    size: 32,
-  }),
-  imdbCol.accessor("hash", {
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs">{getValue()}</span>
-    ),
-    header: "Hash",
-  }),
-  imdbCol.accessor("t_title", {
-    cell: ({ getValue }) => (
-      <Tooltip>
-        <TooltipTrigger>
-          <span className="inline-block max-w-sm truncate text-sm">
-            {getValue()}
+        return (
+          <span>
+            {imdb_title} ({imdb_year}){" "}
+            <span className="text-muted-foreground text-xs">[{imdb_type}]</span>
           </span>
-        </TooltipTrigger>
-        <TooltipContent>{getValue()}</TooltipContent>
-      </Tooltip>
-    ),
-    header: "Torrent Title",
-  }),
-  imdbCol.accessor("imdb_id", {
-    header: "IMDB ID",
-  }),
-  imdbCol.accessor("imdb_title", {
-    cell: ({ row }) => {
-      const { imdb_title, imdb_type, imdb_year } = row.original;
-      if (!imdb_title) {
-        return <span className="text-muted-foreground">-</span>;
-      }
-      return (
-        <span>
-          {imdb_title} ({imdb_year}){" "}
-          <span className="text-muted-foreground text-xs">[{imdb_type}]</span>
-        </span>
-      );
-    },
-    header: "IMDB Title",
-  }),
-  imdbCol.accessor("mapped_at", {
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return <span className="text-muted-foreground">-</span>;
-      return DateTime.fromISO(value).toLocaleString(DateTime.DATETIME_MED);
-    },
-    header: "Mapped At",
-  }),
-];
+        );
+      },
+      header: "IMDB Title",
+    }),
+    imdbCol.accessor("mapped_at", {
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return <span className="text-muted-foreground">-</span>;
+        return DateTime.fromISO(value).toLocaleString(DateTime.DATETIME_MED);
+      },
+      header: "Mapped At",
+    }),
+    imdbCol.display({
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => onReview(row.original)}>
+              Request Review
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+      size: 40,
+    }),
+  ];
+}
 
 // AniDB columns definition
 const anidbCol = createColumnHelper<AniDBMappingItem>();
-const anidbColumns: ColumnDef<AniDBMappingItem>[] = [
-  {
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-      />
-    ),
-    enableHiding: false,
-    enableSorting: false,
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
+function getAnidbColumns(
+  onReview: (item: AniDBMappingItem) => void,
+): ColumnDef<AniDBMappingItem>[] {
+  return [
+    {
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label="Select row"
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+        />
+      ),
+      enableHiding: false,
+      enableSorting: false,
+      header: ({ table }) => (
+        <Checkbox
+          aria-label="Select all"
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        />
+      ),
+      id: "select",
+    },
+    anidbCol.accessor("hash", {
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs">{getValue()}</span>
+      ),
+      header: "Hash",
+    }),
+    anidbCol.accessor("t_title", {
+      cell: ({ getValue }) => (
+        <Tooltip>
+          <TooltipTrigger>
+            <span className="inline-block max-w-sm truncate text-sm">
+              {getValue()}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{getValue()}</TooltipContent>
+        </Tooltip>
+      ),
+      header: "Torrent Title",
+    }),
+    anidbCol.accessor("anidb_id", {
+      header: "AniDB ID",
+    }),
+    anidbCol.accessor("anidb_title", {
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return <span className="text-muted-foreground">-</span>;
+        return value;
+      },
+      header: "AniDB Title",
+    }),
+    anidbCol.accessor("season_type", {
+      cell: ({ row }) => {
+        const { ep_end, ep_start, season, season_type } = row.original;
+        if (!season_type) {
+          return <span className="text-muted-foreground">-</span>;
         }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-      />
-    ),
-    id: "select",
-  },
-  anidbCol.accessor("hash", {
-    cell: ({ getValue }) => (
-      <span className="font-mono text-xs">{getValue()}</span>
-    ),
-    header: "Hash",
-  }),
-  anidbCol.accessor("t_title", {
-    cell: ({ getValue }) => (
-      <Tooltip>
-        <TooltipTrigger>
-          <span className="inline-block max-w-sm truncate text-sm">
-            {getValue()}
+        const epRange =
+          ep_start === ep_end ? `Ep ${ep_start}` : `Ep ${ep_start}-${ep_end}`;
+        return (
+          <span className="text-sm">
+            S{season} ({season_type}) - {epRange}
           </span>
-        </TooltipTrigger>
-        <TooltipContent>{getValue()}</TooltipContent>
-      </Tooltip>
-    ),
-    header: "Torrent Title",
-  }),
-  anidbCol.accessor("anidb_id", {
-    header: "AniDB ID",
-  }),
-  anidbCol.accessor("anidb_title", {
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return <span className="text-muted-foreground">-</span>;
-      return value;
-    },
-    header: "AniDB Title",
-  }),
-  anidbCol.accessor("season_type", {
-    cell: ({ row }) => {
-      const { ep_end, ep_start, season, season_type } = row.original;
-      if (!season_type) {
-        return <span className="text-muted-foreground">-</span>;
-      }
-      const epRange =
-        ep_start === ep_end ? `Ep ${ep_start}` : `Ep ${ep_start}-${ep_end}`;
-      return (
-        <span className="text-sm">
-          S{season} ({season_type}) - {epRange}
-        </span>
-      );
-    },
-    header: "Season/Episode",
-  }),
-  anidbCol.accessor("mapped_at", {
-    cell: ({ getValue }) => {
-      const value = getValue();
-      if (!value) return <span className="text-muted-foreground">-</span>;
-      return DateTime.fromISO(value).toLocaleString(DateTime.DATETIME_MED);
-    },
-    header: "Mapped At",
-  }),
-];
+        );
+      },
+      header: "Season/Episode",
+    }),
+    anidbCol.accessor("mapped_at", {
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (!value) return <span className="text-muted-foreground">-</span>;
+        return DateTime.fromISO(value).toLocaleString(DateTime.DATETIME_MED);
+      },
+      header: "Mapped At",
+    }),
+    anidbCol.display({
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => onReview(row.original)}>
+              Request Review
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+      enableHiding: false,
+      enableSorting: false,
+      size: 40,
+    }),
+  ];
+}
 
 function RouteComponent() {
   const [tab, setTab] = useState<"anidb" | "imdb">("imdb");
@@ -214,8 +269,26 @@ function RouteComponent() {
   const [episode, setEpisode] = useState("");
   const [anidbEpisode, setAnidbEpisode] = useState("");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+  const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
+  const [reviewItem, setReviewItem] = useState<{
+    hash: string;
+    target: "imdb" | "anidb";
+    prevId: string;
+  } | null>(null);
 
   const reprocessMutation = useReprocessTorrents();
+
+  const handleReviewItem = (
+    item: IMDBMappingItem | AniDBMappingItem,
+    target: "imdb" | "anidb",
+  ) => {
+    const prevId =
+      target === "imdb"
+        ? (item as IMDBMappingItem).imdb_id
+        : (item as AniDBMappingItem).anidb_id;
+    setReviewItem({ hash: item.hash, target, prevId });
+    setReviewSheetOpen(true);
+  };
 
   const isSeries = selectedTitle && SERIES_TYPES.includes(selectedTitle.type);
   const isAniDBSeries =
@@ -239,6 +312,17 @@ function RouteComponent() {
   const anidbItems = useMemo(
     () => anidbMappings.data?.pages.flatMap((page) => page.items) ?? [],
     [anidbMappings.data],
+  );
+
+  const imdbColumns = useMemo(
+    () => getImdbColumns((item) => handleReviewItem(item, "imdb")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const anidbColumns = useMemo(
+    () => getAnidbColumns((item) => handleReviewItem(item, "anidb")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   const imdbTable = useDataTable({
@@ -503,6 +587,16 @@ function RouteComponent() {
           </div>
         )}
       </div>
+
+      {reviewItem && (
+        <TorrentMappingReviewSheet
+          hash={reviewItem.hash}
+          onOpenChange={setReviewSheetOpen}
+          open={reviewSheetOpen}
+          prevId={reviewItem.prevId}
+          target={reviewItem.target}
+        />
+      )}
 
       {/* Results */}
       {currentQuery.isLoading ? (
