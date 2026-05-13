@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.101.3](https://github.com/MunifTanjim/stremthru/compare/0.101.2...0.101.3) (2026-05-13)
+
+
+### Bug Fixes
+
+* **store/realdebrid:** update user-agent ([ecffff0](https://github.com/MunifTanjim/stremthru/commit/ecffff02b02614dfc8f6fa7e55e836b8a37828cb))
+
 ## [0.101.2](https://github.com/MunifTanjim/stremthru/compare/0.101.1...0.101.2) (2026-05-09)
 
 
