@@ -112,11 +112,7 @@ func addTorz(r *http.Request, ctx *storecontext.Context, link string, file *mult
 	}
 	data, err := ctx.Store.AddMagnet(params)
 	TrackAddMagnet(ctx, link, data, err)
-	if err != nil {
-		return nil, err
-	}
-	buddy.TrackMagnet(ctx.Store, data.Hash, data.Name, data.Size, data.Private, data.Files, "", data.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
-	return data, nil
+	return data, err
 }
 
 func handleStoreTorzAdd(w http.ResponseWriter, r *http.Request) {
