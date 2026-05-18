@@ -113,6 +113,71 @@ func DeleteTorrentsByHashes(hashes []string) error {
 	return nil
 }
 
+func DeleteTorrentByTidAndHash(tid, hash string) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ? AND %s = ?", TorrentTableName, TorrentColumn.TId, TorrentColumn.Hash)
+	_, err := db.Exec(query, tid, hash)
+	if err != nil {
+		log.Error("failed to delete anidb torrent by tid and hash", "error", err)
+	}
+	return err
+}
+
+func DeleteTorrentsByTidAndHashPairs(pairs []AniDBTorrent) error {
+	if len(pairs) == 0 {
+		return nil
+	}
+
+	for cPairs := range slices.Chunk(pairs, 500) {
+		placeholders := util.RepeatJoin("(?,?)", len(cPairs), ",")
+		query := fmt.Sprintf("DELETE FROM %s WHERE (%s, %s) IN (%s)", TorrentTableName, TorrentColumn.TId, TorrentColumn.Hash, placeholders)
+		args := make([]any, len(cPairs)*2)
+		for i, p := range cPairs {
+			args[i*2] = p.TId
+			args[i*2+1] = p.Hash
+		}
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			log.Error("failed to delete anidb torrents by tid and hash pairs", "error", err)
+			return err
+		}
+	}
+	return nil
+}
+
+var query_get_torrents_by_hashes = fmt.Sprintf(
+	"SELECT %s FROM %s WHERE %s IN ",
+	strings.Join(TorrentColumns, ", "), TorrentTableName, TorrentColumn.Hash,
+)
+
+func GetTorrentsByHashes(hashes []string) ([]AniDBTorrent, error) {
+	if len(hashes) == 0 {
+		return []AniDBTorrent{}, nil
+	}
+
+	result := []AniDBTorrent{}
+	for cHashes := range slices.Chunk(hashes, 500) {
+		placeholders := util.RepeatJoin("?", len(cHashes), ",")
+		query := query_get_torrents_by_hashes + "(" + placeholders + ")"
+		args := make([]any, len(cHashes))
+		for i, h := range cHashes {
+			args[i] = h
+		}
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var item AniDBTorrent
+			if err := rows.Scan(&item.TId, &item.Hash, &item.SeasonType, &item.Season, &item.EpisodeStart, &item.EpisodeEnd, &item.Episodes, &item.UAt); err != nil {
+				return nil, err
+			}
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+
 func UpsertTorrents(items []AniDBTorrent) error {
 	if len(items) == 0 {
 		return nil

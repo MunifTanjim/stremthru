@@ -2,6 +2,7 @@ package dash_api
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"slices"
 
@@ -15,9 +16,14 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/worker"
 )
 
+type ReprocessItem struct {
+	TId  string `json:"tid"`
+	Hash string `json:"hash"`
+}
+
 type ReprocessRequest struct {
-	Hashes  []string `json:"hashes"`
-	Targets []string `json:"targets"`
+	Items   []ReprocessItem `json:"items"`
+	Targets []string        `json:"targets"`
 }
 
 type ReprocessResponse struct {
@@ -99,7 +105,7 @@ func handleReprocessTorrents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Hashes) == 0 {
+	if len(req.Items) == 0 {
 		ErrorBadRequest(r).Send(w, r)
 		return
 	}
@@ -112,7 +118,13 @@ func handleReprocessTorrents(w http.ResponseWriter, r *http.Request) {
 	includeIMDB := slices.Contains(targets, "imdb")
 	includeAniDB := slices.Contains(targets, "anidb")
 
-	tInfoByHash, err := torrent_info.GetByHashes(req.Hashes)
+	hashSet := util.NewSet[string]()
+	for _, item := range req.Items {
+		hashSet.Add(item.Hash)
+	}
+	uniqueHashes := hashSet.ToSlice()
+
+	tInfoByHash, err := torrent_info.GetByHashes(uniqueHashes)
 	if err != nil {
 		SendError(w, r, err)
 		return
@@ -146,13 +158,21 @@ func handleReprocessTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if includeIMDB {
-		if err := imdb_torrent.DeleteByHashes(hashes); err != nil {
+		imdbPairs := make([]imdb_torrent.IMDBTorrent, len(req.Items))
+		for i, item := range req.Items {
+			imdbPairs[i] = imdb_torrent.IMDBTorrent{TId: item.TId, Hash: item.Hash}
+		}
+		if err := imdb_torrent.Delete(imdbPairs); err != nil {
 			SendError(w, r, err)
 			return
 		}
 	}
 	if includeAniDB {
-		if err := anidb.DeleteTorrentsByHashes(hashes); err != nil {
+		anidbPairs := make([]anidb.AniDBTorrent, len(req.Items))
+		for i, item := range req.Items {
+			anidbPairs[i] = anidb.AniDBTorrent{TId: item.TId, Hash: item.Hash}
+		}
+		if err := anidb.DeleteTorrentsByTidAndHashPairs(anidbPairs); err != nil {
 			SendError(w, r, err)
 			return
 		}
@@ -172,7 +192,18 @@ func handleReprocessTorrents(w http.ResponseWriter, r *http.Request) {
 	mapped := map[string]int{}
 
 	if includeIMDB {
-		imdbMapped, err := mapTorrentsToIMDB(tInfoByHash, log)
+		tInfoToRemap := maps.Clone(tInfoByHash)
+		existingIMDB, err := imdb_torrent.GetByHashes(hashes)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		for _, item := range existingIMDB {
+			if item.TId != "" {
+				delete(tInfoToRemap, item.Hash)
+			}
+		}
+		imdbMapped, err := mapTorrentsToIMDB(tInfoToRemap, log)
 		if err != nil {
 			SendError(w, r, err)
 			return
@@ -181,7 +212,18 @@ func handleReprocessTorrents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if includeAniDB {
-		anidbMapped, err := mapTorrentsToAniDB(tInfoByHash)
+		tInfoToRemap := maps.Clone(tInfoByHash)
+		existingAniDB, err := anidb.GetTorrentsByHashes(hashes)
+		if err != nil {
+			SendError(w, r, err)
+			return
+		}
+		for _, item := range existingAniDB {
+			if item.TId != "" {
+				delete(tInfoToRemap, item.Hash)
+			}
+		}
+		anidbMapped, err := mapTorrentsToAniDB(tInfoToRemap)
 		if err != nil {
 			SendError(w, r, err)
 			return

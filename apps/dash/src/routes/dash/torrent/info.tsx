@@ -11,7 +11,7 @@ import {
   AniDBMappingItem,
   IMDBMappingItem,
   MappingMode,
-  ReprocessTarget,
+  ReprocessItem,
   useAniDBMappings,
   useIMDBMappings,
   useReprocessTorrents,
@@ -129,7 +129,6 @@ function getImdbColumns(
       header: "Mapped At",
     }),
     imdbCol.display({
-      id: "actions",
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -146,6 +145,7 @@ function getImdbColumns(
       ),
       enableHiding: false,
       enableSorting: false,
+      id: "actions",
       size: 40,
     }),
   ];
@@ -234,7 +234,6 @@ function getAnidbColumns(
       header: "Mapped At",
     }),
     anidbCol.display({
-      id: "actions",
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -251,6 +250,7 @@ function getAnidbColumns(
       ),
       enableHiding: false,
       enableSorting: false,
+      id: "actions",
       size: 40,
     }),
   ];
@@ -270,23 +270,23 @@ function RouteComponent() {
   const [anidbEpisode, setAnidbEpisode] = useState("");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
-  const [reviewItem, setReviewItem] = useState<{
+  const [reviewItem, setReviewItem] = useState<null | {
     hash: string;
-    target: "imdb" | "anidb";
     prevId: string;
-  } | null>(null);
+    target: "anidb" | "imdb";
+  }>(null);
 
   const reprocessMutation = useReprocessTorrents();
 
   const handleReviewItem = (
-    item: IMDBMappingItem | AniDBMappingItem,
-    target: "imdb" | "anidb",
+    item: AniDBMappingItem | IMDBMappingItem,
+    target: "anidb" | "imdb",
   ) => {
     const prevId =
       target === "imdb"
         ? (item as IMDBMappingItem).imdb_id
         : (item as AniDBMappingItem).anidb_id;
-    setReviewItem({ hash: item.hash, target, prevId });
+    setReviewItem({ hash: item.hash, prevId, target });
     setReviewSheetOpen(true);
   };
 
@@ -316,19 +316,19 @@ function RouteComponent() {
 
   const imdbColumns = useMemo(
     () => getImdbColumns((item) => handleReviewItem(item, "imdb")),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [],
   );
   const anidbColumns = useMemo(
     () => getAnidbColumns((item) => handleReviewItem(item, "anidb")),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     [],
   );
 
   const imdbTable = useDataTable({
     columns: imdbColumns,
     data: imdbItems,
-    getRowId: (row) => row.hash,
+    getRowId: (row) => `${row.imdb_id ?? ""}:${row.hash}`,
     initialState: { columnPinning: { left: ["select", "hash"] } },
     onRowSelectionChange: setRowSelection,
     state: { rowSelection },
@@ -336,7 +336,8 @@ function RouteComponent() {
   const anidbTable = useDataTable({
     columns: anidbColumns,
     data: anidbItems,
-    getRowId: (row) => row.hash,
+    getRowId: (row) =>
+      `${row.anidb_id ?? ""}:${row.hash}:${row.season_type ?? ""}:${row.season ?? 0}`,
     initialState: { columnPinning: { left: ["select", "hash"] } },
     onRowSelectionChange: setRowSelection,
     state: { rowSelection },
@@ -357,14 +358,32 @@ function RouteComponent() {
     setRowSelection({});
   };
 
-  const selectedHashes = Object.keys(rowSelection).filter(
-    (key) => rowSelection[key],
-  );
+  const selectedItems = (() => {
+    const seen = new Set<string>();
+    const items: ReprocessItem[] = [];
 
-  const handleReprocess = (hashes: string[], targets?: ReprocessTarget[]) => {
-    const effectiveTargets = targets ?? [tab];
+    for (const key of Object.keys(rowSelection)) {
+      if (!rowSelection[key]) continue;
+
+      const parts = key.split(":");
+      if (tab === "imdb") {
+        // IMDB: tid:hash
+        items.push({ tid: parts[0], hash: parts[1] });
+      } else {
+        // AniDB: tid:hash:s_type:s - extract only tid:hash, dedupe
+        const dedupeKey = `${parts[0]}:${parts[1]}`;
+        if (!seen.has(dedupeKey)) {
+          seen.add(dedupeKey);
+          items.push({ tid: parts[0], hash: parts[1] });
+        }
+      }
+    }
+    return items;
+  })();
+
+  const handleReprocess = (items: ReprocessItem[]) => {
     reprocessMutation.mutate(
-      { hashes, targets: effectiveTargets },
+      { items, targets: [tab] },
       {
         onError: (error) => {
           toast.error(`Error: ${error.message}`);
@@ -566,14 +585,14 @@ function RouteComponent() {
         )}
 
         {/* Actions */}
-        {selectedHashes.length > 0 && (
+        {selectedItems.length > 0 && (
           <div className="ml-auto flex items-center gap-2">
             <span className="text-muted-foreground text-sm">
-              {selectedHashes.length} selected
+              {selectedItems.length} selected
             </span>
             <Button
               disabled={reprocessMutation.isPending}
-              onClick={() => handleReprocess(selectedHashes)}
+              onClick={() => handleReprocess(selectedItems)}
               variant="outline"
             >
               <RefreshCwIcon

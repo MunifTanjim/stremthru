@@ -37,8 +37,13 @@ export type MappingParams = {
   unmapped?: boolean;
 };
 
+export type ReprocessItem = {
+  hash: string;
+  tid: string;
+};
+
 export type ReprocessRequest = {
-  hashes: string[];
+  items: ReprocessItem[];
   targets?: ReprocessTarget[];
 };
 

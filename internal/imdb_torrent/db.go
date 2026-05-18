@@ -106,6 +106,62 @@ func DeleteByHashes(hashes []string) error {
 	return nil
 }
 
+func Delete(pairs []IMDBTorrent) error {
+	if len(pairs) == 0 {
+		return nil
+	}
+
+	for cPairs := range slices.Chunk(pairs, 500) {
+		placeholders := util.RepeatJoin("(?,?)", len(cPairs), ",")
+		query := fmt.Sprintf("DELETE FROM %s WHERE (%s, %s) IN (%s)", TableName, Column.TId, Column.Hash, placeholders)
+		args := make([]any, len(cPairs)*2)
+		for i, p := range cPairs {
+			args[i*2] = p.TId
+			args[i*2+1] = p.Hash
+		}
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			log.Error("failed to delete imdb torrents by tid and hash pairs", "error", err)
+			return err
+		}
+	}
+	return nil
+}
+
+var query_get_by_hashes = fmt.Sprintf(
+	"SELECT %s, %s, %s FROM %s WHERE %s IN ",
+	Column.TId, Column.Hash, Column.UAt, TableName, Column.Hash,
+)
+
+func GetByHashes(hashes []string) ([]IMDBTorrent, error) {
+	if len(hashes) == 0 {
+		return []IMDBTorrent{}, nil
+	}
+
+	result := []IMDBTorrent{}
+	for cHashes := range slices.Chunk(hashes, 500) {
+		placeholders := util.RepeatJoin("?", len(cHashes), ",")
+		query := query_get_by_hashes + "(" + placeholders + ")"
+		args := make([]any, len(cHashes))
+		for i, h := range cHashes {
+			args[i] = h
+		}
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var item IMDBTorrent
+			if err := rows.Scan(&item.TId, &item.Hash, &item.UAt); err != nil {
+				return nil, err
+			}
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+
 // MappingItem represents a torrent-to-IMDB mapping with enriched data
 type MappingItem struct {
 	Hash      string       `json:"hash"`

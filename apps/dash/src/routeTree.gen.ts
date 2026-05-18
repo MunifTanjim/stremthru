@@ -35,6 +35,7 @@ import { Route as DashUsenetNzbRouteImport } from './routes/dash/usenet/nzb'
 import { Route as DashUsenetIndexersRouteImport } from './routes/dash/usenet/indexers'
 import { Route as DashTorrentTorznabIndexersRouteImport } from './routes/dash/torrent/torznab-indexers'
 import { Route as DashTorrentSyncInfoRouteImport } from './routes/dash/torrent/sync-info'
+import { Route as DashTorrentReviewRequestsRouteImport } from './routes/dash/torrent/review-requests'
 import { Route as DashTorrentInfoRouteImport } from './routes/dash/torrent/info'
 import { Route as DashSyncStremioTraktRouteImport } from './routes/dash/sync/stremio-trakt'
 import { Route as DashSyncStremioStremioRouteImport } from './routes/dash/sync/stremio-stremio'
@@ -174,6 +175,12 @@ const DashTorrentSyncInfoRoute = DashTorrentSyncInfoRouteImport.update({
   path: '/sync-info',
   getParentRoute: () => DashTorrentRoute,
 } as any)
+const DashTorrentReviewRequestsRoute =
+  DashTorrentReviewRequestsRouteImport.update({
+    id: '/review-requests',
+    path: '/review-requests',
+    getParentRoute: () => DashTorrentRoute,
+  } as any)
 const DashTorrentInfoRoute = DashTorrentInfoRouteImport.update({
   id: '/info',
   path: '/info',
@@ -224,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrent/info': typeof DashTorrentInfoRoute
+  '/dash/torrent/review-requests': typeof DashTorrentReviewRequestsRoute
   '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
   '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
@@ -251,6 +259,7 @@ export interface FileRoutesByTo {
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrent/info': typeof DashTorrentInfoRoute
+  '/dash/torrent/review-requests': typeof DashTorrentReviewRequestsRoute
   '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
   '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
@@ -286,6 +295,7 @@ export interface FileRoutesById {
   '/dash/sync/stremio-stremio': typeof DashSyncStremioStremioRoute
   '/dash/sync/stremio-trakt': typeof DashSyncStremioTraktRoute
   '/dash/torrent/info': typeof DashTorrentInfoRoute
+  '/dash/torrent/review-requests': typeof DashTorrentReviewRequestsRoute
   '/dash/torrent/sync-info': typeof DashTorrentSyncInfoRoute
   '/dash/torrent/torznab-indexers': typeof DashTorrentTorznabIndexersRoute
   '/dash/usenet/indexers': typeof DashUsenetIndexersRoute
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/torrent/info'
+    | '/dash/torrent/review-requests'
     | '/dash/torrent/sync-info'
     | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/indexers'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/torrent/info'
+    | '/dash/torrent/review-requests'
     | '/dash/torrent/sync-info'
     | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/indexers'
@@ -383,6 +395,7 @@ export interface FileRouteTypes {
     | '/dash/sync/stremio-stremio'
     | '/dash/sync/stremio-trakt'
     | '/dash/torrent/info'
+    | '/dash/torrent/review-requests'
     | '/dash/torrent/sync-info'
     | '/dash/torrent/torznab-indexers'
     | '/dash/usenet/indexers'
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashTorrentSyncInfoRouteImport
       parentRoute: typeof DashTorrentRoute
     }
+    '/dash/torrent/review-requests': {
+      id: '/dash/torrent/review-requests'
+      path: '/review-requests'
+      fullPath: '/dash/torrent/review-requests'
+      preLoaderRoute: typeof DashTorrentReviewRequestsRouteImport
+      parentRoute: typeof DashTorrentRoute
+    }
     '/dash/torrent/info': {
       id: '/dash/torrent/info'
       path: '/info'
@@ -681,6 +701,7 @@ const DashSyncRouteWithChildren = DashSyncRoute._addFileChildren(
 
 interface DashTorrentRouteChildren {
   DashTorrentInfoRoute: typeof DashTorrentInfoRoute
+  DashTorrentReviewRequestsRoute: typeof DashTorrentReviewRequestsRoute
   DashTorrentSyncInfoRoute: typeof DashTorrentSyncInfoRoute
   DashTorrentTorznabIndexersRoute: typeof DashTorrentTorznabIndexersRoute
   DashTorrentIndexRoute: typeof DashTorrentIndexRoute
@@ -688,6 +709,7 @@ interface DashTorrentRouteChildren {
 
 const DashTorrentRouteChildren: DashTorrentRouteChildren = {
   DashTorrentInfoRoute: DashTorrentInfoRoute,
+  DashTorrentReviewRequestsRoute: DashTorrentReviewRequestsRoute,
   DashTorrentSyncInfoRoute: DashTorrentSyncInfoRoute,
   DashTorrentTorznabIndexersRoute: DashTorrentTorznabIndexersRoute,
   DashTorrentIndexRoute: DashTorrentIndexRoute,

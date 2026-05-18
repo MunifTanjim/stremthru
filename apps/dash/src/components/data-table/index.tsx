@@ -1,4 +1,10 @@
-import { Cell, Header, RowData, Table as TTable } from "@tanstack/react-table";
+import {
+  Cell,
+  Header,
+  Row,
+  RowData,
+  Table as TTable,
+} from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { CSSProperties } from "react";
 
@@ -30,7 +36,13 @@ declare module "@tanstack/react-table" {
   }
 }
 
-export function DataTable<TData>({ table }: { table: TTable<TData> }) {
+export function DataTable<TData>({
+  onRowClick,
+  table,
+}: {
+  onRowClick?: (row: Row<TData>) => void;
+  table: TTable<TData>;
+}) {
   return (
     <div className="overflow-hidden rounded-md border">
       <Table className="border-separate">
@@ -66,9 +78,12 @@ export function DataTable<TData>({ table }: { table: TTable<TData> }) {
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <TableRow
-                className="[&:last-child_td]:border-b-0"
+                className={cn("[&:last-child_td]:border-b-0", {
+                  "cursor-pointer": Boolean(onRowClick),
+                })}
                 data-state={row.getIsSelected() && "selected"}
                 key={row.id}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {row.getVisibleCells().map((cell) => {
                   const pinned = cell.column.getIsPinned();

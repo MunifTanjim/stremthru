@@ -7,7 +7,6 @@ import (
 
 	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
-	"github.com/MunifTanjim/stremthru/internal/shared"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
 )
@@ -81,11 +80,6 @@ func toAniDBMappingResponse(items []anidb.MappingItem) []AniDBMappingItemRespons
 }
 
 func handleGetIMDBMappings(w http.ResponseWriter, r *http.Request) {
-	if !shared.IsMethod(r, http.MethodGet) {
-		ErrorMethodNotAllowed(r).Send(w, r)
-		return
-	}
-
 	query := r.URL.Query()
 	mode := query.Get("mode")
 	q := query.Get("q")
@@ -113,20 +107,20 @@ func handleGetIMDBMappings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hashes, hashErr := torrent_info.ListHashesByStremId(q)
-		if hashErr != nil {
-			SendError(w, r, hashErr)
-			return
+		hashes, herr := torrent_info.ListHashesByStremId(q)
+		if herr == nil {
+			items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, false, false)
 		}
-
-		items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, false, false)
 	case "by-title":
-		hashes, hashErr := torrent_info.ListHashesByTitleQuery(q, 1000)
-		if hashErr != nil {
-			SendError(w, r, hashErr)
-			return
+		var hashes []string
+		if util.IsTorrentInfoHash(q) {
+			hashes = []string{q}
+		} else {
+			hashes, err = torrent_info.ListHashesByTitleQuery(q, 1000)
 		}
-		items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		if err == nil {
+			items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		}
 	default:
 		SendData(w, r, 200, ListIMDBMappingsResponse{
 			Items: []IMDBMappingItemResponse{},
@@ -151,11 +145,6 @@ func handleGetIMDBMappings(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetAniDBMappings(w http.ResponseWriter, r *http.Request) {
-	if !shared.IsMethod(r, http.MethodGet) {
-		ErrorMethodNotAllowed(r).Send(w, r)
-		return
-	}
-
 	query := r.URL.Query()
 	mode := query.Get("mode")
 	q := query.Get("q")
@@ -183,20 +172,20 @@ func handleGetAniDBMappings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hashes, hashErr := torrent_info.ListHashesByStremId(q)
-		if hashErr != nil {
-			SendError(w, r, hashErr)
-			return
+		hashes, herr := torrent_info.ListHashesByStremId(q)
+		if herr == nil {
+			items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, true, false)
 		}
-
-		items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, true, false)
 	case "by-title":
-		hashes, hashErr := torrent_info.ListHashesByTitleQuery(q, 1000)
-		if hashErr != nil {
-			SendError(w, r, hashErr)
-			return
+		var hashes []string
+		if util.IsTorrentInfoHash(q) {
+			hashes = []string{q}
+		} else {
+			hashes, err = torrent_info.ListHashesByTitleQuery(q, 1000)
 		}
-		items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		if err == nil {
+			items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		}
 	default:
 		SendData(w, r, 200, ListAniDBMappingsResponse{
 			Items: []AniDBMappingItemResponse{},
@@ -223,6 +212,6 @@ func handleGetAniDBMappings(w http.ResponseWriter, r *http.Request) {
 func AddTorrentInfoEndpoints(router *http.ServeMux) {
 	authed := EnsureAuthed
 
-	router.HandleFunc("/torrents/info/imdb", authed(handleGetIMDBMappings))
-	router.HandleFunc("/torrents/info/anidb", authed(handleGetAniDBMappings))
+	router.HandleFunc("GET /torrents/info/imdb", authed(handleGetIMDBMappings))
+	router.HandleFunc("GET /torrents/info/anidb", authed(handleGetAniDBMappings))
 }

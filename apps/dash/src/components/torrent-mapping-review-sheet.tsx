@@ -6,8 +6,9 @@ import { IMDBTitle } from "@/api/imdb";
 import {
   MappingReviewRequest,
   ReviewReason,
+  SuggestedMapping,
   useSubmitMappingReview,
-} from "@/api/torrent-mapping-review";
+} from "@/api/torrent-review-requests";
 
 import { AniDBSearch } from "./anidb-search";
 import { IMDBSearch } from "./imdb-search";
@@ -28,6 +29,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "./ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
 import { Textarea } from "./ui/textarea";
 
 type TorrentMappingReviewSheetProps = {
@@ -63,6 +72,7 @@ export function TorrentMappingReviewSheet({
   const [correctedId, setCorrectedId] = useState("");
   const [correctedTitle, setCorrectedTitle] = useState("");
   const [comment, setComment] = useState("");
+  const [suggestedMappings, setSuggestedMappings] = useState<SuggestedMapping[]>([]);
 
   const submitReview = useSubmitMappingReview();
 
@@ -71,6 +81,7 @@ export function TorrentMappingReviewSheet({
     setCorrectedId("");
     setCorrectedTitle("");
     setComment("");
+    setSuggestedMappings([]);
   }
 
   function handleIMDBSelect(title: IMDBTitle) {
@@ -83,10 +94,45 @@ export function TorrentMappingReviewSheet({
     setCorrectedTitle(title.title);
   }
 
+  function handleMappingChange(index: number, field: keyof SuggestedMapping, value: string | number) {
+    const updated = [...suggestedMappings];
+    updated[index] = { ...updated[index], [field]: value };
+    setSuggestedMappings(updated);
+  }
+
+  function handleAddMapping() {
+    setSuggestedMappings([
+      ...suggestedMappings,
+      { s_type: "tv", s: 1, ep_start: 1, ep_end: 1 },
+    ]);
+  }
+
+  function handleRemoveMapping(index: number) {
+    setSuggestedMappings(suggestedMappings.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit() {
     if (!reason) {
       toast.error("Please select a reason.");
       return;
+    }
+
+    // Validate: if AniDB with corrected ID, require at least one mapping
+    if (target === "anidb" && correctedId && suggestedMappings.length === 0) {
+      toast.error("Please add at least one suggested mapping.");
+      return;
+    }
+
+    // Validate mapping values
+    for (const m of suggestedMappings) {
+      if (m.ep_start > m.ep_end) {
+        toast.error("Invalid episode range: start cannot be greater than end.");
+        return;
+      }
+      if (m.s < 0 || m.ep_start < 0 || m.ep_end < 0) {
+        toast.error("Season and episode numbers must be non-negative.");
+        return;
+      }
     }
 
     const params: MappingReviewRequest = {
@@ -96,6 +142,7 @@ export function TorrentMappingReviewSheet({
       prev_id: prevId,
       reason,
       target,
+      suggested_mappings: target === "anidb" && suggestedMappings.length > 0 ? suggestedMappings : undefined,
     };
 
     try {
@@ -165,6 +212,81 @@ export function TorrentMappingReviewSheet({
               <p className="text-muted-foreground text-xs">{correctedId}</p>
             )}
           </div>
+
+          {target === "anidb" && correctedId && (
+            <div className="flex flex-col gap-2">
+              <Label>Suggested Mappings</Label>
+              {suggestedMappings.length > 0 && (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Season</TableHead>
+                      <TableHead>Ep Start</TableHead>
+                      <TableHead>Ep End</TableHead>
+                      <TableHead><span className="sr-only">Actions</span></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {suggestedMappings.map((mapping, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Select
+                            value={mapping.s_type}
+                            onValueChange={(v) => handleMappingChange(index, "s_type", v)}
+                          >
+                            <SelectTrigger className="h-8 w-20" aria-label="Season type">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="abs">abs</SelectItem>
+                              <SelectItem value="tv">tv</SelectItem>
+                              <SelectItem value="ani">ani</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            className="h-8 w-16"
+                            value={mapping.s}
+                            onChange={(e) => handleMappingChange(index, "s", parseInt(e.target.value) || 0)}
+                            aria-label="Season"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            className="h-8 w-16"
+                            value={mapping.ep_start}
+                            onChange={(e) => handleMappingChange(index, "ep_start", parseInt(e.target.value) || 0)}
+                            aria-label="Episode start"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            className="h-8 w-16"
+                            value={mapping.ep_end}
+                            onChange={(e) => handleMappingChange(index, "ep_end", parseInt(e.target.value) || 0)}
+                            aria-label="Episode end"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => handleRemoveMapping(index)}>
+                            ✕
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <Button variant="outline" size="sm" onClick={handleAddMapping}>
+                + Add Mapping
+              </Button>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="review-comment">Comment (optional)</Label>
