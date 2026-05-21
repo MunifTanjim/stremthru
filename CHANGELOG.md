@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.101.6](https://github.com/MunifTanjim/stremthru/compare/0.101.5...0.101.6) (2026-05-21)
+
+
+### Bug Fixes
+
+* **newznab:** adjust queries in stremthru indexer ([c3afea2](https://github.com/MunifTanjim/stremthru/commit/c3afea2421497ccfb1a17b16a0e09f9b93d5cd63))
+* **torz:** fix error handling for add torz ([b8972d9](https://github.com/MunifTanjim/stremthru/commit/b8972d93bb4f348c673527f11858d6567fdb9441))
+* **usenet:** fix HashNZBFileLink for newznab api t=g ([46d5e9d](https://github.com/MunifTanjim/stremthru/commit/46d5e9d194afd73a06ba74c0dec4405648033915))
+
 ## [0.101.5](https://github.com/MunifTanjim/stremthru/compare/0.101.4...0.101.5) (2026-05-13)
 
 
