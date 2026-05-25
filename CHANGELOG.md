@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.101.7](https://github.com/MunifTanjim/stremthru/compare/0.101.6...0.101.7) (2026-05-25)
+
+
+### Bug Fixes
+
+* **mdblist:** deal with undocumented/inconsistent data type ([d3cad16](https://github.com/MunifTanjim/stremthru/commit/d3cad1691e74e9c9da8874b618572eeb90f03742))
+* **store/torbox:** extract error message from html response ([6f6322d](https://github.com/MunifTanjim/stremthru/commit/6f6322de9cd50a5965d2d177ae5cd75647952797))
+* **stremio/store:** fix panic on bad request for unsupported store ([ab094ac](https://github.com/MunifTanjim/stremthru/commit/ab094ac02afef0a4b6d160facc5c56ebb8d00661))
+* **torrent_info:** fix lingering data on re-parse ([c2cf2cd](https://github.com/MunifTanjim/stremthru/commit/c2cf2cd151e03137c4a43e55cc2674aca93efe7e))
+* **torrent_info:** fix OOM when parsing bad titles ([ad8fc1f](https://github.com/MunifTanjim/stremthru/commit/ad8fc1f6d9dcdb92f6dfab17ec3a4d896ff36746))
+
 ## [0.101.6](https://github.com/MunifTanjim/stremthru/compare/0.101.5...0.101.6) (2026-05-21)
 
 
