@@ -158,7 +158,10 @@ func (c *APIClient) login(cfg *qbitConfig) (*http.Client, error) {
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 
-	if resp.StatusCode != http.StatusOK {
+	// qBittorrent 5.2.0+ returns 204 No Content on a successful login, while
+	// older versions return 200 with an "Ok."/"Fails." body. Accept both; the
+	// SID cookie check below is the authoritative success signal.
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return nil, UpstreamErrorWithCause(newQbitError(resp.StatusCode, body))
 	}
 
