@@ -169,7 +169,10 @@ func (c *APIClient) login(cfg *qbitConfig) (*http.Client, error) {
 	cookies := jar.Cookies(baseURL)
 	hasSID := false
 	for _, cookie := range cookies {
-		if cookie.Name == "SID" {
+		// qBittorrent 5.2.0+ names the session cookie QBT_SID_<port>; older
+		// versions use plain SID. The cookie jar replays whichever one back on
+		// subsequent requests, so we just need to confirm a session was set.
+		if cookie.Name == "SID" || strings.HasPrefix(cookie.Name, "QBT_SID") {
 			hasSID = true
 			break
 		}
