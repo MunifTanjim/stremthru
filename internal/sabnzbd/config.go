@@ -4,6 +4,8 @@ import "github.com/MunifTanjim/stremthru/internal/config"
 
 var version = config.Newz.GetSABnzbdVersion()
 
+const nzoIDPrefix = "SABnzbd_nzo_"
+
 var categories = []map[string]any{
 	{
 		"name":     "*",
