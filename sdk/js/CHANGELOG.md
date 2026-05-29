@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.12.0...sdk-js-0.13.0) (2026-05-29)
+
+
+### Features
+
+* **sdk/js:** add name for check torz items ([a2e6650](https://github.com/MunifTanjim/stremthru/commit/a2e66509f1fc365589afb7443cffca12cf5cd74f))
+
 ## [0.12.0](https://github.com/MunifTanjim/stremthru/compare/sdk-js-0.11.0...sdk-js-0.12.0) (2026-03-05)
 
 
