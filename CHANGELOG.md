@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.102.0](https://github.com/MunifTanjim/stremthru/compare/0.101.7...0.102.0) (2026-05-29)
+
+
+### Features
+
+* **bitmagnet:** allow progress reset from dashboard ([dc7ff22](https://github.com/MunifTanjim/stremthru/commit/dc7ff22b579fb812ff8fd29ad8d3da54c1a2a29e))
+* **config:** re-organize feature list ([424bbbd](https://github.com/MunifTanjim/stremthru/commit/424bbbda8e897b845b97a9d21b5cd96e3bb69893))
+* **dash/settings:** make all config sections collapsible ([7bf6f16](https://github.com/MunifTanjim/stremthru/commit/7bf6f161bc6c6eb399b132e872a869dca03bd3ab))
+* **dmm_hashlist:** allow progress reset from dashboard ([852891d](https://github.com/MunifTanjim/stremthru/commit/852891de6f30da104a7a8e359a9b69fc4d2c1510))
+* **newznab:** add indexer stats ([d077c65](https://github.com/MunifTanjim/stremthru/commit/d077c658e4bc6ff81c6c1a8d16085c78e0651abf))
+* **newznab:** add tunnel settings for indexer ([1076fce](https://github.com/MunifTanjim/stremthru/commit/1076fce189dd37b31b6b4f758efb485727c2f32b))
+* **newznab:** support newznab for individual indexer ([d822032](https://github.com/MunifTanjim/stremthru/commit/d822032fef855498ffac595d0a5a60949719f98d))
+* **sabnzbd:** support mode - get_cats, history, queue ([f3a4713](https://github.com/MunifTanjim/stremthru/commit/f3a4713a2e0795ec25162a1c1b11ad712a0f603b))
+* **store:** forward retry-after header ([7060cec](https://github.com/MunifTanjim/stremthru/commit/7060cecd0f2647246ccbb822aeb81c1efe5b1625))
+* **stremio:** strictly validate stream filter ([ac167c3](https://github.com/MunifTanjim/stremthru/commit/ac167c3e41e62837509c87d44b3610e89eda28b1))
+* **torrent_info:** revamp dashboard torrent info page ([edc1e64](https://github.com/MunifTanjim/stremthru/commit/edc1e64836dcf453c60cecf361b65496bb1bc80d))
+* **torrent_info:** revamp dashboard torrent info page ([8e851e2](https://github.com/MunifTanjim/stremthru/commit/8e851e2c9cfb0807b484ab15815e58c2202a2084))
+* **torz:** add name in check endpoint response ([7b86760](https://github.com/MunifTanjim/stremthru/commit/7b8676033f73b226bfb01333420022e5042cbf89))
+* **torznab/indexer:** shorten syncinfo error from jackett ([a0a2959](https://github.com/MunifTanjim/stremthru/commit/a0a2959bd90398ec4bbb4a35bd65d3b03db4f50f))
+* **usenet:** record nzb file inspection meta ([b9b0016](https://github.com/MunifTanjim/stremthru/commit/b9b00168749dc0b4a15dcdadc50fb1a3e59f41bd))
+* **usenet:** support tunnel fallback for nzb grab ([97e0e11](https://github.com/MunifTanjim/stremthru/commit/97e0e114897a80f78e05a7c667b9d9890bfbec52))
+
+
+### Bug Fixes
+
+* **dash/usenet:** fix colliding stats chart color ([7a5d19b](https://github.com/MunifTanjim/stremthru/commit/7a5d19bfa55035bda48082addf78d46736cbf39e))
+* **torznab/client:** fix cache key for torrent file download ([f67234a](https://github.com/MunifTanjim/stremthru/commit/f67234ab38084a6880507617cab67abfb8fc2de7))
+* **torznab/client:** fix nil pointer dereference in SetLimit ([0eca6f3](https://github.com/MunifTanjim/stremthru/commit/0eca6f357c03ad4c2faf5e3cae04ce1515a1e07b))
+* **usenet:** purge idle connections from pool info ([a3b8b59](https://github.com/MunifTanjim/stremthru/commit/a3b8b5943abed1dd0f8a30549d4fc656fdb4e9c4))
+
 ## [0.101.7](https://github.com/MunifTanjim/stremthru/compare/0.101.6...0.101.7) (2026-05-25)
 
 
