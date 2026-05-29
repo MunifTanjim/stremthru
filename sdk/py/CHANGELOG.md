@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.8.0...sdk-py-0.9.0) (2026-05-29)
+
+
+### Features
+
+* **sdk/py:** add name for check torz items ([d973a63](https://github.com/MunifTanjim/stremthru/commit/d973a63417a911a6d6cf0a25dd22f6cc8d57561d))
+
 ## [0.8.0](https://github.com/MunifTanjim/stremthru/compare/sdk-py-0.7.0...sdk-py-0.8.0) (2026-03-05)
 
 
