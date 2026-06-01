@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.102.1](https://github.com/MunifTanjim/stremthru/compare/0.102.0...0.102.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* **store:** fix nil pointer dereference for check magnet ([b1eb651](https://github.com/MunifTanjim/stremthru/commit/b1eb651f22df22be2c97e0fbedf95a6b133e77dc))
+
 ## [0.102.0](https://github.com/MunifTanjim/stremthru/compare/0.101.7...0.102.0) (2026-05-29)
 
 
