@@ -816,6 +816,12 @@ func PrintConfig(state *AppState) {
 		l.Println("      nzb file max size: " + data.Newz.NZBFileMaxSize)
 		l.Println("     segment cache size: " + data.Newz.SegmentCacheSize)
 		l.Println("     stream buffer size: " + data.Newz.StreamBufferSize)
+		if len(data.Newz.Flags) > 0 {
+			l.Println("                  flags:")
+			for _, flag := range data.Newz.Flags {
+				l.Println("                    - " + flag)
+			}
+		}
 		l.Println()
 	}
 

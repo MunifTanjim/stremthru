@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -77,6 +78,32 @@ func (mbt newzIndexerRequestHeaderByType) Get(queryType NewzIndexerRequestQueryT
 	return nil
 }
 
+type newzConfigFlag struct {
+	is_set bool
+	list   []string
+
+	ServerPickerRandomize bool
+}
+
+func (flags *newzConfigFlag) fromString(input string) {
+	if flags.is_set {
+		return
+	}
+	for _, part := range strings.FieldsFunc(input, func(c rune) bool {
+		return c == ','
+	}) {
+		flag := strings.TrimSpace(part)
+		flags.list = append(flags.list, flag)
+		switch flag {
+		case "server_picker_randomize":
+			flags.ServerPickerRandomize = true
+		default:
+			log.Fatalf("newz config: unknown flag: %s", flag)
+		}
+	}
+	flags.is_set = true
+}
+
 type newzConfig struct {
 	IndexerRequestHeader   newzIndexerRequestHeaderMap
 	MaxConnectionPerStream int
@@ -85,6 +112,7 @@ type newzConfig struct {
 	NZBFileMaxSize         int64
 	SegmentCacheSize       int64
 	StreamBufferSize       int64
+	Flag                   newzConfigFlag
 
 	sabnzbdVersion string
 }
@@ -208,6 +236,8 @@ var Newz = func() newzConfig {
 		SegmentCacheSize:       util.ToBytes(getEnv("STREMTHRU_NEWZ_SEGMENT_CACHE_SIZE")),
 		StreamBufferSize:       util.ToBytes(getEnv("STREMTHRU_NEWZ_STREAM_BUFFER_SIZE")),
 	}
+
+	newz.Flag.fromString(getEnv("STREMTHRU_NEWZ_FLAG"))
 
 	return newz
 }()

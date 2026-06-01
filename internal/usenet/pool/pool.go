@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"slices"
 	"sync"
 	"time"
 
 	"golang.org/x/sync/singleflight"
 
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/logger"
 	"github.com/MunifTanjim/stremthru/internal/nntp"
 	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
@@ -193,6 +195,12 @@ func (p *Pool) GetConnection(ctx context.Context, excluder ProviderExcluder, max
 
 	if len(providers) == 0 {
 		return nil, ErrNoProvidersAvailable
+	}
+
+	if config.Newz.Flag.ServerPickerRandomize {
+		rand.Shuffle(len(providers), func(i, j int) {
+			providers[i], providers[j] = providers[j], providers[i]
+		})
 	}
 
 	for _, provider := range providers {
