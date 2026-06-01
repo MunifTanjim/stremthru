@@ -53,6 +53,7 @@ type ConfigNetwork = {
 
 type ConfigNewz = {
   disabled: boolean;
+  flags?: string[];
   max_connection_per_stream: string;
   nzb_file_cache_size: string;
   nzb_file_cache_ttl: string;

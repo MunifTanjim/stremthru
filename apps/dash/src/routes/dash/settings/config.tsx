@@ -269,7 +269,7 @@ function NewzSection({ newz }: { newz: ConfigData["newz"] }) {
     { key: "max_connection_per_stream", label: "Max Connection Per Stream" },
   ];
 
-  const settingsCount = configFields.length;
+  const settingsCount = configFields.length + (newz.flags?.length ? 1 : 0);
 
   return (
     <CollapsibleConfigSection
@@ -290,6 +290,20 @@ function NewzSection({ newz }: { newz: ConfigData["newz"] }) {
                 value={String(usenetConfig[key])}
               />
             ))}
+            {newz.flags?.length ? (
+              <ConfigEntry
+                label="Flags"
+                value={
+                  <span className="flex flex-wrap gap-1">
+                    {newz.flags.map((flag) => (
+                      <Badge key={flag} variant="secondary">
+                        {flag}
+                      </Badge>
+                    ))}
+                  </span>
+                }
+              />
+            ) : null}
           </div>
           <div className="mt-4 border-t pt-4">
             <h3 className="mb-3 text-sm font-semibold">

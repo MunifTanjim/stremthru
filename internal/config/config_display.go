@@ -86,6 +86,7 @@ type ConfigDisplayIntegration struct {
 
 type ConfigDisplayNewz struct {
 	Disabled               bool              `json:"disabled"`
+	Flags                  []string          `json:"flags,omitempty"`
 	MaxConnectionPerStream string            `json:"max_connection_per_stream"`
 	NZBFileCacheSize       string            `json:"nzb_file_cache_size"`
 	NZBFileCacheTTL        string            `json:"nzb_file_cache_ttl"`
@@ -292,6 +293,7 @@ func BuildConfigDisplay(storeNames []string) ConfigDisplay {
 		for hostname, mode := range NewzNZBLinkMode {
 			data.Newz.NZBLinkMode[hostname] = string(mode)
 		}
+		data.Newz.Flags = Newz.Flag.list
 	}
 
 	data.Torz.Disabled = !Feature.HasTorz()

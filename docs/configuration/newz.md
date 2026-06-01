@@ -164,6 +164,20 @@ Header-Name: Header-Value
 STREMTHRU_NEWZ_GRAB_HEADER=":sabnzbd:"
 ```
 
+### `STREMTHRU_NEWZ_FLAG`
+
+Comma-separated list of flags to control Newz behavior.
+
+| Value                     | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| `server_picker_randomize` | Randomize usenet server (w/ same priority) selection |
+
+**Example:**
+
+```sh
+STREMTHRU_NEWZ_FLAG=server_picker_randomize
+```
+
 ## Authentication
 
 ### `STREMTHRU_AUTH_SABNZBD`
