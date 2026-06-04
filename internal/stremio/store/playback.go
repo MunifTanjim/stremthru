@@ -119,6 +119,18 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		var stLink string
 		var lerr error
 		switch storeName {
+		case store.StoreNameDebridLink:
+			if config.StoreContentProxy.IsEnabled(string(storeName)) && ctx.StoreAuthToken == config.StoreAuthToken.GetToken(ctx.ProxyAuthUser, string(storeName)) {
+				if ctx.IsProxyAuthorized {
+					tunnelType := config.StoreTunnel.GetTypeForStream(string(storeName))
+					if proxyLink, err := shared.CreateProxyLink(r, link, nil, tunnelType, 12*time.Hour, ctx.ProxyAuthUser, ctx.ProxyAuthPassword, true, fileName); err != nil {
+						lerr = err
+					} else {
+						link = proxyLink
+					}
+				}
+			}
+			stLink = link
 		case store.StoreNamePikPak:
 			linkData, err := shared.GenerateStremThruLink(r, &ctx.Context, url, fileName)
 			if err != nil {

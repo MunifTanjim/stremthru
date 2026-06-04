@@ -21,6 +21,8 @@ type PoolConfig struct {
 	MinSize int32
 	MaxSize int32
 
+	MaxInflightCommands uint8
+
 	HealthCheckTimeout time.Duration
 	ReconnectTimeout   time.Duration
 	ReconnectDelay     time.Duration
@@ -106,6 +108,10 @@ func (p *Pool) MaxSize() int32 {
 
 func (p *Pool) MinSize() int32 {
 	return p.config.MinSize
+}
+
+func (p *Pool) MaxInflightCommands() uint8 {
+	return p.config.MaxInflightCommands
 }
 
 func NewPool(config *PoolConfig) (*Pool, error) {
@@ -419,4 +425,8 @@ func (pc *PooledConnection) CurrentGroup() string {
 
 func (pc *PooledConnection) ProviderId() string {
 	return pc.pool.Id()
+}
+
+func (pc *PooledConnection) MaxInflightCommands() uint8 {
+	return pc.pool.MaxInflightCommands()
 }

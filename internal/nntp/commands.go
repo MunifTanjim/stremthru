@@ -490,29 +490,11 @@ func (c *Connection) Article(spec string) (*Article, error) {
 	}, nil
 }
 
-// The `spec` parameter can be:
-//   - "message-id"
-//   - "number"
-//   - ""
-//
-// Reference: RFC 3977 Section 6.2.2 (HEAD)
-// https://tools.ietf.org/html/rfc3977#section-6.2.2
-func (c *Connection) Head(spec string) (*Article, error) {
-	if err := c.ensureConnected(); err != nil {
-		return nil, err
-	}
+type HeadCmdResult struct {
+	*CmdResult
+}
 
-	if spec != "" {
-		if err := validateInput(spec); err != nil {
-			return nil, err
-		}
-	}
-
-	r := c.cmd(CommandHead.String(), spec)
-	if err := r.Err(); err != nil {
-		return nil, err
-	}
-
+func (r *HeadCmdResult) Response() (*Article, error) {
 	code, message, headers, err := r.readCodeLineAndHeaders(StatusArticleHeaders)
 	if err != nil {
 		return nil, NewCommandError(r.cmd, code, message).WithCause(err)
@@ -534,29 +516,42 @@ func (c *Connection) Head(spec string) (*Article, error) {
 	}, nil
 }
 
-// The `spec` parameter can be:
-//   - "message-id"
-//   - "number"
-//   - ""
-//
-// Reference: RFC 3977 Section 6.2.3 (BODY)
-// https://tools.ietf.org/html/rfc3977#section-6.2.3
-func (c *Connection) Body(spec string) (*Article, error) {
-	if err := c.ensureConnected(); err != nil {
-		return nil, err
-	}
-
+func (c *Connection) HeadCmd(spec string) (*HeadCmdResult, error) {
 	if spec != "" {
 		if err := validateInput(spec); err != nil {
 			return nil, err
 		}
 	}
-
-	r := c.cmd(CommandBody.String(), spec)
+	r := c.cmd(CommandHead.String(), spec)
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
+	return &HeadCmdResult{&r}, nil
+}
 
+// The `spec` parameter can be:
+//   - "message-id"
+//   - "number"
+//   - ""
+//
+// Reference: RFC 3977 Section 6.2.2 (HEAD)
+// https://tools.ietf.org/html/rfc3977#section-6.2.2
+func (c *Connection) Head(spec string) (*Article, error) {
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
+	r, err := c.HeadCmd(spec)
+	if err != nil {
+		return nil, err
+	}
+	return r.Response()
+}
+
+type BodyCmdResult struct {
+	*CmdResult
+}
+
+func (r *BodyCmdResult) Response() (*Article, error) {
 	code, message, body, err := r.readCodeLineAndBody(StatusArticleBody)
 	if err != nil {
 		return nil, NewCommandError(r.cmd, code, message).WithCause(err)
@@ -572,6 +567,37 @@ func (c *Connection) Body(spec string) (*Article, error) {
 		MessageId: messageId,
 		Body:      body,
 	}, nil
+}
+
+func (c *Connection) BodyCmd(spec string) (*BodyCmdResult, error) {
+	if spec != "" {
+		if err := validateInput(spec); err != nil {
+			return nil, err
+		}
+	}
+	r := c.cmd(CommandBody.String(), spec)
+	if err := r.Err(); err != nil {
+		return nil, err
+	}
+	return &BodyCmdResult{&r}, nil
+}
+
+// The `spec` parameter can be:
+//   - "message-id"
+//   - "number"
+//   - ""
+//
+// Reference: RFC 3977 Section 6.2.3 (BODY)
+// https://tools.ietf.org/html/rfc3977#section-6.2.3
+func (c *Connection) Body(spec string) (*Article, error) {
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
+	r, err := c.BodyCmd(spec)
+	if err != nil {
+		return nil, err
+	}
+	return r.Response()
 }
 
 // The `spec` parameter can be:
@@ -718,4 +744,114 @@ func (c *Connection) Last() (int64, string, error) {
 	}
 
 	return parseLastResponseMessage(message)
+}
+
+type MultiHeadResult struct {
+	Number    int64
+	MessageId string
+	Headers   textproto.MIMEHeader
+	Err       error
+}
+
+// Reference: RFC 3977 Section 3.5 (Pipelining), Section 6.2.2 (HEAD)
+// https://datatracker.ietf.org/doc/html/rfc3977#section-3.5
+// https://tools.ietf.org/html/rfc3977#section-6.2.2
+func (c *Connection) MultiHead(specs []string) ([]MultiHeadResult, error) {
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
+
+	results := make([]MultiHeadResult, len(specs))
+	if len(specs) == 0 {
+		return results, nil
+	}
+
+	cmds := make([]*HeadCmdResult, len(specs))
+	for i, spec := range specs {
+		r, err := c.HeadCmd(spec)
+		if err != nil {
+			results[i].Err = err
+			for k := i + 1; k < len(specs); k++ {
+				if results[k].Err == nil {
+					results[k].Err = err
+				}
+			}
+			break
+		}
+		cmds[i] = r
+	}
+
+	for i, cmd := range cmds {
+		if cmd == nil {
+			continue
+		}
+		article, err := cmd.Response()
+		if err != nil {
+			results[i].Err = err
+			continue
+		}
+		results[i].Number = article.Number
+		results[i].MessageId = article.MessageId
+		results[i].Headers = article.Headers
+	}
+
+	return results, nil
+}
+
+type MultiBodyResult struct {
+	Number    int64
+	MessageId string
+	Body      []byte
+	Err       error
+}
+
+// Reference: RFC 3977 Section 3.5 (Pipelining), Section 6.2.3 (BODY)
+// https://datatracker.ietf.org/doc/html/rfc3977#section-3.5
+// https://tools.ietf.org/html/rfc3977#section-6.2.3
+func (c *Connection) MultiBody(specs []string) ([]MultiBodyResult, error) {
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
+
+	results := make([]MultiBodyResult, len(specs))
+	if len(specs) == 0 {
+		return results, nil
+	}
+
+	cmds := make([]*BodyCmdResult, len(specs))
+	for i, spec := range specs {
+		r, err := c.BodyCmd(spec)
+		if err != nil {
+			results[i].Err = err
+			for k := i + 1; k < len(specs); k++ {
+				if results[k].Err == nil {
+					results[k].Err = err
+				}
+			}
+			break
+		}
+		cmds[i] = r
+	}
+
+	for i, cmd := range cmds {
+		if cmd == nil {
+			continue
+		}
+		article, err := cmd.Response()
+		if err != nil {
+			results[i].Err = err
+			continue
+		}
+		data, err := article.Body.ReadAll()
+		article.Body.Close()
+		if err != nil {
+			results[i].Err = err
+			continue
+		}
+		results[i].Number = article.Number
+		results[i].MessageId = article.MessageId
+		results[i].Body = data
+	}
+
+	return results, nil
 }
