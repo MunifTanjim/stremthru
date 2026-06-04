@@ -490,11 +490,13 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 				URL:  streamUrl.String(),
 				Name: file.Name,
 				BehaviorHints: &stremio.StreamBehaviorHints{
-					BingeGroup: matcher.IdPrefix + cInfo.Hash,
-					Filename:   file.Name,
-					VideoSize:  file.Size,
-					VideoHash:  file.VideoHash,
+					Filename:  file.Name,
+					VideoSize: file.Size,
+					VideoHash: file.VideoHash,
 				},
+			}
+			if cInfo.Hash != "" {
+				stream.BehaviorHints.BingeGroup = matcher.IdPrefix + cInfo.Hash
 			}
 			if pttr == nil {
 				if r, err := util.ParseTorrentTitle(file.Name); err == nil {

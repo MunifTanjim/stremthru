@@ -326,3 +326,127 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 	data := &store.GenerateLinkData{Link: params.Link}
 	return data, nil
 }
+
+func (c *StoreClient) ListWebz(params *store.ListWebzParams) (*store.ListWebzData, error) {
+	origLimit := params.Limit
+	origOffset := params.Offset
+
+	data := &store.ListWebzData{
+		Items:      []store.ListWebzDataItem{},
+		TotalItems: 0,
+	}
+	totalPages := 0
+
+	limit := LIST_SEEDBOX_TORRENTS_PER_PAGE_MAX
+	page := origOffset / limit
+	offsetInPage := origOffset % limit
+	remainingItems := origLimit
+	hasMore := true
+	for hasMore {
+		start := time.Now()
+		res, err := c.client.ListDownloaderLinks(&ListDownloaderLinksParams{
+			Ctx:     params.Ctx,
+			PerPage: limit,
+			Page:    page,
+			IP:      params.ClientIP,
+		})
+		stats.Record(c.Name, "list_webz", time.Since(start), err != nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resItems := res.Data.Value
+		totalPages = res.Data.Pagination.Pages
+		totalResItems := len(resItems)
+		if totalResItems == 0 {
+			break
+		}
+
+		if offsetInPage != 0 {
+			resItems = resItems[offsetInPage:]
+			totalResItems = len(resItems)
+			offsetInPage = 0
+		}
+
+		for _, link := range resItems[:min(totalResItems, remainingItems)] {
+			item := store.ListWebzDataItem{
+				Id:      link.ID,
+				Hash:    "",
+				Name:    link.Name,
+				Size:    link.Size,
+				Status:  string(store.MagnetStatusUnknown),
+				AddedAt: link.GetAddedAt(),
+				Files:   []store.WebzFile{},
+			}
+			if link.IsProcessing {
+				item.Status = string(store.MagnetStatusProcessing)
+			} else if link.Expired {
+				item.Status = string(store.MagnetStatusInvalid)
+			} else if link.DownloadURL != "" {
+				item.Status = string(store.MagnetStatusDownloaded)
+				item.Files = append(item.Files, store.WebzFile{
+					Idx:  0,
+					Link: link.DownloadURL,
+					Name: link.Name,
+					Path: "/" + link.Name,
+					Size: link.Size,
+				})
+			}
+
+			data.Items = append(data.Items, item)
+		}
+
+		page++
+		remainingItems -= totalResItems
+		hasMore = page < totalPages && remainingItems > 0
+	}
+
+	data.TotalItems = totalPages * limit
+
+	return data, nil
+}
+
+func (c *StoreClient) GetWebz(params *store.GetWebzParams) (*store.GetWebzData, error) {
+	start := time.Now()
+	res, err := c.client.ListDownloaderLinks(&ListDownloaderLinksParams{
+		Ctx: params.Ctx,
+		IDs: []string{params.Id},
+		IP:  params.ClientIP,
+	})
+	stats.Record(c.Name, "get_webz", time.Since(start), err != nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Data.Value) != 1 || res.Data.Value[0].ID != params.Id {
+		err := core.NewAPIError("not found")
+		err.StatusCode = http.StatusNotFound
+		err.StoreName = string(store.StoreNameDebridLink)
+		return nil, err
+	}
+	link := res.Data.Value[0]
+	data := &store.GetWebzData{
+		Id:      link.ID,
+		Hash:    "",
+		Name:    link.Name,
+		Size:    link.Size,
+		Status:  string(store.MagnetStatusUnknown),
+		AddedAt: link.GetAddedAt(),
+		Files:   []store.WebzFile{},
+	}
+	if link.IsProcessing {
+		data.Status = string(store.MagnetStatusProcessing)
+	} else if link.Expired {
+		data.Status = string(store.MagnetStatusInvalid)
+	} else if link.DownloadURL != "" {
+		data.Status = string(store.MagnetStatusDownloaded)
+		data.Files = append(data.Files, store.WebzFile{
+			Idx:  0,
+			Link: link.DownloadURL,
+			Name: link.Name,
+			Path: "/" + link.Name,
+			Size: link.Size,
+		})
+	}
+
+	return data, nil
+}

@@ -144,7 +144,7 @@ func getWebDLCatalogItems(s store.Store, storeToken string, clientIp string, idS
 		storeName := s.GetName()
 
 		switch storeName {
-		case store.StoreNamePikPak:
+		case store.StoreNameDebridLink, store.StoreNamePikPak:
 			if webzStore, ok := s.(store.WebzStore); ok {
 				offset := 0
 				hasMore := true
