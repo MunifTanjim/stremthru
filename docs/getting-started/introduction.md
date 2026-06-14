@@ -17,6 +17,7 @@ Supported stores:
 - [Premiumize](https://www.premiumize.me/ref/634502061)
 - [RealDebrid](http://real-debrid.com/?id=12448969)
 - [TorBox](https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa)
+- [Torrin](https://torrin.app)
 
 ## Stremio Addons
 

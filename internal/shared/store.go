@@ -24,6 +24,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/realdebrid"
 	"github.com/MunifTanjim/stremthru/store/stremthru"
 	"github.com/MunifTanjim/stremthru/store/torbox"
+	"github.com/MunifTanjim/stremthru/store/torrin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -64,6 +65,10 @@ var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torbox")),
 	UserAgent:  config.StoreClientUserAgent,
 })
+var toStore = torrin.NewStoreClient(&torrin.StoreClientConfig{
+	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torrin")),
+	UserAgent:  config.StoreClientUserAgent,
+})
 
 func GetStore(name string) store.Store {
 	switch store.StoreName(name) {
@@ -87,6 +92,8 @@ func GetStore(name string) store.Store {
 		return stStore
 	case store.StoreNameTorBox:
 		return tbStore
+	case store.StoreNameTorrin:
+		return toStore
 	default:
 		return nil
 	}
@@ -114,6 +121,8 @@ func GetStoreByCode(code string) store.Store {
 		return stStore
 	case store.StoreCodeTorBox:
 		return tbStore
+	case store.StoreCodeTorrin:
+		return toStore
 	default:
 		return nil
 	}

@@ -152,6 +152,7 @@ If `username` is `*`, it is used as a fallback for users without explicit store 
 | Premiumize  | `premiumize` | `<api-key>`          |
 | RealDebrid  | `realdebrid` | `<api-token>`        |
 | TorBox      | `torbox`     | `<api-key>`          |
+| Torrin      | `torrin`     | `<api-key>`          |
 
 **Example:**
 
