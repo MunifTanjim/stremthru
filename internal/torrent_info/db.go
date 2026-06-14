@@ -21,6 +21,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
 	ts "github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
+	"github.com/MunifTanjim/stremthru/store"
 	"github.com/zeebo/xxh3"
 )
 
@@ -101,8 +102,13 @@ const (
 	TorrentInfoSourcePremiumize  TorrentInfoSource = "pm"
 	TorrentInfoSourceRealDebrid  TorrentInfoSource = "rd"
 	TorrentInfoSourceTorBox      TorrentInfoSource = "tb"
+	TorrentInfoSourceTorrin      TorrentInfoSource = "ti"
 	TorrentInfoSourceUnknown     TorrentInfoSource = ""
 )
+
+func (s TorrentInfoSource) HasUntrustedData() bool {
+	return store.StoreCode(s).HasUntrustedData()
+}
 
 type TorrentInfoCategory string
 
@@ -822,6 +828,11 @@ func Upsert(items []TorrentInfoInsertData, category TorrentInfoCategory, discard
 			seenHash[t.Hash] = struct{}{}
 
 			if len(t.Hash) != 40 {
+				count--
+				continue
+			}
+
+			if t.Source.HasUntrustedData() {
 				count--
 				continue
 			}

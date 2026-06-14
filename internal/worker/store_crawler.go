@@ -19,6 +19,10 @@ func InitCrawlStoreWorker(conf *WorkerConfig) *Worker {
 				return nil
 			}
 
+			if store.StoreCode(item.StoreCode).HasUntrustedData() {
+				return nil
+			}
+
 			tSource := torrent_info.TorrentInfoSource(item.StoreCode)
 			discardFileIdx := s.GetName().Code() != store.StoreCodeRealDebrid
 

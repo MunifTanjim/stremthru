@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: Store Integrations
-    details: Connect to 9 debrid services — AllDebrid, Debrider, Debrid-Link, EasyDebrid, Offcloud, PikPak, Premiumize, RealDebrid, and TorBox — through a unified API.
+    details: Connect to 10 debrid services — AllDebrid, Debrider, Debrid-Link, EasyDebrid, Offcloud, PikPak, Premiumize, RealDebrid, TorBox, and Torrin — through a unified API.
     link: /configuration/
   - title: Stremio Addons
     details: Five built-in addons — Store, Wrap, Torz, Newz and List — to enhance your Stremio experience. And a tool — Sidekick — for extra features missing in Stremio.

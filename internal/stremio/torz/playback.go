@@ -180,7 +180,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		isKitsuId := strings.HasPrefix(sid, "kitsu:")
 		isMALId := strings.HasPrefix(sid, "mal:")
 		isAnimeId := isKitsuId || isMALId
-		shouldTagStream := isIMDBId || isAnimeId
+		shouldTagStream := (isIMDBId || isAnimeId) && !storeCode.HasUntrustedData()
 
 		magnet, err = stremio_shared.WaitForMagnetStatus(&ctx.Ctx, magnet, store.MagnetStatusDownloaded, 3, 5*time.Second)
 		if err != nil {

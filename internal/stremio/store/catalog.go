@@ -252,6 +252,7 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idr *Par
 		storeName := s.GetName()
 		storeCode := storeName.Code()
 
+		shouldRecordTorrentInfo := !storeCode.HasUntrustedData()
 		tInfoItems := []torrent_info.TorrentInfoInsertData{}
 		tInfoSource := torrent_info.TorrentInfoSource(storeCode)
 
@@ -285,13 +286,15 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idr *Par
 						PosterShape: stremio.MetaPosterShapePoster,
 					}, item.Hash})
 				}
-				tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
-					Hash:         item.Hash,
-					TorrentTitle: item.Name,
-					Size:         item.Size,
-					Source:       tInfoSource,
-					Private:      item.Private,
-				})
+				if shouldRecordTorrentInfo {
+					tInfoItems = append(tInfoItems, torrent_info.TorrentInfoInsertData{
+						Hash:         item.Hash,
+						TorrentTitle: item.Name,
+						Size:         item.Size,
+						Source:       tInfoSource,
+						Private:      item.Private,
+					})
+				}
 			}
 			log.Debug("processed magnets", "duration", time.Since(start).String(), "store.name", storeName, "offset", offset, "count", count)
 
@@ -299,10 +302,12 @@ func getCatalogItems(s store.Store, storeToken string, clientIp string, idr *Par
 			hasMore = len(res.Items) == fetch_list_limit && offset < res.TotalItems
 
 			if hasMore && offset >= max_fetch_list_items {
-				worker_queue.StoreCrawlerQueue.Queue(worker_queue.StoreCrawlerQueueItem{
-					StoreCode:  string(storeCode),
-					StoreToken: storeToken,
-				})
+				if shouldRecordTorrentInfo {
+					worker_queue.StoreCrawlerQueue.Queue(worker_queue.StoreCrawlerQueueItem{
+						StoreCode:  string(storeCode),
+						StoreToken: storeToken,
+					})
+				}
 				break
 			}
 

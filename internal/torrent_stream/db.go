@@ -408,6 +408,10 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 }
 
 func TrackFiles(storeCode store.StoreCode, filesByHash map[string]Files) {
+	if storeCode.HasUntrustedData() {
+		return
+	}
+
 	items := []InsertData{}
 	for hash, files := range filesByHash {
 		shouldIgnoreFiles := storeCode == store.StoreCodePremiumize && !files.HasVideo()

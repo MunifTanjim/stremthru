@@ -632,7 +632,7 @@ func handleMeta(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if !idr.isUsenet && !idr.isWebDL {
+	if !idr.isUsenet && !idr.isWebDL && !ctx.Store.GetName().Code().HasUntrustedData() {
 		go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{tInfo}, "", ctx.Store.GetName().Code() != store.StoreCodeRealDebrid)
 	}
 

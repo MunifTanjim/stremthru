@@ -142,7 +142,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		shouldTagStream := strings.HasPrefix(sid, "tt")
+		shouldTagStream := strings.HasPrefix(sid, "tt") && !storeCode.HasUntrustedData()
 
 		videoFiles := []store.File{}
 		for i := range magnet.Files {

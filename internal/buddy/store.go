@@ -32,6 +32,10 @@ var peerLog = logger.Scoped("buddy:upstream")
 
 func TrackMagnet(s store.Store, hash string, name string, size int64, private bool, files []store.MagnetFile, tInfoCategory torrent_info.TorrentInfoCategory, cacheMiss bool, storeToken string) {
 	storeCode := s.GetName().Code()
+	if storeCode.HasUntrustedData() {
+		return
+	}
+
 	tInfoSource := torrent_info.TorrentInfoSource(storeCode)
 	tsFiles := torrent_stream.Files{}
 	for _, f := range files {
@@ -109,6 +113,10 @@ func BulkTrackMagnet(s store.Store, tInfos []TorrentInfoInput, cached map[string
 	}
 
 	storeCode := s.GetName().Code()
+	if storeCode.HasUntrustedData() {
+		return
+	}
+
 	tInfoSource := torrent_info.TorrentInfoSource(storeCode)
 	filesByHash := map[string]torrent_stream.Files{}
 	for i := range tInfos {

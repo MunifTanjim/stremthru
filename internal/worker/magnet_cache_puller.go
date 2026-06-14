@@ -26,6 +26,10 @@ func InitMagnetCachePullerWorker(conf *WorkerConfig) *Worker {
 				return nil
 			}
 
+			if store.StoreCode(storeCode).HasUntrustedData() {
+				return nil
+			}
+
 			hashes := make([]string, len(items))
 			clientIps := []string{}
 			seenClientIp := map[string]struct{}{}
