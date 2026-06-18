@@ -64,6 +64,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_STORE_CONTENT_PROXY":                    "*:true",
 		"STREMTHRU_STORE_TUNNEL":                           "*:true",
 		"STREMTHRU_STORE_CLIENT_USER_AGENT":                "stremthru",
+		"STREMTHRU_STORE_TORBOX_PERMALINK":                 "false",
 		"STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME":    "12h",
 		"STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME": "24h",
 		"STREMTHRU_INTEGRATION_LETTERBOXD_USER_AGENT":      "stremthru",
@@ -350,6 +351,7 @@ type Config struct {
 	StoreContentProxy           StoreContentProxyMap
 	StoreContentCachedStaleTime storeContentCachedStaleTimeMap
 	StoreClientUserAgent        string
+	StoreTorBoxPermalink        bool
 	ContentProxyConnectionLimit ContentProxyConnectionLimitMap
 
 	DataDir     string
@@ -590,6 +592,7 @@ var config = func() Config {
 		StoreContentProxy:           storeContentProxyMap,
 		StoreContentCachedStaleTime: storeContentCachedStaleTimeMap,
 		StoreClientUserAgent:        getEnv("STREMTHRU_STORE_CLIENT_USER_AGENT"),
+		StoreTorBoxPermalink:        getEnv("STREMTHRU_STORE_TORBOX_PERMALINK") == "true",
 		ContentProxyConnectionLimit: contentProxyConnectionMap,
 		DataDir:                     dataDir,
 		VaultSecret:                 vaultSecret,
@@ -618,6 +621,7 @@ var ServerStartTime = config.ServerStartTime
 var StoreContentProxy = config.StoreContentProxy
 var StoreContentCachedStaleTime = config.StoreContentCachedStaleTime
 var StoreClientUserAgent = config.StoreClientUserAgent
+var StoreTorBoxPermalink = config.StoreTorBoxPermalink
 var ContentProxyConnectionLimit = config.ContentProxyConnectionLimit
 var InstanceId = strings.ReplaceAll(uuid.NewString(), "-", "")
 

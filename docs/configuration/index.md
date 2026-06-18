@@ -192,6 +192,29 @@ If `store_name` is `*`, it is used as a fallback.
 STREMTHRU_STORE_CONTENT_PROXY=*:true
 ```
 
+### `STREMTHRU_STORE_TORBOX_PERMALINK`
+
+Return permanent TorBox links instead of temporary ones.
+
+When enabled, the TorBox store returns the permanent `requestdl?...&redirect=true` link form, which redirects to a fresh CDN link on every access and never expires. This avoids having to re-generate a link when a temporary one expires mid-stream.
+
+| `value` | Description                      |
+| ------- | -------------------------------- |
+| `true`  | Return permanent links           |
+| `false` | Return temporary links (default) |
+
+- **Default:** `false`
+
+**Example:**
+
+```sh
+STREMTHRU_STORE_TORBOX_PERMALINK=true
+```
+
+::: warning
+The permanent link embeds your TorBox API token. Only enable it when every consumer of the generated link is trusted (e.g. a self-hosted setup with content proxy enabled, or an entirely local setup). With content proxy disabled or pass-through access, the token would be exposed to the streaming client.
+:::
+
 ### `STREMTHRU_CONTENT_PROXY_CONNECTION_LIMIT`
 
 Comma-separated list of content proxy connection limits per user in `username:connection_limit` format.
