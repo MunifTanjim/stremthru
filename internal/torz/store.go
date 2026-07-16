@@ -369,6 +369,7 @@ func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink string, linkDa
 		if err != nil {
 			return
 		}
+		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, "", magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 		for _, f := range magnet.Files {
 			if f.Link == lockedLink || f.Idx == fileId {
 				torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, linkData.Link)
