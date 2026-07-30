@@ -277,7 +277,12 @@ func (sccst storeContentCachedStaleTimeMap) GetStaleTime(isCached bool, storeNam
 	return 0
 }
 
-func parseStoreContentCachedStaleTime(staleTimeConfig string) (staleTimeMap storeContentCachedStaleTimeMap, err error) {
+func parseStoreContentCachedStaleTime(staleTimeConfig string, hasPeer bool) (staleTimeMap storeContentCachedStaleTimeMap, err error) {
+	minCachedStaleTime, minUncachedStaleTime := 18*time.Hour, 6*time.Hour
+	if !hasPeer {
+		minCachedStaleTime, minUncachedStaleTime = 30*time.Minute, 5*time.Minute
+	}
+
 	staleTimeMap = storeContentCachedStaleTimeMap{}
 	staleTimeList := strings.FieldsFunc(staleTimeConfig, func(c rune) bool {
 		return c == ','
@@ -294,16 +299,16 @@ func parseStoreContentCachedStaleTime(staleTimeConfig string) (staleTimeMap stor
 
 		if cachedStaleDuration, err := time.ParseDuration(cachedStaleTime); err != nil {
 			return nil, fmt.Errorf("invalid cached stale time (%s): %v", cachedStaleTime, err)
-		} else if cachedStaleDuration < 18*time.Hour {
-			return nil, fmt.Errorf("cached stale time (%s) must be at least 18h", cachedStaleTime)
+		} else if cachedStaleDuration < minCachedStaleTime {
+			return nil, fmt.Errorf("cached stale time (%s) must be at least %s", cachedStaleTime, minCachedStaleTime)
 		} else {
 			staleTime.cached = cachedStaleDuration
 		}
 
 		if uncachedStaleDuration, err := time.ParseDuration(uncachedStaleTime); err != nil {
 			return nil, fmt.Errorf("invalid uncached stale time (%s): %v", uncachedStaleTime, err)
-		} else if uncachedStaleDuration < 6*time.Hour {
-			return nil, fmt.Errorf("uncached stale time (%s) must be at least 6h", uncachedStaleTime)
+		} else if uncachedStaleDuration < minUncachedStaleTime {
+			return nil, fmt.Errorf("uncached stale time (%s) must be at least %s", uncachedStaleTime, minUncachedStaleTime)
 		} else {
 			staleTime.uncached = uncachedStaleDuration
 		}
@@ -527,7 +532,7 @@ var config = func() Config {
 		log.Fatalf("data directory does not exist: %v", dataDir)
 	}
 
-	storeContentCachedStaleTimeMap, err := parseStoreContentCachedStaleTime(getEnv("STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME"))
+	storeContentCachedStaleTimeMap, err := parseStoreContentCachedStaleTime(getEnv("STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME"), peerUrl != "")
 	if err != nil {
 		log.Fatalf("failed to parse store content cached stale time: %v", err)
 	}

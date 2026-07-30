@@ -166,6 +166,13 @@ Comma-separated list of stale time for cached/uncached content in `store_name:ca
 
 If `store_name` is `*`, it is used as a fallback.
 
+Minimum allowed values depend on whether StremThru is connected to upstream or not:
+
+| Upstream     | Min Cached | Min Uncached |
+| ------------ | ---------- | ------------ |
+| Connected    | `18h`      | `6h`         |
+| Disconnected | `30m`      | `5m`         |
+
 - **Default:** `*:24h:8h`
 
 **Example:**
