@@ -24,6 +24,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
     premiumize: "pm",
     realdebrid: "rd",
     torbox: "tb",
+    torrin: "ti",
     p2p: "p2p",
   };
   const nameDescElem = document.querySelector(` + "`[name='${nameField.name}'] + small > span.description`" + `);
@@ -40,6 +41,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
       pp: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://mypikpak.com/drive/activity/invited?invitation-code=46013321'>Sign Up</a> Invitation Code: <a target='_blank' href='https://mypikpak.com/drive/activity/invited?invitation-code=46013321'><code>46013321</code></a>",
       rd: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='http://real-debrid.com/?id=12448969'>Sign Up<a>",
       tb: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'>Sign Up</a> Referral Code: <a target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'><code>fbe2c844-4b50-416a-9cd8-4e37925f5dfa</code></a>",
+      ti: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torrin.app/login'>Sign Up</a>",
       p2p: "⚠️ Peer-to-Peer (🧪 Experimental)",
     };
     nameDescElem.innerHTML = descByStore[nameField.value] || descByStore[storeFallback[nameField.value]] || descByStore["*"] || "";
@@ -59,6 +61,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
 			pp: "PikPak <a href='https://mypikpak.com/drive/account/basic' target='_blank'>credential</a> in <code>email:password</code> format, e.g. <code>john.doe@example.com:secret-password</code>",
 			rd: "RealDebrid <a href='https://real-debrid.com/apitoken' target='_blank'>API Token</a>",
 			tb: "TorBox <a href='https://torbox.app/settings' target='_blank'>API Key</a>",
+			ti: "Torrin <a href='https://torrin.app/app/settings' target='_blank'>API Key</a>",
 			p2p: "…",
 		};
     tokenDescElem.innerHTML = descByStore[nameField.value] || descByStore[storeFallback[nameField.value]] || descByStore["*"] || "";

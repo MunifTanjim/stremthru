@@ -50,6 +50,7 @@ func getStoreNameConfig(defaultValue string) configure.Config {
 		{Value: "premiumize", Label: "Premiumize"},
 		{Value: "realdebrid", Label: "RealDebrid"},
 		{Value: "torbox", Label: "TorBox"},
+		{Value: "torrin", Label: "🧪 Torrin"},
 	}
 	if config.IsPublicInstance {
 		options[0].Disabled = true

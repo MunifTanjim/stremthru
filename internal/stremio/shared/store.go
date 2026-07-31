@@ -23,6 +23,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 		{Value: "pp", Label: "PikPak"},
 		{Value: "rd", Label: "RealDebrid"},
 		{Value: "tb", Label: "TorBox"},
+		{Value: "ti", Label: "🧪 Torrin"},
 	}
 	if config.IsPublicInstance {
 		options[0].Disabled = true
