@@ -515,6 +515,10 @@ func (p *Pool) StreamByContentPath(
 		return p.streamPlainFile(ctx, file, config)
 	}
 
+	if contentFile == nil {
+		return nil, fmt.Errorf("no content file matching '%s' found", name)
+	}
+
 	archiveName := contentFile.Name
 	if contentFile.Alias != "" {
 		archiveName = contentFile.Alias
