@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.103.2](https://github.com/MunifTanjim/stremthru/compare/0.103.1...0.103.2) (2026-08-01)
+
+
+### Bug Fixes
+
+* **stremio:** surface torrin in addons ([b13a0e9](https://github.com/MunifTanjim/stremthru/commit/b13a0e9d02ef527d663b8292a4c16858672220dd))
+
 ## [0.103.1](https://github.com/MunifTanjim/stremthru/compare/0.103.0...0.103.1) (2026-07-31)
 
 
