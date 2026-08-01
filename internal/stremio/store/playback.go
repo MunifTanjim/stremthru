@@ -181,7 +181,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		go torz.TryQueueMediaInfoProbe(&ctx.Context, url, stLink)
+		go torz.TrackAndQueueMediaInfoProbe(&ctx.Context, url, stLink)
 
 		stremLinkCache.Add(cacheKey, stLink.Link)
 		http.Redirect(w, r, stLink.Link, http.StatusFound)
