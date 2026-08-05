@@ -355,6 +355,7 @@ type Config struct {
 	StoreContentProxy           StoreContentProxyMap
 	StoreContentCachedStaleTime storeContentCachedStaleTimeMap
 	StoreClientUserAgent        string
+	StoreTorrinBaseURL          string
 	ContentProxyConnectionLimit ContentProxyConnectionLimitMap
 
 	DataDir     string
@@ -374,6 +375,24 @@ func parseUri(uri string) (parsedUrl, parsedToken string) {
 	u.User = nil
 	parsedUrl = strings.TrimSpace(u.String())
 	return
+}
+
+func parseStoreBaseURL(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+	u, err := url.Parse(value)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return "", fmt.Errorf("scheme must be http or https")
+	}
+	if u.Host == "" {
+		return "", fmt.Errorf("host is required")
+	}
+	return strings.TrimRight(value, "/"), nil
 }
 
 var config = func() Config {
@@ -471,6 +490,11 @@ var config = func() Config {
 	peerUrl, peerAuthToken := "", ""
 	if peerUri != "-" {
 		peerUrl, peerAuthToken = parseUri(peerUri)
+	}
+
+	torrinBaseURL, tiErr := parseStoreBaseURL(getEnv("STREMTHRU_STORE_TORRIN_BASE_URL"))
+	if tiErr != nil {
+		log.Fatalf("invalid STREMTHRU_STORE_TORRIN_BASE_URL: %v", tiErr)
 	}
 
 	databaseUri := getEnv("STREMTHRU_DATABASE_URI")
@@ -595,6 +619,7 @@ var config = func() Config {
 		StoreContentProxy:           storeContentProxyMap,
 		StoreContentCachedStaleTime: storeContentCachedStaleTimeMap,
 		StoreClientUserAgent:        getEnv("STREMTHRU_STORE_CLIENT_USER_AGENT"),
+		StoreTorrinBaseURL:          torrinBaseURL,
 		ContentProxyConnectionLimit: contentProxyConnectionMap,
 		DataDir:                     dataDir,
 		VaultSecret:                 vaultSecret,
@@ -623,6 +648,7 @@ var ServerStartTime = config.ServerStartTime
 var StoreContentProxy = config.StoreContentProxy
 var StoreContentCachedStaleTime = config.StoreContentCachedStaleTime
 var StoreClientUserAgent = config.StoreClientUserAgent
+var StoreTorrinBaseURL = config.StoreTorrinBaseURL
 var ContentProxyConnectionLimit = config.ContentProxyConnectionLimit
 var InstanceId = strings.ReplaceAll(uuid.NewString(), "-", "")
 
