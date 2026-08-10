@@ -501,16 +501,16 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 		return data, nil
 	}
 
-	missingHashes := []string{}
-	for _, hash := range hashes {
-		if _, ok := foundItemByHash[hash]; !ok {
-			missingHashes = append(missingHashes, hash)
-		}
-	}
-
+	// Ask qBittorrent about every hash, not just the ones the cache had no answer
+	// for. The magnet_cache consulted above exists to avoid hammering rate-limited
+	// remote debrid APIs; qBittorrent is a local seedbox where one call covers all
+	// hashes, so that trade-off does not apply. Honouring a non-stale "not cached"
+	// record here meant a torrent that finished downloading after the record was
+	// written stayed invisible until the record went stale, so freshly grabbed
+	// files were never offered as a local source.
 	torrentByHash := map[string]TorrentInfo{}
-	if len(missingHashes) > 0 {
-		torrents, err := c.client.GetTorrents(cfg, missingHashes, 0, 0)
+	if len(hashes) > 0 {
+		torrents, err := c.client.GetTorrents(cfg, hashes, 0, 0)
 		if err != nil {
 			return nil, UpstreamErrorWithCause(err)
 		}
@@ -526,9 +526,16 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 	source := string(c.GetName().Code())
 
 	for _, hash := range hashes {
-		if item, ok := foundItemByHash[hash]; ok {
-			data.Items = append(data.Items, item)
-			continue
+		t, knownLocally := torrentByHash[hash]
+
+		// Fall back to the cached verdict only when qBittorrent has never heard of
+		// this hash. When it has, the live instance wins - notably when it now
+		// reports a finished download that the cache still calls uncached.
+		if !knownLocally {
+			if item, ok := foundItemByHash[hash]; ok {
+				data.Items = append(data.Items, item)
+				continue
+			}
 		}
 
 		m := magnetByHash[hash]
@@ -543,7 +550,7 @@ func (c *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 			Files: torrent_stream.Files{},
 		}
 
-		if t, ok := torrentByHash[hash]; ok {
+		if knownLocally {
 			tInfo.TorrentTitle = t.Name
 			tInfo.Size = t.TotalSize
 
