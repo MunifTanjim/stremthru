@@ -357,6 +357,18 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		return nil, err
 	}
 
+	// qBittorrent answers 409 on /torrents/add when the hash is already in the
+	// transfer list. For a seedbox store that is the success condition, not a
+	// failure - the data is already local and is exactly what we want to stream.
+	// Returning here meant anything still seeding could never be played again:
+	// the add was rejected, so the lookup below never ran and no source was
+	// offered, surfacing to the caller as "(upstream_error) Conflict".
+	//
+	// Hold the conflict rather than swallowing it. The poll below looks the hash
+	// up anyway, so we can confirm the torrent really is present and only treat
+	// the 409 as benign then; a 409 that meant something else still gets raised.
+	var conflictErr error
+
 	var magnet *core.MagnetLink
 	if params.Magnet != "" {
 		m, err := core.ParseMagnetLink(params.Magnet)
@@ -364,9 +376,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			return nil, err
 		}
 		magnet = &m
-		err = c.client.AddTorrentMagnet(cfg, magnet.RawLink)
-		if err != nil {
-			return nil, UpstreamErrorWithCause(err)
+		if err := c.client.AddTorrentMagnet(cfg, magnet.RawLink); err != nil {
+			uerr := UpstreamErrorWithCause(err)
+			if uerr.Code != core.ErrorCodeConflict {
+				return nil, uerr
+			}
+			conflictErr = uerr
 		}
 	} else if params.Torrent != nil {
 		mi, _, err := params.GetTorrentMeta()
@@ -378,9 +393,12 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			return nil, err
 		}
 		magnet = &m
-		err = c.client.AddTorrentFile(cfg, params.Torrent)
-		if err != nil {
-			return nil, UpstreamErrorWithCause(err)
+		if err := c.client.AddTorrentFile(cfg, params.Torrent); err != nil {
+			uerr := UpstreamErrorWithCause(err)
+			if uerr.Code != core.ErrorCodeConflict {
+				return nil, uerr
+			}
+			conflictErr = uerr
 		}
 	} else {
 		return nil, fmt.Errorf("either magnet or torrent must be provided")
@@ -395,6 +413,14 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			torrent = &torrents[0]
 			break
 		}
+	}
+
+	// The add was refused and the hash is not in qBittorrent either, so the 409
+	// did not mean "already present". Report the upstream error rather than
+	// returning an empty queued entry that would look like a successful add.
+	if torrent == nil && conflictErr != nil {
+		stats.Record(c.Name, "add_magnet", time.Since(start), true)
+		return nil, conflictErr
 	}
 
 	data := &store.AddMagnetData{

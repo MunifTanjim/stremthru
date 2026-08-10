@@ -1,7 +1,9 @@
 package qbittorrent
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -525,4 +527,74 @@ func TestCheckRangeAvailable_ZeroPieceSize(t *testing.T) {
 func TestCheckRangeAvailable_LastPieceBeyondStates(t *testing.T) {
 	states := []int{2, 2}
 	assert.False(t, checkRangeAvailable(0, 1000, states, 5, 0, 5999))
+}
+
+// --- AddMagnet: qBittorrent answers 409 when the hash is already present ---
+
+// fakeQbit stands in for a qBittorrent WebUI. addStatus is what /torrents/add
+// replies with, and torrents is what /torrents/info reports afterwards.
+func fakeQbit(t *testing.T, addStatus int, torrents []TorrentInfo) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v2/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "SID", Value: "test-session", Path: "/"})
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Ok."))
+	})
+	mux.HandleFunc("/api/v2/torrents/add", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(addStatus)
+		w.Write([]byte(http.StatusText(addStatus)))
+	})
+	mux.HandleFunc("/api/v2/torrents/info", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(torrents)
+	})
+	mux.HandleFunc("/api/v2/torrents/files", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]TorrentFile{{Index: 0, Name: "show.mkv", Size: 1234, Progress: 1}})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+const testMagnetHash = "0123456789abcdef0123456789abcdef01234567"
+
+func addMagnetAgainst(srv *httptest.Server) (*store.AddMagnetData, error) {
+	c := NewStoreClient(&StoreClientConfig{})
+	params := &store.AddMagnetParams{Magnet: "magnet:?xt=urn:btih:" + testMagnetHash + "&dn=Test"}
+	params.APIKey = srv.URL + "|admin|password|http://fileserver"
+	return c.AddMagnet(params)
+}
+
+// A 409 means the torrent is already in the transfer list, which for a seedbox
+// store is the success condition - the data is local and ready to stream.
+// Treating it as fatal made anything still seeding impossible to play again.
+func TestAddMagnet_ConflictWithTorrentPresent(t *testing.T) {
+	srv := fakeQbit(t, http.StatusConflict, []TorrentInfo{{
+		Hash: testMagnetHash, Name: "Test", Progress: 1, TotalSize: 1234,
+	}})
+	data, err := addMagnetAgainst(srv)
+	require.NoError(t, err)
+	assert.Equal(t, testMagnetHash, data.Hash)
+	assert.Equal(t, store.MagnetStatusDownloaded, data.Status)
+	require.Len(t, data.Files, 1)
+	assert.Equal(t, "show.mkv", data.Files[0].Name)
+}
+
+// A 409 with the hash genuinely absent did not mean "already present", so it
+// must still surface instead of returning an empty queued entry that would look
+// like a successful add.
+func TestAddMagnet_ConflictWithTorrentAbsent(t *testing.T) {
+	srv := fakeQbit(t, http.StatusConflict, []TorrentInfo{})
+	_, err := addMagnetAgainst(srv)
+	require.Error(t, err)
+	uerr, ok := err.(*core.UpstreamError)
+	require.True(t, ok, "expected *core.UpstreamError, got %T", err)
+	assert.Equal(t, core.ErrorCodeConflict, uerr.Code)
+}
+
+// Any other add failure must still fail fast rather than falling through.
+func TestAddMagnet_NonConflictErrorStillFails(t *testing.T) {
+	srv := fakeQbit(t, http.StatusBadRequest, []TorrentInfo{{Hash: testMagnetHash}})
+	_, err := addMagnetAgainst(srv)
+	require.Error(t, err)
 }
