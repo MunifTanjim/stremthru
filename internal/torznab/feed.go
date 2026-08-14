@@ -27,6 +27,7 @@ type FeedItem struct {
 
 	Audio      string
 	Codec      string
+	Group      string
 	IMDB       string
 	InfoHash   string
 	Language   string
@@ -82,6 +83,9 @@ func (ri FeedItem) toChannelItem() ChannelItem {
 	}
 	if ri.Size > 0 {
 		attrs = append(attrs, znab.ChannelItemAttr{Name: "size", Value: strconv.FormatInt(ri.Size, 10)})
+	}
+	if ri.Group != "" {
+		attrs = append(attrs, znab.ChannelItemAttr{Name: znab.TorznabAttrNameTeam, Value: ri.Group})
 	}
 	if ri.Codec != "" {
 		attrs = append(attrs, znab.ChannelItemAttr{Name: "video", Value: ri.Codec})
