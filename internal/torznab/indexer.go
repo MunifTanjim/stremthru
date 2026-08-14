@@ -58,6 +58,7 @@ func toFeedItem(tInfo torrent_info.TorrentInfo, imdbId string) FeedItem {
 		Audio:       audio,
 		Category:    category,
 		Codec:       tInfo.Codec,
+		Group:       tInfo.Group,
 		IMDB:        imdbId,
 		InfoHash:    tInfo.Hash,
 		Language:    strings.Join(tInfo.Languages, ", "),
