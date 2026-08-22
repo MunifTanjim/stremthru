@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -162,6 +163,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_NONE: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_NONE)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
@@ -169,6 +171,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_AUTO: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_AUTO)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
@@ -176,6 +179,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_FORCED: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_FORCED)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
