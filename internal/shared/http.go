@@ -183,7 +183,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 }
 
 func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType) (bytesWritten int64, err error) {
-	request, err := http.NewRequest(r.Method, url, nil)
+	request, err := http.NewRequestWithContext(r.Context(), r.Method, url, nil)
 	if err != nil {
 		e := ErrorInternalServerError(r, "failed to create request")
 		e.Cause = err
