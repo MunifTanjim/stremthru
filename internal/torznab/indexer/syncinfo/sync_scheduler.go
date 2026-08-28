@@ -1,6 +1,7 @@
 package torznab_indexer_syncinfo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -164,7 +165,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 						}
 
 						start := time.Now()
-						qResults, err := client.Search(query)
+						qResults, err := client.Search(context.Background(), query)
 						if err != nil {
 							if e, ok := errors.AsType[*znab.Error](err); ok {
 								switch e.StatusCode {

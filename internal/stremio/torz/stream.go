@@ -1,6 +1,7 @@
 package stremio_torz
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -84,7 +85,7 @@ type indexerSearchQuery struct {
 
 var torrentFetchPool = pond.NewPool(20)
 
-func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStream, []string, error) {
+func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId string) ([]WrappedStream, []string, error) {
 	if len(ctx.Indexers) == 0 {
 		return []WrappedStream{}, []string{}, nil
 	}
@@ -237,7 +238,7 @@ func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStrea
 		go func(sq indexerSearchQuery, i int) {
 			defer wg.Done()
 			start := time.Now()
-			results[i], errs[i] = sq.indexer.Search(sq.query.Values())
+			results[i], errs[i] = sq.indexer.Search(reqCtx, sq.query.Values())
 			if errs[i] == nil {
 				log.Debug("indexer search completed", "indexer", sq.indexer.GetId(), "query", sq.query.Encode(), "duration", time.Since(start).String(), "count", len(results[i]))
 			} else {
@@ -247,8 +248,16 @@ func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStrea
 	}
 	wg.Wait()
 
-	if len(results) == 0 && len(errs) > 0 {
-		return nil, nil, errors.Join(errs...)
+	realErrs := []error{}
+	for _, err := range errs {
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			realErrs = append(realErrs, err)
+		}
+	}
+	if reqCtx.Err() != nil {
+		log.Warn("indexer search timed out, returning partial results")
+	} else if len(results) == 0 && len(realErrs) > 0 {
+		return nil, nil, errors.Join(realErrs...)
 	}
 
 	seenSourceURL := util.NewSet[string]()
@@ -263,6 +272,11 @@ func GetStreamsFromIndexers(ctx *Ctx, stremType, stremId string) ([]WrappedStrea
 				seenSourceURL.Add(item.SourceLink)
 
 				torzFetchWg.Submit(func() {
+					// TODO: only skips not-yet-started tasks; EnsureMagnet isn't
+					// context-aware, so reqCtx bounds the search phase, not this.
+					if reqCtx.Err() != nil {
+						return
+					}
 					err := item.EnsureMagnet()
 					if err != nil {
 						log.Warn("failed to ensure magnet link for torrent", "error", err)
@@ -743,24 +757,10 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	var hashesFromIndexers []string
 	var getStreamsFromIndexersError error
 	wg.Go(func() {
-		var streams []WrappedStream
-		var hashes []string
-		var err error
-		done := make(chan struct{})
-		go func() {
-			streams, hashes, err = GetStreamsFromIndexers(ctx, contentType, id)
-			close(done)
-		}()
-
-		select {
-		case <-done:
-			wrappedStreamsFromIndexers = streams
-			hashesFromIndexers = hashes
-			getStreamsFromIndexersError = err
-			log.Debug("fetched streams from indexers", "count", len(streams))
-		case <-time.After(config.Stremio.Torz.IndexerMaxTimeout):
-			log.Warn("fetching streams from indexers timed out")
-		}
+		timeoutCtx, cancel := context.WithTimeout(r.Context(), config.Stremio.Torz.IndexerMaxTimeout)
+		defer cancel()
+		wrappedStreamsFromIndexers, hashesFromIndexers, getStreamsFromIndexersError = GetStreamsFromIndexers(timeoutCtx, ctx, contentType, id)
+		log.Debug("fetched streams from indexers", "count", len(wrappedStreamsFromIndexers))
 	})
 
 	wg.Wait()

@@ -1,6 +1,7 @@
 package jackett
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -136,8 +137,9 @@ func (tc *TorznabClient) GetName() string {
 	return tc.name
 }
 
-func (tc TorznabClient) Search(query url.Values) ([]torznab_client.Torz, error) {
+func (tc TorznabClient) Search(ctx context.Context, query url.Values) ([]torznab_client.Torz, error) {
 	params := &Ctx{}
+	params.Context = ctx
 	params.Query = &query
 	var resp torznab_client.Response[SearchResponse]
 	_, err := tc.Client.Request("GET", "/api", params, &resp)

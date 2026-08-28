@@ -1,6 +1,7 @@
 package torznab_client
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"strconv"
@@ -188,5 +189,5 @@ type Indexer interface {
 	GetId() string
 	GetName() string
 	NewSearchQuery(fn func(caps Caps) Function) (*Query, error)
-	Search(query url.Values) ([]Torz, error)
+	Search(ctx context.Context, query url.Values) ([]Torz, error)
 }
