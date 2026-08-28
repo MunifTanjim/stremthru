@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.104.0](https://github.com/MunifTanjim/stremthru/compare/0.103.2...0.104.0) (2026-08-28)
+
+
+### Features
+
+* **stremio/transformer:** show edition in default stream template ([360206a](https://github.com/MunifTanjim/stremthru/commit/360206a37a5b3e0cc5cc739930c7e494c4b9a306))
+* **torznab:** add team attr for release group ([e97392a](https://github.com/MunifTanjim/stremthru/commit/e97392a78210d4b51cc556659e1c90a83d1f4a55))
+* **torz:** try to record torrent info when generating links ([227c508](https://github.com/MunifTanjim/stremthru/commit/227c5088e5fc1f257bf2ca3335cd04c4138a433d))
+
+
+### Bug Fixes
+
+* **shared:** add response header timeout to proxy clients ([00ff82d](https://github.com/MunifTanjim/stremthru/commit/00ff82dc63e8a9703568b2b2e47b90e0a5b843e1))
+* **shared:** bind proxied request to request context ([de49535](https://github.com/MunifTanjim/stremthru/commit/de49535dcde6a382f093ba3057e5478b37e1e087))
+* **stremio/torz:** cancel indexer search on timeout ([8b8bcb2](https://github.com/MunifTanjim/stremthru/commit/8b8bcb2749faf19508b91d926b8011a37fdfeb0b))
+* **stremio/torz:** cancel magnet fetch on timeout ([552ddc6](https://github.com/MunifTanjim/stremthru/commit/552ddc6c8d9854891a75f7ddc52bc62760078e29))
+* use tini as init to reap zombie processes ([d9b2fe2](https://github.com/MunifTanjim/stremthru/commit/d9b2fe2e700cd8603ab30b40ba46636169e21238))
+
 ## [0.103.2](https://github.com/MunifTanjim/stremthru/compare/0.103.1...0.103.2) (2026-08-01)
 
 
