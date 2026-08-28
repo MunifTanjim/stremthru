@@ -31,7 +31,7 @@ RUN xx-verify --static stremthru
 
 FROM alpine
 
-RUN apk add --no-cache git ffmpeg
+RUN apk add --no-cache git ffmpeg tini
 
 WORKDIR /app
 
@@ -43,4 +43,6 @@ ENV STREMTHRU_ENV=prod
 
 EXPOSE 8080
 
-ENTRYPOINT ["./stremthru"]
+ENTRYPOINT ["/sbin/tini", "--"]
+
+CMD ["./stremthru"]
