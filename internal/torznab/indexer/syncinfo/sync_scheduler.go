@@ -233,7 +233,7 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 							seenSourceURL.Add(item.SourceLink)
 
 							torzFetchWg.Submit(func() {
-								err := item.EnsureMagnet()
+								err := item.EnsureMagnet(context.Background())
 								if err != nil {
 									log.Warn("failed to ensure magnet link for torrent", "error", err)
 								}

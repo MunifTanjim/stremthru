@@ -272,12 +272,10 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 				seenSourceURL.Add(item.SourceLink)
 
 				torzFetchWg.Submit(func() {
-					// TODO: only skips not-yet-started tasks; EnsureMagnet isn't
-					// context-aware, so reqCtx bounds the search phase, not this.
 					if reqCtx.Err() != nil {
 						return
 					}
-					err := item.EnsureMagnet()
+					err := item.EnsureMagnet(reqCtx)
 					if err != nil {
 						log.Warn("failed to ensure magnet link for torrent", "error", err)
 					}

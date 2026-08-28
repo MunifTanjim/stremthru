@@ -55,7 +55,7 @@ func (t *Torz) HasMissingData() bool {
 	return t.Hash == "" || t.MagnetLink == ""
 }
 
-func (t *Torz) EnsureMagnet() error {
+func (t *Torz) EnsureMagnet(ctx context.Context) error {
 	if !t.HasMissingData() {
 		return nil
 	}
@@ -83,6 +83,7 @@ func (t *Torz) EnsureMagnet() error {
 		cacheKeys = append(cacheKeys, t.Hash)
 	}
 	magnetLink, file, err := shared.FetchTorrentFile(t.SourceLink, &shared.FetchTorrentFileOptions{
+		Context:   ctx,
 		Log:       log,
 		CacheKeys: cacheKeys,
 	})
