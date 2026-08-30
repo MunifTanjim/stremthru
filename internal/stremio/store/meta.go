@@ -247,7 +247,7 @@ type contentInfo struct {
 func getStoreContentInfo(s store.Store, storeToken string, id string, clientIp string, idr *ParsedId) (*contentInfo, error) {
 	if idr.isUsenet {
 		switch s.GetName() {
-		case store.StoreNameStremThru:
+		case store.StoreNameStremThru, store.StoreNameTorrin:
 			newzStore, ok := s.(store.NewzStore)
 			if !ok {
 				return nil, nil
