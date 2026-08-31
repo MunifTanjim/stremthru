@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.104.1](https://github.com/MunifTanjim/stremthru/compare/0.104.0...0.104.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* **stremio/transformer:** add missing ISO 639-2/B language aliases ([c5cad99](https://github.com/MunifTanjim/stremthru/commit/c5cad997fc317996d5594e93fbf0a201911ca1a9))
+* **stremio/transformer:** add missing subtitle/audio languages ([73bf362](https://github.com/MunifTanjim/stremthru/commit/73bf362ecab3780bf094fba0fdf7f078f00291ce))
+* **stremio:** preserve private flag across magnet status wait ([3433b40](https://github.com/MunifTanjim/stremthru/commit/3433b40cdb9aa7c531a0f40b5098be51c9ab87b0))
+* **stremio:** propagate private flag from add magnet response ([eaea9a2](https://github.com/MunifTanjim/stremthru/commit/eaea9a27f8336bf9309a1fab31e6f964a8b12095))
+* **stremio:** propagate size from add magnet response ([6aebd72](https://github.com/MunifTanjim/stremthru/commit/6aebd72d0c4d5c3fadebdbc72452d2337020f0d0))
+
 ## [0.104.0](https://github.com/MunifTanjim/stremthru/compare/0.103.2...0.104.0) (2026-08-28)
 
 
