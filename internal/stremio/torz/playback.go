@@ -171,6 +171,7 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			Id:      amRes.Id,
 			Name:    amRes.Name,
 			Hash:    amRes.Hash,
+			Size:    amRes.Size,
 			Status:  amRes.Status,
 			Files:   amRes.Files,
 			Private: amRes.Private,
