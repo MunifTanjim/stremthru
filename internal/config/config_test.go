@@ -59,3 +59,21 @@ func (s *StoreContentCachedStaleTimeTestSuite) TestStoreContentCachedStaleTimeWi
 func TestConfig(t *testing.T) {
 	suite.Run(t, new(StoreContentCachedStaleTimeTestSuite))
 }
+
+func TestParseStoreBaseURL(t *testing.T) {
+	if got, err := parseStoreBaseURL(""); err != nil || got != "" {
+		t.Errorf("empty: got %q, err %v", got, err)
+	}
+	if got, err := parseStoreBaseURL("https://torrin.example.com/"); err != nil || got != "https://torrin.example.com" {
+		t.Errorf("https: got %q, err %v", got, err)
+	}
+	if got, err := parseStoreBaseURL("http://10.0.0.5:8080"); err != nil || got != "http://10.0.0.5:8080" {
+		t.Errorf("http+port: got %q, err %v", got, err)
+	}
+	if _, err := parseStoreBaseURL("ftp://x"); err == nil {
+		t.Error("ftp scheme should error")
+	}
+	if _, err := parseStoreBaseURL("torrin.example.com"); err == nil {
+		t.Error("scheme-less should error")
+	}
+}
