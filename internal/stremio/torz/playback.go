@@ -200,8 +200,6 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			return strem, err
 		}
 
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
-
 		videoFiles := []store.File{}
 		for i := range magnet.Files {
 			f := &magnet.Files[i]
@@ -233,6 +231,17 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		go func() {
+			buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+			if shouldTagStream && file != nil {
+				if isIMDBId {
+					torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
+				} else if isAnimeId {
+					torrent_stream.TagAnimeStremId(magnet.Hash, file.GetPath(), sid)
+				}
+			}
+		}()
+
 		link := ""
 		if file != nil {
 			link = file.GetLink()
@@ -243,14 +252,6 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 				error_log:   "no matching file found for (" + sid + " - " + magnet.Hash + ")",
 				error_video: store_video.StoreVideoNameNoMatchingFile,
 			}, nil
-		}
-
-		if shouldTagStream {
-			if isIMDBId {
-				torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
-			} else if isAnimeId {
-				go torrent_stream.TagAnimeStremId(magnet.Hash, file.GetPath(), sid)
-			}
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, &ctx.Context, link, fileName)
