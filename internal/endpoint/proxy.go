@@ -61,7 +61,13 @@ func handleProxyLinkAccess(w http.ResponseWriter, r *http.Request) {
 			defer cpStore.Del(ctx.RequestId)
 		}
 	}
-	bytesWritten, err := shared.ProxyResponse(w, r, link, tunnelType)
+
+	var bytesWritten int64
+	if torrentHash := r.URL.Query().Get("torrent_hash"); torrentHash != "" {
+		bytesWritten, err = shared.ProxyTorrentResponse(w, r, link, tunnelType, user, torrentHash)
+	} else {
+		bytesWritten, err = shared.ProxyResponse(w, r, link, tunnelType)
+	}
 	ctx.Log.Info("[proxy] connection closed", "user", user, "size", util.ToSize(bytesWritten), "error", err)
 }
 
