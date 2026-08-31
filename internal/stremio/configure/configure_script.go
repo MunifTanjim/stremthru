@@ -25,6 +25,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
     realdebrid: "rd",
     torbox: "tb",
     torrin: "ti",
+    webtor: "wt",
     p2p: "p2p",
   };
   const nameDescElem = document.querySelector(` + "`[name='${nameField.name}'] + small > span.description`" + `);
@@ -42,6 +43,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
       rd: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='http://real-debrid.com/?id=12448969'>Sign Up<a>",
       tb: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'>Sign Up</a> Referral Code: <a target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'><code>fbe2c844-4b50-416a-9cd8-4e37925f5dfa</code></a>",
       ti: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torrin.app/login'>Sign Up</a>",
+      wt: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://webtor.io/login'>Sign Up</a>",
       p2p: "⚠️ Peer-to-Peer (🧪 Experimental)",
     };
     nameDescElem.innerHTML = descByStore[nameField.value] || descByStore[storeFallback[nameField.value]] || descByStore["*"] || "";
@@ -62,6 +64,7 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
 			rd: "RealDebrid <a href='https://real-debrid.com/apitoken' target='_blank'>API Token</a>",
 			tb: "TorBox <a href='https://torbox.app/settings' target='_blank'>API Key</a>",
 			ti: "Torrin <a href='https://torrin.app/app/settings' target='_blank'>API Key</a>",
+			wt: "Webtor <a href='https://webtor.io/profile' target='_blank'>API Key</a>",
 			p2p: "…",
 		};
     tokenDescElem.innerHTML = descByStore[nameField.value] || descByStore[storeFallback[nameField.value]] || descByStore["*"] || "";

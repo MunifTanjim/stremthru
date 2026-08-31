@@ -24,6 +24,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 		{Value: "rd", Label: "RealDebrid"},
 		{Value: "tb", Label: "TorBox"},
 		{Value: "ti", Label: "🧪 Torrin"},
+		{Value: "wt", Label: "Webtor"},
 	}
 	if config.IsPublicInstance {
 		options[0].Disabled = true
