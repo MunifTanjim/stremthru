@@ -71,6 +71,7 @@ func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
 	options := []configure.ConfigOption{
 		{Value: "", Label: "StremThru"},
 		{Value: "tb", Label: "TorBox"},
+		{Value: "ti", Label: "Torrin"},
 	}
 	if config.IsPublicInstance {
 		options[0].Disabled = true
@@ -80,6 +81,19 @@ func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
 }
 
 func WaitForNewzStatus(ctx *Ctx, data *store.GetNewzData, status store.NewzStatus, maxRetry int, retryInterval time.Duration) (*store.GetNewzData, error) {
+	if data.Status == status {
+		params := &store.GetNewzParams{
+			Id:       data.Id,
+			ClientIP: ctx.ClientIP,
+		}
+		params.APIKey = ctx.StoreAuthToken
+		newz, err := ctx.Store.(store.NewzStore).GetNewz(params)
+		if err != nil {
+			return data, err
+		}
+		return newz, nil
+	}
+
 	retry := 0
 	for data.Status != status && retry < maxRetry {
 		params := &store.GetNewzParams{
