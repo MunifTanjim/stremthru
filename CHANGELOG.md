@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.104.2](https://github.com/MunifTanjim/stremthru/compare/0.104.1...0.104.2) (2026-09-11)
+
+
+### Bug Fixes
+
+* **stremio:** fix race between magnet tracking and strem id tagging ([a4d09bc](https://github.com/MunifTanjim/stremthru/commit/a4d09bcbdb2be1f8d1418495e99dd3237465de6b))
+
 ## [0.104.1](https://github.com/MunifTanjim/stremthru/compare/0.104.0...0.104.1) (2026-08-31)
 
 
