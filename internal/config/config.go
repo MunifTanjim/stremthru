@@ -94,6 +94,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_NEWZ_STREAM_BUFFER_SIZE":                "200MB",
 		"STREMTHRU_NEWZ_NZB_LINK_TYPE":                     "*:proxy",
 		"STREMTHRU_WEBDAV_FILE_EXT_FILTER":                 ":video:,:subtitle:",
+		"STREMTHRU__REDIRECT__":                            "torbox-signup:https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa realdebrid-signup:http://real-debrid.com/?id=12448969",
 	},
 }
 
