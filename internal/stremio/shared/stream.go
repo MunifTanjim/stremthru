@@ -223,6 +223,10 @@ type StremIdMeta struct {
 	season, episode int
 }
 
+func (m *StremIdMeta) IsAnime() bool {
+	return m.nsid.IsAnime
+}
+
 func (m *StremIdMeta) Titles() []string {
 	return m.titles
 }
