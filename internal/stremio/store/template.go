@@ -51,6 +51,7 @@ func getStoreNameConfig(defaultValue string) configure.Config {
 		{Value: "realdebrid", Label: "RealDebrid"},
 		{Value: "torbox", Label: "TorBox"},
 		{Value: "torrin", Label: "🧪 Torrin"},
+		{Value: "webtor", Label: "Webtor"},
 	}
 	if config.IsPublicInstance {
 		options[0].Disabled = true

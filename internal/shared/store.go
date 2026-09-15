@@ -25,6 +25,7 @@ import (
 	"github.com/MunifTanjim/stremthru/store/stremthru"
 	"github.com/MunifTanjim/stremthru/store/torbox"
 	"github.com/MunifTanjim/stremthru/store/torrin"
+	"github.com/MunifTanjim/stremthru/store/webtor"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -69,6 +70,10 @@ var tiStore = torrin.NewStoreClient(&torrin.StoreClientConfig{
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torrin")),
 	UserAgent:  config.StoreClientUserAgent,
 })
+var wtStore = webtor.NewStoreClient(&webtor.StoreClientConfig{
+	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("webtor")),
+	UserAgent:  config.StoreClientUserAgent,
+})
 
 func GetStore(name string) store.Store {
 	switch store.StoreName(name) {
@@ -94,6 +99,8 @@ func GetStore(name string) store.Store {
 		return tbStore
 	case store.StoreNameTorrin:
 		return tiStore
+	case store.StoreNameWebtor:
+		return wtStore
 	default:
 		return nil
 	}
@@ -123,6 +130,8 @@ func GetStoreByCode(code string) store.Store {
 		return tbStore
 	case store.StoreCodeTorrin:
 		return tiStore
+	case store.StoreCodeWebtor:
+		return wtStore
 	default:
 		return nil
 	}

@@ -34,6 +34,7 @@ var logoByStoreCode = map[string]string{
 	"rd": "https://fcdn.real-debrid.com/0830/favicons/android-chrome-192x192.png",
 	"tb": "https://torbox.app/android-chrome-192x192.png",
 	"ti": "https://torrin.app/favicon.png",
+	"wt": "https://webtor.io/android-chrome-192x192.png",
 }
 
 func getManifestCatalog(code string, hideCatalog bool) stremio.Catalog {
