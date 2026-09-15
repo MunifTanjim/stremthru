@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.105.0](https://github.com/MunifTanjim/stremthru/compare/0.104.2...0.105.0) (2026-09-15)
+
+
+### Features
+
+* **debug:** add admin-guarded pprof endpoints ([d55e759](https://github.com/MunifTanjim/stremthru/commit/d55e75999dc4f8c55c67701ef5286cd666407b7f))
+
 ## [0.104.2](https://github.com/MunifTanjim/stremthru/compare/0.104.1...0.104.2) (2026-09-11)
 
 
