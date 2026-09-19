@@ -15,6 +15,8 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+const sqliteDefaultMaxConns = 8
+
 type DB struct {
 	*sql.DB
 	URI     ConnectionURI
@@ -208,6 +210,16 @@ func Open() *DB {
 		database, err := sql.Open(connUri.DriverName, connUri.DSN(dsnModifiers...))
 		if err != nil {
 			log.Fatalf("[db] failed to open: %v\n", err)
+		}
+		// Each connection holds its own page cache (see _cache_size), so bound
+		// the pool (configurable via max_conns) to keep RSS in check.
+		maxConns := connUri.MaxConnection
+		if maxConns == 0 {
+			maxConns = sqliteDefaultMaxConns
+		}
+		database.SetMaxOpenConns(maxConns)
+		if connUri.MinConnection != 0 {
+			database.SetMaxIdleConns(connUri.MinConnection)
 		}
 		db.DB = database
 		db.onClose = func() error {
