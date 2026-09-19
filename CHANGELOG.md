@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.105.1](https://github.com/MunifTanjim/stremthru/compare/0.105.0...0.105.1) (2026-09-19)
+
+
+### Performance Improvements
+
+* **db:** set sqlite pool size to cap memory usage ([ee89105](https://github.com/MunifTanjim/stremthru/commit/ee89105885cbe4f5b7d943f39480d0dd023c9d03))
+
 ## [0.105.0](https://github.com/MunifTanjim/stremthru/compare/0.104.2...0.105.0) (2026-09-15)
 
 
