@@ -119,6 +119,45 @@ func TestStreamTemplateDefault(t *testing.T) {
 `)
 			},
 		},
+		{
+			name: "torz w/ edition",
+			prepare: func(d *StreamExtractorResult) {
+				d.Result.Edition = "Extended Edition"
+			},
+			expectedName: "✨ ⚡️ [RD] 🔑\nAddon\n1080p",
+			expectedDescription: func(*StreamExtractorResult) string {
+				return strings.TrimSpace(`
+💿 BluRay 🎞️ x265
+📺 HDR10 DV 🎧 DDP | 5.1
+💾 2.4 GB 📦 2.5 GB 〽️ 1.5 MB/s 👤 42
+🎙️ 🇬🇧 🇯🇵
+💬 🇬🇧
+🏷️ Extended Edition ⚙️ GROUP 🔍 Indexer
+📄 movie.mkv
+`)
+			},
+		},
+		{
+			name: "torz w/ edition, w/o group, site, indexer",
+			prepare: func(d *StreamExtractorResult) {
+				d.Result.Edition = "Extended Edition"
+				d.Result.Group = ""
+				d.Result.Site = ""
+				d.Indexer = StreamExtractorResultIndexer{}
+			},
+			expectedName: "✨ ⚡️ [RD] 🔑\nAddon\n1080p",
+			expectedDescription: func(*StreamExtractorResult) string {
+				return strings.TrimSpace(`
+💿 BluRay 🎞️ x265
+📺 HDR10 DV 🎧 DDP | 5.1
+💾 2.4 GB 📦 2.5 GB 〽️ 1.5 MB/s 👤 42
+🎙️ 🇬🇧 🇯🇵
+💬 🇬🇧
+🏷️ Extended Edition 
+📄 movie.mkv
+`)
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			data := makeData()

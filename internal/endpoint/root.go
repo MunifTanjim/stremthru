@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/MunifTanjim/stremthru/internal/config"
+	"github.com/MunifTanjim/stremthru/internal/server"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 )
 
@@ -80,4 +81,14 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func AddRootEndpoint(mux *http.ServeMux) {
 	mux.HandleFunc("/{$}", handleRoot)
+
+	mux.HandleFunc("/__redirect__/{key}", func(w http.ResponseWriter, r *http.Request) {
+		key := r.PathValue("key")
+		targetUrl := config.Redirect.GetRandom(key)
+		if targetUrl == "" {
+			server.ErrorNotFound(r).Send(w, r)
+			return
+		}
+		http.Redirect(w, r, targetUrl, http.StatusFound)
+	})
 }

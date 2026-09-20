@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/config"
@@ -162,6 +163,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_NONE: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_NONE)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
@@ -169,6 +171,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_AUTO: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_AUTO)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
@@ -176,6 +179,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 	config.TUNNEL_TYPE_FORCED: func() *http.Client {
 		transport := config.DefaultHTTPTransport.Clone()
 		transport.Proxy = config.Tunnel.GetProxy(config.TUNNEL_TYPE_FORCED)
+		transport.ResponseHeaderTimeout = 90 * time.Second
 		return &http.Client{
 			Transport: transport,
 		}
@@ -183,7 +187,7 @@ var proxyHttpClientByTunnelType = map[config.TunnelType]*http.Client{
 }
 
 func ProxyResponse(w http.ResponseWriter, r *http.Request, url string, tunnelType config.TunnelType) (bytesWritten int64, err error) {
-	request, err := http.NewRequest(r.Method, url, nil)
+	request, err := http.NewRequestWithContext(r.Context(), r.Method, url, nil)
 	if err != nil {
 		e := ErrorInternalServerError(r, "failed to create request")
 		e.Cause = err

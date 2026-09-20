@@ -7,6 +7,7 @@ const (
 	TorznabAttrNameIMDB                 ChannelItemAttrName = "imdb"
 	TorznabAttrNameIMDBId               ChannelItemAttrName = "imdbid"
 	TorznabAttrNameGenre                ChannelItemAttrName = "genre"
+	TorznabAttrNameTeam                 ChannelItemAttrName = "team"
 	TorznabAttrNameSeeders              ChannelItemAttrName = "seeders"
 	TorznabAttrNamePeers                ChannelItemAttrName = "peers"
 	TorznabAttrNameLeechers             ChannelItemAttrName = "leechers"

@@ -39,6 +39,9 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 }
 
 func WaitForMagnetStatus(ctx *Ctx, m *store.GetMagnetData, status store.MagnetStatus, maxRetry int, retryInterval time.Duration) (*store.GetMagnetData, error) {
+	// most stores only populate Private in AddMagnet (derived from the torrent
+	// metainfo), not in GetMagnet, so carry the incoming value across refreshes.
+	private := m.Private
 	retry := 0
 	for m.Status != status && retry < maxRetry {
 		gmParams := &store.GetMagnetParams{
@@ -51,6 +54,8 @@ func WaitForMagnetStatus(ctx *Ctx, m *store.GetMagnetData, status store.MagnetSt
 			return m, err
 		}
 		m = magnet
+		private = private || m.Private
+		m.Private = private
 		time.Sleep(retryInterval)
 		retry++
 	}

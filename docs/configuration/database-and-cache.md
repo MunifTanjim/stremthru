@@ -21,10 +21,10 @@ URI for the database connection.
 
 **Supported query parameters:**
 
-| Parameter   | Description                   |
-| ----------- | ----------------------------- |
-| `max_conns` | Maximum number of connections |
-| `min_conns` | Minimum number of connections |
+| Parameter   | Description                   | Default      |
+| ----------- | ----------------------------- | ------------ |
+| `max_conns` | Maximum number of connections | `8` (SQLite) |
+| `min_conns` | Minimum number of connections | —            |
 
 #### SQLite
 
@@ -35,8 +35,14 @@ SQLite is the recommended database for the vast majority of the users. You don't
 SQLite is used by default with no configuration required. The database file is stored in the data directory.
 
 ```sh
-STREMTHRU_DATABASE_URI=sqlite://./data/stremthru.db
+STREMTHRU_DATABASE_URI=sqlite://./data/stremthru.db?max_conns=8
 ```
+
+::: warning
+Every SQLite connection gets its own 64 MB page cache, so memory scales with the
+pool size (8 connections ≈ 512 MB). The pool defaults to 8; bump `max_conns` if
+you need more read concurrency and can spare ~64 MB per extra connection.
+:::
 
 #### PostgreSQL
 

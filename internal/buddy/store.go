@@ -54,14 +54,16 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 		})
 	}
 	magnet_cache.Touch(s.GetName().Code(), hash, tsFiles, !cacheMiss, true)
-	go torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{{
+	if err := torrent_info.Upsert([]torrent_info.TorrentInfoInsertData{{
 		Hash:         hash,
 		TorrentTitle: name,
 		Size:         size,
 		Source:       tInfoSource,
 		Files:        tsFiles,
 		Private:      private,
-	}}, tInfoCategory, storeCode != store.StoreCodeRealDebrid)
+	}}, tInfoCategory, storeCode != store.StoreCodeRealDebrid); err != nil {
+		buddyLog.Error("failed to track magnet", "store.name", s.GetName(), "hash", hash, "error", core.PackError(err))
+	}
 
 	// Skip external sharing (Buddy/Peer) for qBittorrent. qBit runs on the
 	// user's own infrastructure — its content is user-specific and has no
@@ -75,18 +77,20 @@ func TrackMagnet(s store.Store, hash string, name string, size int64, private bo
 	}
 
 	if config.HasBuddy {
-		params := &TrackMagnetCacheParams{
-			Store:     s.GetName(),
-			Hash:      hash,
-			Files:     files,
-			CacheMiss: cacheMiss,
-		}
-		start := time.Now()
-		if _, err := Buddy.TrackMagnetCache(params); err != nil {
-			buddyLog.Error("failed to track magnet cache", "store.name", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
-		} else {
-			buddyLog.Info("track magnet cache", "store.name", s.GetName(), "hash", hash, "duration", time.Since(start))
-		}
+		go func() {
+			params := &TrackMagnetCacheParams{
+				Store:     s.GetName(),
+				Hash:      hash,
+				Files:     files,
+				CacheMiss: cacheMiss,
+			}
+			start := time.Now()
+			if _, err := Buddy.TrackMagnetCache(params); err != nil {
+				buddyLog.Error("failed to track magnet cache", "store.name", s.GetName(), "hash", hash, "error", core.PackError(err), "duration", time.Since(start))
+			} else {
+				buddyLog.Info("track magnet cache", "store.name", s.GetName(), "hash", hash, "duration", time.Since(start))
+			}
+		}()
 	}
 
 	if config.HasPeer && config.PeerAuthToken != "" {

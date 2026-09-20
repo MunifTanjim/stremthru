@@ -39,8 +39,8 @@ function onStoreNameChangeUpdateStoreTokenDescription(nameField) {
       oc: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://offcloud.com'>Sign Up</a>",
       pm: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://www.premiumize.me/ref/634502061'>Sign Up</a>",
       pp: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://mypikpak.com/drive/activity/invited?invitation-code=46013321'>Sign Up</a> Invitation Code: <a target='_blank' href='https://mypikpak.com/drive/activity/invited?invitation-code=46013321'><code>46013321</code></a>",
-      rd: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='http://real-debrid.com/?id=12448969'>Sign Up<a>",
-      tb: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'>Sign Up</a> Referral Code: <a target='_blank' href='https://torbox.app/subscription?referral=fbe2c844-4b50-416a-9cd8-4e37925f5dfa'><code>fbe2c844-4b50-416a-9cd8-4e37925f5dfa</code></a>",
+      rd: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://stremthru.13377001.xyz/__redirect__/realdebrid-signup'>Sign Up</a>",
+      tb: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://stremthru.13377001.xyz/__redirect__/torbox-signup'>Sign Up</a>",
       ti: "<a type='button' class='outline mb-0' style='font-size: 0.75rem; padding: 0.02em 0.5em;' target='_blank' href='https://torrin.app/login'>Sign Up</a>",
       p2p: "⚠️ Peer-to-Peer (🧪 Experimental)",
     };

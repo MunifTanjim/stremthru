@@ -2,6 +2,7 @@ package shared
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -119,6 +120,7 @@ var torrentFileFetcher = func() *http.Client {
 }()
 
 type FetchTorrentFileOptions struct {
+	Context   context.Context
 	Name      string
 	SkipCache bool
 	CacheKeys []string
@@ -196,9 +198,18 @@ func FetchTorrentFile(link string, opts *FetchTorrentFileOptions) (string, *mult
 	if len(cacheKeys) > 0 {
 		singleflightKey = cacheKeys[0]
 	}
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	result, err, _ := torrentFileFetchSG.Do(singleflightKey, func() (ret any, err error) {
 		defer func() {
 			if err == nil {
+				return
+			}
+			// don't cache caller cancellation as a failure
+			if ctx.Err() != nil {
 				return
 			}
 			if err := setTorrentCacheValue(torrentFetchErrCache, cacheKeys, err.Error()); err != nil {
@@ -208,7 +219,11 @@ func FetchTorrentFile(link string, opts *FetchTorrentFileOptions) (string, *mult
 			}
 		}()
 
-		res, err := torrentFileFetcher.Get(link)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, link, nil)
+		if err != nil {
+			return nil, err
+		}
+		res, err := torrentFileFetcher.Do(req)
 		if err != nil {
 			return nil, err
 		}

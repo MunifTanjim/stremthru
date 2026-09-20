@@ -106,8 +106,10 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			Id:      amRes.Id,
 			Name:    amRes.Name,
 			Hash:    amRes.Hash,
+			Size:    amRes.Size,
 			Status:  amRes.Status,
 			Files:   amRes.Files,
+			Private: amRes.Private,
 			AddedAt: amRes.AddedAt,
 		}
 
@@ -132,8 +134,6 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 		if sid == "" {
 			sid = "*"
 		}
-
-		go buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
 
 		var pattern *regexp.Regexp
 		if re := query.Get("re"); re != "" {
@@ -180,6 +180,13 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		go func() {
+			buddy.TrackMagnet(ctx.Store, magnet.Hash, magnet.Name, magnet.Size, magnet.Private, magnet.Files, torrent_info.GetCategoryFromStremId(sid, ""), magnet.Status != store.MagnetStatusDownloaded, ctx.StoreAuthToken)
+			if shouldTagStream && file != nil {
+				torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
+			}
+		}()
+
 		link := ""
 		if file != nil {
 			link = file.GetLink()
@@ -190,10 +197,6 @@ func handleStrem(w http.ResponseWriter, r *http.Request) {
 				error_log:   "no matching file found for (" + sid + " - " + magnet.Hash + ")",
 				error_video: "no_matching_file",
 			}, nil
-		}
-
-		if shouldTagStream {
-			torrent_stream.TagStremId(magnet.Hash, file.GetPath(), sid)
 		}
 
 		glRes, err := shared.GenerateStremThruLink(r, &ctx.Context, link, fileName)
