@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.105.2](https://github.com/MunifTanjim/stremthru/compare/0.105.1...0.105.2) (2026-09-21)
+
+
+### Performance Improvements
+
+* preload mimalloc to bound container memory ([1b5e99a](https://github.com/MunifTanjim/stremthru/commit/1b5e99a121da059c3c0ed4b3ad39b8651252a514))
+* **worker:** cut allocation churn in anidb title matching ([90ac479](https://github.com/MunifTanjim/stremthru/commit/90ac4797251ab5ab1630318e3e3dd6fd1870d536))
+
 ## [0.105.1](https://github.com/MunifTanjim/stremthru/compare/0.105.0...0.105.1) (2026-09-19)
 
 
