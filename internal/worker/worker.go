@@ -779,7 +779,8 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitSyncAnimeToshoWorker(&WorkerConfig{
-		Disabled:          !config.Feature.IsEnabled("anime"),
+		// animetosho.org is shutting down; disable regardless of the "anime" feature.
+		Disabled:          true,
 		Name:              "sync-animetosho",
 		Interval:          24 * time.Hour,
 		RunAtStartupAfter: 90 * time.Second,
