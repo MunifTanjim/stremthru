@@ -1,0 +1,63 @@
+services:
+  stremthru:
+    container_name: stremthru
+    image: ghcr.io/giorgiobrullo/stremthru:latest
+    environment:
+      TZ: "Europe/Rome"
+      STREMTHRU_BASE_URL: "https://stremthru.cursedkarma.com"
+      STREMTHRU_DATABASE_URI: "sqlite:///app/data/stremthru.db"
+      STREMTHRU_FEATURE: "stremio_store,imdb_title"
+    hostname: stremthru
+    labels:
+      com.github.saltbox.saltbox_managed: true
+      diun.enable: true
+      autoheal: true
+      autoheal.stop.timeout: 10
+      traefik.enable: true
+      traefik.http.routers.stremthru-http.entrypoints: web
+      traefik.http.routers.stremthru-http.service: stremthru-http
+      traefik.http.routers.stremthru-http.rule: Host(`stremthru.cursedkarma.com`)
+      traefik.http.routers.stremthru-http.priority: 20
+      traefik.http.routers.stremthru-http.middlewares: globalHeaders@file,redirect-to-https@docker,robotHeaders@file,authentik@docker
+      traefik.http.routers.stremthru.entrypoints: websecure
+      traefik.http.routers.stremthru.service: stremthru
+      traefik.http.routers.stremthru.rule: Host(`stremthru.cursedkarma.com`)
+      traefik.http.routers.stremthru.priority: 20
+      traefik.http.routers.stremthru.tls.certresolver: httpresolver
+      traefik.http.routers.stremthru.tls.options: securetls@file
+      traefik.http.routers.stremthru.middlewares: globalHeaders@file,secureHeaders@file,robotHeaders@file,authentik@docker
+      traefik.http.services.stremthru-http.loadbalancer.server.port: 8080
+      traefik.http.services.stremthru.loadbalancer.server.port: 8080
+    networks:
+      - saltbox
+    restart: unless-stopped
+    volumes:
+      - /opt/stremthru:/app/data
+      - /etc/localtime:/etc/localtime:ro
+
+  qbit-fileserver:
+    container_name: qbit-fileserver
+    image: nginx:alpine
+    hostname: qbit-fileserver
+    volumes:
+      - /mnt/unionfs/downloads/torrents/qbittorrent/completed:/data:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - saltbox
+    restart: unless-stopped
+    command: |
+      sh -c 'echo "server {
+        listen 80;
+        root /data;
+        location / {
+          autoindex on;
+          sendfile on;
+          tcp_nopush on;
+          aio on;
+          directio 512;
+        }
+      }" > /etc/nginx/conf.d/default.conf && nginx -g "daemon off;"'
+
+networks:
+  saltbox:
+    external: true
