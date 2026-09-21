@@ -46,22 +46,58 @@ func sortAniDBTitles(titles anidb.AniDBTitles, tInfo torrent_info.TorrentInfo, t
 		}
 	}
 
-	slices.SortStableFunc(titles, func(a, b anidb.AniDBTitle) int {
-		if tYear != "" {
-			if a.Year == b.Year {
-				return levenshtein.ComputeDistance(tTitle, strings.ToLower(a.Value)) - levenshtein.ComputeDistance(tTitle, strings.ToLower(b.Value))
-			}
-			if a.Year == tYear {
+	// Precompute each title's edit distance once: an inline comparator would
+	// recompute it (and re-lowercase) O(n log n) times.
+	type sortItem struct {
+		title anidb.AniDBTitle
+		dist  int
+	}
+	items := make([]sortItem, len(titles))
+	for i := range titles {
+		items[i] = sortItem{
+			title: titles[i],
+			dist:  levenshtein.ComputeDistance(tTitle, strings.ToLower(titles[i].Value)),
+		}
+	}
+
+	slices.SortStableFunc(items, func(a, b sortItem) int {
+		if tYear != "" && a.title.Year != b.title.Year {
+			if a.title.Year == tYear {
 				return -1
 			}
-			if b.Year == tYear {
+			if b.title.Year == tYear {
 				return 1
 			}
 		}
-		return levenshtein.ComputeDistance(tTitle, strings.ToLower(a.Value)) - levenshtein.ComputeDistance(tTitle, strings.ToLower(b.Value))
+		return a.dist - b.dist
 	})
 
+	for i := range items {
+		titles[i] = items[i].title
+	}
+
 	return titles
+}
+
+// maxAniDBTitleMatchRatio cleanses tTitle once instead of per candidate;
+// otherwise it mirrors fuzzy.UQRatio (cleanse both sides, then Ratio).
+func maxAniDBTitleMatchRatio(tTitle string, titles anidb.AniDBTitles) int {
+	titleMatchRatio := 0
+	tTitleCleansed := fuzzy.Cleanse(tTitle, false)
+	if tTitleCleansed == "" {
+		return titleMatchRatio
+	}
+	for i := range titles {
+		titleCleansed := fuzzy.Cleanse(titles[i].Value, false)
+		if titleCleansed == "" {
+			continue
+		}
+		titleMatchRatio = max(titleMatchRatio, fuzzy.Ratio(tTitleCleansed, titleCleansed))
+		if titleMatchRatio >= 85 {
+			break
+		}
+	}
+	return titleMatchRatio
 }
 
 func prepareAniDBTorrentMaps(tvdbMaps *anidb.AniDBTVDBEpisodeMapsResult, titles anidb.AniDBTitles, tInfo torrent_info.TorrentInfo) ([]torrentMap, error) {
@@ -663,14 +699,7 @@ func MapTorrentToAniDB(hash string, tInfo torrent_info.TorrentInfo, onError MapA
 		return []anidb.AniDBTorrent{{Hash: hash}}
 	}
 
-	titleMatchRatio := 0
-	for i := range anidbTitles {
-		title := &anidbTitles[i]
-		titleMatchRatio = max(titleMatchRatio, fuzzy.UQRatio(tInfo.Title, title.Value))
-		if titleMatchRatio >= 85 {
-			break
-		}
-	}
+	titleMatchRatio := maxAniDBTitleMatchRatio(tInfo.Title, anidbTitles)
 	if titleMatchRatio < 85 {
 		if onError != nil {
 			onError("title match ratio is low", nil, "anidb_id", anidbId, "tvdb_id", tvdbId, "t_title", tInfo.Title, "ratio", titleMatchRatio)
