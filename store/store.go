@@ -24,6 +24,7 @@ const (
 	StoreNameStremThru  StoreName = "stremthru"
 	StoreNameTorBox     StoreName = "torbox"
 	StoreNameTorrin     StoreName = "torrin"
+	StoreNameWebtor     StoreName = "webtor"
 )
 
 func (n StoreName) String() string {
@@ -41,6 +42,7 @@ var StoreNames = []StoreName{
 	StoreNameRealDebrid,
 	StoreNameTorBox,
 	StoreNameTorrin,
+	StoreNameWebtor,
 }
 
 type StoreCode string
@@ -57,6 +59,7 @@ const (
 	StoreCodeStremThru  StoreCode = "st"
 	StoreCodeTorBox     StoreCode = "tb"
 	StoreCodeTorrin     StoreCode = "ti"
+	StoreCodeWebtor     StoreCode = "wt"
 )
 
 var storeCodeByName = map[StoreName]StoreCode{
@@ -71,6 +74,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameStremThru:  StoreCodeStremThru,
 	StoreNameTorBox:     StoreCodeTorBox,
 	StoreNameTorrin:     StoreCodeTorrin,
+	StoreNameWebtor:     StoreCodeWebtor,
 }
 
 var storeNameByCode = map[StoreCode]StoreName{
@@ -85,6 +89,7 @@ var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodeStremThru:  StoreNameStremThru,
 	StoreCodeTorBox:     StoreNameTorBox,
 	StoreCodeTorrin:     StoreNameTorrin,
+	StoreCodeWebtor:     StoreNameWebtor,
 }
 
 func (sn StoreName) Code() StoreCode {

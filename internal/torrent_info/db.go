@@ -103,6 +103,7 @@ const (
 	TorrentInfoSourceRealDebrid  TorrentInfoSource = "rd"
 	TorrentInfoSourceTorBox      TorrentInfoSource = "tb"
 	TorrentInfoSourceTorrin      TorrentInfoSource = "ti"
+	TorrentInfoSourceWebtor      TorrentInfoSource = "wt"
 	TorrentInfoSourceUnknown     TorrentInfoSource = ""
 )
 

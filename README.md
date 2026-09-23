@@ -25,6 +25,7 @@ Check [documentation](https://docs.stremthru.13377001.xyz).
 - [RealDebrid](https://stremthru.13377001.xyz/__redirect__/realdebrid-signup)
 - [TorBox](https://stremthru.13377001.xyz/__redirect__/torbox-signup)
 - [Torrin](https://torrin.app)
+- [Webtor](https://webtor.io)
 
 ### SDK
 
