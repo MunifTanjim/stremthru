@@ -408,6 +408,7 @@ func handleStoreMagnet(w http.ResponseWriter, r *http.Request) {
 
 type GenerateLinkPayload struct {
 	Link string `json:"link"`
+	SId  string `json:"sid,omitempty"`
 }
 
 func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
@@ -426,7 +427,7 @@ func handleStoreLinkGenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := storecontext.Get(r)
 	link, err := shared.GenerateStremThruLink(r, ctx, payload.Link, "")
 	if err == nil && link != nil {
-		go torz.TryQueueMediaInfoProbe(ctx, payload.Link, link)
+		go torz.TryQueueMediaInfoProbe(ctx, payload.Link, link, payload.SId)
 	}
 	SendResponse(w, r, 200, link, err)
 }
