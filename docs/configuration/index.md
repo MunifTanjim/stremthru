@@ -279,6 +279,20 @@ Only used when using StremThru to interact with the Store. Not affected by `STRE
 StremThru will _try_ to automatically adjust `STREMTHRU_TUNNEL` to reflect `STREMTHRU_STORE_TUNNEL`.
 :::
 
+### `STREMTHRU_STORE_TORRIN_BASE_URL`
+
+Base URL for the [Torrin](https://torrin.app) store. Set this to point StremThru at a self-hosted Torrin instance instead of the public one.
+
+Must be an `http`/`https` URL. Read once at startup (operator configuration only).
+
+- **Default:** `https://api.torrin.app`
+
+**Example:**
+
+```sh
+STREMTHRU_STORE_TORRIN_BASE_URL=https://torrin.example.com
+```
+
 ## Peer
 
 ### `STREMTHRU_PEER_FLAG`
