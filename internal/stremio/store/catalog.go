@@ -53,7 +53,7 @@ func getUsenetCatalogItems(s store.Store, storeToken string, clientIp string, id
 	idPrefix := getIdPrefix(idStoreCode)
 
 	switch s.GetName() {
-	case store.StoreNameStremThru:
+	case store.StoreNameStremThru, store.StoreNameTorrin:
 		if newzStore, ok := s.(store.NewzStore); ok {
 			params := &store.ListNewzParams{
 				ClientIP: clientIp,
