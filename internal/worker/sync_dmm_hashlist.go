@@ -3,7 +3,6 @@ package worker
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"io/fs"
 	"net/url"
 	"os"
@@ -33,6 +32,90 @@ type wrappedDMMHashlistItems struct {
 	Torrents []DMMHashlistItem `json:"torrents"`
 }
 
+var dmmHashlistFilenameRegex = regexp.MustCompile(`\S{8}-\S{4}-\S{4}-\S{4}-\S{12}\.html`)
+
+var dmmHashlistIdRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+func extractQuotedValueAfter(content, prefix string) string {
+	_, value, found := strings.Cut(content, prefix)
+	if !found {
+		return ""
+	}
+	value, _, _ = strings.Cut(value, `"`)
+	return value
+}
+
+// returns the data url's fragment, which is either the lz-string payload
+// or `id=<uuid>` pointing to `lists/<uuid>.txt`
+func extractDMMHashlistDataFragment(content string) (string, error) {
+	dataUrl := ""
+	// <iframe .. src="https://..."
+	if _, iframe, found := strings.Cut(content, "<iframe"); found {
+		dataUrl = extractQuotedValueAfter(iframe, `src="`)
+	}
+	// <meta .. content="0;url=https://..."
+	if dataUrl == "" {
+		dataUrl = strings.TrimPrefix(extractQuotedValueAfter(content, `content="`), "0;url=")
+	}
+	if dataUrl == "" {
+		return "", errors.New("failed to extract data url")
+	}
+	u, err := url.Parse(dataUrl)
+	if err != nil {
+		return "", Error{"failed to parse data url", err}
+	}
+	return u.Fragment, nil
+}
+
+func extractDMMHashlistItems(repoDir, filename string) ([]DMMHashlistItem, error) {
+	fileContent, err := os.ReadFile(path.Join(repoDir, filename))
+	if err != nil {
+		return nil, Error{"failed to read file", err}
+	}
+	encodedData, err := extractDMMHashlistDataFragment(string(fileContent))
+	if err != nil {
+		return nil, err
+	}
+	if id, ok := strings.CutPrefix(encodedData, "id="); ok {
+		if !dmmHashlistIdRegex.MatchString(id) {
+			return nil, errors.New("invalid stored hashlist id: " + id)
+		}
+		listContent, err := os.ReadFile(path.Join(repoDir, "lists", id+".txt"))
+		if err != nil {
+			return nil, Error{"failed to read stored hashlist", err}
+		}
+		encodedData = strings.TrimSpace(string(listContent))
+		if strings.HasPrefix(encodedData, "<") {
+			encodedData, err = extractDMMHashlistDataFragment(encodedData)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if encodedData == "" {
+		return nil, nil
+	}
+	blob, err := lzstring.DecompressFromEncodedUriComponent(encodedData)
+	if err != nil {
+		return nil, Error{"failed to decompress data", err}
+	}
+	items := []DMMHashlistItem{}
+	if strings.HasPrefix(blob, "{") {
+		wrappedItems := wrappedDMMHashlistItems{}
+		err := json.Unmarshal([]byte(blob), &wrappedItems)
+		if err != nil {
+			return nil, Error{"failed to unmarshal wrapped hashlist items", err}
+		}
+		items = wrappedItems.Torrents
+	} else {
+		err := json.Unmarshal([]byte(blob), &items)
+		if err != nil {
+			return nil, Error{"failed to unmarshal hashlist items", err}
+		}
+	}
+	return items, nil
+}
+
 func ResetSyncDMMHashlistProgress() error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -49,7 +132,6 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 	}
 
 	REPO_DIR := path.Join(config.DataDir, "hashlists")
-	hashlistFilenameRegex := regexp.MustCompile(`\S{8}-\S{4}-\S{4}-\S{4}-\S{12}\.html`)
 
 	ensureRepository := func(w *Worker) error {
 		repoDirExists, err := util.DirExists(REPO_DIR)
@@ -104,64 +186,6 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 		return nil
 	}
 
-	// <iframe .. src="https://..."
-	urlRegex := regexp.MustCompile(`<iframe *src="(.+)".*>`)
-	// <meta .. content="0;url=https://..."
-	fallbackUrlRegex := regexp.MustCompile(`content="(.+)".*`)
-	extractHashlistItems := func(filename string) ([]DMMHashlistItem, error) {
-		file, err := os.Open(path.Join(REPO_DIR, filename))
-		if err != nil {
-			return nil, Error{"failed to get working directory", err}
-		}
-		defer file.Close()
-		fileContent, err := io.ReadAll(file)
-		if err != nil {
-			return nil, Error{"failed to read file", err}
-		}
-		dataUrl := ""
-		matches := urlRegex.FindAllStringSubmatch(string(fileContent), -1)
-		if len(matches) > 0 {
-			dataUrl = matches[0][1]
-		}
-		if dataUrl == "" {
-			matches = fallbackUrlRegex.FindAllStringSubmatch(string(fileContent), -1)
-			if len(matches) > 0 {
-				dataUrl = matches[0][1]
-				dataUrl = strings.TrimPrefix(dataUrl, "0;url=")
-			}
-		}
-		if dataUrl == "" {
-			return nil, errors.New("failed to extract data url")
-		}
-		u, err := url.Parse(dataUrl)
-		if err != nil {
-			return nil, Error{"failed to parse data url", err}
-		}
-		encodedData := u.Fragment
-		if encodedData == "" {
-			return nil, nil
-		}
-		blob, err := lzstring.DecompressFromEncodedUriComponent(encodedData)
-		if err != nil {
-			return nil, Error{"failed to decompress data", err}
-		}
-		items := []DMMHashlistItem{}
-		if strings.HasPrefix(blob, "{") {
-			wrappedItems := wrappedDMMHashlistItems{}
-			err := json.Unmarshal([]byte(blob), &wrappedItems)
-			if err != nil {
-				return nil, Error{"failed to unmarshal wrapped hashlist items", err}
-			}
-			items = wrappedItems.Torrents
-		} else {
-			err := json.Unmarshal([]byte(blob), &items)
-			if err != nil {
-				return nil, Error{"failed to unmarshal hashlist items", err}
-			}
-		}
-		return items, nil
-	}
-
 	processHashlistFile := func(w *Worker, filename string, hashSeen *cache.LRUCache[struct{}], totalCount int) (int, error) {
 		id := strings.TrimSuffix(filename, ".html")
 
@@ -174,7 +198,7 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 
 		w.Log.Info("processing hashlist", "id", id)
 
-		items, err := extractHashlistItems(filename)
+		items, err := extractDMMHashlistItems(REPO_DIR, filename)
 		if err != nil {
 			return totalCount, err
 		}
@@ -250,12 +274,13 @@ func InitSyncDMMHashlistWorker(conf *WorkerConfig) *Worker {
 
 		totalCount := 0
 		for _, filename := range files {
-			if !hashlistFilenameRegex.MatchString(filename) {
+			if !dmmHashlistFilenameRegex.MatchString(filename) {
 				continue
 			}
 			newTotalCount, err := processHashlistFile(w, filename, hashSeenLru, totalCount)
 			if err != nil {
-				return err
+				w.Log.Error("failed to process hashlist", "filename", filename, "error", err)
+				continue
 			}
 			if newTotalCount != totalCount {
 				w.Log.Info("upserted entries", "totalCount", totalCount)
