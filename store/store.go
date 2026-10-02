@@ -13,17 +13,18 @@ import (
 type StoreName string
 
 const (
-	StoreNameAlldebrid  StoreName = "alldebrid"
-	StoreNameDebrider   StoreName = "debrider"
-	StoreNameDebridLink StoreName = "debridlink"
-	StoreNameEasyDebrid StoreName = "easydebrid"
-	StoreNameOffcloud   StoreName = "offcloud"
-	StoreNamePikPak     StoreName = "pikpak"
-	StoreNamePremiumize StoreName = "premiumize"
-	StoreNameRealDebrid StoreName = "realdebrid"
-	StoreNameStremThru  StoreName = "stremthru"
-	StoreNameTorBox     StoreName = "torbox"
-	StoreNameTorrin     StoreName = "torrin"
+	StoreNameAlldebrid   StoreName = "alldebrid"
+	StoreNameDebrider    StoreName = "debrider"
+	StoreNameDebridLink  StoreName = "debridlink"
+	StoreNameEasyDebrid  StoreName = "easydebrid"
+	StoreNameOffcloud    StoreName = "offcloud"
+	StoreNamePikPak      StoreName = "pikpak"
+	StoreNamePremiumize  StoreName = "premiumize"
+	StoreNameRealDebrid  StoreName = "realdebrid"
+	StoreNameStremThru   StoreName = "stremthru"
+	StoreNameTorBox      StoreName = "torbox"
+	StoreNameTorrin      StoreName = "torrin"
+	StoreNameQBittorrent StoreName = "qbittorrent"
 )
 
 func (n StoreName) String() string {
@@ -41,50 +42,54 @@ var StoreNames = []StoreName{
 	StoreNameRealDebrid,
 	StoreNameTorBox,
 	StoreNameTorrin,
+	StoreNameQBittorrent,
 }
 
 type StoreCode string
 
 const (
-	StoreCodeAllDebrid  StoreCode = "ad"
-	StoreCodeDebrider   StoreCode = "dr"
-	StoreCodeDebridLink StoreCode = "dl"
-	StoreCodeEasyDebrid StoreCode = "ed"
-	StoreCodeOffcloud   StoreCode = "oc"
-	StoreCodePikPak     StoreCode = "pp"
-	StoreCodePremiumize StoreCode = "pm"
-	StoreCodeRealDebrid StoreCode = "rd"
-	StoreCodeStremThru  StoreCode = "st"
-	StoreCodeTorBox     StoreCode = "tb"
-	StoreCodeTorrin     StoreCode = "ti"
+	StoreCodeAllDebrid   StoreCode = "ad"
+	StoreCodeDebrider    StoreCode = "dr"
+	StoreCodeDebridLink  StoreCode = "dl"
+	StoreCodeEasyDebrid  StoreCode = "ed"
+	StoreCodeOffcloud    StoreCode = "oc"
+	StoreCodePikPak      StoreCode = "pp"
+	StoreCodePremiumize  StoreCode = "pm"
+	StoreCodeRealDebrid  StoreCode = "rd"
+	StoreCodeStremThru   StoreCode = "st"
+	StoreCodeTorBox      StoreCode = "tb"
+	StoreCodeTorrin      StoreCode = "ti"
+	StoreCodeQBittorrent StoreCode = "qb"
 )
 
 var storeCodeByName = map[StoreName]StoreCode{
-	StoreNameAlldebrid:  StoreCodeAllDebrid,
-	StoreNameDebrider:   StoreCodeDebrider,
-	StoreNameDebridLink: StoreCodeDebridLink,
-	StoreNameEasyDebrid: StoreCodeEasyDebrid,
-	StoreNameOffcloud:   StoreCodeOffcloud,
-	StoreNamePikPak:     StoreCodePikPak,
-	StoreNamePremiumize: StoreCodePremiumize,
-	StoreNameRealDebrid: StoreCodeRealDebrid,
-	StoreNameStremThru:  StoreCodeStremThru,
-	StoreNameTorBox:     StoreCodeTorBox,
-	StoreNameTorrin:     StoreCodeTorrin,
+	StoreNameAlldebrid:   StoreCodeAllDebrid,
+	StoreNameDebrider:    StoreCodeDebrider,
+	StoreNameDebridLink:  StoreCodeDebridLink,
+	StoreNameEasyDebrid:  StoreCodeEasyDebrid,
+	StoreNameOffcloud:    StoreCodeOffcloud,
+	StoreNamePikPak:      StoreCodePikPak,
+	StoreNamePremiumize:  StoreCodePremiumize,
+	StoreNameRealDebrid:  StoreCodeRealDebrid,
+	StoreNameStremThru:   StoreCodeStremThru,
+	StoreNameTorBox:      StoreCodeTorBox,
+	StoreNameTorrin:      StoreCodeTorrin,
+	StoreNameQBittorrent: StoreCodeQBittorrent,
 }
 
 var storeNameByCode = map[StoreCode]StoreName{
-	StoreCodeAllDebrid:  StoreNameAlldebrid,
-	StoreCodeDebrider:   StoreNameDebrider,
-	StoreCodeDebridLink: StoreNameDebridLink,
-	StoreCodeEasyDebrid: StoreNameEasyDebrid,
-	StoreCodeOffcloud:   StoreNameOffcloud,
-	StoreCodePikPak:     StoreNamePikPak,
-	StoreCodePremiumize: StoreNamePremiumize,
-	StoreCodeRealDebrid: StoreNameRealDebrid,
-	StoreCodeStremThru:  StoreNameStremThru,
-	StoreCodeTorBox:     StoreNameTorBox,
-	StoreCodeTorrin:     StoreNameTorrin,
+	StoreCodeAllDebrid:   StoreNameAlldebrid,
+	StoreCodeDebrider:    StoreNameDebrider,
+	StoreCodeDebridLink:  StoreNameDebridLink,
+	StoreCodeEasyDebrid:  StoreNameEasyDebrid,
+	StoreCodeOffcloud:    StoreNameOffcloud,
+	StoreCodePikPak:      StoreNamePikPak,
+	StoreCodePremiumize:  StoreNamePremiumize,
+	StoreCodeRealDebrid:  StoreNameRealDebrid,
+	StoreCodeStremThru:   StoreNameStremThru,
+	StoreCodeTorBox:      StoreNameTorBox,
+	StoreCodeTorrin:      StoreNameTorrin,
+	StoreCodeQBittorrent: StoreNameQBittorrent,
 }
 
 func (sn StoreName) Code() StoreCode {
