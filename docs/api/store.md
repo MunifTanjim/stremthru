@@ -44,6 +44,37 @@ Get information about the authenticated user.
 }
 ```
 
+### Generate Link
+
+**`POST /v0/store/link/generate`**
+
+Generate a direct link for a store file link.
+
+**Query Parameters:**
+
+- `client_ip` — Client IP to use for the request (optional)
+
+**Request:**
+
+```json
+{
+  "link": "string",
+  "sid": "string"
+}
+```
+
+- `sid` — Stremio stream ID, used to tag the torrent if it matches (optional)
+
+**Response:**
+
+```json
+{
+  "data": {
+    "link": "string"
+  }
+}
+```
+
 ## Newz Endpoints
 
 The Store API supports Newz (Usenet). See the [Newz API](./newz) page for full documentation of all `/v0/store/newz/*` endpoints.

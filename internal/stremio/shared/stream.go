@@ -1,12 +1,15 @@
 package stremio_shared
 
 import (
+	"errors"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/MunifTanjim/go-ptt"
 	"github.com/MunifTanjim/stremthru/internal/anidb"
+	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -211,4 +214,130 @@ func MatchFileByStremId(folderName string, files []store.File, sid string, torzH
 	}
 
 	return matchFileByIMDBStremId(files, sid)
+}
+
+type StremIdMeta struct {
+	nsid            *torrent_stream.NormalizedStremId
+	titles          []string
+	year            int
+	season, episode int
+}
+
+func (m *StremIdMeta) IsAnime() bool {
+	return m.nsid.IsAnime
+}
+
+func (m *StremIdMeta) Titles() []string {
+	return m.titles
+}
+
+func (m *StremIdMeta) Year() int {
+	return m.year
+}
+
+func (m *StremIdMeta) Season() int {
+	return m.season
+}
+
+func (m *StremIdMeta) Episode() int {
+	return m.episode
+}
+
+// NewStremIdMeta resolves imdb/anidb metadata for sid.
+func NewStremIdMeta(sid string) (*StremIdMeta, error) {
+	nsid, err := torrent_stream.NormalizeStreamId(sid)
+	if err != nil {
+		return nil, err
+	}
+
+	m := &StremIdMeta{nsid: nsid, titles: []string{}}
+
+	if nsid.IsAnime {
+		aniEp := util.SafeParseInt(nsid.Episode, -1)
+		if aniEp == -1 {
+			return m, nil
+		}
+		tvdbMaps, err := anidb.GetTVDBEpisodeMaps(nsid.Id, false)
+		if err != nil {
+			return nil, err
+		}
+		epMap := tvdbMaps.GetByAnidbEpisode(aniEp)
+		if epMap == nil {
+			return m, nil
+		}
+		m.episode = epMap.GetTMDBEpisode(aniEp)
+		m.season = epMap.TVDBSeason
+		titles, err := anidb.GetTitlesByIds([]string{nsid.Id})
+		if err != nil {
+			return nil, err
+		}
+		if len(titles) == 0 {
+			return nil, errors.New("no titles found for anidb id: " + nsid.Id)
+		}
+		seenTitle := util.NewSet[string]()
+		for i := range titles {
+			title := &titles[i]
+			if seenTitle.Has(title.Value) {
+				continue
+			}
+			seenTitle.Add(title.Value)
+			m.titles = append(m.titles, title.Value)
+			if m.year == 0 && title.Year != "" {
+				m.year = util.SafeParseInt(title.Year, 0)
+			}
+		}
+		return m, nil
+	}
+
+	it, err := imdb_title.Get(nsid.Id)
+	if err != nil {
+		return nil, err
+	}
+	if it == nil {
+		return nil, errors.New("imdb title not found: " + nsid.Id)
+	}
+	m.titles = append(m.titles, it.Title)
+	if it.OrigTitle != "" && it.OrigTitle != it.Title {
+		m.titles = append(m.titles, it.OrigTitle)
+	}
+	if it.Year > 0 {
+		m.year = it.Year
+	}
+	if nsid.IsSeries() {
+		m.season = util.SafeParseInt(nsid.Season, 0)
+		m.episode = util.SafeParseInt(nsid.Episode, 0)
+	}
+	return m, nil
+}
+
+// Matches reports whether candidateTitle plausibly matches this strem id's metadata.
+func (m *StremIdMeta) Matches(candidateTitle string, normalizer *util.StringNormalizer) bool {
+	pttr, err := util.ParseTorrentTitle(candidateTitle)
+	if err != nil {
+		log.Error("failed to parse title", "error", err, "title", candidateTitle)
+		return false
+	}
+
+	matchesTitle := false
+	for _, title := range m.titles {
+		if util.MaxLevenshteinDistance(5, pttr.Title, title, normalizer) {
+			matchesTitle = true
+			break
+		}
+	}
+	if !matchesTitle {
+		return false
+	}
+
+	if m.nsid.IsSeries() {
+		if !slices.Contains(pttr.Seasons, m.season) {
+			return false
+		}
+		if len(pttr.Episodes) > 0 && !slices.Contains(pttr.Episodes, m.episode) {
+			return false
+		}
+		return true
+	}
+
+	return m.year == 0 || pttr.Year == "" || pttr.Year == strconv.Itoa(m.year)
 }

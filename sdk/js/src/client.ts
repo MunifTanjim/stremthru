@@ -110,14 +110,16 @@ class StremThruStore {
   async generateLink({
     clientIp = this.#clientIp,
     link,
+    sid,
   }: {
     clientIp?: string;
     link: string;
+    sid?: string;
   }) {
     return await this.#client.request<{
       link: string;
     }>(`/v0/store/link/generate`, {
-      body: { link },
+      body: { link, sid },
       method: "POST",
       params: clientIp ? { client_ip: clientIp } : {},
     });
@@ -385,11 +387,11 @@ class StremThruStoreTorz {
     });
   }
 
-  async generateLink({ link }: { link: string }) {
+  async generateLink({ link, sid }: { link: string; sid?: string }) {
     return await this.#client.request<{
       link: string;
     }>("/v0/store/torz/link/generate", {
-      body: { link },
+      body: { link, sid },
       method: "POST",
     });
   }

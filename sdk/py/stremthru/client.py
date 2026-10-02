@@ -478,11 +478,16 @@ class StremThruStoreTorz:
             params["sid"] = sid
         return await self.client.request("/v0/store/torz/check", params=params)
 
-    async def generate_link(self, link: str) -> Response[GenerateLinkData]:
+    async def generate_link(
+        self, link: str, sid: Optional[str] = None
+    ) -> Response[GenerateLinkData]:
+        json: dict[str, Any] = {"link": link}
+        if sid:
+            json["sid"] = sid
         return await self.client.request(
             "/v0/store/torz/link/generate",
             "POST",
-            json={"link": link},
+            json=json,
         )
 
     async def get(self, torz_id: str) -> Response[GetTorzData]:
@@ -555,15 +560,19 @@ class StremThruStore:
         return await self.client.request("/v0/store/magnets/check", params=params)
 
     async def generate_link(
-        self, link: str, client_ip: str | None = None
+        self, link: str, client_ip: str | None = None, sid: Optional[str] = None
     ) -> Response[GenerateLinkData]:
         if not client_ip:
             client_ip = self._client_ip
 
+        json: dict[str, Any] = {"link": link}
+        if sid:
+            json["sid"] = sid
+
         return await self.client.request(
             "/v0/store/link/generate",
             "POST",
-            json={"link": link},
+            json=json,
             params={"client_ip": client_ip} if client_ip else None,
         )
 

@@ -207,9 +207,12 @@ Generate a direct link for a torz file link.
 
 ```json
 {
-  "link": "string"
+  "link": "string",
+  "sid": "string"
 }
 ```
+
+- `sid` — Stremio stream ID, used to tag the torrent if it matches (optional)
 
 **Response:**
 

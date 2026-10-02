@@ -15,6 +15,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	storecontext "github.com/MunifTanjim/stremthru/internal/store/context"
 	store_util "github.com/MunifTanjim/stremthru/internal/store/util"
+	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -323,6 +324,7 @@ func handleStoreTorzRemove(w http.ResponseWriter, r *http.Request) {
 
 type GenerateTorzLinkPayload struct {
 	Link string `json:"link"`
+	SId  string `json:"sid,omitempty"`
 }
 
 func handleStoreTorzLinkGenerate(w http.ResponseWriter, r *http.Request) {
@@ -351,12 +353,23 @@ func handleStoreTorzLinkGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go TryQueueMediaInfoProbe(ctx, payload.Link, data)
+	go TryQueueMediaInfoProbe(ctx, payload.Link, data, payload.SId)
 
 	server.SendData(w, r, 200, data)
 }
 
-func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink string, linkData *store.GenerateLinkData) {
+func tagStremIdIfMatches(sid string, meta *stremio_shared.StremIdMeta, hash, path, candidateTitle string) {
+	if !meta.Matches(candidateTitle, util.NewStringNormalizer()) {
+		return
+	}
+	if meta.IsAnime() {
+		torrent_stream.TagAnimeStremId(hash, path, sid)
+	} else {
+		torrent_stream.TagStremId(hash, path, sid)
+	}
+}
+
+func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink string, linkData *store.GenerateLinkData, sid string) {
 	switch ctx.Store.GetName() {
 	case store.StoreNameTorBox:
 		id, fileId, err := torbox.LockedFileLink(lockedLink).Parse()
@@ -373,6 +386,11 @@ func TryQueueMediaInfoProbe(ctx *storecontext.Context, lockedLink string, linkDa
 		for _, f := range magnet.Files {
 			if f.Link == lockedLink || f.Idx == fileId {
 				torrent_stream.QueueMediaInfoProbe(magnet.Hash, f.Path, linkData.Link)
+				if sid != "" {
+					if meta, err := stremio_shared.NewStremIdMeta(sid); err == nil {
+						tagStremIdIfMatches(sid, meta, magnet.Hash, f.Path, magnet.Name)
+					}
+				}
 				return
 			}
 		}
