@@ -13,8 +13,14 @@ import (
 // https://github.com/pieroxy/lz-string/
 //
 
-// map of "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$"
-var keyStrUriSafe map[byte]int = map[byte]int{74: 9, 78: 13, 83: 18, 36: 64, 109: 38, 114: 43, 116: 45, 101: 30, 45: 63, 73: 8, 81: 16, 113: 42, 49: 53, 50: 54, 54: 58, 76: 11, 100: 29, 107: 36, 121: 50, 77: 12, 89: 24, 105: 34, 66: 1, 69: 4, 85: 20, 48: 52, 119: 48, 117: 46, 120: 49, 52: 56, 56: 60, 110: 39, 112: 41, 70: 5, 71: 6, 79: 14, 88: 23, 97: 26, 102: 31, 103: 32, 67: 2, 118: 47, 65: 0, 68: 3, 72: 7, 108: 37, 51: 55, 57: 61, 82: 17, 90: 25, 98: 27, 115: 44, 122: 51, 53: 57, 86: 21, 106: 35, 111: 40, 55: 59, 43: 62, 75: 10, 80: 15, 84: 19, 87: 22, 99: 28, 104: 33}
+const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$"
+
+var baseValueByChar = func() (m [256]int) {
+	for i := range len(keyStrUriSafe) {
+		m[keyStrUriSafe[i]] = i
+	}
+	return m
+}()
 
 type dataStruct struct {
 	input      string
@@ -27,7 +33,7 @@ type dataStruct struct {
 }
 
 func getBaseValue(char byte) int {
-	return keyStrUriSafe[char]
+	return baseValueByChar[char]
 }
 
 // Input is composed of ASCII characters, so accessing it by array has no UTF-8 pb.
