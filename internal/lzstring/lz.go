@@ -45,7 +45,10 @@ func readBits(nb int, data *dataStruct) int {
 		data.position = data.position / 2
 		if data.position == 0 {
 			data.position = 32
-			data.val = getBaseValue(data.input[data.index])
+			data.val = 0
+			if data.index < len(data.input) {
+				data.val = getBaseValue(data.input[data.index])
+			}
 			data.index += 1
 		}
 		if respB > 0 {
@@ -109,7 +112,7 @@ func DecompressFromEncodedUriComponent(input string) (string, error) {
 	}
 	last := result
 	data.numBits += 1
-	for {
+	for data.index <= len(data.input) {
 		str, isEnd, err := getString(last, &data)
 		if err != nil || isEnd {
 			return r.String(), err
