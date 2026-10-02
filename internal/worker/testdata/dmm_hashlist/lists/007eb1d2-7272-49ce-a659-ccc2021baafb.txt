@@ -1,0 +1,11 @@
+<!doctype html>
+<html>
+<head>
+<meta charset=UTF-8>
+<title>Debrid Media Manager Hash List</title>
+<style>iframe{border:none;position:absolute;top:0;left:0;width:100%;height:100%}</style>
+</head>
+<body>
+<iframe src="https://debridmediamanager.com/hashlist#N4IgLglmA2CmIC4QAtUgDTgPYCcewDswBnRAbVADMI4CBDAW3iQHkBXMAIzoGMBrAAQsADnWgCAEmyKwcxAQGUAjEoEBRAAwBOALRqVApRoAcG4QIDqagEIAlCOYAeAJgBsAFh3E+uYRCwEGCh0xMiIILDuPADM7s4ArBo8xu7GACaulHQA7M4mWnnZaXTRdEqU7ibOZfGU0ZxBnACeYLCkCPHu7onZKfFKAL7oVDSEjMwg7Fy8giJiktKtcooG+sZ6eYYmZpY29k5unt6+-oGYyCFhSGnxdGnud+7RGs5Kxs5pGkawStGurgUtNFjD8NLd4tl3Jx4q40o0Wm1EP03L94tFegMALoDIA"></iframe>
+</body>
+</html>
