@@ -368,8 +368,9 @@ func (c *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
 	start := time.Now()
 	ul, err := c.client.UnlockLink(&UnlockLinkParams{
-		Ctx:  params.Ctx,
-		Link: params.Link,
+		Ctx:    params.Ctx,
+		Link:   params.Link,
+		UserIP: params.ClientIP,
 	})
 	stats.Record(c.Name, "generate_torz_link", time.Since(start), err != nil)
 	if err != nil {
