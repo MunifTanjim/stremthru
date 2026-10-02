@@ -115,15 +115,32 @@ func (l *postgresAdvisoryLock) commit() {
 	l.Executor = nil
 }
 
+// releases the tx (and its pooled connection) when no lock is held
+func (l *postgresAdvisoryLock) rollbackIfUnlocked() {
+	if l.count != 0 || l.Executor == nil {
+		return
+	}
+	err := l.Executor.(*Tx).Rollback()
+	if err != nil {
+		lockLog.Error("lock tx rollback failed", "error", err, "name", l.name)
+	}
+	l.Executor = nil
+}
+
 func (l *postgresAdvisoryLock) GetName() string {
 	return l.name
 }
 
 func (l *postgresAdvisoryLock) Acquire() bool {
+	if l.Executor == nil {
+		lockLog.Error("acquire failed, lock tx closed", "name", l.name)
+		return false
+	}
 	_, err := l.Exec("SELECT pg_advisory_lock(?, ?)", l.keyA, l.keyB)
 	if err != nil {
 		lockLog.Error("acquire failed", "error", err, "name", l.name)
 		l.err = errors.Join(l.err, err)
+		l.rollbackIfUnlocked()
 		return false
 	}
 	l.count++
@@ -131,14 +148,20 @@ func (l *postgresAdvisoryLock) Acquire() bool {
 }
 
 func (l *postgresAdvisoryLock) TryAcquire() bool {
+	if l.Executor == nil {
+		lockLog.Error("try acquire failed, lock tx closed", "name", l.name)
+		return false
+	}
 	row := l.QueryRow("SELECT pg_try_advisory_lock(?, ?)", l.keyA, l.keyB)
 	var acquired bool
 	if err := row.Scan(&acquired); err != nil {
 		l.err = errors.Join(l.err, err)
 		lockLog.Error("try acquire failed", "error", l.err, "name", l.name)
+		l.rollbackIfUnlocked()
 		return false
 	} else if !acquired {
 		lockLog.Debug("try acquire failed", "name", l.name, "count", l.count)
+		l.rollbackIfUnlocked()
 		return false
 	}
 	l.count++
