@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.105.3](https://github.com/MunifTanjim/stremthru/compare/0.105.2...0.105.3) (2026-10-02)
+
+
+### Bug Fixes
+
+* **db:** release postgres advisory lock tx when acquire fails ([94e2ae3](https://github.com/MunifTanjim/stremthru/commit/94e2ae3158779bcf3ae6938d88e32f3c3c45e017))
+* **lzstring:** return error instead of panic on truncated input ([808ba00](https://github.com/MunifTanjim/stremthru/commit/808ba00b6c0c267769a8c75edff88da46118bcd6))
+* **torznab:** include season packs for tvsearch without episode ([b76b234](https://github.com/MunifTanjim/stremthru/commit/b76b234982f8bc5babad90d2d5dc2e726953aceb))
+* **worker:** support dmm hashlist stored list format ([f848a56](https://github.com/MunifTanjim/stremthru/commit/f848a569c7d10354c5af987ae8047dab0df2693e))
+
+
+### Performance Improvements
+
+* **lzstring:** use lookup table for base value ([731eec9](https://github.com/MunifTanjim/stremthru/commit/731eec95faee17f90b810947fbca3bba2fdee6a1))
+
 ## [0.105.2](https://github.com/MunifTanjim/stremthru/compare/0.105.1...0.105.2) (2026-09-21)
 
 
