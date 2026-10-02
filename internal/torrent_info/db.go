@@ -1236,14 +1236,15 @@ func ListHashesByStremId(stremId string) ([]string, error) {
 		args = make([]any, 0, 5)
 		query += query_list_hashes_by_stremid_from_torrent_stream
 		args = append(args, stremId)
-		if parts := strings.SplitN(stremId, ":", 3); len(parts) == 3 {
-			args = append(args, parts[0])
-
+		parts := strings.SplitN(stremId, ":", 3)
+		args = append(args, parts[0])
+		switch len(parts) {
+		case 3:
 			query += " UNION " + query_list_hashes_by_stremid_from_imdb_torrent_for_series
 			args = append(args, parts[0], "%,"+parts[1]+",%", "%,"+parts[2]+",%")
-		} else {
-			imdbId, _, _ := strings.Cut(stremId, ":")
-			args = append(args, imdbId)
+		case 2:
+			query += " UNION " + query_list_hashes_by_stremid_from_imdb_torrent_for_series
+			args = append(args, parts[0], "%,"+parts[1]+",%", "%")
 		}
 	} else {
 		args = make([]any, 0, 3)
