@@ -66,6 +66,7 @@ var tbStore = torbox.NewStoreClient(&torbox.StoreClientConfig{
 	UserAgent:  config.StoreClientUserAgent,
 })
 var tiStore = torrin.NewStoreClient(&torrin.StoreClientConfig{
+	BaseURL:    config.StoreTorrinBaseURL,
 	HTTPClient: config.GetHTTPClient(config.StoreTunnel.GetTypeForAPI("torrin")),
 	UserAgent:  config.StoreClientUserAgent,
 })
