@@ -58,6 +58,7 @@ var defaultValueByEnv = map[string]map[string]string{
 		"STREMTHRU_DATABASE_URI":                           "sqlite://./data/stremthru.db",
 		"STREMTHRU_DATA_DIR":                               "./data",
 		"STREMTHRU_LANDING_PAGE":                           "{}",
+		"STREMTHRU_PLUGIN_DIR":                             "./data/plugins",
 		"STREMTHRU_LOG_FORMAT":                             "json",
 		"STREMTHRU_LOG_LEVEL":                              "INFO",
 		"STREMTHRU_PORT":                                   "8080",
@@ -360,6 +361,7 @@ type Config struct {
 
 	DataDir     string
 	VaultSecret string
+	PluginDir   string
 }
 
 func parseUri(uri string) (parsedUrl, parsedToken string) {
@@ -533,6 +535,11 @@ var config = func() Config {
 		log.Fatalf("data directory does not exist: %v", dataDir)
 	}
 
+	pluginDir, err := filepath.Abs(getEnv("STREMTHRU_PLUGIN_DIR"))
+	if err != nil {
+		log.Fatalf("failed to resolve plugin directory: %v", err)
+	}
+
 	storeContentCachedStaleTimeMap, err := parseStoreContentCachedStaleTime(getEnv("STREMTHRU_STORE_CONTENT_CACHED_STALE_TIME"), peerUrl != "")
 	if err != nil {
 		log.Fatalf("failed to parse store content cached stale time: %v", err)
@@ -599,6 +606,7 @@ var config = func() Config {
 		ContentProxyConnectionLimit: contentProxyConnectionMap,
 		DataDir:                     dataDir,
 		VaultSecret:                 vaultSecret,
+		PluginDir:                   pluginDir,
 	}
 }()
 
@@ -646,6 +654,19 @@ var IsTrusted = func() bool {
 
 var DataDir = config.DataDir
 var VaultSecret = config.VaultSecret
+var PluginDir = config.PluginDir
+
+func PluginIMDBPath() string {
+	return filepath.Join(PluginDir, "imdb")
+}
+
+func IsIMDBPluginAvailable(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, "imdb"))
+	if err != nil || info.IsDir() {
+		return false
+	}
+	return info.Mode().Perm()&0o111 != 0
+}
 
 var IsPublicInstance = len(Auth.user_pass) == 0
 
