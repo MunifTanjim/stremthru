@@ -84,6 +84,20 @@ Directory for StremThru data files (cache, database, temporary files etc.).
 STREMTHRU_DATA_DIR=./data
 ```
 
+### `STREMTHRU_PLUGIN_DIR`
+
+Directory containing external provider plugin binaries. The IMDb meta
+endpoints (`GET /v0/meta/imdb/titles/{id}`) are enabled only when an executable
+file named `imdb` exists in this directory.
+
+- **Default:** `./data/plugins`
+
+**Example:**
+
+```sh
+STREMTHRU_PLUGIN_DIR=./data/plugins
+```
+
 ### `STREMTHRU_IP_CHECKER`
 
 Comma-separated list of IP checker services used to determine the machine's public IP address. Multiple checkers provide fallback — if the first fails, the next is tried.
