@@ -171,6 +171,13 @@ func (r *StreamExtractorResult) Age() string {
 	return util.FormatDuration(time.Since(r.Date), 1)
 }
 
+func (r *StreamExtractorResult) DurationText() string {
+	if r.Duration <= 0 {
+		return ""
+	}
+	return util.FormatDuration(r.Duration, 3)
+}
+
 func (br StreamExtractorResultBitRate) String() string {
 	if br <= 0 {
 		return ""
