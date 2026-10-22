@@ -2,8 +2,6 @@ package debridlink
 
 import (
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -54,13 +52,8 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 	if err != nil {
 		return nil, err
 	}
-	url, err := url.Parse(res.Data.ViewSessidUrl)
-	if err != nil {
-		return nil, err
-	}
-	id := strings.Split(url.Path, "/")[2]
 	data := &store.User{
-		Id:    id,
+		Id:    res.Data.Username,
 		Email: res.Data.Email,
 	}
 	if res.Data.PremiumLeft != 0 {
