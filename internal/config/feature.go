@@ -23,6 +23,7 @@ const (
 	FeatureStremioTorz     string = "stremio_torz"
 	FeatureStremioWrap     string = "stremio_wrap"
 	FeatureVault           string = "vault"
+	FeatureIMDBMeta        string = "imdb_meta"
 	FeatureProbeMediaInfo  string = "probe_media_info"
 )
 
@@ -36,6 +37,7 @@ var features = []string{
 	FeatureAnime,
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
+	FeatureIMDBMeta,
 
 	FeatureStremioList,
 	FeatureStremioNewz,
@@ -115,6 +117,10 @@ func (f FeatureConfig) HasStremioStore() bool {
 
 func (f FeatureConfig) HasStremioAddon() bool {
 	return f.HasStremioList() || f.HasStremioNewz() || f.HasStremioTorz() || f.HasStremioStore() || f.IsEnabled(FeatureStremioWrap)
+}
+
+func (f FeatureConfig) HasIMDBMeta() bool {
+	return f.IsEnabled(FeatureIMDBMeta) && f.HasMeta() && IsIMDBPluginAvailable(PluginDir)
 }
 
 func (f FeatureConfig) HasProbeMediaInfo() bool {
