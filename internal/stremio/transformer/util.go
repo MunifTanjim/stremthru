@@ -32,6 +32,9 @@ func ApplyMediaInfo(data *StreamExtractorResult, mi *media_info.MediaInfo) {
 		if mi.Format.BitRate > 0 {
 			data.BitRate = StreamExtractorResultBitRate(mi.Format.BitRate)
 		}
+		if mi.Format.Duration > 0 {
+			data.Duration = mi.Format.Duration
+		}
 	}
 }
 

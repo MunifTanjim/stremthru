@@ -120,6 +120,24 @@ func TestStreamTemplateDefault(t *testing.T) {
 			},
 		},
 		{
+			name: "torz w/ duration",
+			prepare: func(d *StreamExtractorResult) {
+				d.Duration = 6130 * time.Second
+			},
+			expectedName: "✨ ⚡️ [RD] 🔑\nAddon\n1080p",
+			expectedDescription: func(*StreamExtractorResult) string {
+				return strings.TrimSpace(`
+💿 BluRay 🎞️ x265
+📺 HDR10 DV 🎧 DDP | 5.1
+💾 2.4 GB 📦 2.5 GB 〽️ 1.5 MB/s ⏳ 1h 42m 10s 👤 42
+🎙️ 🇬🇧 🇯🇵
+💬 🇬🇧
+⚙️ GROUP 🔍 Indexer
+📄 movie.mkv
+`)
+			},
+		},
+		{
 			name: "torz w/ edition",
 			prepare: func(d *StreamExtractorResult) {
 				d.Result.Edition = "Extended Edition"
