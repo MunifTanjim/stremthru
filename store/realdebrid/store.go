@@ -502,13 +502,14 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (*store.GetMagnet
 	}
 	totalLinks := len(res.Data.Links)
 	if data.Status == store.MagnetStatusDownloaded {
+		linksMatch := totalLinks == len(getSelectedFileIdsFromTorrent(&res.Data))
 		source := string(c.GetName().Code())
 		idx := -1
 		for _, f := range res.Data.Files {
 			if f.Selected == 1 {
 				idx++
 				link := ""
-				if totalLinks >= idx+1 {
+				if linksMatch {
 					link = LockedFileLink("").Create(res.Data.Id, res.Data.Links[idx])
 				}
 				smFile := f.toStoreMagnetFile()
