@@ -292,6 +292,15 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 		magnet = &m
 	}
+	if res.Data.TorrentId == 0 && res.Data.QueuedId != 0 {
+		return &store.AddMagnetData{
+			Hash:    magnet.Hash,
+			Magnet:  magnet.Link,
+			Status:  store.MagnetStatusQueued,
+			Files:   []store.MagnetFile{},
+			AddedAt: time.Now().UTC(),
+		}, nil
+	}
 	data := &store.AddMagnetData{
 		Id:     strconv.Itoa(res.Data.TorrentId),
 		Hash:   res.Data.Hash,
