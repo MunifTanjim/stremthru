@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
@@ -65,6 +66,7 @@ func (c APIClient) CheckTorrentsCached(params *CheckTorrentsCachedParams) (APIRe
 
 type CreateTorrentData struct {
 	TorrentId int    `json:"torrent_id"`
+	QueuedId  int    `json:"queued_id"`
 	Hash      string `json:"hash"`
 	AuthId    string `json:"auth_id"`
 }
@@ -158,7 +160,14 @@ const (
 	TorrentDownloadStateCached             TorrentDownloadState = "cached"             // The torrent is cached from the server
 	TorrentDownloadStateMetaDL             TorrentDownloadState = "metaDL"             // The torrent is downloading metadata from the hoard
 	TorrentDownloadStateCheckingResumeData TorrentDownloadState = "checkingResumeData" // The torrent is checking resumable data
+	TorrentDownloadStateFailed             TorrentDownloadState = "failed"             // The torrent failed to download
+	TorrentDownloadStateError              TorrentDownloadState = "error"              // The torrent hit an error
+	TorrentDownloadStateMissingFiles       TorrentDownloadState = "missingFiles"       // The torrent's files are missing
 )
+
+func (s TorrentDownloadState) IsFailed() bool {
+	return s == TorrentDownloadStateMissingFiles || strings.HasPrefix(string(s), string(TorrentDownloadStateFailed)) || strings.HasPrefix(string(s), string(TorrentDownloadStateError))
+}
 
 type Torrent struct {
 	Id               int                  `json:"id"`

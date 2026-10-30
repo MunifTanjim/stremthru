@@ -292,6 +292,15 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		}
 		magnet = &m
 	}
+	if res.Data.TorrentId == 0 && res.Data.QueuedId != 0 {
+		return &store.AddMagnetData{
+			Hash:    magnet.Hash,
+			Magnet:  magnet.Link,
+			Status:  store.MagnetStatusQueued,
+			Files:   []store.MagnetFile{},
+			AddedAt: time.Now().UTC(),
+		}, nil
+	}
 	data := &store.AddMagnetData{
 		Id:     strconv.Itoa(res.Data.TorrentId),
 		Hash:   res.Data.Hash,
@@ -316,6 +325,8 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 	data.AddedAt = t.Data.GetAddedAt()
 	if t.Data.DownloadFinished && t.Data.DownloadPresent {
 		data.Status = store.MagnetStatusDownloaded
+	} else if t.Data.DownloadState.IsFailed() {
+		data.Status = store.MagnetStatusFailed
 	} else if t.Data.Progress > 0 {
 		data.Status = store.MagnetStatusDownloading
 	}
@@ -437,6 +448,8 @@ func (c *StoreClient) GetMagnet(params *store.GetMagnetParams) (_ *store.GetMagn
 	}
 	if res.Data.DownloadFinished && res.Data.DownloadPresent {
 		data.Status = store.MagnetStatusDownloaded
+	} else if res.Data.DownloadState.IsFailed() {
+		data.Status = store.MagnetStatusFailed
 	} else if res.Data.Progress > 0 {
 		data.Status = store.MagnetStatusDownloading
 	}
@@ -488,6 +501,8 @@ func (c *StoreClient) ListMagnets(params *store.ListMagnetsParams) (*store.ListM
 		}
 		if t.DownloadFinished && t.DownloadPresent {
 			item.Status = store.MagnetStatusDownloaded
+		} else if t.DownloadState.IsFailed() {
+			item.Status = store.MagnetStatusFailed
 		} else if t.Progress > 0 {
 			item.Status = store.MagnetStatusDownloading
 		}
