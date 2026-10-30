@@ -183,7 +183,20 @@ func (c *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 
 func shouldRemoveTorrent(t *GetTorrentInfoData) bool {
 	status := t.Status
-	return (status == TorrentStatusMagnetError || status == TorrentStatusError || status == TorrentStatusVirus || status == TorrentStatusDead) || ((status == TorrentStatusQueued || status == TorrentStatusDownloading || status == TorrentStatusDownloaded) && len(getSelectedFileIdsFromTorrent(t)) != len(getVideoFileIdsFromTorrent(t)))
+	return status == TorrentStatusMagnetError || status == TorrentStatusError || status == TorrentStatusVirus || status == TorrentStatusDead
+}
+
+func shouldSkipTorrent(t *GetTorrentInfoData) bool {
+	status := t.Status
+	if status != TorrentStatusQueued && status != TorrentStatusDownloading && status != TorrentStatusDownloaded {
+		return false
+	}
+	for _, f := range t.Files {
+		if f.Selected != 1 && core.HasVideoExtension(f.Path) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *StoreClient) waitForTorrentStatus(ctx store.Ctx, t *GetTorrentInfoData, status TorrentStatus, maxRetry int, retryInterval time.Duration) (*GetTorrentInfoData, error) {
@@ -278,16 +291,18 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 		if err != nil {
 			return nil, err
 		}
-		t = &tInfo.Data
 		if shouldRemoveTorrent(&tInfo.Data) {
 			_, err := c.RemoveMagnet(&store.RemoveMagnetParams{
 				Ctx: params.Ctx,
-				Id:  t.Id,
+				Id:  tInfo.Data.Id,
 			})
 			if err != nil {
 				return nil, err
 			}
-			t = nil
+			continue
+		}
+		if !shouldSkipTorrent(&tInfo.Data) {
+			t = &tInfo.Data
 		}
 	}
 
@@ -318,6 +333,7 @@ func (c *StoreClient) AddMagnet(params *store.AddMagnetParams) (*store.AddMagnet
 			}
 			id = res.Data.Id
 		}
+		c.addIdHashMapCache(params, id, magnet.Hash)
 		start := time.Now()
 		tInfo, err := c.client.GetTorrentInfo(&GetTorrentInfoParams{
 			Ctx: params.Ctx,
