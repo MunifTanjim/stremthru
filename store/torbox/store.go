@@ -2,6 +2,7 @@ package torbox
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream"
 	"github.com/MunifTanjim/stremthru/internal/util"
 	"github.com/MunifTanjim/stremthru/store"
@@ -366,6 +368,22 @@ func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.Gen
 		error.Cause = err
 		return nil, error
 	}
+
+	// Opt-in: return TorBox's permalink (a stable URL that 307-redirects to a
+	// fresh CDN link on every access) instead of a temporary one that expires in
+	// a few hours. It embeds the API token in the URL, so it is gated behind
+	// STREMTHRU_STORE_TORBOX_PERMALINK and should only be used with trusted consumers.
+	if config.StoreTorBoxPermalink {
+		query := url.Values{}
+		query.Add("token", params.GetAPIKey(c.client.apiKey))
+		query.Add("torrent_id", strconv.Itoa(torrentId))
+		query.Add("file_id", strconv.Itoa(fileId))
+		query.Add("redirect", "true")
+		link := c.client.BaseURL.JoinPath("/v1/api/torrents/requestdl")
+		link.RawQuery = query.Encode()
+		return &store.GenerateLinkData{Link: link.String()}, nil
+	}
+
 	if v := c.getCachedGeneratedLink(params, torrentId, fileId); v != nil {
 		return v, nil
 	}
