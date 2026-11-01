@@ -20,7 +20,7 @@ var tbClient = torbox.NewAPIClient(&torbox.APIClientConfig{
 
 func IsSupported(storeCode store.StoreCode) bool {
 	switch storeCode {
-	case store.StoreCodeTorBox:
+	case store.StoreCodeTorBox, store.StoreCodeTorrin:
 		return true
 	default:
 		return false
