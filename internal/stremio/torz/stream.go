@@ -5,17 +5,14 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/MunifTanjim/stremthru/core"
-	"github.com/MunifTanjim/stremthru/internal/anidb"
 	"github.com/MunifTanjim/stremthru/internal/buddy"
 	"github.com/MunifTanjim/stremthru/internal/config"
-	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/shared"
 	stremio_shared "github.com/MunifTanjim/stremthru/internal/stremio/shared"
 	stremio_transformer "github.com/MunifTanjim/stremthru/internal/stremio/transformer"
@@ -62,21 +59,6 @@ func (s WrappedStream) GetHDR() string {
 	return strings.Join(s.R.HDR, "|")
 }
 
-type indexerSearchQueryMeta struct {
-	titles     []string
-	year       int
-	season, ep int
-}
-
-func (m *indexerSearchQueryMeta) MatchesTitle(parsedTitle string, normalizer *util.StringNormalizer) bool {
-	for _, title := range m.titles {
-		if util.MaxLevenshteinDistance(5, parsedTitle, title, normalizer) {
-			return true
-		}
-	}
-	return false
-}
-
 type indexerSearchQuery struct {
 	indexer  tznc.Indexer
 	query    *tznc.Query
@@ -97,58 +79,9 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 		return nil, nil, err
 	}
 
-	queryMeta := indexerSearchQueryMeta{titles: []string{}}
-	if nsid.IsAnime {
-		if aniEp := util.SafeParseInt(nsid.Episode, -1); aniEp != -1 {
-			tvdbMaps, err := anidb.GetTVDBEpisodeMaps(nsid.Id, false)
-			if err != nil {
-				return nil, nil, err
-			}
-			if epMap := tvdbMaps.GetByAnidbEpisode(aniEp); epMap != nil {
-				ep := epMap.GetTMDBEpisode(aniEp)
-				titles, err := anidb.GetTitlesByIds([]string{nsid.Id})
-				if err != nil {
-					return nil, nil, err
-				}
-				if len(titles) == 0 {
-					return nil, nil, errors.New("no titles found for anidb id: " + nsid.Id)
-				}
-				queryMeta.titles = make([]string, 0, len(titles))
-				queryMeta.season = epMap.TVDBSeason
-				queryMeta.ep = ep
-				seenTitle := util.NewSet[string]()
-				for i := range titles {
-					title := &titles[i]
-					if seenTitle.Has(title.Value) {
-						continue
-					}
-					seenTitle.Add(title.Value)
-					queryMeta.titles = append(queryMeta.titles, title.Value)
-					if queryMeta.year == 0 && title.Year != "" {
-						queryMeta.year = util.SafeParseInt(title.Year, 0)
-					}
-				}
-			}
-		}
-	} else {
-		it, err := imdb_title.Get(nsid.Id)
-		if err != nil {
-			return nil, nil, err
-		}
-		if it == nil {
-			return nil, nil, errors.New("imdb title not found: " + nsid.Id)
-		}
-		queryMeta.titles = append(queryMeta.titles, it.Title)
-		if it.OrigTitle != "" && it.OrigTitle != it.Title {
-			queryMeta.titles = append(queryMeta.titles, it.OrigTitle)
-		}
-		if it.Year > 0 {
-			queryMeta.year = it.Year
-		}
-		if nsid.IsSeries() {
-			queryMeta.season = util.SafeParseInt(nsid.Season, 0)
-			queryMeta.ep = util.SafeParseInt(nsid.Episode, 0)
-		}
+	stremIdMeta, err := stremio_shared.NewStremIdMeta(stremId)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	sQueries := make([]indexerSearchQuery, 0, len(ctx.Indexers)*2)
@@ -189,10 +122,10 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 		} else {
 			query.SetT(tznc.FunctionSearch)
 			supportsYear := query.IsSupported(tznc.SearchParamYear)
-			if supportsYear && queryMeta.year != 0 {
-				query.Set(tznc.SearchParamYear, strconv.Itoa(queryMeta.year))
+			if supportsYear && stremIdMeta.Year() != 0 {
+				query.Set(tznc.SearchParamYear, strconv.Itoa(stremIdMeta.Year()))
 			}
-			for _, title := range queryMeta.titles {
+			for _, title := range stremIdMeta.Titles() {
 				var q strings.Builder
 				q.WriteString(title)
 				if nsid.IsSeries() {
@@ -200,26 +133,26 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 						indexer: indexer,
 						query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
 					})
-					if queryMeta.season > 0 {
+					if stremIdMeta.Season() > 0 {
 						q.WriteString(" S")
-						q.WriteString(util.ZeroPadInt(queryMeta.season, 2))
-						if queryMeta.ep > 0 {
+						q.WriteString(util.ZeroPadInt(stremIdMeta.Season(), 2))
+						if stremIdMeta.Episode() > 0 {
 							sQueries = append(sQueries, indexerSearchQuery{
 								indexer: indexer,
 								query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
 							})
 							q.WriteString("E")
-							q.WriteString(util.ZeroPadInt(queryMeta.ep, 2))
+							q.WriteString(util.ZeroPadInt(stremIdMeta.Episode(), 2))
 						}
 						sQueries = append(sQueries, indexerSearchQuery{
 							indexer: indexer,
 							query:   query.Clone().Set(tznc.SearchParamQ, q.String()),
 						})
 					}
-				} else if queryMeta.year > 0 {
+				} else if stremIdMeta.Year() > 0 {
 					if !supportsYear {
 						q.WriteString(" ")
-						q.WriteString(strconv.Itoa(queryMeta.year))
+						q.WriteString(strconv.Itoa(stremIdMeta.Year()))
 					}
 					sQueries = append(sQueries, indexerSearchQuery{
 						indexer: indexer,
@@ -324,26 +257,8 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 				continue
 			}
 
-			if !is_exact {
-				pttr, err := util.ParseTorrentTitle(item.Title)
-				if err != nil {
-					continue
-				}
-				if !queryMeta.MatchesTitle(pttr.Title, strn) {
-					continue
-				}
-				if nsid.IsSeries() {
-					if !slices.Contains(pttr.Seasons, queryMeta.season) {
-						continue
-					}
-					if len(pttr.Episodes) > 0 && !slices.Contains(pttr.Episodes, queryMeta.ep) {
-						continue
-					}
-				} else if queryMeta.year > 0 {
-					if pttr.Year != "" && pttr.Year != strconv.Itoa(queryMeta.year) {
-						continue
-					}
-				}
+			if !is_exact && !stremIdMeta.Matches(item.Title, strn) {
+				continue
 			}
 
 			if tInfo, ok := tInfoByHash[item.Hash]; ok {
