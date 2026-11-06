@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.105.4](https://github.com/MunifTanjim/stremthru/compare/0.105.3...0.105.4) (2026-10-25)
+
+
+### Bug Fixes
+
+* **store/debridlink:** use username as user id ([14cd22d](https://github.com/MunifTanjim/stremthru/commit/14cd22d31b8a875f2e4521043b66f8dc6b16ddb0))
+
 ## [0.105.3](https://github.com/MunifTanjim/stremthru/compare/0.105.2...0.105.3) (2026-10-02)
 
 
