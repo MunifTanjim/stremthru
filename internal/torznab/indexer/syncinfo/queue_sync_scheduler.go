@@ -58,10 +58,29 @@ var _ = job.NewScheduler(&job.SchedulerConfig[JobData]{
 				return nil
 			}
 
+			// The normalized identifier is an IMDb ID for most Stremio requests.
+			// Resolve its anime classification once only when an anime-only indexer
+			// is enabled; retain the original IMDb ID for query construction.
+			isAnime := nsid.IsAnime
+			if !isAnime {
+				for i := range indexers {
+					if !indexers[i].OnlyAnime {
+						continue
+					}
+					isAnime, err = classifyAnimeIMDb(nsid.Id, meta.Titles, meta.Season, meta.Ep)
+					if err != nil {
+						// A broken MatchLab request must not block non-anime indexers.
+						log.Warn("failed to classify IMDb anime; skipping anime-only indexers", "error", err, "sid", item.SId)
+						isAnime = false
+					}
+					break
+				}
+			}
+
 			for i := range indexers {
 				indexer := &indexers[i]
 
-				if indexer.OnlyAnime && !nsid.IsAnime {
+				if indexer.OnlyAnime && !isAnime {
 					continue
 				}
 

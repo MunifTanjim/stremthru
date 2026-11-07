@@ -30,6 +30,14 @@ func (c integrationConfigBitmagnet) IsEnabled() bool {
 	return c.BaseURL != nil && c.DatabaseURI != ""
 }
 
+type integrationConfigMatchLab struct {
+	URL        string
+	Timeout    time.Duration
+	Concurrent int
+}
+
+func (c integrationConfigMatchLab) IsEnabled() bool { return c.URL != "" }
+
 type integrationConfigLettterboxd struct {
 	ClientId      string
 	ClientSecret  string
@@ -105,6 +113,7 @@ func (c integrationConfigTVDB) IsEnabled() bool {
 type IntegrationConfig struct {
 	AniList    integrationConfigAniList
 	Bitmagnet  integrationConfigBitmagnet
+	MatchLab   integrationConfigMatchLab
 	GitHub     integrationConfigGitHub
 	Letterboxd integrationConfigLettterboxd
 	MDBList    integrationConfigMDBList
@@ -141,6 +150,16 @@ func parseIntegration() IntegrationConfig {
 			ListStaleTime: mustParseDuration("anilist list stale time", getEnv("STREMTHRU_INTEGRATION_ANILIST_LIST_STALE_TIME"), 15*time.Minute),
 		},
 		Bitmagnet: bitmagnet,
+		MatchLab: integrationConfigMatchLab{
+			URL: func() string {
+				if value := getEnv("STREMTHRU_INTEGRATION_MATCHLAB_URL"); value != "" {
+					return value
+				}
+				return getEnv("MATCHLAB_URL")
+			}(),
+			Timeout:    mustParseDuration("MatchLab timeout", getEnv("STREMTHRU_INTEGRATION_MATCHLAB_TIMEOUT"), time.Millisecond),
+			Concurrent: util.SafeParseInt(getEnv("STREMTHRU_INTEGRATION_MATCHLAB_CONCURRENCY"), 8),
+		},
 		GitHub: integrationConfigGitHub{
 			User:  getEnv("STREMTHRU_INTEGRATION_GITHUB_USER"),
 			Token: getEnv("STREMTHRU_INTEGRATION_GITHUB_TOKEN"),

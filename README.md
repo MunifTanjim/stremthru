@@ -71,7 +71,31 @@ sequenceDiagram
     Proxy->>Client: Forward HTTP Response
 ```
 
+### Torrent parsing and matching
+
+- **Native (default):** StremThru uses its existing Go-PTT parser and local IMDb/AniDB matching workers.
+- **[MatchLab](https://github.com/Dizzybog/MatchLab) (optional):** Configure an external parser and authoritative IMDb/AniDB matcher for release titles, video-file identities, episode ranges and mixed anime packs. Existing local matching remains the default when MatchLab is not configured.
+- **Optimized Torz requests (opt-in):** With MatchLab configured, `STREMTHRU_FEATURE=+performance` uses stored torrent/file matches and asynchronously refreshes peers and indexers. Stremio stream responses still **wait for debrid cache status**, so cached availability is confirmed by the configured provider.
+
+MatchLab and `+performance` are independent opt-ins: neither is required for the native StremThru workflow. When MatchLab is disconnected, the optimized file lookup automatically falls back to the original Torz path.
+
 ## Configuration
+
+For an optional MatchLab deployment, configure a reachable API base URL (and optionally adjust the request timeout and concurrency):
+
+```env
+STREMTHRU_INTEGRATION_MATCHLAB_URL=http://matchlab:8765
+STREMTHRU_INTEGRATION_MATCHLAB_TIMEOUT=10s
+STREMTHRU_INTEGRATION_MATCHLAB_CONCURRENCY=8
+```
+
+Enable optimized Torz lookup only if desired:
+
+```env
+STREMTHRU_FEATURE=+performance
+```
+
+See the [MatchLab integration guide](./docs/integrations/matchlab.md) for setup and compatibility, the [mapping design notes](./docs/matchlab.md) for data flow and recovery, and the [feature documentation](./docs/configuration/features.md) for opt-in flags.
 
 Check [documentation](https://docs.stremthru.13377001.xyz/configuration).
 

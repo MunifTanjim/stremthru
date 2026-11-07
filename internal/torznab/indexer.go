@@ -54,7 +54,7 @@ func toFeedItem(tInfo torrent_info.TorrentInfo, imdbId string) FeedItem {
 	if len(tInfo.Channels) > 0 {
 		audio += " | " + strings.Join(tInfo.Channels, ", ")
 	}
-	return FeedItem{
+	item := FeedItem{
 		Audio:       audio,
 		Category:    category,
 		Codec:       tInfo.Codec,
@@ -72,6 +72,13 @@ func toFeedItem(tInfo torrent_info.TorrentInfo, imdbId string) FeedItem {
 		Year:        tInfo.Year,
 		IndexerName: jackett.GetIndexerName(tInfo.Indexer),
 	}
+	// Private tracker peer counts must not be exposed by our public Torznab feed.
+	// FeedItem serialization omits the seeders/leechers attributes when zero.
+	if tInfo.Private {
+		item.Seeders = 0
+		item.Leechers = 0
+	}
+	return item
 }
 
 func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
@@ -125,7 +132,9 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	for _, imdbId := range imdbIds {
 		wg.Go(func() {
 			torznab_indexer_syncinfo.QueueJob(imdbId + sidSuffix)
-			if config.PeerFlag.Lazy {
+			if config.Feature.HasPerformance() {
+				buddy.QueuePullTorrentsByStremId(imdbId)
+			} else if config.PeerFlag.Lazy {
 				go buddy.PullTorrentsByStremId(imdbId, "")
 			} else {
 				buddy.PullTorrentsByStremId(imdbId, "")
@@ -141,7 +150,13 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	for _, imdbId := range imdbIds {
 		wg.Go(func() {
 			stremId := imdbId + sidSuffix
-			hashes, err := torrent_info.ListHashesByStremId(stremId)
+			var hashes []string
+			var err error
+			if config.Feature.HasPerformance() {
+				hashes, err = torrent_info.ListHashesByStremIdFast(stremId)
+			} else {
+				hashes, err = torrent_info.ListHashesByStremId(stremId)
+			}
 			if err != nil {
 				log.Error("failed to list hashes by strem id", "error", err, "stremId", stremId)
 				return
@@ -165,7 +180,13 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 		allHashes = append(allHashes, hashes...)
 	}
 
-	tInfoByHash, err := torrent_info.GetByHashes(allHashes)
+	var tInfoByHash map[string]torrent_info.TorrentInfo
+	var err error
+	if config.Feature.HasPerformance() {
+		tInfoByHash, err = torrent_info.GetForTorznab(allHashes)
+	} else {
+		tInfoByHash, err = torrent_info.GetByHashes(allHashes)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +194,7 @@ func (sti stremThruIndexer) Search(q Query) ([]FeedItem, error) {
 	items := []FeedItem{}
 	for _, hash := range allHashes {
 		tInfo, ok := tInfoByHash[hash]
-		if !ok || tInfo.Private {
+		if !ok {
 			continue
 		}
 		items = append(items, toFeedItem(tInfo, imdbIDByHash[hash]))

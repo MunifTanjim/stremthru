@@ -13,6 +13,7 @@ const (
 	FeatureSync string = "sync"
 
 	FeatureAnime           string = "anime"
+	FeaturePerformance     string = "performance"
 	FeatureDMMHashlist     string = "dmm_hashlist"
 	FeatureIMDBTitle       string = "imdb_title"
 	FeatureStremioList     string = "stremio_list"
@@ -34,6 +35,7 @@ var features = []string{
 	FeatureVault,
 
 	FeatureAnime,
+	FeaturePerformance,
 	FeatureDMMHashlist,
 	FeatureIMDBTitle,
 
@@ -81,6 +83,16 @@ func (f FeatureConfig) HasTorz() bool {
 	return f.IsEnabled(FeatureTorz)
 }
 
+// Performance requires MatchLab's precomputed file identities. Falling back to
+// the original path without MatchLab also preserves original result semantics.
+func (f FeatureConfig) CanUsePerformance(hasMatchLab bool) bool {
+	return hasMatchLab && f.HasTorz() && f.IsEnabled(FeaturePerformance)
+}
+
+func (f FeatureConfig) HasPerformance() bool {
+	return f.CanUsePerformance(Integration.MatchLab.IsEnabled())
+}
+
 func (f FeatureConfig) HasSync() bool {
 	return f.IsEnabled(FeatureSync) && f.HasVault()
 }
@@ -121,12 +133,12 @@ func (f FeatureConfig) HasProbeMediaInfo() bool {
 	return f.IsEnabled(FeatureProbeMediaInfo) && f.HasTorz()
 }
 
-var Feature = func() FeatureConfig {
+func parseFeatureConfig(value string) FeatureConfig {
 	feature := FeatureConfig{
-		disabled: []string{FeatureAnime, FeatureStremioP2P},
+		disabled: []string{FeatureAnime, FeaturePerformance, FeatureStremioP2P},
 	}
 
-	for _, name := range strings.FieldsFunc(strings.TrimSpace(getEnv("STREMTHRU_FEATURE")), func(c rune) bool {
+	for _, name := range strings.FieldsFunc(strings.TrimSpace(value), func(c rune) bool {
 		return c == ','
 	}) {
 		switch {
@@ -156,4 +168,6 @@ var Feature = func() FeatureConfig {
 	}
 
 	return feature
-}()
+}
+
+var Feature = parseFeatureConfig(getEnv("STREMTHRU_FEATURE"))

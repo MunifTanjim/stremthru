@@ -8,6 +8,7 @@ import (
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/imdb_title"
 	"github.com/MunifTanjim/stremthru/internal/imdb_torrent"
+	"github.com/MunifTanjim/stremthru/internal/matchlab"
 	"github.com/MunifTanjim/stremthru/internal/torrent_info"
 )
 
@@ -64,6 +65,9 @@ func MapTorrentToIMDB(hash string, tInfo torrent_info.TorrentInfo, onError MapIM
 }
 
 func InitMapIMDBTorrentWorker(conf *WorkerConfig) *Worker {
+	if matchlab.Enabled() {
+		return InitMapMatchLabTorrentWorker(conf)
+	}
 	conf.Executor = func(w *Worker) error {
 		if !isIMDBSyncedInLast24Hours() {
 			w.Log.Info("IMDB not synced yet today, skipping")

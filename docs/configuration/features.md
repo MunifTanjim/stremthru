@@ -40,12 +40,13 @@ Use the `+` and `-` prefix syntax to selectively toggle features without affecti
 
 | Feature            | Description                 | Default  | Notes                     |
 | ------------------ | --------------------------- | -------- | ------------------------- |
-| `anime`            | Anime support               | Disabled |                           |
+| `anime`            | Anime source sync / local mapping | Disabled | Opt in with `+anime` |
 | `dmm_hashlist`     | DMM hashlist support        | Enabled  | Requires `torz`           |
 | `imdb_title`       | IMDB title support          | Enabled  | Requires `newz` or `torz` |
 | `meta`             | Meta API endpoints          | Enabled  |                           |
 | `newz`             | Usenet support              | Enabled  |                           |
 | `probe_media_info` | Probe Media Info            | Enabled  | Requires `torz`           |
+| `performance`      | Background Torz refresh, fast mapped-file lookup, synchronous debrid checks | Disabled | Requires `torz`; independent of `anime` |
 | `stremio_list`     | Stremio List addon          | Enabled  |                           |
 | `stremio_newz`     | Stremio Newz addon          | Enabled  | Requires `newz`           |
 | `stremio_p2p`      | Stremio P2P support         | Disabled |                           |
@@ -67,3 +68,11 @@ When both `newz` and `vault` are enabled, additional Usenet capabilities become 
 - **Server Management** — Configure Usenet servers for downloading/streaming
 - **SABnzbd Endpoint** — SABnzbd compatible API for tools like Sonarr/Radarr
 - **WebDAV Endpoint** — Browse and stream Newz content
+
+### `performance` (opt-in)
+
+Set `STREMTHRU_FEATURE=+performance` to opt into the faster Torz stream and Torznab search path. Without this flag, StremThru uses the original synchronous Torz request path, the original DB queries and file-matching fallbacks, and the original peer-pull / debrid checks. The new bounded background refresh workers are not started when `performance` is off.
+
+With `performance` on, Stremio Torz and the Torznab feed return currently indexed torrents and refresh peer/indexer data in the background. **Stremio Torz stream requests wait for the configured debrid services to finish checking the cache status of the visible, unique torrent hashes** before sending the response. A provider error is not treated as an uncached result. This preserves fast matching while ensuring that cached-only requests show confirmed debrid availability on the first response. File-list episodes need a precomputed file mapping rather than inline filename matching. MatchLab is independent of debrid checking.
+
+`performance` is an independent **configuration option**, but its optimized file-search path requires MatchLab's precomputed file identities. If MatchLab is disconnected, the application automatically uses the original Torz implementation even with `+performance` enabled; no restart-time error or local-match regression should result. With MatchLab configured, `+performance`, `+anime`, or `+performance,+anime` are valid combinations.

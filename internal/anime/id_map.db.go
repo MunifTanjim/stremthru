@@ -340,6 +340,37 @@ func GetTypeByKitsuIds(ids []int) (map[int]AnimeIdMapType, error) {
 	return typeById, nil
 }
 
+// IsAnimeIMDBId identifies anime using the local anime ID mapping, without
+// changing the IMDb identifier or search mode. Manga and novels do not qualify.
+var isAnimeIMDBIdCache = cache.NewLRUCache[bool](&cache.CacheConfig{
+	Lifetime: 5 * time.Minute,
+	Name:     "is_anime_imdb_id",
+})
+
+func IsAnimeIMDBId(imdbId string) (bool, error) {
+	if !strings.HasPrefix(imdbId, "tt") {
+		return false, nil
+	}
+	var isAnime bool
+	if isAnimeIMDBIdCache.Get(imdbId, &isAnime) {
+		return isAnime, nil
+	}
+
+	// imdb is not unique: several anime records may reference one IMDb title.
+	var found int
+	err := db.QueryRow(
+		"SELECT 1 FROM "+IdMapTableName+
+			" WHERE imdb = ? AND type IN ('TV','TV_SHORT','MOVIE','SPECIAL','OVA','ONA','MUSIC') LIMIT 1",
+		imdbId,
+	).Scan(&found)
+	if err != nil && err != sql.ErrNoRows {
+		return false, err
+	}
+	isAnime = err == nil
+	_ = isAnimeIMDBIdCache.Add(imdbId, isAnime)
+	return isAnime, nil
+}
+
 type cachedAniDBId struct {
 	Id     string
 	Season string

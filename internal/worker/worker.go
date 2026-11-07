@@ -79,7 +79,12 @@ var WorkerDetailsById = map[string]*WorkerDetail{
 		Title: "Sync DMM Hashlist",
 	},
 	"map-imdb-torrent": {
-		Title: "Map IMDB Torrent",
+		Title: func() string {
+			if config.Integration.MatchLab.IsEnabled() {
+				return "Map IMDb/AniDB via MatchLab"
+			}
+			return "Map IMDB Torrent"
+		}(),
 	},
 	"pull-magnet-cache": {
 		Title: "Pull Magnet Cache",
@@ -477,12 +482,15 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitMapIMDBTorrentWorker(&WorkerConfig{
-		Disabled:          !config.Feature.HasIMDBTitle(),
+		Disabled:          !config.Feature.HasIMDBTitle() && !config.Integration.MatchLab.IsEnabled(),
 		Name:              "map-imdb-torrent",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 30 * time.Second,
 		RunExclusive:      true,
 		ShouldWait: func() (bool, string) {
+			if config.Integration.MatchLab.IsEnabled() {
+				return false, ""
+			}
 			mutex.Lock()
 			defer mutex.Unlock()
 
@@ -675,7 +683,7 @@ func InitWorkers() func() {
 	}
 
 	if worker := InitMapAniDBTorrentWorker(&WorkerConfig{
-		Disabled:          !config.Feature.IsEnabled("anime"),
+		Disabled:          !config.Feature.IsEnabled("anime") || config.Integration.MatchLab.IsEnabled(),
 		Name:              "map-anidb-torrent",
 		Interval:          30 * time.Minute,
 		RunAtStartupAfter: 90 * time.Second,

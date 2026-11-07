@@ -28,3 +28,9 @@ jobs:
         run: go build --tags "fts5" -v ./...
       - name: Test
         run: STREMTHRU_ENV=test go test --tags "fts5" -v ./...
+      - name: Test Anime and Performance Flag Combinations
+        run: |
+          for flags in "" "+anime" "+performance" "+anime,+performance"; do
+            echo "Testing STREMTHRU_FEATURE=${flags:-default}"
+            STREMTHRU_ENV=test STREMTHRU_FEATURE="$flags" go test --tags "fts5" ./internal/config ./internal/matchlab ./internal/worker ./internal/torrent_info ./internal/torrent_stream ./internal/torznab ./internal/stremio/torz ./internal/torznab/indexer/syncinfo
+          done
