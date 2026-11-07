@@ -345,7 +345,7 @@ function RouteComponent() {
             <SelectItem value="by-id">
               By {tab === "imdb" ? "IMDB" : "AniDB"}
             </SelectItem>
-            <SelectItem value="by-title">By Title</SelectItem>
+            <SelectItem value="by-title">By Title / Hash</SelectItem>
           </SelectContent>
         </Select>
 

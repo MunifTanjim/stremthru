@@ -121,12 +121,12 @@ func handleGetIMDBMappings(w http.ResponseWriter, r *http.Request) {
 
 		items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, false, false)
 	case "by-title":
-		hashes, hashErr := torrent_info.ListHashesByTitleQuery(q, 1000)
+		hashes, hashErr := torrent_info.ListHashesByTitleOrHash(q, 1000)
 		if hashErr != nil {
 			SendError(w, r, hashErr)
 			return
 		}
-		items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		items, err = imdb_torrent.GetMappingsByHashes(hashes, cursor, limit, !unmapped || torrent_info.IsTorrentInfoHash(q), unmapped || torrent_info.IsTorrentInfoHash(q))
 	default:
 		SendData(w, r, 200, ListIMDBMappingsResponse{
 			Items: []IMDBMappingItemResponse{},
@@ -191,12 +191,12 @@ func handleGetAniDBMappings(w http.ResponseWriter, r *http.Request) {
 
 		items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, true, false)
 	case "by-title":
-		hashes, hashErr := torrent_info.ListHashesByTitleQuery(q, 1000)
+		hashes, hashErr := torrent_info.ListHashesByTitleOrHash(q, 1000)
 		if hashErr != nil {
 			SendError(w, r, hashErr)
 			return
 		}
-		items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, !unmapped, unmapped)
+		items, err = anidb.GetMappingsByHashes(hashes, cursor, limit, !unmapped || torrent_info.IsTorrentInfoHash(q), unmapped || torrent_info.IsTorrentInfoHash(q))
 	default:
 		SendData(w, r, 200, ListAniDBMappingsResponse{
 			Items: []AniDBMappingItemResponse{},

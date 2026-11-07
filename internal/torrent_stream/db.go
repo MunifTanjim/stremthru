@@ -18,6 +18,7 @@ import (
 	"github.com/MunifTanjim/stremthru/core"
 	"github.com/MunifTanjim/stremthru/internal/anime"
 	"github.com/MunifTanjim/stremthru/internal/cache"
+	"github.com/MunifTanjim/stremthru/internal/config"
 	"github.com/MunifTanjim/stremthru/internal/db"
 	"github.com/MunifTanjim/stremthru/internal/torrent_stream/media_info"
 	"github.com/MunifTanjim/stremthru/internal/util"
@@ -346,6 +347,10 @@ func GetFile(hash string, sid string) (*File, error) {
 	return &file, nil
 }
 
+// InvalidateFilesByHash prevents stale SID/ASID data after an external
+// mapper updates torrent_stream directly in an atomic database transaction.
+func InvalidateFilesByHash(hash string) { filesByHashCache.Remove(hash) }
+
 var filesByHashCache = cache.NewCache[Files](&cache.CacheConfig{
 	Name:     "torrent_stream:files_by_hash",
 	Lifetime: 2 * time.Hour,
@@ -405,6 +410,79 @@ func GetFilesByHashes(hashes []string) (map[string]Files, error) {
 		return nil, err
 	}
 	return byHash, nil
+}
+
+// GetMatchingFilesByHashes fetches only previously matched files for this
+// stream. Avoid JSON-aggregating the complete file list of every season pack.
+func GetMatchingFilesByHashes(hashes []string, streamId string) (map[string]File, error) {
+	result := make(map[string]File)
+	if len(hashes) == 0 || streamId == "" {
+		return result, nil
+	}
+	for chunk := range slices.Chunk(hashes, 400) {
+		cond, args := db.InStringValues(chunk)
+		args = append(args, streamId, streamId)
+		rows, err := db.Query(
+			"SELECT h, p, i, s, sid, asid, src, vhash, mi FROM "+TableName+
+				" WHERE h "+cond+" AND (sid = ? OR asid = ?) ORDER BY h, i", args...,
+		)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var hash string
+			var file File
+			var mi db.JSONB[media_info.MediaInfo]
+			if err := rows.Scan(&hash, &file.Path, &file.Idx, &file.Size, &file.SId, &file.ASId, &file.Source, &file.VideoHash, &mi); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			file.Normalize()
+			if !file.IsVideo() {
+				continue
+			}
+			if _, exists := result[hash]; exists {
+				continue
+			}
+			if !mi.Null {
+				file.MediaInfo = &mi.Data
+			}
+			result[hash] = file
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
+	return result, nil
+}
+
+// GetHashesWithFiles checks file presence without reading their paths or
+// parsing their filenames in the request path.
+func GetHashesWithFiles(hashes []string) (map[string]bool, error) {
+	result := make(map[string]bool)
+	for chunk := range slices.Chunk(hashes, 400) {
+		cond, args := db.InStringValues(chunk)
+		rows, err := db.Query("SELECT DISTINCT h FROM "+TableName+" WHERE h "+cond, args...)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var hash string
+			if err := rows.Scan(&hash); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			result[hash] = true
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
+	return result, nil
 }
 
 func TrackFiles(storeCode store.StoreCode, filesByHash map[string]Files) {
@@ -624,6 +702,18 @@ func Record(items []InsertData, discardIdx bool) error {
 					invalidatedHashes.Add(hash)
 				}
 			}
+			if config.Integration.MatchLab.IsEnabled() {
+				// Only touched hashes need another MatchLab pass. Avoid
+				// polling the entire torrent_stream table every cycle.
+				hashes := invalidatedHashes.ToSlice()
+				if len(hashes) > 0 {
+					query, args := db.InStringValues(hashes)
+					_, err := db.Exec("UPDATE torrent_info SET matchlab_mapped_at = NULL, matchlab_retry_at = NULL, matchlab_file_revision = matchlab_file_revision + 1 WHERE hash "+query, args...)
+					if err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
 		}
 	}
 
@@ -676,6 +766,11 @@ var tag_strem_id_query = fmt.Sprintf(
 )
 
 func TagStremId(hash string, filepath string, sid string) {
+	if config.Integration.MatchLab.IsEnabled() {
+		// Do not persist request-derived IDs over an authoritative
+		// MatchLab no-match or independent file identity.
+		return
+	}
 	if filepath == "" {
 		return
 	}
@@ -703,6 +798,10 @@ var query_tag_anime_strem_id = fmt.Sprintf(
 )
 
 func TagAnimeStremId(hash string, filepath string, sid string) {
+	if config.Integration.MatchLab.IsEnabled() {
+		// MatchLab supplies verified AniDB coordinates for each file.
+		return
+	}
 	if filepath == "" {
 		return
 	}

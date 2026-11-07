@@ -150,6 +150,8 @@ func (uderr *userDataError) Error() string {
 type Ctx struct {
 	stremio_shared.Ctx
 	Indexers []torznab_client.Indexer
+	// Scoped to the current addon configuration; never persisted to the DB.
+	sourceScope string
 }
 
 func (ud *UserData) GetRequestContext(r *http.Request) (*Ctx, error) {

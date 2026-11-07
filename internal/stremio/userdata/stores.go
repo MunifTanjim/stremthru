@@ -272,9 +272,11 @@ func (ud *UserDataStores) CheckMagnet(params *store.CheckMagnetParams, log *logg
 			storeCode := strings.ToUpper(string(s.Store.GetName().Code()))
 			if err != nil {
 				log.Warn("failed to check magnet", "error", err, "store.name", s.Store.GetName())
+				res.m.Lock()
 				res.Err[idx] = err
 				res.HasErr = true
 				res.HasErrByStoreCode[storeCode] = struct{}{}
+				res.m.Unlock()
 			} else {
 				res.m.Lock()
 				defer res.m.Unlock()

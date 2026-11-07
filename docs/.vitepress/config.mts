@@ -90,6 +90,7 @@ export default defineConfig({
           { text: "AniList", link: "/integrations/anilist" },
           { text: "GitHub", link: "/integrations/github" },
           { text: "Letterboxd", link: "/integrations/letterboxd" },
+          { text: "MatchLab", link: "/integrations/matchlab" },
           { text: "MDBList", link: "/integrations/mdblist" },
           { text: "Serializd", link: "/integrations/serializd" },
           { text: "TMDB", link: "/integrations/tmdb" },

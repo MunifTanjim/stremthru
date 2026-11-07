@@ -54,6 +54,31 @@ Stale time for Letterboxd list data.
 STREMTHRU_INTEGRATION_LETTERBOXD_LIST_STALE_TIME=24h
 ```
 
+## MatchLab
+
+Optional external torrent parser and IMDb/AniDB matcher. It is not required for the default local parsing and matching behavior.
+
+### `STREMTHRU_INTEGRATION_MATCHLAB_URL`
+
+Reachable MatchLab HTTP(S) base URL. Leave unset to use the built-in Go-PTT/IMDb/AniDB matching. `MATCHLAB_URL` is also supported as an alias.
+
+**Example:**
+
+```sh
+STREMTHRU_INTEGRATION_MATCHLAB_URL=http://matchlab:8765
+```
+
+### `STREMTHRU_INTEGRATION_MATCHLAB_TIMEOUT`
+
+- **Default:** `10s`
+
+### `STREMTHRU_INTEGRATION_MATCHLAB_CONCURRENCY`
+
+- **Default:** `8` concurrent API calls
+- **Allowed range:** 1–64
+
+See the [MatchLab integration guide](/integrations/matchlab) for setup, feature flags, migrations, and how to return to native matching.
+
 ## MDBList
 
 ### `STREMTHRU_INTEGRATION_MDBLIST_LIST_STALE_TIME`

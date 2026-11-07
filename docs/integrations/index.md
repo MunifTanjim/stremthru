@@ -9,6 +9,7 @@ StremThru integrates with several external services for content metadata, list m
 | [AniList](./anilist)       | List addon                    | No                    |
 | [GitHub](./github)         | Various                       | Personal Access Token |
 | [Letterboxd](./letterboxd) | List addon                    | No                    |
+| [MatchLab](./matchlab)     | Torz parser, IMDb/AniDB ID matching | No (external API) |
 | [MDBList](./mdblist)       | List addon                    | No                    |
 | [Serializd](./serializd)   | List addon                    | No (requires TMDB)    |
 | [TMDB](./tmdb)             | List addon, ID mapping        | Access Token          |

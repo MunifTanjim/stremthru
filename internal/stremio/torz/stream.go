@@ -31,7 +31,6 @@ import (
 )
 
 var streamTemplate = stremio_transformer.StreamTemplateDefault
-var torzLazyPull = config.Stremio.Torz.LazyPull
 
 type WrappedStream struct {
 	*stremio.Stream
@@ -323,6 +322,9 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 			if item.HasMissingData() {
 				continue
 			}
+			if config.Feature.HasPerformance() {
+				rememberIndexerSourceLink(ctx.sourceScope, item.Hash, item.SourceLink)
+			}
 
 			if !is_exact {
 				pttr, err := util.ParseTorrentTitle(item.Title)
@@ -527,18 +529,41 @@ func GetStreamsFromIndexers(reqCtx context.Context, ctx *Ctx, stremType, stremId
 			wrappedStreams = append(wrappedStreams, wrappedStream)
 		}
 	}
-	go torrent_info.Upsert(tInfosToUpsert, torrent_info.TorrentInfoCategoryUnknown, false)
+	if len(tInfosToUpsert) > 0 {
+		if config.Feature.HasPerformance() {
+			// Background refreshes must persist their results before completing.
+			if err := torrent_info.Upsert(tInfosToUpsert, torrent_info.TorrentInfoCategoryUnknown, false); err != nil {
+				return nil, nil, err
+			}
+		} else {
+			// Preserve the original nonblocking import behavior for legacy requests.
+			go torrent_info.Upsert(tInfosToUpsert, torrent_info.TorrentInfoCategoryUnknown, false)
+		}
+	}
 
 	return wrappedStreams, hashes, nil
 }
 
 func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torrent_stream.NormalizedStremId) ([]WrappedStream, error) {
+	if !config.Feature.HasPerformance() {
+		return getStreamsForHashesLegacy(stremType, stremId, hashes, nsid)
+	}
 	tInfoByHash, err := torrent_info.GetByHashes(hashes)
 	if err != nil {
 		return nil, err
 	}
 
-	filesByHashes, err := torrent_stream.GetFilesByHashes(hashes)
+	// Resolve only pre-matched stream files. Parsing whole season packs here
+	// makes large series disproportionately expensive.
+	idToMatch := stremId
+	if nsid.IsAnime {
+		idToMatch = nsid.Id + ":" + nsid.Episode
+	}
+	matchedFiles, err := torrent_stream.GetMatchingFilesByHashes(hashes, idToMatch)
+	if err != nil {
+		return nil, err
+	}
+	filePresence, err := torrent_stream.GetHashesWithFiles(hashes)
 	if err != nil {
 		return nil, err
 	}
@@ -551,46 +576,13 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 		}
 
 		var file *torrent_stream.File
-		if files, ok := filesByHashes[hash]; ok {
-			idToMatch := stremId
-			if nsid.IsAnime {
-				if nsid.Id == "" {
-					idToMatch = ""
-				} else {
-					idToMatch = nsid.Id + ":" + nsid.Episode
-				}
-			}
-			if idToMatch != "" {
-				for i := range files {
-					f := &files[i]
-					if f.IsVideo() {
-						if f.SId == idToMatch || f.ASId == idToMatch {
-							file = f
-							break
-						}
-					}
-				}
-			}
-			if file == nil && !nsid.IsAnime && nsid.IsSeries() && nsid.Episode != "" {
-				for i := range files {
-					f := &files[i]
-					if f.IsVideo() {
-						data := stremio_shared.ParseSeasonEpisodeFromName(f.Name, false)
-						if data.Season != -1 && strconv.Itoa(data.Season) != nsid.Season {
-							continue
-						}
-						if data.Episode == -1 || strconv.Itoa(data.Episode) != nsid.Episode {
-							continue
-						}
-						file = f
-						break
-					}
-				}
-				if file == nil {
-					log.Trace("skipping torrent: no matching file found", "hash", tInfo.Hash, "sid", stremId)
-					continue
-				}
-			}
+		if match, ok := matchedFiles[hash]; ok {
+			file = &match
+		} else if !nsid.IsAnime && nsid.IsSeries() && nsid.Episode != "" && filePresence[hash] {
+			// Files exist, but MatchLab has not produced a matching SID yet.
+			// Never guess the episode synchronously from a season pack.
+			log.Trace("skipping torrent: awaiting matching file mapping", "hash", tInfo.Hash, "sid", stremId)
+			continue
 		}
 
 		pttr, err := tInfo.ToParsedResult()
@@ -653,6 +645,10 @@ func GetStreamsForHashes(stremType, stremId string, hashes []string, nsid *torre
 }
 
 func handleStream(w http.ResponseWriter, r *http.Request) {
+	if !config.Feature.HasPerformance() {
+		handleStreamLegacy(w, r)
+		return
+	}
 	if !IsMethod(r, http.MethodGet) {
 		shared.ErrorMethodNotAllowed(r).Send(w, r)
 		return
@@ -702,109 +698,74 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 
 	eud := ud.GetEncoded()
 
-	pulledHashes := []string{}
+	// Queue external peer/indexer refresh work and read only already stored
+	// torrent mappings. Fresh results become visible on the next request.
 	nsid, err := torrent_stream.NormalizeStreamId(id)
-	if err == nil {
-		cleanSId := nsid.ToClean()
-		if torzLazyPull {
-			go buddy.PullTorrentsByStremId(cleanSId, "")
-		} else {
-			hashes := buddy.PullTorrentsByStremId(cleanSId, "")
-			pulledHashes = append(pulledHashes, hashes...)
+	if err != nil {
+		if errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
+			shared.ErrorBadRequest(r, "unsupported strem id: "+id).Send(w, r)
+			return
 		}
-
-		torznab_indexer_syncinfo.QueueJob(nsid.String())
-	} else if !errors.Is(err, torrent_stream.ErrUnsupportedStremId) {
 		log.Error("failed to normalize strem id", "error", err, "id", id)
 		shared.ErrorInternalServerError(r, "failed to normalize strem id").WithCause(err).Send(w, r)
 		return
-	} else {
-		shared.ErrorBadRequest(r, "unsupported strem id: "+id).Send(w, r)
-		return
 	}
 
-	hashes, err := torrent_info.ListHashesByStremId(id)
+	buddy.QueuePullTorrentsByStremId(nsid.ToClean())
+	torznab_indexer_syncinfo.QueueJob(nsid.String())
+	ctx.sourceScope = eud
+	queueIndexerRefresh(ctx, contentType, id, eud)
+
+	hashes, err := torrent_info.ListHashesByStremIdFast(id)
 	if err != nil {
 		SendError(w, r, err)
 		return
 	}
 
-	hashSet := util.NewSet[string]()
-	for _, hash := range hashes {
-		hashSet.Add(hash)
-	}
-
-	if len(pulledHashes) > 0 {
-		for _, hash := range pulledHashes {
-			if !hashSet.Has(hash) {
-				hashSet.Add(hash)
-				hashes = append(hashes, hash)
-			}
-		}
-	}
-
-	var wg sync.WaitGroup
-
-	var wrappedStreams []WrappedStream
-	var getStreamsError error
-	wg.Go(func() {
-		wrappedStreams, getStreamsError = GetStreamsForHashes(contentType, id, hashes, nsid)
-	})
-
-	var wrappedStreamsFromIndexers []WrappedStream
-	var hashesFromIndexers []string
-	var getStreamsFromIndexersError error
-	wg.Go(func() {
-		timeoutCtx, cancel := context.WithTimeout(r.Context(), config.Stremio.Torz.IndexerMaxTimeout)
-		defer cancel()
-		wrappedStreamsFromIndexers, hashesFromIndexers, getStreamsFromIndexersError = GetStreamsFromIndexers(timeoutCtx, ctx, contentType, id)
-		log.Debug("fetched streams from indexers", "count", len(wrappedStreamsFromIndexers))
-	})
-
-	wg.Wait()
-
-	if getStreamsError != nil {
-		SendError(w, r, getStreamsError)
+	wrappedStreams, err := GetStreamsForHashes(contentType, id, hashes, nsid)
+	if err != nil {
+		SendError(w, r, err)
 		return
 	}
-
-	if getStreamsFromIndexersError != nil {
-		log.Error("failed to get streams from indexers", "error", getStreamsFromIndexersError)
-	} else {
-		wrappedStreams = append(wrappedStreams, wrappedStreamsFromIndexers...)
-		for _, hash := range hashesFromIndexers {
-			if !hashSet.Has(hash) {
-				hashSet.Add(hash)
-				hashes = append(hashes, hash)
-			}
+	for i := range wrappedStreams {
+		if wrappedStreams[i].R.IsPrivate {
+			wrappedStreams[i].torrentLink = getIndexerSourceLink(eud, wrappedStreams[i].R.Hash)
 		}
 	}
 
 	isP2P := ud.IsP2P()
 
+	// Keep the fast database-only torrent lookup, but do not return streams
+	// while the debrid cache state is still unknown. Only check torrents that
+	// survived the user's filters, and only check each hash once.
+	wrappedStreams = filterStreams(wrappedStreams, filter)
+
 	var isCachedByHash map[string]string
 	var hasErrByStoreCode map[string]struct{}
-	var checkMagnetError error
-	if !isP2P && len(hashes) > 0 {
-		cmRes := ud.CheckMagnet(&store.CheckMagnetParams{
-			Magnets:  hashes,
-			ClientIP: ctx.ClientIP,
-			SId:      id,
-		}, ctx.Log)
-		if cmRes.HasErr && len(cmRes.ByHash) == 0 {
-			checkMagnetError = errors.Join(cmRes.Err...)
-		} else {
-			isCachedByHash = cmRes.ByHash
-			hasErrByStoreCode = cmRes.HasErrByStoreCode
+	if !isP2P {
+		visibleHashes := debridCandidateHashes(wrappedStreams)
+		if len(visibleHashes) > 0 {
+			availability, err := awaitDebridAvailability(func() debridAvailability {
+				result := ud.CheckMagnet(&store.CheckMagnetParams{
+					Magnets:  visibleHashes,
+					ClientIP: ctx.ClientIP,
+					SId:      id,
+				}, ctx.Log)
+				return debridAvailability{
+					ByHash:       result.ByHash,
+					FailedStores: result.HasErrByStoreCode,
+					Err:          result.Err,
+					HasErr:       result.HasErr,
+				}
+			})
+			if err != nil {
+				SendError(w, r, err)
+				return
+			}
+			isCachedByHash = availability.ByHash
+			hasErrByStoreCode = availability.FailedStores
 		}
 	}
-
-	if checkMagnetError != nil {
-		SendError(w, r, checkMagnetError)
-		return
-	}
-
-	wrappedStreams = filterStreams(wrappedStreams, filter)
 
 	stremio_transformer.SortStreams(wrappedStreams, ud.Sort)
 
@@ -895,10 +856,6 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	for i := range uncachedStreams {
 		streams[idx] = uncachedStreams[i]
 		idx++
-	}
-
-	if isP2P && !torzLazyPull {
-		w.Header().Set("Cache-Control", "public, max-age=7200")
 	}
 
 	SendResponse(w, r, 200, &stremio.StreamHandlerResponse{
