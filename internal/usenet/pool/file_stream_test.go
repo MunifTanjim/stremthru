@@ -3,6 +3,7 @@ package usenet_pool
 import (
 	"testing"
 
+	"github.com/MunifTanjim/stremthru/internal/usenet/nzb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,4 +57,20 @@ func TestByteRange(t *testing.T) {
 		assert.Equal(t, int64(50), r.Start)
 		assert.Equal(t, int64(150), r.End)
 	})
+}
+
+func TestSegmentsContiguous(t *testing.T) {
+	numbered := func(numbers ...int) []nzb.Segment {
+		segments := make([]nzb.Segment, len(numbers))
+		for i, number := range numbers {
+			segments[i].Number = number
+		}
+		return segments
+	}
+
+	assert.True(t, segmentsContiguous(nil))
+	assert.True(t, segmentsContiguous(numbered(1, 2, 3)))
+	assert.False(t, segmentsContiguous(numbered(1, 2, 2, 3)), "duplicate part")
+	assert.False(t, segmentsContiguous(numbered(1, 3, 4)), "missing part")
+	assert.False(t, segmentsContiguous(numbered(2, 3, 4)), "missing first part")
 }

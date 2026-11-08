@@ -57,7 +57,34 @@ type FileStream struct {
 	position int64
 	stream   *SegmentsStream
 
+	// ReadAt state, see readAtCursor. ReadAt never takes mu.
+	contiguous bool // segment numbers are exactly 1..N
+	raMu       sync.Mutex
+	ra         *readAtCursor // parked between calls, nil while a call holds it
+	raClosed   bool
+
 	closed bool
+}
+
+// readAtCursor is the SegmentsStream of an earlier ReadAt call, kept open
+// while calls stay sequential. The 7z reader reads stored entries through an
+// unbuffered io.SectionReader, so each 32 KB read of an HTTP response is one
+// ReadAt here. A stream per call keeps about two segments in flight and
+// re-reads the current segment from the segment cache on every call.
+//
+// A cursor's stream checks that every segment continues the bytes before
+// it, so it serves only bytes at their file offsets. When a check fails, or
+// the stream ends before the end of the file, that call is served the way a
+// stream per call serves it.
+//
+// A cursor's read-ahead budget only grows: it keeps the largest per-call
+// budget it has served until it grows to the stream buffer size.
+type readAtCursor struct {
+	stream *SegmentsStream
+	pos    int64 // file offset of the stream's next byte
+	seq    int64 // bytes served to calls that continued where the last call ended
+	budget int64 // read-ahead budget given to the stream so far
+	grown  bool
 }
 
 func NewFileStream(
@@ -95,6 +122,7 @@ func NewFileStream(
 		fileSize:         fileSize,
 		avgSegmentSize:   avgSegmentSize,
 		segmentSizeRatio: segmentSizeRatio,
+		contiguous:       segmentsContiguous(file.Segments),
 
 		pool:       pool,
 		bufferSize: bufferSize,
@@ -117,7 +145,7 @@ func (s *FileStream) Read(p []byte) (n int, err error) {
 	}
 
 	if s.stream == nil {
-		stream, err := s.createSegmentsStream(s.position, s.bufferSize)
+		stream, err := s.createSegmentsStream(s.position, s.bufferSize, false)
 		if err != nil {
 			return 0, err
 		}
@@ -133,16 +161,153 @@ func (s *FileStream) ReadAt(p []byte, off int64) (n int, err error) {
 	if off < 0 || off >= s.fileSize {
 		return 0, io.EOF
 	}
-
-	// Use at least the requested read size as buffer, plus one extra segment for overhead
-	bufferSize := int64(len(p)) + s.avgSegmentSize
-	stream, err := s.createSegmentsStream(off, bufferSize)
-	if err != nil {
+	if err := s.ctx.Err(); err != nil {
 		return 0, err
 	}
-	defer stream.Close()
 
-	return io.ReadFull(stream, p)
+	if !s.contiguous {
+		return s.readAtOnce(p, off)
+	}
+
+	cursor, reused, err := s.takeReadAtCursor(off, int64(len(p)))
+	if err != nil {
+		if s.ctx.Err() == nil && readAtFallsBack(err) {
+			return s.readAtOnce(p, off)
+		}
+		return 0, err
+	}
+
+	n, err = io.ReadFull(cursor.stream, p)
+	cursor.pos += int64(n)
+	if reused {
+		cursor.seq += int64(n)
+	}
+	if err == nil {
+		s.parkReadAtCursor(cursor)
+		return n, nil
+	}
+	cursor.stream.Close()
+
+	if s.ctx.Err() != nil {
+		return n, s.ctx.Err()
+	}
+	if off+int64(n) >= s.fileSize && !errors.Is(err, errSegmentOffset) {
+		// The call ran into the end of the file.
+		return n, err
+	}
+	if readAtFallsBack(err) {
+		return s.readAtOnce(p, off)
+	}
+	return n, err
+}
+
+// readAtFallsBack reports whether a ReadAt call whose cursor failed with err
+// is served again the way a stream per call serves it: the stream stopped
+// matching file offsets, ended early, as it does for an NZB that lacks its
+// last parts, or got another reader's cancellation. The pool shares a fetch
+// of one article between readers, on the context of the reader that started
+// it, so a reader that closes its stream can cancel a fetch that another one
+// is waiting for.
+func readAtFallsBack(err error) bool {
+	return errors.Is(err, errSegmentOffset) || err == io.EOF || err == io.ErrUnexpectedEOF || errors.Is(err, context.Canceled)
+}
+
+// readAtOnce serves one ReadAt call from a stream of its own. ReadAt uses it
+// when the segment numbers are not exactly 1..N: a stream that runs on past a
+// duplicate or missing part no longer matches file offsets, while a stream
+// located for each call does.
+func (s *FileStream) readAtOnce(p []byte, off int64) (int, error) {
+	// Use at least the requested read size as buffer, plus one extra segment for overhead
+	bufferSize := int64(len(p)) + s.avgSegmentSize
+	stream, err := s.createSegmentsStream(off, bufferSize, false)
+	if err == nil {
+		defer stream.Close()
+		var n int
+		n, err = io.ReadFull(stream, p)
+		if err == nil {
+			return n, nil
+		}
+		if s.ctx.Err() == nil {
+			return n, err
+		}
+		return n, s.ctx.Err()
+	}
+	if s.ctx.Err() != nil {
+		return 0, s.ctx.Err()
+	}
+	return 0, err
+}
+
+// takeReadAtCursor returns the parked cursor if it stands at off, otherwise a
+// new cursor at off, and whether the cursor continues an earlier call. The
+// caller owns the cursor until it parks or closes it, so concurrent ReadAt
+// calls never share a stream, and no lock is held while a call waits on a
+// provider.
+func (s *FileStream) takeReadAtCursor(off, size int64) (*readAtCursor, bool, error) {
+	s.raMu.Lock()
+	if s.raClosed {
+		s.raMu.Unlock()
+		return nil, false, errors.New("file stream is closed")
+	}
+	cursor := s.ra
+	s.ra = nil
+	s.raMu.Unlock()
+
+	// Use at least the requested read size as buffer, plus one extra segment for overhead
+	budget := size + s.avgSegmentSize
+
+	if cursor != nil {
+		if cursor.pos == off {
+			// A larger call gets the budget a stream of its own would get.
+			if budget > cursor.budget {
+				cursor.stream.growBuffer(budget - cursor.budget)
+				cursor.budget = budget
+			}
+			return cursor, true, nil
+		}
+		cursor.stream.Close()
+	}
+
+	stream, err := s.createSegmentsStream(off, budget, true)
+	if err != nil {
+		return nil, false, err
+	}
+	return &readAtCursor{stream: stream, pos: off, budget: budget}, false, nil
+}
+
+// parkReadAtCursor keeps the cursor for the next ReadAt call. Once calls that
+// continue where the last one ended have read two average segments from a
+// cursor, its read-ahead grows to the stream buffer size, as Read's does.
+// Header reads, random access and single large reads keep the per-call
+// budget.
+func (s *FileStream) parkReadAtCursor(cursor *readAtCursor) {
+	s.raMu.Lock()
+	if s.raClosed || s.ra != nil {
+		s.raMu.Unlock()
+		cursor.stream.Close()
+		return
+	}
+	// Grow only a cursor that is kept, so a closed one never starts fetches.
+	if !cursor.grown && cursor.seq >= 2*s.avgSegmentSize {
+		cursor.grown = true
+		if s.bufferSize > cursor.budget {
+			cursor.stream.growBuffer(s.bufferSize - cursor.budget)
+			cursor.budget = s.bufferSize
+		}
+	}
+	s.ra = cursor
+	s.raMu.Unlock()
+}
+
+// segmentsContiguous reports whether the segment numbers are exactly 1..N.
+// NZB parsing sorts segments by number but keeps duplicates and gaps.
+func segmentsContiguous(segments []nzb.Segment) bool {
+	for i := range segments {
+		if segments[i].Number != i+1 {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *FileStream) Seek(offset int64, whence int) (int64, error) {
@@ -196,18 +361,39 @@ func (s *FileStream) Close() error {
 
 	s.closed = true
 
+	// Close ReadAt before cancelling, so a call that starts now gets an
+	// error rather than a cancelled stream. A call that already holds a
+	// cursor closes it itself.
+	s.raMu.Lock()
+	s.raClosed = true
+	cursor := s.ra
+	s.ra = nil
+	s.raMu.Unlock()
+
 	s.cancel()
+
+	if cursor != nil {
+		cursor.stream.Close()
+	}
+
 	if s.stream != nil {
 		return s.stream.Close()
 	}
 	return nil
 }
 
-func (s *FileStream) createSegmentsStream(startPos int64, bufferSize int64) (*SegmentsStream, error) {
+// createSegmentsStream starts a stream at startPos. With checkOffsets, the
+// stream fails with errSegmentOffset when a segment does not continue the
+// bytes before it.
+func (s *FileStream) createSegmentsStream(startPos int64, bufferSize int64, checkOffsets bool) (*SegmentsStream, error) {
 	fileLog.Trace("create segments stream - start", "position", startPos)
 
 	if startPos == 0 {
-		return NewSegmentsStream(s.ctx, s.pool, s.file.Segments, s.file.Groups, bufferSize), nil
+		stream := NewSegmentsStream(s.ctx, s.pool, s.file.Segments, s.file.Groups, bufferSize)
+		if checkOffsets {
+			stream.checkSegmentOffsets(0)
+		}
+		return stream, nil
 	}
 
 	result, err := s.interpolationSearch(startPos)
@@ -218,6 +404,9 @@ func (s *FileStream) createSegmentsStream(startPos int64, bufferSize int64) (*Se
 	fileLog.Trace("create segments stream - found segment", "segment_idx", result.SegmentIndex, "byte_range", fmt.Sprintf("[%d, %d)", result.ByteRange.Start, result.ByteRange.End))
 
 	stream := NewSegmentsStream(s.ctx, s.pool, s.file.Segments[result.SegmentIndex:], s.file.Groups, bufferSize)
+	if checkOffsets {
+		stream.checkSegmentOffsets(result.ByteRange.Start)
+	}
 
 	skipBytes := startPos - result.ByteRange.Start
 	if skipBytes > 0 {
