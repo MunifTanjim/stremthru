@@ -101,7 +101,7 @@ func TestQueuedMagnetIsFoundByHash(t *testing.T) {
 		case r.Method == http.MethodPost:
 			writeJSON(w, 200, `{"id":"`+testQueueId+`","service":"torrent","state":"queued"}`)
 		case q.Get("id") == testQueueId:
-			writeJSON(w, 404, `{"error":"not_found","message":"Transfer nicht gefunden."}`)
+			writeJSON(w, 404, `{"error":"not_found","message":"Transfer not found."}`)
 		case q.Get("check") != "":
 			writeJSON(w, 200, `{"service":"torrent","results":{"`+testHash+`":{"known":true,"ready":true,"id":"11","name":"Show S01","size":300}}}`)
 		case q.Get("id") == "11":
@@ -210,7 +210,7 @@ func TestRemoveMagnetReasons(t *testing.T) {
 func TestGenerateLink(t *testing.T) {
 	s, requests := testStore(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("file") == "missing" {
-			writeJSON(w, 404, `{"error":"file_not_found","message":"Datei nicht gefunden."}`)
+			writeJSON(w, 404, `{"error":"file_not_found","message":"File not found."}`)
 			return
 		}
 		writeJSON(w, 200, `{"id":"11","state":"completed","file":{"id":"f1","index":0,"path":"Show S01/E01.mkv","size":100,"partial":false,"download_url":"https://dl.example/signed"}}`)
@@ -238,7 +238,7 @@ func TestGenerateLink(t *testing.T) {
 
 func TestErrorMapping(t *testing.T) {
 	s, _ := testStore(t, func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, 401, `{"error":"invalid_token","message":"Token ungültig."}`)
+		writeJSON(w, 401, `{"error":"invalid_token","message":"Invalid token."}`)
 	})
 	_, err := s.GetUser(&store.GetUserParams{Ctx: ctx()})
 	var uerr *core.UpstreamError
