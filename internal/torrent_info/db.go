@@ -97,6 +97,7 @@ const (
 	TorrentInfoSourceDebrider    TorrentInfoSource = "dr"
 	TorrentInfoSourceDebridLink  TorrentInfoSource = "dl"
 	TorrentInfoSourceEasyDebrid  TorrentInfoSource = "ed"
+	TorrentInfoSourceHighWay     TorrentInfoSource = "hw"
 	TorrentInfoSourceOffcloud    TorrentInfoSource = "oc"
 	TorrentInfoSourcePikPak      TorrentInfoSource = "pp"
 	TorrentInfoSourcePremiumize  TorrentInfoSource = "pm"

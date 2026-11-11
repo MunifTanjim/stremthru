@@ -18,6 +18,7 @@ func GetStoreCodeOptions(includeP2P bool) []configure.ConfigOption {
 		{Value: "dr", Label: "⚠️ Debrider"},
 		{Value: "dl", Label: "DebridLink"},
 		{Value: "ed", Label: "⚠️ EasyDebrid"},
+		{Value: "hw", Label: "HighWay"},
 		{Value: "oc", Label: "Offcloud"},
 		{Value: "pm", Label: "Premiumize"},
 		{Value: "pp", Label: "PikPak"},

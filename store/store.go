@@ -17,6 +17,7 @@ const (
 	StoreNameDebrider   StoreName = "debrider"
 	StoreNameDebridLink StoreName = "debridlink"
 	StoreNameEasyDebrid StoreName = "easydebrid"
+	StoreNameHighWay    StoreName = "highway"
 	StoreNameOffcloud   StoreName = "offcloud"
 	StoreNamePikPak     StoreName = "pikpak"
 	StoreNamePremiumize StoreName = "premiumize"
@@ -35,6 +36,7 @@ var StoreNames = []StoreName{
 	StoreNameDebrider,
 	StoreNameDebridLink,
 	StoreNameEasyDebrid,
+	StoreNameHighWay,
 	StoreNameOffcloud,
 	StoreNamePikPak,
 	StoreNamePremiumize,
@@ -50,6 +52,7 @@ const (
 	StoreCodeDebrider   StoreCode = "dr"
 	StoreCodeDebridLink StoreCode = "dl"
 	StoreCodeEasyDebrid StoreCode = "ed"
+	StoreCodeHighWay    StoreCode = "hw"
 	StoreCodeOffcloud   StoreCode = "oc"
 	StoreCodePikPak     StoreCode = "pp"
 	StoreCodePremiumize StoreCode = "pm"
@@ -64,6 +67,7 @@ var storeCodeByName = map[StoreName]StoreCode{
 	StoreNameDebrider:   StoreCodeDebrider,
 	StoreNameDebridLink: StoreCodeDebridLink,
 	StoreNameEasyDebrid: StoreCodeEasyDebrid,
+	StoreNameHighWay:    StoreCodeHighWay,
 	StoreNameOffcloud:   StoreCodeOffcloud,
 	StoreNamePikPak:     StoreCodePikPak,
 	StoreNamePremiumize: StoreCodePremiumize,
@@ -78,6 +82,7 @@ var storeNameByCode = map[StoreCode]StoreName{
 	StoreCodeDebrider:   StoreNameDebrider,
 	StoreCodeDebridLink: StoreNameDebridLink,
 	StoreCodeEasyDebrid: StoreNameEasyDebrid,
+	StoreCodeHighWay:    StoreNameHighWay,
 	StoreCodeOffcloud:   StoreNameOffcloud,
 	StoreCodePikPak:     StoreNamePikPak,
 	StoreCodePremiumize: StoreNamePremiumize,
