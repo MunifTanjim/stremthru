@@ -57,7 +57,7 @@ func TestGetUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if user.Id != "5" || user.SubscriptionStatus != store.UserSubscriptionStatusPremium {
+	if user.Id != "5" || user.SubscriptionStatus != store.UserSubscriptionStatusPremium || !user.HasUsenet {
 		t.Fatalf("user = %+v", user)
 	}
 	if (*requests)[0] != "GET stats=1" {
@@ -265,7 +265,7 @@ func TestCheckHashesBatches(t *testing.T) {
 	for i := range hashes {
 		hashes[i] = strings.Repeat("0", 37) + string(rune('a'+i%6)) + string(rune('a'+i/6%6)) + string(rune('a'+i/36%6))
 	}
-	results, err := s.checkHashes(ctx(), hashes)
+	results, err := s.checkHashes(ctx(), "torrent", hashes)
 	if err != nil {
 		t.Fatal(err)
 	}

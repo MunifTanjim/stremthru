@@ -94,9 +94,11 @@ type listResponse struct {
 
 type addResponse struct {
 	ResponseContainer
-	Id      string `json:"id"`
-	Service string `json:"service"`
-	State   string `json:"state"`
+	Id       string `json:"id"`
+	Service  string `json:"service"`
+	State    string `json:"state"`
+	Hash     string `json:"hash"`      // only for nzb_url: md5 of the NZB content
+	LinkHash string `json:"link_hash"` // only for nzb_url: md5 of the link, as in util.HashNZBFileLink
 }
 
 type fileResponse struct {

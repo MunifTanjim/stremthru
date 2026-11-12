@@ -71,6 +71,7 @@ func WaitForMagnetStatus(ctx *Ctx, m *store.GetMagnetData, status store.MagnetSt
 func GetStoreCodeOptionsForNewz() []configure.ConfigOption {
 	options := []configure.ConfigOption{
 		{Value: "", Label: "StremThru"},
+		{Value: "hw", Label: "HighWay"},
 		{Value: "tb", Label: "TorBox"},
 	}
 	if config.IsPublicInstance {

@@ -74,6 +74,7 @@ Navigate to **Stremio Addons > Newz** in your StremThru instance. Configure the 
 | Value     | Description                                                                           |
 | --------- | ------------------------------------------------------------------------------------- |
 | StremThru | Streams using your configured Usenet servers and any stores in `STREMTHRU_STORE_AUTH` |
+| HighWay   | Uses HighWay for downloading and streaming; HighWay fetches NZB links itself          |
 | TorBox    | Uses TorBox for downloading and streaming                                             |
 
 ::: info

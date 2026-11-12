@@ -82,8 +82,16 @@ func toMagnetStatus(state string) store.MagnetStatus {
 // ------------------------------------------------------------------------------------------ ids
 
 type transferId struct {
-	id   string // numeric or 32-hex queue id
-	hash string // info hash, only for queue ids
+	id      string // numeric or 32-hex queue id
+	hash    string // info hash (torrent) or NZB md5 (usenet), only for queue ids
+	service string // "torrent" (default) or "usenet"
+}
+
+func (t transferId) serviceName() string {
+	if t.service == "" {
+		return "torrent"
+	}
+	return t.service
 }
 
 func (t transferId) isQueued() bool {
@@ -93,7 +101,7 @@ func (t transferId) isQueued() bool {
 func (t transferId) query() url.Values {
 	query := url.Values{"id": {t.id}}
 	if !t.isQueued() {
-		query.Set("service", "torrent")
+		query.Set("service", t.serviceName())
 	}
 	return query
 }
@@ -204,22 +212,28 @@ func (s *StoreClient) GetUser(params *store.GetUserParams) (*store.User, error) 
 	}
 	if response.Premium {
 		user.SubscriptionStatus = store.UserSubscriptionStatusPremium
+		// every HighWay plan includes Usenet
+		user.HasUsenet = true
 	}
 	return user, nil
 }
 
 // ---------------------------------------------------------------------------------------- check
 
-func (s *StoreClient) checkHashes(ctx store.Ctx, hashes []string) (map[string]checkItem, error) {
+func (s *StoreClient) checkHashes(ctx store.Ctx, service string, hashes []string) (map[string]checkItem, error) {
 	results := map[string]checkItem{}
+	stat := "check_torz"
+	if service == "usenet" {
+		stat = "check_newz"
+	}
 	for i := 0; i < len(hashes); i += checkBatchSize {
 		batch := hashes[i:min(i+checkBatchSize, len(hashes))]
 		reqCtx := ctx
-		reqCtx.Query = &url.Values{"service": {"torrent"}, "check": {strings.Join(batch, ",")}}
+		reqCtx.Query = &url.Values{"service": {service}, "check": {strings.Join(batch, ",")}}
 		response := &checkResponse{}
 		start := time.Now()
 		_, err := s.client.Request(http.MethodGet, &reqCtx, response)
-		stats.Record(s.Name, "check_torz", time.Since(start), err != nil)
+		stats.Record(s.Name, stat, time.Since(start), err != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -272,7 +286,7 @@ func (s *StoreClient) CheckMagnet(params *store.CheckMagnetParams) (*store.Check
 
 	resultByHash := map[string]checkItem{}
 	if len(missingHashes) > 0 {
-		resultByHash, err = s.checkHashes(params.Ctx, missingHashes)
+		resultByHash, err = s.checkHashes(params.Ctx, "torrent", missingHashes)
 		if err != nil {
 			return nil, err
 		}
@@ -377,7 +391,7 @@ func isNotFound(err error) bool {
 }
 
 // fetchTransfer loads one transfer. A queued transfer that has started in the
-// meantime is found again by its info hash.
+// meantime is found again by its hash (info hash or NZB md5).
 func (s *StoreClient) fetchTransfer(ctx store.Ctx, id transferId) (*transfer, error) {
 	reqCtx := ctx
 	query := id.query()
@@ -385,12 +399,12 @@ func (s *StoreClient) fetchTransfer(ctx store.Ctx, id transferId) (*transfer, er
 	response := &transferResponse{}
 	_, err := s.client.Request(http.MethodGet, &reqCtx, response)
 	if err != nil && id.isQueued() && id.hash != "" && isNotFound(err) {
-		results, checkErr := s.checkHashes(ctx, []string{id.hash})
+		results, checkErr := s.checkHashes(ctx, id.serviceName(), []string{id.hash})
 		if checkErr != nil {
 			return nil, checkErr
 		}
 		if r, ok := results[id.hash]; ok && r.Id != nil {
-			return s.fetchTransfer(ctx, transferId{id: *r.Id})
+			return s.fetchTransfer(ctx, transferId{id: *r.Id, service: id.service})
 		}
 	}
 	if err != nil {
@@ -485,7 +499,7 @@ func (s *StoreClient) RemoveMagnet(params *store.RemoveMagnetParams) (*store.Rem
 	if err == nil && !response.Removed && response.Reason != "not_owner" && id.isQueued() && id.hash != "" {
 		// The queued transfer may have started in the meantime.
 		var results map[string]checkItem
-		results, err = s.checkHashes(params.Ctx, []string{id.hash})
+		results, err = s.checkHashes(params.Ctx, "torrent", []string{id.hash})
 		if r, ok := results[id.hash]; err == nil && ok && r.Id != nil {
 			response, err = s.remove(params.Ctx, transferId{id: *r.Id})
 		}
