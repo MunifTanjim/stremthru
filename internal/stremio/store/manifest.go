@@ -28,6 +28,7 @@ var logoByStoreCode = map[string]string{
 	"ad": "https://cdn.alldebrid.com/lib/images/default/logo_alldebrid.png",
 	"dl": "https://debrid-link.com/img/fav/icon_192.png",
 	"ed": "https://paradise-cloud.com/android-chrome-192x192.png",
+	"hw": "https://cloud.high-way.me/icon-192.png",
 	"oc": "https://offcloud.com/images/apple-touch-icon-180x180.png",
 	"pm": "https://www.premiumize.me/apple-touch-icon.png",
 	"pp": "https://mypikpak.com/android-chrome-192x192.png",

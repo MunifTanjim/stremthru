@@ -192,7 +192,7 @@ If `.status` is `cached`, `.files` will contain the list of files.
 
 ::: info Notes
 
-- For `offcloud`, the `.files` list is always empty.
+- For `offcloud` and `highway`, the `.files` list is always empty.
 - If `.files[].index` is `-1`, the file index is unknown — rely on `.name` instead.
 - If `.files[].size` is `-1`, the file size is unknown.
   :::

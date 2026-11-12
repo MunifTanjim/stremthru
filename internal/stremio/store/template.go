@@ -45,6 +45,7 @@ func getStoreNameConfig(defaultValue string) configure.Config {
 		{Value: "debrider", Label: "⚠️ Debrider"},
 		{Value: "debridlink", Label: "DebridLink"},
 		{Value: "easydebrid", Label: "⚠️ EasyDebrid"},
+		{Value: "highway", Label: "HighWay"},
 		{Value: "offcloud", Label: "Offcloud"},
 		{Value: "pikpak", Label: "PikPak"},
 		{Value: "premiumize", Label: "Premiumize"},

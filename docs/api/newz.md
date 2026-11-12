@@ -166,6 +166,10 @@ Check NZB hashes.
 }
 ```
 
+::: info
+For `highway`, the `.files` list is always empty.
+:::
+
 ### Generate Newz Link
 
 **`POST /v0/store/newz/link/generate`**

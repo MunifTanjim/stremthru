@@ -12,6 +12,7 @@ Supported stores:
 - [Debrider](https://debrider.app)
 - [Debrid-Link](https://debrid-link.com/id/4v8Uc)
 - [EasyDebrid](https://easydebrid.com)
+- [HighWay](https://high-way.me)
 - [Offcloud](https://offcloud.com/?=ce30ae1f)
 - [PikPak](https://mypikpak.com/drive/activity/invited?invitation-code=46013321)
 - [Premiumize](https://www.premiumize.me/ref/634502061)
