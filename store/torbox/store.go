@@ -345,9 +345,15 @@ func intToStr(key ...int) string {
 
 }
 
+// TorBox picks the CDN node from `user_ip`, so the client ip is part of the key:
+// a link generated for one client must not be served to another.
+func (c *StoreClient) getGenerateLinkCacheKey(params *store.GenerateLinkParams, torrentId int, fileId int) string {
+	return params.GetAPIKey(c.client.apiKey) + ":" + params.ClientIP + intToStr(torrentId, fileId)
+}
+
 func (c *StoreClient) getCachedGeneratedLink(params *store.GenerateLinkParams, torrentId int, fileId int) *store.GenerateLinkData {
 	v := &store.GenerateLinkData{}
-	if c.generateLinkCache.Get(params.GetAPIKey(c.client.apiKey)+":"+intToStr(torrentId, fileId), v) {
+	if c.generateLinkCache.Get(c.getGenerateLinkCacheKey(params, torrentId, fileId), v) {
 		return v
 	}
 	return nil
@@ -355,7 +361,7 @@ func (c *StoreClient) getCachedGeneratedLink(params *store.GenerateLinkParams, t
 }
 
 func (c *StoreClient) setCachedGenerateLink(params *store.GenerateLinkParams, torrentId int, fileId int, v *store.GenerateLinkData) {
-	c.generateLinkCache.Add(params.GetAPIKey(c.client.apiKey)+":"+intToStr(torrentId, fileId), *v)
+	c.generateLinkCache.Add(c.getGenerateLinkCacheKey(params, torrentId, fileId), *v)
 }
 
 func (c *StoreClient) GenerateLink(params *store.GenerateLinkParams) (*store.GenerateLinkData, error) {
